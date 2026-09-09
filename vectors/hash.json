@@ -1,0 +1,40 @@
+{
+  "data": [
+    {
+      "input": "",
+      "sha512": "cf83e1357eefb8bdf1542850d66d8007d620e4050b5715dc83f4a921d36ce9ce47d0d13c5d85f2b0ff8318d2877eec2f63b931bd47417a81a538327af927da3e"
+    },
+    {
+      "input": "61",
+      "sha512": "1f40fc92da241694750979ee6cf582f2d5d7d28e18335de05abc54d0560e0f5302860c652bf08d560252aa5e74210546f369fbbbce8c12cfc7957b2652fe9a75"
+    },
+    {
+      "input": "4155524f4e",
+      "sha512": "8a7d7fc6d280fe046a52c8571e4ee034b239cb5cf594f4af95a46c7c3e8ba82b506f1f89943b8dd49275d44940d1a4a461af209d804db446c81bf00d31f6f749"
+    },
+    {
+      "input": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f404142434445464748494a4b4c4d4e4f505152535455565758595a5b5c5d5e5f606162636465666768696a6b6c6d6e6f707172737475767778797a7b7c7d7e7f808182838485868788898a8b8c8d8e8f909192939495969798999a9b9c9d9e9fa0a1a2a3a4a5a6a7a8a9aaabacadaeafb0b1b2b3b4b5b6b7b8b9babbbcbdbebfc0c1c2c3c4c5c6c7c8c9cacbcccdcecfd0d1d2d3d4d5d6d7d8d9dadbdcdddedfe0e1e2e3e4e5e6e7e8e9eaebecedeeeff0f1f2f3f4f5f6f7f8f9fafbfcfdfeff",
+      "sha512": "1e7b80bc8edc552c8feeb2780e111477e5bc70465fac1a77b29b35980c3f0ce4a036a6c9462036824bd56801e62af7e9feba5c22ed8a5af877bf7de117dcac6d"
+    },
+    {
+      "output": "4b",
+      "xof_domain": "444f4d",
+      "xof_len": 1,
+      "xof_seed": "73656d656e7465"
+    },
+    {
+      "output": "4bb16041356dd369ca4f7c175f67233272e3367b99e8e03dec42b436359c79e3",
+      "xof_domain": "444f4d",
+      "xof_len": 32,
+      "xof_seed": "73656d656e7465"
+    },
+    {
+      "output": "4bb16041356dd369ca4f7c175f67233272e3367b99e8e03dec42b436359c79e3aaa2e9cf2ba542d1be861a28262929ec1c3555a4d6393e9dd13d611bdd35088c17cca59551f7cba65a44f961f648be8abe9d3b7f9b32382b17d184ddaf17e17380552e3b",
+      "xof_domain": "444f4d",
+      "xof_len": 100,
+      "xof_seed": "73656d656e7465"
+    }
+  ],
+  "generator": "reference/tools/gen_vectors.py",
+  "spec": "AURON-SPEC-01"
+}

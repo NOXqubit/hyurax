@@ -1,0 +1,49 @@
+{
+  "files": {
+    "argon2.json": {
+      "bytes": 2071,
+      "sha512_16": "d4a59d94f99eef9636ea9de908aa0ec3"
+    },
+    "chain.json": {
+      "bytes": 5539,
+      "sha512_16": "4370e68697260cda3eddfb97996a7d99"
+    },
+    "codec.json": {
+      "bytes": 2540,
+      "sha512_16": "c68c0072dcdddf7b9a696d8f61807cac"
+    },
+    "crypto_ed25519.json": {
+      "bytes": 2764,
+      "sha512_16": "44afc3c527ed563dca973f93fb3d0753"
+    },
+    "emission.json": {
+      "bytes": 1128,
+      "sha512_16": "c40df1cad01f84c8041dde2b7effdccd"
+    },
+    "genesis.json": {
+      "bytes": 3640,
+      "sha512_16": "3cf530f0cc19ae26a64ba0ca9b1109dd"
+    },
+    "hash.json": {
+      "bytes": 1957,
+      "sha512_16": "69eabb2b570cdf3a0eff62d824c6247c"
+    },
+    "targets.json": {
+      "bytes": 11466,
+      "sha512_16": "4936e78b3b53e9d74c1fcd802acc16b4"
+    },
+    "transactions.json": {
+      "bytes": 5017,
+      "sha512_16": "19ce368620409079223c5c3d2eab0c79"
+    },
+    "units.json": {
+      "bytes": 1041,
+      "sha512_16": "c239436396584fbee1aa991b3eec11d2"
+    },
+    "utrax.json": {
+      "bytes": 14643,
+      "sha512_16": "da235d1e160b82dd351d9042db678d8b"
+    }
+  },
+  "spec": "AURON-SPEC-01"
+}

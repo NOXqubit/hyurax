@@ -1,0 +1,44 @@
+# Configuração de build do Auron.
+#
+# Afinada para a máquina de desenvolvimento atual: 3,4 GB de RAM, 4 núcleos
+# lógicos e o projeto num HD externo USB. Os valores aqui não são frescura,
+# são o que faz o build caber na máquina.
+#
+# Este arquivo vai para o repositório de propósito: as três máquinas do
+# projeto usam a mesma configuração, e `target-dir` relativo funciona igual
+# no Windows e no Linux.
+
+[build]
+# Dois trabalhos em paralelo, não quatro. Cada rustc pode pedir de 0,5 a 1 GB.
+# Com 3,4 GB de RAM e o Claude ocupando 1,1 GB, quatro em paralelo estouram e
+# a máquina vai para o swap, que aqui é um disco que gira.
+jobs = 2
+
+# Artefatos dentro do projeto, em caminho relativo. Portátil entre as
+# máquinas e mantém tudo no mesmo disco do código.
+target-dir = ".target"
+
+[profile.dev]
+# Informação de depuração é o que mais infla memória do compilador e tamanho
+# em disco num build de Rust. Não precisamos dela ainda: os testes falham com
+# mensagem, não com depurador. Ligar de novo é trocar por `debug = 1`.
+debug = 0
+# Incremental ajuda muito na iteração, e o custo é disco, não memória.
+incremental = true
+
+[profile.dev.package."*"]
+# Dependência de terceiro nunca precisa de símbolo de depuração aqui.
+debug = 0
+
+[profile.release]
+debug = 0
+lto = false
+codegen-units = 16
+
+[net]
+# Deixa o git de verdade buscar dependências git. A implementação interna do
+# cargo tropeça em rede e em caminho com espaço no Windows.
+git-fetch-with-cli = true
+
+[term]
+progress.when = "auto"

@@ -1,0 +1,54 @@
+# ---------------------------------------------------------------------------
+# Ferramentas instaladas no HD externo. Nunca vão para o repositório: são
+# gigabytes de binário que cada máquina baixa sozinha.
+# ---------------------------------------------------------------------------
+.toolchain/
+
+# ---------------------------------------------------------------------------
+# Artefatos de build
+# ---------------------------------------------------------------------------
+.target/
+target/
+**/*.rs.bk
+*.pdb
+
+# ---------------------------------------------------------------------------
+# Python
+# ---------------------------------------------------------------------------
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+
+# ---------------------------------------------------------------------------
+# Dados de nó: cadeia local, chaves, logs. Nada disso é código.
+# CHAVE PRIVADA NUNCA ENTRA NO REPOSITÓRIO.
+# ---------------------------------------------------------------------------
+*.db
+*.db.tmp
+data/
+keystore/
+*.key
+*.secret
+node.log
+*.log
+
+# ---------------------------------------------------------------------------
+# Sistema operacional e editor
+# ---------------------------------------------------------------------------
+Thumbs.db
+desktop.ini
+.DS_Store
+.vscode/
+.idea/
+*.swp
+
+# ---------------------------------------------------------------------------
+# O que NÃO está ignorado, de propósito:
+#
+#   vectors/     é o contrato entre a referência Python e o nó Rust. Sem eles
+#                não existe validação cruzada. Entram no repositório.
+#   .cargo/      a configuração de build é a mesma nas três máquinas.
+#   spec/        a especificação é o projeto.
+# ---------------------------------------------------------------------------

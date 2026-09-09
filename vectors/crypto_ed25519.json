@@ -1,0 +1,62 @@
+{
+  "data": [
+    {
+      "address": "a036e6ddaf9df2b5bee54330ef94561811219990",
+      "label": "A",
+      "public_key": "d04ab232742bb4ab3a1368bd4615e4e6d0224ab71a016baf8520a332c9778737",
+      "secret": "1111111111111111111111111111111111111111111111111111111111111111",
+      "signatures": [
+        {
+          "message": "",
+          "signature": "d893e31c5518c521925f89c9d9ebb7ee928a1bbc2be1393b6db3a2d46cae459b1da6ba81b22c482c471efddb2b87f5f4ec649329e2689f4ad6240d0d96bef100",
+          "valid": true
+        },
+        {
+          "message": "61",
+          "signature": "15316c728a7c77e1ee576878100e840eece09f8333d0e05cf3808f3e578834ebf52a2d73176322d062390d6d32bf3819c0ca8892cb0a0b6b2870d900689d610f",
+          "valid": true
+        },
+        {
+          "message": "4155524f4e",
+          "signature": "d182c128de4614f29d9473c506f51e77ba0943a96513f41df195ec7103e538c82c96e87660dff44df21a27ab6cf2c0f0a41222a564a0549512f5c703835fce02",
+          "valid": true
+        },
+        {
+          "message": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f",
+          "signature": "54a6ea3a6a5708e8507b5118e4b3014535ee570fcab2f41a29d90fd4e2278cd511b4fb99a031a6b2cd9b50d3c461d1d9209e8f296e32ebcc59118f0317f85001",
+          "valid": true
+        }
+      ]
+    },
+    {
+      "address": "d3f1fe3f80c9f13b705fa3b2767dc05474e0fc27",
+      "label": "B",
+      "public_key": "a09aa5f47a6759802ff955f8dc2d2a14a5c99d23be97f864127ff9383455a4f0",
+      "secret": "2222222222222222222222222222222222222222222222222222222222222222",
+      "signatures": [
+        {
+          "message": "",
+          "signature": "422cd005fe03596845047e520947890f0136d531083d9a7ee8ded471305623c99fc6207342266b641a726b517e1ddfb0296533c2a944f82944485ace136e100f",
+          "valid": true
+        },
+        {
+          "message": "61",
+          "signature": "7af49c0e5cbcdd7bf6dd1cd5a796b7e14152acb717f735040ed0ef8bebfa5d3d96f6c96da0d474f2068fb345cf62ede844c372e166e9406d96aa0c1ef1db9406",
+          "valid": true
+        },
+        {
+          "message": "4155524f4e",
+          "signature": "6511d52e1b5a85c6bfd12deae0341257cbbe87dd1cb998ad5294a2f674afc230702b158f860ed85820b2f8f1a4ce4fd1179559c7afe3a0401a6e92b83d3c4e05",
+          "valid": true
+        },
+        {
+          "message": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f",
+          "signature": "a34d42d8df8988e24092c6baf703e1fc0cc7545e3b8afeaeabdc72d0c33196c81e30efe423ef7193b56369be7c23a7d9076669d77cf4e6005b2202f03214b707",
+          "valid": true
+        }
+      ]
+    }
+  ],
+  "generator": "reference/tools/gen_vectors.py",
+  "spec": "AURON-SPEC-01"
+}

@@ -1,0 +1,52 @@
+{
+  "data": [
+    {
+      "cumulative": "5000000000",
+      "height": 0,
+      "network": "auron-mainnet",
+      "reward": "5000000000"
+    },
+    {
+      "cumulative": "10000000000",
+      "height": 1,
+      "network": "auron-mainnet",
+      "reward": "5000000000"
+    },
+    {
+      "cumulative": "1050000000000000",
+      "height": 209999,
+      "network": "auron-mainnet",
+      "reward": "5000000000"
+    },
+    {
+      "cumulative": "1050002500000000",
+      "height": 210000,
+      "network": "auron-mainnet",
+      "reward": "2500000000"
+    },
+    {
+      "cumulative": "1575001250000000",
+      "height": 420000,
+      "network": "auron-mainnet",
+      "reward": "1250000000"
+    },
+    {
+      "cumulative": "2099999997690000",
+      "height": 6930000,
+      "network": "auron-mainnet",
+      "reward": "0"
+    },
+    {
+      "cumulative": "2099999997690000",
+      "height": 13440000,
+      "network": "auron-mainnet",
+      "reward": "0"
+    },
+    {
+      "network": "auron-mainnet",
+      "total_emission": "2099999997690000"
+    }
+  ],
+  "generator": "reference/tools/gen_vectors.py",
+  "spec": "AURON-SPEC-01"
+}

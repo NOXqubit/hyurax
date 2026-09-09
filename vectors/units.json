@@ -1,0 +1,55 @@
+{
+  "data": [
+    {
+      "formatted": "0.00000000",
+      "input": "0",
+      "units": "0"
+    },
+    {
+      "formatted": "1.00000000",
+      "input": "1",
+      "units": "100000000"
+    },
+    {
+      "formatted": "0.10000000",
+      "input": "0.1",
+      "units": "10000000"
+    },
+    {
+      "formatted": "0.00000001",
+      "input": "0.00000001",
+      "units": "1"
+    },
+    {
+      "formatted": "1.50000000",
+      "input": "1.5",
+      "units": "150000000"
+    },
+    {
+      "formatted": "50.00000000",
+      "input": "50",
+      "units": "5000000000"
+    },
+    {
+      "formatted": "21000000.00000000",
+      "input": "21000000",
+      "units": "2100000000000000"
+    },
+    {
+      "formatted": "-1.50000000",
+      "input": "-1.5",
+      "units": "-150000000"
+    },
+    {
+      "formatted": "123.45678901",
+      "input": "123.45678901",
+      "units": "12345678901"
+    },
+    {
+      "error": "AmountError",
+      "input": "float 0.1"
+    }
+  ],
+  "generator": "reference/tools/gen_vectors.py",
+  "spec": "AURON-SPEC-01"
+}

@@ -1,0 +1,93 @@
+{
+  "data": {
+    "encoding": [
+      {
+        "bytes": "ff",
+        "kind": "u8",
+        "value": 255
+      },
+      {
+        "bytes": "00000001",
+        "kind": "u32",
+        "value": 1
+      },
+      {
+        "bytes": "8000000000000000",
+        "kind": "u64",
+        "value": 9223372036854775808
+      },
+      {
+        "bytes": "00000003000102",
+        "kind": "bytes",
+        "value": "000102"
+      },
+      {
+        "bytes": "00000005c3a7c3a36f",
+        "kind": "str",
+        "value": "ção"
+      }
+    ],
+    "merkle": [
+      {
+        "leaves": [],
+        "root": "cf83e1357eefb8bdf1542850d66d8007d620e4050b5715dc83f4a921d36ce9ce47d0d13c5d85f2b0ff8318d2877eec2f63b931bd47417a81a538327af927da3e"
+      },
+      {
+        "leaves": [
+          "61"
+        ],
+        "root": "031ab9ff5962e81139a6900216945fc584ab186aeb1bf3498c661b976a7393af94b6bcc9784f7e8cb75b071de60f9fda06d44ddd561e53e3343857eea2089217"
+      },
+      {
+        "leaves": [
+          "61",
+          "62"
+        ],
+        "root": "4b46df98b7104978e58a14ed3d5febb89bb2327ffce4307b55254ae8b26e76bf251dec7ea1111502a142e2eadf5a8ebbdece4b3a519c7cf3c781144f2a38f2cf"
+      },
+      {
+        "leaves": [
+          "61",
+          "62",
+          "63"
+        ],
+        "root": "8312813c8b27697db9eb313fca312ff54a9f5411dd702e16dde081c0493856aa0624d4689c6f37569e9dd3e2920952c655ed46a4e75b0534fcbe8a6cfdbcad2d"
+      },
+      {
+        "leaves": [
+          "666f6c68612d30",
+          "666f6c68612d31",
+          "666f6c68612d32",
+          "666f6c68612d33",
+          "666f6c68612d34",
+          "666f6c68612d35",
+          "666f6c68612d36"
+        ],
+        "root": "b47c7502c4bda6f8b9feb7c1ffd0649d284f88309c7a56e35bad87334a8bb7ff52ead2b5fe0cd1c0037fcfd2dc86118adeb6785257a423842f0d93f2e19df722"
+      },
+      {
+        "leaves": [
+          "666f6c68612d30",
+          "666f6c68612d31",
+          "666f6c68612d32",
+          "666f6c68612d33",
+          "666f6c68612d34",
+          "666f6c68612d35",
+          "666f6c68612d36",
+          "666f6c68612d37",
+          "666f6c68612d38",
+          "666f6c68612d39",
+          "666f6c68612d3130",
+          "666f6c68612d3131",
+          "666f6c68612d3132",
+          "666f6c68612d3133",
+          "666f6c68612d3134",
+          "666f6c68612d3135"
+        ],
+        "root": "f5c0c6996ba9010677ce74916a31381f8e8b69a65b80d3f3bd2f9978cb3aeaf1857bf2a02605b82021f4d957951e35c513e05a2083250b72652c7fed68b751a7"
+      }
+    ]
+  },
+  "generator": "reference/tools/gen_vectors.py",
+  "spec": "AURON-SPEC-01"
+}
