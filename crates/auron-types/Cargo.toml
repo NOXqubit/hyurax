@@ -1,0 +1,32 @@
+[package]
+name = "auron-types"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+description = "Auron — tipos base: dinheiro inteiro sem sinal"
+
+[dependencies]
+# Nenhuma. Este crate é o alicerce e não depende de nada.
+
+[dev-dependencies]
+serde_json.workspace = true
+
+[lints.rust]
+unsafe_code = "forbid"
+missing_docs = "warn"
+
+[lints.clippy]
+# Em código de dinheiro, entrar em pânico é derrubar o nó, e `unwrap` é a
+# forma mais comum de fazer isso sem perceber. Erro precisa virar `Result`.
+unwrap_used = "deny"
+expect_used = "deny"
+panic = "deny"
+indexing_slicing = "deny"
+
+# Aviso, não erro. A intenção é boa (forçar aritmética conferida em dinheiro),
+# mas o lint também acusa divisão por constante não-nula e multiplicação em
+# contexto const, que são seguras. Fica avisando para eu olhar, sem travar o
+# build por falso positivo.
+arithmetic_side_effects = "warn"

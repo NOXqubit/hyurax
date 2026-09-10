@@ -1,168 +1,219 @@
 {
-  "data": [
-    {
-      "accepted": true,
-      "formatted": "0.00000000",
-      "input": "0",
-      "units": "0"
-    },
-    {
-      "accepted": true,
-      "formatted": "1.00000000",
-      "input": "1",
-      "units": "100000000"
-    },
-    {
-      "accepted": true,
-      "formatted": "0.10000000",
-      "input": "0.1",
-      "units": "10000000"
-    },
-    {
-      "accepted": true,
-      "formatted": "0.00000001",
-      "input": "0.00000001",
-      "units": "1"
-    },
-    {
-      "accepted": true,
-      "formatted": "1.50000000",
-      "input": "1.5",
-      "units": "150000000"
-    },
-    {
-      "accepted": true,
-      "formatted": "50.00000000",
-      "input": "50",
-      "units": "5000000000"
-    },
-    {
-      "accepted": true,
-      "formatted": "21000000.00000000",
-      "input": "21000000",
-      "units": "2100000000000000"
-    },
-    {
-      "accepted": true,
-      "formatted": "2.00000000",
-      "input": "+2",
-      "units": "200000000"
-    },
-    {
-      "accepted": true,
-      "formatted": "0.50000000",
-      "input": ".5",
-      "units": "50000000"
-    },
-    {
-      "accepted": true,
-      "formatted": "7.00000000",
-      "input": "7.",
-      "units": "700000000"
-    },
-    {
-      "accepted": true,
-      "formatted": "123.45678901",
-      "input": "123.45678901",
-      "units": "12345678901"
-    },
-    {
-      "accepted": true,
-      "formatted": "3.25000000",
-      "input": "  3.25  ",
-      "units": "325000000"
-    },
-    {
-      "accepted": false,
-      "error": "AmountError",
-      "input": "-1"
-    },
-    {
-      "accepted": false,
-      "error": "AmountError",
-      "input": "-1.5"
-    },
-    {
-      "accepted": false,
-      "error": "AmountError",
-      "input": "1.123456789"
-    },
-    {
-      "accepted": false,
-      "error": "AmountError",
-      "input": ""
-    },
-    {
-      "accepted": false,
-      "error": "AmountError",
-      "input": "   "
-    },
-    {
-      "accepted": false,
-      "error": "AmountError",
-      "input": "."
-    },
-    {
-      "accepted": false,
-      "error": "AmountError",
-      "input": "abc"
-    },
-    {
-      "accepted": false,
-      "error": "AmountError",
-      "input": "1.2.3"
-    },
-    {
-      "accepted": false,
-      "error": "AmountError",
-      "input": "1,5"
-    },
-    {
-      "accepted": false,
-      "error": "AmountError",
-      "input": "1 5"
-    },
-    {
-      "accepted": false,
-      "error": "AmountError",
-      "input": "0x10"
-    },
-    {
-      "accepted": false,
-      "error": "AmountError",
-      "input": "1e8"
-    },
-    {
-      "accepted": false,
-      "error": "AmountError",
-      "input": "１"
-    },
-    {
-      "accepted": false,
-      "error": "AmountError",
-      "input": "١"
-    },
-    {
-      "accepted": false,
-      "error": "AmountError",
-      "input": "184467440737.09551616"
-    },
-    {
-      "accepted": false,
-      "error": "AmountError",
-      "input": "float 0.1"
-    },
-    {
-      "accepted": false,
-      "error": "AmountError",
-      "input": "float 1.0"
-    },
-    {
-      "accepted": true,
-      "formatted": "-1.50000000",
-      "input": "to_aur_str(-150000000)"
-    }
-  ],
+  "data": {
+    "format": [
+      {
+        "formatted": "0.00000000",
+        "units": "0"
+      },
+      {
+        "formatted": "0.00000001",
+        "units": "1"
+      },
+      {
+        "formatted": "0.10000000",
+        "units": "10000000"
+      },
+      {
+        "formatted": "1.00000000",
+        "units": "100000000"
+      },
+      {
+        "formatted": "1.50000000",
+        "units": "150000000"
+      },
+      {
+        "formatted": "21000000.00000000",
+        "units": "2100000000000000"
+      },
+      {
+        "formatted": "184467440737.09551615",
+        "units": "18446744073709551615"
+      }
+    ],
+    "parse": [
+      {
+        "accepted": true,
+        "formatted": "0.00000000",
+        "input": "0",
+        "units": "0"
+      },
+      {
+        "accepted": true,
+        "formatted": "1.00000000",
+        "input": "1",
+        "units": "100000000"
+      },
+      {
+        "accepted": true,
+        "formatted": "0.10000000",
+        "input": "0.1",
+        "units": "10000000"
+      },
+      {
+        "accepted": true,
+        "formatted": "0.00000001",
+        "input": "0.00000001",
+        "units": "1"
+      },
+      {
+        "accepted": true,
+        "formatted": "1.50000000",
+        "input": "1.5",
+        "units": "150000000"
+      },
+      {
+        "accepted": true,
+        "formatted": "50.00000000",
+        "input": "50",
+        "units": "5000000000"
+      },
+      {
+        "accepted": true,
+        "formatted": "21000000.00000000",
+        "input": "21000000",
+        "units": "2100000000000000"
+      },
+      {
+        "accepted": true,
+        "formatted": "2.00000000",
+        "input": "+2",
+        "units": "200000000"
+      },
+      {
+        "accepted": true,
+        "formatted": "0.50000000",
+        "input": ".5",
+        "units": "50000000"
+      },
+      {
+        "accepted": true,
+        "formatted": "7.00000000",
+        "input": "7.",
+        "units": "700000000"
+      },
+      {
+        "accepted": true,
+        "formatted": "123.45678901",
+        "input": "123.45678901",
+        "units": "12345678901"
+      },
+      {
+        "accepted": true,
+        "formatted": "3.25000000",
+        "input": "  3.25  ",
+        "units": "325000000"
+      },
+      {
+        "accepted": false,
+        "error": "AmountError",
+        "input": "-1"
+      },
+      {
+        "accepted": false,
+        "error": "AmountError",
+        "input": "-1.5"
+      },
+      {
+        "accepted": false,
+        "error": "AmountError",
+        "input": "1.123456789"
+      },
+      {
+        "accepted": false,
+        "error": "AmountError",
+        "input": ""
+      },
+      {
+        "accepted": false,
+        "error": "AmountError",
+        "input": "   "
+      },
+      {
+        "accepted": false,
+        "error": "AmountError",
+        "input": "."
+      },
+      {
+        "accepted": false,
+        "error": "AmountError",
+        "input": "abc"
+      },
+      {
+        "accepted": false,
+        "error": "AmountError",
+        "input": "1.2.3"
+      },
+      {
+        "accepted": false,
+        "error": "AmountError",
+        "input": "1,5"
+      },
+      {
+        "accepted": false,
+        "error": "AmountError",
+        "input": "1 5"
+      },
+      {
+        "accepted": false,
+        "error": "AmountError",
+        "input": "0x10"
+      },
+      {
+        "accepted": false,
+        "error": "AmountError",
+        "input": "1e8"
+      },
+      {
+        "accepted": false,
+        "error": "AmountError",
+        "input": "１"
+      },
+      {
+        "accepted": false,
+        "error": "AmountError",
+        "input": "١"
+      },
+      {
+        "accepted": false,
+        "error": "AmountError",
+        "input": " 1.5"
+      },
+      {
+        "accepted": false,
+        "error": "AmountError",
+        "input": "1.5 "
+      },
+      {
+        "accepted": false,
+        "error": "AmountError",
+        "input": "1​.5"
+      },
+      {
+        "accepted": false,
+        "error": "AmountError",
+        "input": "184467440737.09551616"
+      }
+    ],
+    "python_only": [
+      {
+        "accepted": false,
+        "case": "float 0.1",
+        "error": "AmountError",
+        "note": "no Rust o tipo f64 nem compila aqui"
+      },
+      {
+        "accepted": false,
+        "case": "float 1.0",
+        "error": "AmountError",
+        "note": "no Rust o tipo f64 nem compila aqui"
+      },
+      {
+        "case": "to_aur_str(-150000000)",
+        "formatted": "-1.50000000",
+        "note": "formatacao aceita negativo por ser exibicao de diferenca; o tipo Amount do Rust e u64 e nao representa isto"
+      }
+    ]
+  },
   "generator": "reference/tools/gen_vectors.py",
   "spec": "AURON-SPEC-01"
 }

@@ -96,7 +96,11 @@ def test_entrada_malformada_recusada():
         ("1 5", "espaco no meio"),
         ("0x10", "hexadecimal"),
         ("1e8", "notacao cientifica"),
-        ("１", "digito nao ASCII"),
+        ("１", "digito de largura completa"),
+        ("١", "algarismo indo-arabico oriental"),
+        (" 1.5", "espaco inseparavel na frente"),
+        ("1.5 ", "espaco inseparavel atras"),
+        ("1​.5", "espaco de largura zero no meio"),
     ):
         esperar_erro(to_units, ruim, rotulo=rotulo)
     esperar_erro(to_units, True, rotulo="bool True")

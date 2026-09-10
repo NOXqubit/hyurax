@@ -65,7 +65,17 @@ def to_units(aur: str | int) -> int:
     if not isinstance(aur, str):
         raise AmountError(f"tipo inválido para valor: {type(aur).__name__}")
 
-    s = aur.strip()
+    # Toda a entrada precisa ser ASCII, e só espaço ASCII é aparado.
+    #
+    # `str.strip()` do Python remove espaço em branco Unicode, incluindo o
+    # espaço inseparável U+00A0. O `trim()` do Rust também, mas as duas listas
+    # não são idênticas em toda versão. Em vez de tentar casar duas tabelas
+    # Unicode, o protocolo simplesmente não aceita nada fora do ASCII.
+    if not aur.isascii():
+        raise AmountError(
+            f"valor deve conter apenas caracteres ASCII: {aur!r}"
+        )
+    s = aur.strip(" \t\n\r\f\v")
     if not s:
         raise AmountError("valor vazio")
 

@@ -1,0 +1,46 @@
+[workspace]
+resolver = "3"
+members = ["crates/auron-types"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.98"
+authors = ["Projeto Auron"]
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/"
+description = "Auron — implementação de nó em Rust"
+
+# ---------------------------------------------------------------------------
+# REGRA DO PROJETO: só dependência Rust pura.
+#
+# A máquina de desenvolvimento não tem compilador C e não cabe um: o Visual
+# Studio Build Tools pede de 3 a 4 GB no C:, que tem 5,7 GB livres. Em vez de
+# forçar, o projeto escolhe dependências que não precisam de C.
+#
+# Isso não é limitação de máquina fraca. É o que vai permitir compilar o mesmo
+# código no Termux do celular e num PC Linux velho sem preparar toolchain em
+# lugar nenhum.
+#
+# Na prática: nada de `ring` nem `aws-lc-rs`. Quando chegarmos no P2P, isso
+# significa TCP + Noise + Yamux, sem QUIC e sem rustls, porque os dois puxam
+# `ring`.
+#
+# Antes de adicionar qualquer crate, conferir se ela tem `build.rs` chamando
+# `cc`. Se tiver, procurar outra.
+# ---------------------------------------------------------------------------
+
+[workspace.dependencies]
+# Vetores de teste. Rust puro.
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+hex = "0.4"
+
+[profile.dev]
+debug = 0
+incremental = true
+
+[profile.release]
+debug = 0
+lto = false
+codegen-units = 16

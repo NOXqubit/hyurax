@@ -29,6 +29,7 @@ from auron.block import BlockHeader  # noqa: E402
 from auron.chain import Chain, make_genesis  # noqa: E402
 from auron.consensus import MAINNET, REGTEST, TESTNET  # noqa: E402
 from auron.tx import Coinbase, sign_transfer  # noqa: E402
+from auron.units import MAX_SUPPLY as MAX_SUPPLY_UNITS  # noqa: E402
 from auron.units import to_aur_str, to_units  # noqa: E402
 
 # Segredos FIXOS, so para vetores. Nunca usar em rede de verdade.
@@ -60,36 +61,53 @@ def vec_units() -> list[dict]:
         "0x10", "1e8",
         "１",                # digito de largura completa: Python aceitava
         "١",                # algarismo indo-arabico oriental
+        " 1.5",          # espaco inseparavel: strip() do Python removia
+        "1.5 ",
+        "1​.5",          # espaco de largura zero no meio
         "184467440737.09551616",  # acima de u64
     )
 
-    out = []
+    parse = []
     for text in aceitos:
         units = to_units(text)
-        out.append({"input": text, "accepted": True,
-                    "units": str(units), "formatted": to_aur_str(units)})
+        parse.append({"input": text, "accepted": True,
+                      "units": str(units), "formatted": to_aur_str(units)})
     for text in recusados:
         try:
             units = to_units(text)
-            out.append({"input": text, "accepted": True,
-                        "units": str(units), "UNEXPECTED": True})
+            parse.append({"input": text, "accepted": True,
+                          "units": str(units), "UNEXPECTED": True})
         except Exception as exc:
-            out.append({"input": text, "accepted": False,
-                        "error": type(exc).__name__})
+            parse.append({"input": text, "accepted": False,
+                          "error": type(exc).__name__})
 
-    # float precisa ser recusado, nao aceito silenciosamente
+    # unidades -> texto. Sem sinal, que e o que o tipo Amount do Rust cobre.
+    fmt = [
+        {"units": str(u), "formatted": to_aur_str(u)}
+        for u in (0, 1, 10_000_000, 100_000_000, 150_000_000,
+                  MAX_SUPPLY_UNITS, 2**64 - 1)
+    ]
+
+    # Casos que so existem no Python e o Rust nao consegue nem expressar.
+    # Ficam registrados para nao parecer esquecimento, e o harness os ignora.
+    python_only = []
     for valor, rotulo in ((0.1, "float 0.1"), (1.0, "float 1.0")):
         try:
             to_units(valor)  # type: ignore[arg-type]
-            out.append({"input": rotulo, "accepted": True, "UNEXPECTED": True})
+            python_only.append({"case": rotulo, "accepted": True,
+                                "UNEXPECTED": True})
         except Exception as exc:
-            out.append({"input": rotulo, "accepted": False,
-                        "error": type(exc).__name__})
+            python_only.append({"case": rotulo, "accepted": False,
+                                "error": type(exc).__name__,
+                                "note": "no Rust o tipo f64 nem compila aqui"})
+    python_only.append({
+        "case": "to_aur_str(-150000000)",
+        "formatted": to_aur_str(-150_000_000),
+        "note": "formatacao aceita negativo por ser exibicao de diferenca; "
+                "o tipo Amount do Rust e u64 e nao representa isto",
+    })
 
-    # formatacao aceita negativo de proposito: e exibicao de diferenca
-    out.append({"input": "to_aur_str(-150000000)", "accepted": True,
-                "formatted": to_aur_str(-150_000_000)})
-    return out
+    return {"parse": parse, "format": fmt, "python_only": python_only}
 
 
 def vec_crypto() -> list[dict]:
