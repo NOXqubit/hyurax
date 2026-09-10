@@ -17,14 +17,41 @@ precisa reproduzir cada valor definido aqui, byte a byte, contra os vetores em
 
 1 AUR = 100 000 000 unidades internas (`AUR_UNIT`, 8 casas).
 
-Dinheiro é **sempre** inteiro sem sinal. Ponto flutuante é proibido em saldo,
-taxa, recompensa e emissão, sem exceção. A conversão a partir de texto recusa
-mais de 8 casas decimais em vez de truncar: truncar é perder dinheiro em
-silêncio.
+Dinheiro é **sempre** inteiro sem sinal. Todo valor serializado cabe em `u64`.
 
 `MAX_SUPPLY` = 21 000 000 AUR = 2 100 000 000 000 000 unidades.
 
-Todo valor serializado cabe em `u64`.
+### Regras do parser de valor
+
+O parser é parte do consenso na prática: se Python e Rust discordarem sobre o
+que é um valor válido, discordam sobre transações. As regras abaixo existem
+para que os dois recusem exatamente as mesmas entradas.
+
+1. **Ponto flutuante é proibido.** Não só desaconselhado: a função recusa o
+   tipo. `to_units(0.1)` era aceito no protótipo, e era por ali que a poeira
+   de arredondamento entrava no dinheiro.
+2. **Negativo é recusado**, tanto em texto quanto em inteiro. Saldo, valor e
+   taxa são `u64`; um valor negativo não tem representação na codificação.
+   A checagem fica na saída comum das duas rotas, senão o caminho de inteiro
+   passa por baixo do parser de texto.
+3. **Só dígitos ASCII 0-9.** `str.isdigit()` do Python devolve verdadeiro para
+   dígito de largura completa (`１`), algarismo indo-arábico oriental (`١`) e
+   dezenas de outros, e `int()` converte todos. `str::parse::<u64>()` do Rust
+   só aceita ASCII. Sem esta regra, `１` valeria 1 AUR num lado e erro no
+   outro. Também fecha uma porta de falsificação visual: `１.5` e `1.5` são
+   idênticos na tela.
+4. **Mais de 8 casas decimais é recusado, não truncado.** Truncar é perder
+   dinheiro em silêncio.
+5. `+` inicial é aceito. `.5` e `7.` são aceitos. Espaço nas pontas é
+   ignorado. Espaço no meio, vírgula, notação científica e prefixo hexadecimal
+   são recusados.
+
+A formatação (`to_aur_str`) aceita inteiro negativo de propósito, porque é
+função de exibição e às vezes é preciso mostrar a diferença entre dois saldos.
+Isso não cria valor monetário negativo no protocolo.
+
+O arquivo `vectors/units.json` lista os casos aceitos **e** os recusados. O
+Rust precisa reproduzir os dois lados.
 
 ## 2. AACL — Auron Adaptive Cryptographic Layer
 

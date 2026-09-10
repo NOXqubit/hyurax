@@ -17,7 +17,21 @@ terceiros é o numpy, e só na camada Utrax, que está fora do consenso.
 python tests/run_all_tests.py
 ```
 
-67 testes, cerca de 100 segundos. Não precisa instalar nada além do numpy.
+77 testes. Entre 2 e 4 minutos nesta máquina, conforme a memória livre. Não
+precisa instalar nada além do numpy.
+
+## Achados próprios, depois do protótipo
+
+Dois bugs que não vieram do protótipo: apareceram no código que eu mesmo
+escrevi, e foram pegos ao escrever o teste que faltava para `units.py`.
+
+| Achado | Por que importava | Teste |
+|---|---|---|
+| `to_units("１")` devolvia 1 AUR | `str.isdigit()` do Python aceita dígito Unicode de largura completa e `int()` converte. O Rust recusa. Os dois lados discordariam sobre o que é valor válido, e a mesma string na tela viraria valores diferentes | `test_00::test_entrada_malformada_recusada` |
+| `to_units("-1.5")` era aceito | A especificação diz que dinheiro é `u64`. Um valor negativo não tem como ser serializado, então o vetor de teste continha um caso que o Rust nunca poderia reproduzir | `test_00::test_negativo_recusado_nos_dois_caminhos` |
+
+`units.py` era o único módulo sem arquivo de teste próprio. Foi exatamente
+onde os dois se esconderam.
 
 ## Estado
 

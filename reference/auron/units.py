@@ -28,6 +28,25 @@ class AmountError(ValueError):
     """Valor monetário inválido."""
 
 
+_DIGITOS_ASCII = frozenset("0123456789")
+
+
+def _apenas_digitos_ascii(texto: str) -> bool:
+    """Só 0-9 de verdade. Nada de dígito Unicode exótico.
+
+    `str.isdigit()` do Python devolve True para dígito de largura completa
+    ('１'), algarismo indo-arábico oriental ('١') e vários outros, e `int()`
+    converte todos eles. O Rust não faz isso: `str::parse::<u64>()` só aceita
+    ASCII.
+
+    Sem esta checagem, '１' viraria 1 AUR no Python e erro no Rust. Duas
+    implementações discordando sobre o que é um valor válido é exatamente o
+    tipo de divergência que racha uma rede. Também fecha uma porta de
+    falsificação visual: '１.5' e '1.5' são indistinguíveis na tela.
+    """
+    return all(c in _DIGITOS_ASCII for c in texto)
+
+
 def to_units(aur: str | int) -> int:
     """Converte '1.5' (AUR) ou um inteiro (já em unidades) para unidades internas.
 
@@ -50,10 +69,16 @@ def to_units(aur: str | int) -> int:
     if not s:
         raise AmountError("valor vazio")
 
-    sign = 1
-    if s[0] in "+-":
-        if s[0] == "-":
-            sign = -1
+    # Dinheiro no protocolo é SEMPRE sem sinal: saldo, valor e taxa são todos
+    # u64 na codificação. Aceitar negativo aqui criaria um valor que a
+    # especificação não sabe serializar, e que o Rust não teria como
+    # reproduzir. Rejeitar é o que mantém as duas implementações iguais.
+    if s[0] == "-":
+        raise AmountError(
+            f"valor monetário não pode ser negativo: {aur!r} "
+            "(saldo, valor e taxa são sem sinal no protocolo)"
+        )
+    if s[0] == "+":
         s = s[1:]
 
     if "." in s:
@@ -63,9 +88,9 @@ def to_units(aur: str | int) -> int:
 
     if "." in frac:
         raise AmountError("mais de um separador decimal")
-    if whole and not whole.isdigit():
+    if whole and not _apenas_digitos_ascii(whole):
         raise AmountError(f"parte inteira inválida: {whole!r}")
-    if frac and not frac.isdigit():
+    if frac and not _apenas_digitos_ascii(frac):
         raise AmountError(f"parte fracionária inválida: {frac!r}")
     if not whole and not frac:
         raise AmountError("valor sem dígitos")
@@ -75,11 +100,17 @@ def to_units(aur: str | int) -> int:
         )
 
     frac = frac.ljust(AUR_DECIMALS, "0")
-    return _checked(sign * (int(whole or "0") * AUR_UNIT + int(frac)))
+    return _checked(int(whole or "0") * AUR_UNIT + int(frac))
 
 
 def to_aur_str(units: int) -> str:
-    """Formata unidades internas como string decimal com 8 casas, sem float."""
+    """Formata unidades internas como string decimal com 8 casas, sem float.
+
+    Aceita inteiro negativo de propósito, porque isto é função de exibição e
+    às vezes é preciso mostrar uma diferença entre dois saldos. Isso NÃO
+    significa que existe valor monetário negativo no protocolo: `to_units`
+    recusa negativo, e todo campo serializado é u64.
+    """
     if isinstance(units, bool) or not isinstance(units, int):
         raise AmountError("unidades devem ser int")
     sign = "-" if units < 0 else ""
@@ -88,7 +119,17 @@ def to_aur_str(units: int) -> str:
 
 
 def _checked(units: int) -> int:
-    if abs(units) > MAX_AMOUNT:
+    """Porta única de saída de `to_units`. Fecha o caminho de string e o de int.
+
+    Sem a checagem de negativo aqui, `to_units(-5)` passaria direto pelo ramo
+    de inteiro, sem nunca tocar no parser de texto.
+    """
+    if units < 0:
+        raise AmountError(
+            f"valor monetário não pode ser negativo: {units} "
+            "(saldo, valor e taxa são sem sinal no protocolo)"
+        )
+    if units > MAX_AMOUNT:
         raise AmountError(f"valor fora da faixa representável: {units}")
     return units
 

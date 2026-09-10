@@ -20,6 +20,7 @@ ROOT = TESTS_DIR.parent
 sys.path.insert(0, str(ROOT))
 
 MODULES = [
+    ("test_00_units.py", "dinheiro inteiro, sem sinal, sem float"),
     ("test_01_crypto.py", "AACL / Ed25519 (RFC 8032)"),
     ("test_02_codec.py", "codificacao canonica / Merkle (RFC 6962)"),
     ("test_03_argon2.py", "Argon2id (RFC 9106)"),

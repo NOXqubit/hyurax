@@ -45,21 +45,50 @@ def h(data: bytes) -> str:
 
 
 def vec_units() -> list[dict]:
+    """Valores aceitos e, igualmente importante, valores RECUSADOS.
+
+    O Rust precisa recusar exatamente os mesmos. Um parser mais permissivo de
+    um lado que do outro e uma divergencia de consenso esperando acontecer.
+    """
+    aceitos = ("0", "1", "0.1", "0.00000001", "1.5", "50", "21000000",
+               "+2", ".5", "7.", "123.45678901", "  3.25  ")
+    recusados = (
+        "-1", "-1.5",            # negativo: dinheiro e u64
+        "1.123456789",           # mais de 8 casas: recusar em vez de truncar
+        "", "   ", ".", "abc",   # malformado
+        "1.2.3", "1,5", "1 5",
+        "0x10", "1e8",
+        "１",                # digito de largura completa: Python aceitava
+        "١",                # algarismo indo-arabico oriental
+        "184467440737.09551616",  # acima de u64
+    )
+
     out = []
-    for text in ("0", "1", "0.1", "0.00000001", "1.5", "50", "21000000",
-                 "-1.5", "123.45678901"):
+    for text in aceitos:
+        units = to_units(text)
+        out.append({"input": text, "accepted": True,
+                    "units": str(units), "formatted": to_aur_str(units)})
+    for text in recusados:
         try:
             units = to_units(text)
-            out.append({"input": text, "units": str(units),
-                        "formatted": to_aur_str(units)})
+            out.append({"input": text, "accepted": True,
+                        "units": str(units), "UNEXPECTED": True})
         except Exception as exc:
-            out.append({"input": text, "error": type(exc).__name__})
+            out.append({"input": text, "accepted": False,
+                        "error": type(exc).__name__})
+
     # float precisa ser recusado, nao aceito silenciosamente
-    try:
-        to_units(0.1)  # type: ignore[arg-type]
-        out.append({"input": "float 0.1", "error": None})
-    except Exception as exc:
-        out.append({"input": "float 0.1", "error": type(exc).__name__})
+    for valor, rotulo in ((0.1, "float 0.1"), (1.0, "float 1.0")):
+        try:
+            to_units(valor)  # type: ignore[arg-type]
+            out.append({"input": rotulo, "accepted": True, "UNEXPECTED": True})
+        except Exception as exc:
+            out.append({"input": rotulo, "accepted": False,
+                        "error": type(exc).__name__})
+
+    # formatacao aceita negativo de proposito: e exibicao de diferenca
+    out.append({"input": "to_aur_str(-150000000)", "accepted": True,
+                "formatted": to_aur_str(-150_000_000)})
     return out
 
 
