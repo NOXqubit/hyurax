@@ -401,10 +401,13 @@ def main() -> int:
         manifest[filename] = {"sha512_16": digest, "bytes": len(raw)}
         print(f"{len(raw):,} bytes  {digest}")
 
-    (OUT_DIR / "MANIFEST.json").write_text(
+    # write_bytes, e nao write_text: em modo texto o Python do Windows
+    # converte o fim de linha, e o manifesto sairia com bytes diferentes dos
+    # que a mesma execucao produz no Linux. Os vetores ja sao escritos em
+    # bytes pelo mesmo motivo; o manifesto tinha ficado de fora.
+    (OUT_DIR / "MANIFEST.json").write_bytes(
         json.dumps({"spec": "AURON-SPEC-01", "files": manifest},
-                   indent=2, sort_keys=True),
-        encoding="utf-8",
+                   indent=2, sort_keys=True).encode("utf-8")
     )
     print(f"\n{len(FILES)} arquivos de vetores em {OUT_DIR}")
     print("O Rust precisa reproduzir cada um byte a byte.")

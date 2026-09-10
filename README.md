@@ -48,7 +48,46 @@ cargo test --workspace
 Terminal que não achar `cargo` ou `git`:
 
 ```bash
-. "D:\Nova pasta\auron\scripts\env.ps1"
+. "D:\auron\scripts\env.ps1"
+```
+
+## Máquina nova
+
+Tudo o que o projeto precisa vive em `.toolchain/`, no mesmo disco do código.
+Nada é instalado no `C:`. Reinstalar o Windows não derruba o ambiente: o que se
+perde são as variáveis do perfil do usuário, não as ferramentas.
+
+| Ferramenta | Versão conferida | Onde |
+|---|---|---|
+| Rust, alvo GNU | 1.98.1 | `.toolchain/rustup`, `.toolchain/cargo` |
+| Git portátil | 2.55.0 | `.toolchain/git` |
+| Python embeddable | 3.13.15 | `.toolchain/python` |
+| numpy | 2.5.3 | `.toolchain/python/Lib/site-packages` |
+
+Se as variáveis do perfil se perderem:
+
+```powershell
+$tc = "D:\auron\.toolchain"
+[Environment]::SetEnvironmentVariable('RUSTUP_HOME',   "$tc\rustup",    'User')
+[Environment]::SetEnvironmentVariable('CARGO_HOME',    "$tc\cargo",     'User')
+[Environment]::SetEnvironmentVariable('PIP_CACHE_DIR', "$tc\pip-cache", 'User')
+```
+
+E no `PATH` do usuário: `.toolchain\cargo\bin`, `.toolchain\git\cmd`,
+`.toolchain\python`, `.toolchain\python\Scripts`.
+
+Windows reinstalado troca o SID do usuário, e o git passa a recusar o
+repositório por dono diferente. Uma vez:
+
+```bash
+git config --global --add safe.directory D:/auron
+```
+
+Memória virtual, uma vez, como administrador. A mudança só vale depois de
+reiniciar:
+
+```powershell
+& "D:\auron\scripts\setup-pagefile.ps1"
 ```
 
 ## Decisões de projeto

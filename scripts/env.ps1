@@ -9,13 +9,13 @@
 #   2. Conferir rapidamente se tudo está no lugar.
 #
 # Uso:
-#   . "D:\Nova pasta\auron\scripts\env.ps1"
+#   . "D:\auron\scripts\env.ps1"
 #
 # O ponto e o espaço no começo importam: eles fazem o script rodar na sua
 # sessão, e não numa sessão filha que morre no fim.
 # =============================================================================
 
-$AURON_ROOT = "D:\Nova pasta\auron"
+$AURON_ROOT = "D:\auron"
 $TOOLCHAIN  = "$AURON_ROOT\.toolchain"
 
 $env:RUSTUP_HOME = "$TOOLCHAIN\rustup"
@@ -27,7 +27,11 @@ $env:CARGO_HOME  = "$TOOLCHAIN\cargo"
 # fontes de verdade.
 Remove-Item Env:\CARGO_TARGET_DIR -ErrorAction SilentlyContinue
 
-foreach ($p in @("$TOOLCHAIN\cargo\bin", "$TOOLCHAIN\git\cmd")) {
+# Cache do pip tambem no HD externo. Nada do projeto escreve no C:.
+$env:PIP_CACHE_DIR = "$TOOLCHAIN\pip-cache"
+
+foreach ($p in @("$TOOLCHAIN\cargo\bin", "$TOOLCHAIN\git\cmd",
+                 "$TOOLCHAIN\python", "$TOOLCHAIN\python\Scripts")) {
     if ($env:PATH -notlike "*$p*") { $env:PATH = "$p;$env:PATH" }
 }
 

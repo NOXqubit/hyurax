@@ -1,0 +1,18 @@
+# ---------------------------------------------------------------------------
+# Fim de linha: LF em toda parte, no repositório e no disco.
+#
+# Isto não é preferência de estilo. O instalador do Git para Windows deixa
+# `core.autocrlf=true` ligado por padrão, e ele reescreve os arquivos no
+# checkout. `vectors/` é o contrato byte a byte entre a referência Python e o
+# nó Rust: com CRLF no disco, o arquivo deixa de bater com o hash que o
+# `MANIFEST.json` declara, e a validação cruzada passa a comparar bytes que
+# nenhum gerador produziu.
+#
+# Foi exatamente o que aconteceu quando o repositório foi clonado numa máquina
+# Windows recém-instalada: os onze vetores divergiram do manifesto de uma vez,
+# só por causa do `\r`.
+# ---------------------------------------------------------------------------
+* text=auto eol=lf
+
+# Vetores: o git não encosta. Nem para normalizar, nem para converter.
+vectors/** -text
