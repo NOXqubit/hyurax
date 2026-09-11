@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<!-- Capa 1500×500 (X/Twitter) e prévia de link 1200×630: ?w=1200&h=630 -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100..125,300..700&family=Michroma&display=swap">
+<style>
+  html, body { margin: 0; background: #030303; overflow: hidden; }
+  .cena { position: relative; background: radial-gradient(ellipse 60% 90% at 30% 50%, #17181b 0%, #060607 55%, #020202 100%); overflow: hidden; }
+  canvas { position: absolute; inset: 0; }
+  .marca { position: absolute; display: flex; align-items: center; }
+  .marca svg.a { filter: drop-shadow(0 0 40px rgba(243, 226, 196, 0.25)); }
+  .texto { display: grid; }
+  .tec { font-family: Michroma, Arial, sans-serif; color: #c9ccd1; }
+  .lema { font-family: Michroma, Arial, sans-serif; color: #fff3df; }
+  .sub { font-family: Archivo, Arial, sans-serif; color: #8e9199; }
+</style></head>
+<body>
+<div class="cena" id="cena">
+  <canvas id="c"></canvas>
+  <div class="marca" id="marca">
+    <svg class="a" id="a" viewBox="0 0 100 100">
+      <defs><linearGradient id="m" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fafaf8"/><stop offset="0.34" stop-color="#aeb2b8"/><stop offset="0.52" stop-color="#ffffff"/><stop offset="0.76" stop-color="#6f737b"/><stop offset="1" stop-color="#d6d8dc"/></linearGradient>
+      <linearGradient id="mh" x1="0" y1="0" x2="560" y2="100" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#e9eaec"/><stop offset="0.3" stop-color="#9ea2a9"/><stop offset="0.5" stop-color="#fbfbf9"/><stop offset="0.72" stop-color="#8d9198"/><stop offset="1" stop-color="#dcdee1"/></linearGradient></defs>
+      <path d="M50 6 L95 92 L76 92 L50 42 L24 92 L5 92 Z" fill="url(#m)"/>
+      <path d="M8 90 C30 75 51 64 75 57 L78.5 65.5 C56 69.5 33 78 8 90 Z" fill="url(#m)"/>
+    </svg>
+    <div class="texto" id="texto">
+      <svg id="palavra" viewBox="0 0 560 100"><g fill="none" stroke="url(#mh)" stroke-width="10">
+        <path d="M8 92 L50 8 L92 92" stroke-linejoin="miter" stroke-miterlimit="10"/>
+        <path d="M122 8 V58 Q122 92 162 92 Q202 92 202 58 V8"/>
+        <path d="M236 92 V8 H286 Q318 8 318 36 Q318 64 286 64 H236 M284 64 L320 92"/>
+        <rect x="352" y="8" width="96" height="84" rx="34"/>
+        <path d="M482 92 V8 L552 92 V8" stroke-linejoin="miter"/>
+      </g></svg>
+      <span class="tec" id="tec">TECHNOLOGY</span>
+      <span class="lema" id="lema">BUILD THE INFRASTRUCTURE.</span>
+      <span class="sub" id="sub">Value. Compute. Communication. Intelligence.</span>
+    </div>
+  </div>
+</div>
+<script>
+  const q = new URLSearchParams(location.search), W = +q.get("w") || 1500, H = +q.get("h") || 500;
+  const k = H / 500;
+  Object.assign(document.getElementById("cena").style, { width: W + "px", height: H + "px" });
+  const c = document.getElementById("c"); c.width = W; c.height = H;
+  const marca = document.getElementById("marca");
+  Object.assign(marca.style, { left: Math.round(W * 0.08) + "px", top: "50%", transform: "translateY(-50%)", gap: Math.round(56 * k) + "px" });
+  Object.assign(document.getElementById("a").style, { width: 230 * k + "px", height: 230 * k + "px" });
+  Object.assign(document.getElementById("palavra").style, { width: 420 * k + "px", height: 75 * k + "px" });
+  const fs = (id, px, ls, mt) => Object.assign(document.getElementById(id).style, { fontSize: px * k + "px", letterSpacing: ls + "em", marginTop: mt * k + "px" });
+  fs("tec", 17, 0.62, 14); fs("lema", 15, 0.28, 34); fs("sub", 17, 0, 10);
+  // rede à direita, sumindo em direção ao texto
+  const ctx = c.getContext("2d");
+  let s = 11; const r = () => { s = (s * 16807) % 2147483647; return (s - 1) / 2147483646; };
+  const pts = Array.from({ length: 170 }, () => [W * (0.45 + r() * 0.58), H * (r() * 1.1 - 0.05)]);
+  const al = (x) => Math.max(0, Math.min(1, (x - W * 0.5) / (W * 0.35)));
+  pts.forEach((p, i) => pts.map((q, j) => [j, (p[0]-q[0])**2 + (p[1]-q[1])**2]).filter(x => x[0] !== i).sort((a, b) => a[1] - b[1]).slice(0, 3).forEach(([j]) => {
+    const q = pts[j]; ctx.strokeStyle = `rgba(190,196,204,${0.18 * al((p[0]+q[0])/2)})`; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(...p); ctx.lineTo(...q); ctx.stroke();
+  }));
+  pts.forEach(([x, y], i) => { ctx.fillStyle = i % 8 === 0 ? `rgba(255,243,223,${al(x)})` : `rgba(210,214,220,${0.8 * al(x)})`; ctx.beginPath(); ctx.arc(x, y, (i % 8 === 0 ? 2.6 : 1.6) * k, 0, 6.283); ctx.fill(); });
+</script>
+</body></html>

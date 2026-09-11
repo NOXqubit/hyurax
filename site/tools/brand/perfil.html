@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8">
+<style>
+  html, body { margin: 0; width: 1080px; height: 1080px; background: #030303; overflow: hidden; }
+  .cena { position: relative; width: 1080px; height: 1080px; background: radial-gradient(circle at 50% 44%, #1a1b1e 0%, #070708 46%, #020202 78%); }
+  canvas { position: absolute; inset: 0; }
+  svg.a { position: absolute; left: 50%; top: 50%; width: 560px; height: 560px; transform: translate(-50%, -52%); filter: drop-shadow(0 0 60px rgba(243, 226, 196, 0.28)) drop-shadow(0 18px 30px rgba(0, 0, 0, 0.8)); }
+</style></head>
+<body><div class="cena">
+<canvas id="c" width="1080" height="1080"></canvas>
+<svg class="a" viewBox="0 0 100 100">
+  <defs>
+    <linearGradient id="m" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#fafaf8"/><stop offset="0.34" stop-color="#aeb2b8"/><stop offset="0.52" stop-color="#ffffff"/><stop offset="0.76" stop-color="#6f737b"/><stop offset="1" stop-color="#d6d8dc"/>
+    </linearGradient>
+    <linearGradient id="borda" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff3df" stop-opacity="0.9"/><stop offset="1" stop-color="#fff3df" stop-opacity="0"/></linearGradient>
+  </defs>
+  <path d="M50 6 L95 92 L76 92 L50 42 L24 92 L5 92 Z" fill="url(#m)"/>
+  <path d="M8 90 C30 75 51 64 75 57 L78.5 65.5 C56 69.5 33 78 8 90 Z" fill="url(#m)"/>
+  <path d="M50 6 L95 92 M50 6 L5 92" fill="none" stroke="url(#borda)" stroke-width="0.5"/>
+</svg>
+</div>
+<script>
+  // rede discreta ao fundo: pontos e ligações que somem na borda
+  const ctx = document.getElementById("c").getContext("2d");
+  let s = 7; const r = () => { s = (s * 16807) % 2147483647; return (s - 1) / 2147483646; };
+  const pts = Array.from({ length: 150 }, () => { const a = r() * 6.283, d = 250 + r() * 300; return [540 + Math.cos(a) * d, 540 + Math.sin(a) * d]; });
+  ctx.lineWidth = 1;
+  pts.forEach((p, i) => pts.map((q, j) => [j, (p[0]-q[0])**2 + (p[1]-q[1])**2]).filter(x => x[0] !== i).sort((a, b) => a[1] - b[1]).slice(0, 2).forEach(([j]) => {
+    const q = pts[j], d = Math.hypot((p[0]+q[0])/2 - 540, (p[1]+q[1])/2 - 540), al = Math.max(0, 0.16 * (1 - (d - 250) / 320));
+    ctx.strokeStyle = `rgba(190,196,204,${al})`; ctx.beginPath(); ctx.moveTo(...p); ctx.lineTo(...q); ctx.stroke();
+  }));
+  pts.forEach(([x, y], i) => { const d = Math.hypot(x - 540, y - 540), al = Math.max(0, 0.75 * (1 - (d - 250) / 320)); ctx.fillStyle = i % 9 === 0 ? `rgba(255,243,223,${al})` : `rgba(210,214,220,${al})`; ctx.beginPath(); ctx.arc(x, y, i % 9 === 0 ? 2.6 : 1.6, 0, 6.283); ctx.fill(); });
+</script>
+</body></html>

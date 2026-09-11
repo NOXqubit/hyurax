@@ -1,0 +1,13 @@
+{
+  "name": "Auron Technology",
+  "short_name": "Auron",
+  "description": "Distributed infrastructure for value, computation, communication and resources.",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#030303",
+  "theme_color": "#030303",
+  "icons": [
+    { "src": "assets/favicon.svg", "sizes": "any", "type": "image/svg+xml" },
+    { "src": "assets/brand/perfil-1080.png", "sizes": "1080x1080", "type": "image/png" }
+  ]
+}

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Troque SEU-DOMINIO pelo domínio real antes de publicar. O idioma vem do parâmetro ?lang=. -->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">
+  <url>
+    <loc>https://SEU-DOMINIO/</loc>
+    <lastmod>2026-09-11</lastmod>
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://SEU-DOMINIO/?lang=pt-BR"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://SEU-DOMINIO/?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://SEU-DOMINIO/?lang=es"/>
+    <xhtml:link rel="alternate" hreflang="ja" href="https://SEU-DOMINIO/?lang=ja"/>
+  </url>
+</urlset>

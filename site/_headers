@@ -1,0 +1,13 @@
+# Cabeçalhos de segurança para hospedagem estática (Cloudflare Pages e Netlify leem este arquivo).
+# Todo o JavaScript é próprio e carregado de arquivos: nada de script inline nem eval.
+# Estilos inline são permitidos porque o site ajusta tamanhos e posições via atributo style.
+/*
+  Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self'; worker-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; upgrade-insecure-requests
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=()
+  Cross-Origin-Opener-Policy: same-origin
+  Strict-Transport-Security: max-age=31536000; includeSubDomains
+
+/downloads/*
+  Cache-Control: no-cache

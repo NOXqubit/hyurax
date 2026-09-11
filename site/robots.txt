@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+
+# Quando o site tiver domínio próprio, troque pelo endereço completo:
+# Sitemap: https://SEU-DOMINIO/sitemap.xml

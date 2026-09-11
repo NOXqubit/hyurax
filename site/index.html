@@ -1,0 +1,633 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Auron Technology</title>
+<meta name="description" content="A Auron está construindo uma infraestrutura em evolução para valor, computação, comunicação e recursos distribuídos.">
+<meta name="theme-color" content="#030303">
+<meta name="color-scheme" content="dark">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Auron Technology">
+<meta property="og:title" content="Auron Technology — Distributed Infrastructure">
+<meta property="og:description" content="Auron is building an evolving infrastructure for value, computation, communication and distributed resources.">
+<meta property="og:image" content="assets/brand/og-1200x630.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Auron Technology — Distributed Infrastructure">
+<meta name="twitter:description" content="Auron is building an evolving infrastructure for value, computation, communication and distributed resources.">
+<meta name="twitter:image" content="assets/brand/og-1200x630.png">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="manifest" href="site.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100..125,300..800&family=IBM+Plex+Mono:wght@400;500&family=Michroma&display=swap">
+<link rel="stylesheet" href="styles/main.css">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"Organization","name":"Auron Technology","description":"Auron is building an evolving infrastructure for value, computation, communication and distributed resources.","logo":"assets/logo.svg"}
+</script>
+</head>
+<body>
+
+<svg width="0" height="0" class="so-leitor" aria-hidden="true" focusable="false">
+  <defs>
+    <linearGradient id="metal" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f7f7f5"/>
+      <stop offset="0.34" stop-color="#b4b8be"/>
+      <stop offset="0.52" stop-color="#fdfdfb"/>
+      <stop offset="0.76" stop-color="#7a7e86"/>
+      <stop offset="1" stop-color="#d6d8dc"/>
+    </linearGradient>
+    <linearGradient id="metal-h" x1="0" y1="0" x2="560" y2="100" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#e9eaec"/>
+      <stop offset="0.3" stop-color="#9ea2a9"/>
+      <stop offset="0.5" stop-color="#fbfbf9"/>
+      <stop offset="0.72" stop-color="#8d9198"/>
+      <stop offset="1" stop-color="#dcdee1"/>
+    </linearGradient>
+    <symbol id="simbolo-a" viewBox="0 0 100 100">
+      <path d="M50 6 L95 92 L76 92 L50 42 L24 92 L5 92 Z" fill="url(#metal)"/>
+      <path d="M8 90 C30 75 51 64 75 57 L78.5 65.5 C56 69.5 33 78 8 90 Z" fill="url(#metal)"/>
+    </symbol>
+    <symbol id="palavra" viewBox="0 0 560 100">
+      <g fill="none" stroke="url(#metal-h)" stroke-width="10">
+        <path d="M8 92 L50 8 L92 92" stroke-linejoin="miter" stroke-miterlimit="10"/>
+        <path d="M122 8 V58 Q122 92 162 92 Q202 92 202 58 V8"/>
+        <path d="M236 92 V8 H286 Q318 8 318 36 Q318 64 286 64 H236 M284 64 L320 92"/>
+        <rect x="352" y="8" width="96" height="84" rx="34"/>
+        <path d="M482 92 V8 L552 92 V8" stroke-linejoin="miter"/>
+      </g>
+    </symbol>
+  </defs>
+</svg>
+
+<canvas id="mundo" aria-hidden="true"></canvas>
+<div class="veu" aria-hidden="true"></div>
+
+<header class="barra" id="barra">
+  <div class="barra-dentro">
+    <a class="marca" href="#topo" aria-label="Auron Technology">
+      <svg class="a" aria-hidden="true"><use href="#simbolo-a"/></svg>
+      <svg class="palavra" viewBox="0 0 560 100" aria-hidden="true"><use href="#palavra"/></svg>
+    </a>
+    <nav class="menu" data-i18n-attr="aria-label:nav.rotulo">
+      <a href="#nucleo" data-i18n="nav.tecnologia"></a>
+      <a href="#resonance" data-i18n="nav.rede"></a>
+      <a href="#aur">AUR</a>
+      <a href="#fragmentacao" data-i18n="nav.pesquisa"></a>
+      <a href="#caminho" data-i18n="nav.roadmap"></a>
+      <a href="#aberto" data-i18n="nav.docs"></a>
+    </nav>
+    <div class="lado-direito">
+      <div class="idiomas" id="idiomas">
+        <button class="atual" type="button" aria-haspopup="true" aria-expanded="false" id="idioma-atual">PT</button>
+        <ul id="idioma-lista" hidden></ul>
+      </div>
+      <a class="botao botao-claro botao-pequeno explorar" href="#visao" data-i18n="nav.explorar"></a>
+      <button class="abre-menu" type="button" id="abre-menu" aria-expanded="false" data-i18n-attr="aria-label:nav.abrir"><i></i><i></i><i></i></button>
+    </div>
+  </div>
+</header>
+
+<nav class="gaveta" id="gaveta" hidden data-i18n-attr="aria-label:nav.rotulo">
+  <button class="botao botao-linha botao-pequeno fecha" type="button" id="fecha-menu" data-i18n="nav.fechar"></button>
+  <a href="#visao" data-i18n="nav.explorar"></a>
+  <a href="#nucleo" data-i18n="nav.tecnologia"></a>
+  <a href="#resonance" data-i18n="nav.rede"></a>
+  <a href="#aur">AUR</a>
+  <a href="#fragmentacao" data-i18n="nav.pesquisa"></a>
+  <a href="#caminho" data-i18n="nav.roadmap"></a>
+  <a href="#aberto" data-i18n="nav.docs"></a>
+</nav>
+
+<div class="pagina">
+
+<!-- ================= ABERTURA ================= -->
+<section class="abertura" id="topo" data-mundo="logo" aria-labelledby="t-topo">
+  <div class="miolo">
+    <h1 id="t-topo"><span class="so-leitor">Auron</span><svg viewBox="0 0 560 100" aria-hidden="true"><use href="#palavra"/></svg></h1>
+    <div class="tecnologia">TECHNOLOGY</div>
+    <p class="sub" data-i18n="hero.sub"></p>
+    <div class="acoes">
+      <a class="botao botao-claro" href="#visao" data-i18n="hero.explorar"></a>
+      <button class="botao botao-linha" type="button" id="abre-video" data-i18n="hero.assistir"></button>
+    </div>
+    <div class="verdade" data-i18n-html="hero.verdade"></div>
+  </div>
+  <span class="rolar-dica" aria-hidden="true"></span>
+</section>
+
+<!-- ================= VISÃO ================= -->
+<section class="capitulo" id="visao" data-mundo="rede" aria-labelledby="t-visao">
+  <div class="cabeca">
+    <p class="olho" data-i18n="visao.olho"></p>
+  </div>
+  <h2 class="visao-frase revela" id="t-visao" data-i18n-html="visao.frase"></h2>
+  <div class="pilares revela">
+    <div><b>PROTOCOL</b><span data-i18n="visao.protocolo"></span></div>
+    <div><b>INFRASTRUCTURE</b><span data-i18n="visao.infra"></span></div>
+    <div><b>RESEARCH</b><span data-i18n="visao.pesquisa"></span></div>
+    <div><b>SOFTWARE</b><span data-i18n="visao.software"></span></div>
+    <div><b>NETWORK</b><span data-i18n="visao.rede"></span></div>
+    <div><b>ECONOMY</b><span data-i18n="visao.economia"></span></div>
+  </div>
+  <div class="lemas" aria-hidden="true"><span>Value. Compute. Communication.</span><span>One architecture. Multiple layers.</span><span>Designed for a distributed world.</span></div>
+</section>
+
+<!-- ================= NÚCLEO ================= -->
+<section class="capitulo" id="nucleo" data-mundo="nucleo" aria-labelledby="t-nucleo">
+  <div class="cabeca">
+    <p class="olho">AURON CORE</p>
+    <h2 id="t-nucleo" data-i18n-html="nucleo.titulo"></h2>
+    <p data-i18n="nucleo.intro"></p>
+  </div>
+  <div class="nucleo">
+    <div class="painel nucleo-mapa revela">
+      <svg viewBox="0 0 520 400" id="nucleo-svg" role="group" data-i18n-attr="aria-label:nucleo.mapa">
+        <path class="linha" d="M260 92 V150 M260 150 H110 V190 M260 150 H410 V190 M260 150 V190 M110 250 V290 H410 V250 M260 250 V290 M260 290 V318"/>
+        <path class="linha-viva" d="M260 92 V150 H110 V190 M260 150 H410 V190 M110 250 V290 H260 V318"/>
+        <g class="nucleo-centro"><rect x="170" y="40" width="180" height="52" rx="8"/><text x="260" y="71" text-anchor="middle">AURON CORE</text></g>
+        <g class="no-botao" tabindex="0" role="button" data-parte="blockchain" aria-pressed="true"><rect x="40" y="190" width="140" height="60" rx="8"/><text x="110" y="218" text-anchor="middle">BLOCKCHAIN</text><text class="pequeno" x="110" y="236" text-anchor="middle">SHA-512 · MERKLE</text></g>
+        <g class="no-botao" tabindex="0" role="button" data-parte="nos" aria-pressed="false"><rect x="190" y="190" width="140" height="60" rx="8"/><text x="260" y="218" text-anchor="middle">NODES</text><text class="pequeno" x="260" y="236" text-anchor="middle">P2P · RUST</text></g>
+        <g class="no-botao" tabindex="0" role="button" data-parte="consenso" aria-pressed="false"><rect x="340" y="190" width="140" height="60" rx="8"/><text x="410" y="218" text-anchor="middle">CONSENSUS</text><text class="pequeno" x="410" y="236" text-anchor="middle">ARGON2ID · LWMA</text></g>
+        <g class="no-botao" tabindex="0" role="button" data-parte="protocolo" aria-pressed="false"><rect x="170" y="318" width="180" height="56" rx="8"/><text x="260" y="344" text-anchor="middle">PROTOCOL</text><text class="pequeno" x="260" y="361" text-anchor="middle">AURON-SPEC-01</text></g>
+      </svg>
+    </div>
+    <div class="painel detalhe revela" aria-live="polite">
+      <div class="painel-cabeca"><h3 data-i18n="nucleo.detalhe"></h3><span class="selo" id="nucleo-selo"></span></div>
+      <div class="painel-corpo" id="nucleo-detalhe"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= BLOCKCHAIN ================= -->
+<section class="capitulo largo" id="cadeia" data-mundo="cadeia" aria-labelledby="t-cadeia">
+  <div class="cabeca">
+    <p class="olho">BLOCKCHAIN</p>
+    <h2 id="t-cadeia" data-i18n-html="cadeia.titulo"></h2>
+    <p data-i18n="cadeia.intro"></p>
+    <div class="selos"><span class="selo-sim">SIMULATION</span><span class="selo" data-estado="desenvolvimento"><i></i><span data-i18n="estado.desenvolvimento"></span></span></div>
+  </div>
+  <div class="painel revela">
+    <div class="painel-cabeca">
+      <ol class="etapas" id="cadeia-etapas" aria-label="pipeline">
+        <li><span>TRANSACTION</span></li><li><span>MEMPOOL</span></li><li><span>BLOCK</span></li><li><span>VALIDATION</span></li><li><span>CHAIN</span></li>
+      </ol>
+      <div class="controles">
+        <button class="botao botao-linha botao-pequeno" type="button" id="cadeia-tx" data-i18n="cadeia.nova-tx"></button>
+        <button class="botao botao-linha botao-pequeno" type="button" id="cadeia-pausa" data-i18n="ui.pausar"></button>
+      </div>
+    </div>
+    <div class="painel-corpo cadeia-palco">
+      <div>
+        <div class="mempool" id="mempool"><h4>MEMPOOL</h4></div>
+      </div>
+      <div>
+        <div class="candidato" id="candidato"><h4 data-i18n="cadeia.candidato"></h4><div id="candidato-corpo" class="texto-2"></div><ul class="checagens" id="checagens"></ul></div>
+        <div class="trilho" id="trilho" aria-live="polite"></div>
+      </div>
+    </div>
+  </div>
+  <div class="grade-2" style="margin-top:1.2rem">
+    <div class="painel revela">
+      <div class="painel-cabeca"><h3>TRANSACTION</h3><span class="selo-sim">SIMULATION</span></div>
+      <div class="painel-corpo" id="tx-detalhe" aria-live="polite"><p class="texto-2" data-i18n="cadeia.escolha-tx"></p></div>
+    </div>
+    <div class="painel revela">
+      <div class="painel-cabeca"><h3 data-i18n="cadeia.regras-titulo"></h3></div>
+      <div class="painel-corpo"><p class="nota" data-i18n-html="cadeia.regras"></p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= NÓS ================= -->
+<section class="capitulo" id="nos" data-mundo="rede" aria-labelledby="t-nos">
+  <div class="cabeca">
+    <p class="olho">NODES</p>
+    <h2 id="t-nos" data-i18n-html="nos.titulo"></h2>
+    <p data-i18n="nos.intro"></p>
+    <div class="selos"><span class="selo-sim">SIMULATION</span><span class="selo" data-estado="planejado"><i></i><span data-i18n="estado.planejado"></span></span></div>
+  </div>
+  <div class="grade-demo">
+    <div class="tela revela" id="nos-tela">
+      <canvas id="nos-canvas" data-i18n-attr="aria-label:nos.canvas" role="img"></canvas>
+      <div class="rodape-tela"><span data-i18n="nos.dica"></span><span id="nos-contagem"></span></div>
+    </div>
+    <div class="painel ficha-no revela" aria-live="polite">
+      <div class="painel-cabeca"><h3>NODE</h3><span class="selo-sim">SIMULATION</span></div>
+      <div class="painel-corpo" id="no-detalhe"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 16×16 ================= -->
+<section class="capitulo" id="fragmentacao" data-mundo="grade" aria-labelledby="t-frag">
+  <div class="cabeca">
+    <p class="olho">AURON DISTRIBUTED FRAGMENTATION MODEL</p>
+    <h2 id="t-frag" data-i18n-html="frag.titulo"></h2>
+    <p data-i18n="frag.intro"></p>
+    <div class="selos"><span class="selo-sim">SIMULATION</span><span class="selo" data-estado="pesquisa"><i></i><span data-i18n="estado.pesquisa"></span></span></div>
+  </div>
+  <div class="painel revela">
+    <div class="painel-cabeca">
+      <ol class="etapas" id="frag-etapas"><li><span>DATA</span></li><li><span>ENCRYPTION</span></li><li><span>FRAGMENTATION</span></li><li><span>16×16</span></li><li><span>DISTRIBUTION</span></li></ol>
+    </div>
+    <div class="painel-corpo frag">
+      <div>
+        <form class="entrada" id="frag-form">
+          <label class="so-leitor" for="frag-texto" data-i18n="frag.rotulo"></label>
+          <input id="frag-texto" maxlength="120" value="DATA" autocomplete="off" spellcheck="false">
+          <button class="botao botao-claro botao-pequeno" type="submit" data-i18n="frag.fragmentar"></button>
+        </form>
+        <div class="tabuleiro-caixa"><div class="tabuleiro" id="tabuleiro" role="grid" aria-label="16×16"></div></div>
+        <div class="controles" style="margin-top:1rem">
+          <button class="botao botao-linha botao-pequeno" type="button" id="frag-reconstruir" disabled data-i18n="frag.reconstruir"></button>
+          <button class="botao botao-linha botao-pequeno" type="button" id="frag-corromper" disabled data-i18n="frag.corromper"></button>
+        </div>
+        <p class="saida" id="frag-saida" role="status"></p>
+      </div>
+      <div>
+        <div class="painel" style="background:rgba(8,8,9,.6)">
+          <div class="painel-cabeca"><h3>FRAGMENT</h3></div>
+          <div class="painel-corpo" id="frag-detalhe" aria-live="polite"><p class="texto-2" data-i18n="frag.escolha"></p></div>
+        </div>
+        <p class="nota" style="margin-top:1rem" data-i18n-html="frag.nota"></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= RÁDIO ================= -->
+<section class="capitulo" id="radio" data-mundo="malha" aria-labelledby="t-radio">
+  <div class="grade-2" style="align-items:center">
+    <div class="cabeca" style="margin:0">
+      <p class="olho">RADIO RESEARCH</p>
+      <h2 id="t-radio" data-i18n-html="radio.titulo"></h2>
+      <p data-i18n="radio.intro"></p>
+      <p class="nota" lang="en">Experimental research into distributed data transport and wireless resource utilization.</p>
+      <div class="selos"><span class="selo" data-estado="pesquisa"><i></i><span data-i18n="estado.pesquisa"></span></span><span class="selo-sim conceito" data-i18n="ui.conceitual"></span></div>
+    </div>
+    <div class="tela alta revela"><canvas id="radio-canvas" role="img" data-i18n-attr="aria-label:radio.canvas"></canvas><div class="rodape-tela"><span id="radio-estado"></span><span>RESEARCH</span></div></div>
+  </div>
+</section>
+
+<!-- ================= UTRAX ================= -->
+<section class="capitulo largo" id="utrax" data-mundo="rede" aria-labelledby="t-utrax">
+  <div class="cabeca">
+    <p class="olho">USEFULPOW · UTRAX</p>
+    <h2 id="t-utrax" data-i18n-html="utrax.titulo"></h2>
+    <p data-i18n="utrax.intro"></p>
+    <div class="selos"><span class="selo-sim">SIMULATION</span><span class="selo" data-estado="desenvolvimento"><i></i><span data-i18n="estado.desenvolvimento"></span></span></div>
+  </div>
+  <div class="utrax">
+    <div class="painel revela">
+      <div class="painel-cabeca">
+        <ol class="etapas" id="utrax-etapas"><li><span>TASK</span></li><li><span>TASK MARKET</span></li><li><span>NODE SELECTION</span></li><li><span>COMPUTATION</span></li><li><span>VERIFICATION</span></li><li><span>PROOF</span></li><li><span>REWARD</span></li></ol>
+      </div>
+      <div class="painel-corpo">
+        <div class="controles" style="justify-content:space-between">
+          <button class="botao botao-claro botao-pequeno" type="button" id="utrax-rodar" data-i18n="utrax.rodar"></button>
+          <label class="chave"><input type="checkbox" id="utrax-trapaca"><span data-i18n="utrax.trapaca"></span></label>
+        </div>
+        <div class="candidatos" id="utrax-candidatos"></div>
+        <div class="grade-3" style="gap:.8rem">
+          <div><p class="mono texto-2" style="font-size:.66rem;margin:0 0 .3rem">A (8×8)</p><div class="matriz-mini" id="utrax-a"></div></div>
+          <div><p class="mono texto-2" style="font-size:.66rem;margin:0 0 .3rem">B (8×8)</p><div class="matriz-mini" id="utrax-b"></div></div>
+          <div><p class="mono texto-2" style="font-size:.66rem;margin:0 0 .3rem" data-i18n="utrax.c"></p><div class="matriz-mini" id="utrax-c"></div></div>
+        </div>
+        <div class="veredito" id="utrax-veredito" role="status"></div>
+        <dl class="campos" id="utrax-prova" style="margin-top:1rem"></dl>
+      </div>
+    </div>
+    <div class="revela">
+      <h3 class="olho" style="margin:0 0 1rem" data-i18n="utrax.tarefas"></h3>
+      <ul class="lista-estado" id="utrax-tarefas"></ul>
+      <p class="nota" style="margin-top:1rem" data-i18n-html="utrax.nota"></p>
+    </div>
+  </div>
+</section>
+
+<!-- ================= AUR ================= -->
+<section class="capitulo" id="aur" data-mundo="nucleo" aria-labelledby="t-aur">
+  <div class="aur">
+    <div class="moeda revela" aria-hidden="true">
+      <svg viewBox="0 0 400 400">
+        <defs>
+          <radialGradient id="moeda-f" cx="50%" cy="40%" r="60%"><stop offset="0" stop-color="#26282c"/><stop offset="1" stop-color="#0a0a0b"/></radialGradient>
+          <path id="arco" d="M200 200 m-150 0 a150 150 0 1 1 300 0 a150 150 0 1 1 -300 0"/>
+        </defs>
+        <circle cx="200" cy="200" r="188" fill="url(#metal)"/>
+        <circle cx="200" cy="200" r="178" fill="url(#moeda-f)"/>
+        <circle cx="200" cy="200" r="166" fill="none" stroke="#3a3c41" stroke-width="1"/>
+        <g class="gira"><text font-family="Michroma, Archivo, sans-serif" font-size="11.5" letter-spacing="4.2" fill="#9a9ea5"><textPath href="#arco">AURON · DECENTRALIZED COMPUTING NETWORK · SCIENCE · MEDICINE · AGRICULTURE · AI · </textPath></text></g>
+        <circle cx="200" cy="200" r="132" fill="none" stroke="#2c2e33" stroke-width="1"/>
+        <use href="#simbolo-a" x="135" y="96" width="130" height="130"/>
+        <use href="#palavra" x="140" y="244" width="120" height="22"/>
+        <text x="200" y="292" text-anchor="middle" font-family="Michroma, Archivo, sans-serif" font-size="10" letter-spacing="4" fill="#8e9199">AUR</text>
+      </svg>
+    </div>
+    <div>
+      <div class="cabeca" style="margin-bottom:0">
+        <p class="olho">AUR</p>
+        <h2 id="t-aur" data-i18n-html="aur.titulo"></h2>
+        <p data-i18n="aur.intro"></p>
+      </div>
+      <ul class="utilidades revela">
+        <li data-i18n="aur.u1"></li><li data-i18n="aur.u2"></li><li data-i18n="aur.u3"></li><li data-i18n="aur.u4"></li><li data-i18n="aur.u5"></li><li data-i18n="aur.u6"></li>
+      </ul>
+      <dl class="fatos-aur revela">
+        <div><dt data-i18n="aur.f-teto"></dt><dd><span class="num">21 000 000</span><small>AUR</small></dd></div>
+        <div><dt data-i18n="aur.f-casas"></dt><dd><span class="num">8</span><small data-i18n="aur.f-casas-s"></small></dd></div>
+        <div><dt data-i18n="aur.f-bloco"></dt><dd><span class="num">120 s</span><small data-i18n="aur.f-bloco-s"></small></dd></div>
+        <div><dt data-i18n="aur.f-pow"></dt><dd>Argon2id<small>32 MiB</small></dd></div>
+        <div><dt data-i18n="aur.f-recompensa"></dt><dd><span class="num">50</span><small data-i18n="ui.provisorio"></small></dd></div>
+        <div><dt data-i18n="aur.f-halving"></dt><dd><span class="num">210 000</span><small data-i18n="aur.f-halving-s"></small></dd></div>
+      </dl>
+      <div class="nao-e"><span data-i18n="aur.sem-preco"></span><span data-i18n="aur.sem-venda"></span><span data-i18n="aur.sem-promessa"></span></div>
+    </div>
+  </div>
+  <div class="grafico revela" role="img" data-i18n-attr="aria-label:aur.grafico">
+    <svg viewBox="0 0 640 240" xmlns="http://www.w3.org/2000/svg">
+      <defs><linearGradient id="area-g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f3e2c4" stop-opacity="0.22"/><stop offset="1" stop-color="#f3e2c4" stop-opacity="0"/></linearGradient></defs>
+      <text class="t" x="58" y="16" data-i18n="aur.grafico-t"></text>
+      <line x1="58" y1="200" x2="620" y2="200" stroke="#2a2c31"/>
+      <line x1="58" y1="140" x2="620" y2="140" stroke="#1a1b1f" stroke-dasharray="2 5"/>
+      <line x1="58" y1="80" x2="620" y2="80" stroke="#1a1b1f" stroke-dasharray="2 5"/>
+      <line x1="58" y1="20" x2="620" y2="20" stroke="#5f626a" stroke-dasharray="6 5"/>
+      <text x="50" y="204" text-anchor="end">0</text><text x="50" y="144" text-anchor="end">7M</text><text x="50" y="84" text-anchor="end">14M</text><text x="50" y="24" text-anchor="end">21M</text>
+      <path d="M58 200 L128.25 110 L198.5 65 L268.75 42.5 L339 31.25 L409.25 25.63 L479.5 22.81 L549.75 21.41 L620 20.70 L620 200 Z" fill="url(#area-g)"/>
+      <path id="curva-aur" d="M58 200 L128.25 110 L198.5 65 L268.75 42.5 L339 31.25 L409.25 25.63 L479.5 22.81 L549.75 21.41 L620 20.70" fill="none" stroke="#f3e2c4" stroke-width="2"/>
+      <circle cx="128.25" cy="110" r="3" fill="#fff3df"/><circle cx="198.5" cy="65" r="3" fill="#fff3df"/><circle cx="268.75" cy="42.5" r="3" fill="#fff3df"/>
+      <text x="134" y="126">10,5M</text><text x="204" y="81">15,75M</text><text x="274" y="58">18,4M</text>
+      <text x="58" y="218" text-anchor="middle">0</text><text x="198.5" y="218" text-anchor="middle" data-i18n="aur.g16"></text><text x="339" y="218" text-anchor="middle" data-i18n="aur.g32"></text><text x="479.5" y="218" text-anchor="middle" data-i18n="aur.g48"></text><text x="620" y="218" text-anchor="end" data-i18n="aur.g64"></text>
+      <circle r="4" fill="#fff3df" class="anima"><animateMotion dur="7s" repeatCount="indefinite"><mpath href="#curva-aur"/></animateMotion></circle>
+    </svg>
+  </div>
+  <p class="nota" data-i18n="aur.nota-grafico"></p>
+</section>
+
+<!-- ================= DIRECT ================= -->
+<section class="capitulo" id="direct" data-mundo="malha" aria-labelledby="t-direct">
+  <div class="cabeca">
+    <p class="olho">AURON DIRECT</p>
+    <h2 id="t-direct" data-i18n-html="direct.titulo"></h2>
+    <p data-i18n="direct.intro"></p>
+    <div class="selos"><span class="selo-sim">SIMULATION</span><span class="selo" data-estado="planejado"><i></i><span data-i18n="estado.planejado"></span></span></div>
+  </div>
+  <div class="painel direct revela">
+    <div class="painel-cabeca">
+      <div class="pilula" role="group" data-i18n-attr="aria-label:direct.modo">
+        <button type="button" id="direct-online" aria-pressed="true">ONLINE</button>
+        <button type="button" id="direct-offline" aria-pressed="false">OFFLINE</button>
+      </div>
+      <div class="controles">
+        <button class="botao botao-claro botao-pequeno" type="button" id="direct-enviar" data-i18n="direct.enviar"></button>
+        <button class="botao botao-linha botao-pequeno" type="button" id="direct-duplo" hidden data-i18n="direct.duplo"></button>
+      </div>
+    </div>
+    <div class="painel-corpo">
+      <ol class="etapas" id="direct-etapas"></ol>
+      <div class="via"><canvas id="direct-canvas" aria-hidden="true"></canvas></div>
+      <div class="grade-2">
+        <div>
+          <div class="orcamento" id="direct-orcamento" hidden>
+            <div class="legenda-o"><span>OFFLINE BUDGET</span><span id="orcamento-texto"></span></div>
+            <div class="barra-o"><i id="orcamento-barra"></i></div>
+            <div class="legenda-o"><span data-i18n="direct.limite"></span><span>offline_expiration = 24h</span></div>
+          </div>
+          <p class="texto-2" id="direct-explica" aria-live="polite"></p>
+        </div>
+        <dl class="campos" id="direct-campos"></dl>
+      </div>
+      <p class="frase-offline" id="direct-frase" hidden lang="en">Offline authorization is bounded and reconciled when connectivity returns.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ================= RESONANCE / MESH ================= -->
+<section class="capitulo largo" id="resonance" data-mundo="malha" aria-labelledby="t-res">
+  <div class="cabeca">
+    <p class="olho">AURON RESONANCE · MESH</p>
+    <h2 id="t-res" data-i18n-html="res.titulo"></h2>
+    <p data-i18n="res.intro"></p>
+    <div class="selos"><span class="selo-sim">SIMULATION</span><span class="selo" data-estado="planejado"><i></i><span data-i18n="estado.planejado"></span></span></div>
+  </div>
+  <div class="grade-demo">
+    <div class="tela revela">
+      <canvas id="malha-canvas" role="img" data-i18n-attr="aria-label:res.canvas"></canvas>
+      <div class="canto"><button class="botao botao-linha botao-pequeno" type="button" id="malha-derrubar" data-i18n="res.derrubar"></button><button class="botao botao-linha botao-pequeno" type="button" id="malha-restaurar" data-i18n="res.restaurar"></button></div>
+      <div class="rodape-tela"><span id="malha-rota" class="mono"></span></div>
+    </div>
+    <div class="painel revela">
+      <div class="painel-cabeca"><h3>STORE AND FORWARD</h3><span class="selo-sim">SIMULATION</span></div>
+      <div class="painel-corpo"><ol class="passos-sf" id="sf-passos"></ol></div>
+    </div>
+  </div>
+  <div class="transportes" style="margin:1rem 0 2.4rem"><span><i class="bt"></i>Bluetooth</span><span><i class="wd"></i>Wi-Fi Direct</span><span><i></i>Wi-Fi</span><span><i class="net"></i>Internet</span><span data-i18n="res.futuros"></span></div>
+
+  <div class="grade-demo">
+    <div class="revela">
+      <button class="pacote" type="button" id="pacote" aria-expanded="false" aria-controls="pacote-campos">
+        <b>AURON PACKET</b>
+        <span id="pacote-id"></span>
+        <span data-i18n="res.abrir-pacote"></span>
+      </button>
+      <div class="painel pacote-campos" id="pacote-campos" hidden>
+        <div class="painel-cabeca"><h3 data-i18n="res.campos"></h3><div class="pilula" role="group"><button type="button" id="visao-dono" aria-pressed="true" data-i18n="res.visao-dono"></button><button type="button" id="visao-relay" aria-pressed="false" data-i18n="res.visao-relay"></button></div></div>
+        <div class="painel-corpo"><dl class="campos" id="pacote-lista"></dl></div>
+      </div>
+      <p class="nota" style="margin-top:1rem" data-i18n-html="res.nota-pacote"></p>
+    </div>
+    <div class="grade-2 revela" style="gap:1rem;align-content:start">
+      <div class="painel id-cartao"><div class="painel-corpo"><h4>AURON IDENTITY</h4><ul><li>Communication Key</li><li>Device Keys</li><li>Capabilities</li></ul><p class="nota" style="margin:.9rem 0 0" data-i18n="res.identidade"></p></div></div>
+      <div class="painel id-cartao"><div class="painel-corpo"><h4>AURON WALLET</h4><ul><li>Account Keys</li><li>Assets</li><li>Nonce</li><li>Offline Budget</li></ul><p class="nota" style="margin:.9rem 0 0" data-i18n="res.carteira"></p></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= SEGURANÇA ================= -->
+<section class="capitulo largo" id="seguranca" data-mundo="rede" aria-labelledby="t-seg">
+  <div class="cabeca">
+    <p class="olho">SECURITY</p>
+    <h2 id="t-seg" data-i18n-html="seg.titulo"></h2>
+    <p data-i18n="seg.intro"></p>
+  </div>
+  <div class="mecanismos revela" id="mecanismos"></div>
+  <div class="grade-demo" style="margin-top:2.4rem">
+    <div class="tela revela">
+      <canvas id="sybil-canvas" role="img" data-i18n-attr="aria-label:seg.canvas"></canvas>
+      <div class="canto"><button class="botao botao-linha botao-pequeno" type="button" id="sybil-atacar" data-i18n="seg.atacar"></button></div>
+      <div class="rodape-tela"><div class="estados-sybil" id="sybil-estados"><span data-e="normal">NORMAL</span><span data-e="suspeito">SUSPICIOUS</span><span data-e="quarentena">QUARANTINE</span><span data-e="revalidacao">REVALIDATION</span></div></div>
+    </div>
+    <div class="painel revela">
+      <div class="painel-cabeca"><h3>ANTI-SYBIL</h3><span class="selo-sim">SIMULATION</span></div>
+      <div class="painel-corpo"><p class="texto-2" id="sybil-explica" aria-live="polite"></p><p class="nota" data-i18n="seg.sybil-nota"></p><span class="selo" data-estado="planejado"><i></i><span data-i18n="estado.planejado"></span></span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= ARMAZENAMENTO ================= -->
+<section class="capitulo" id="armazenamento" data-mundo="grade" aria-labelledby="t-arm">
+  <div class="grade-2" style="align-items:center">
+    <div class="cabeca" style="margin:0">
+      <p class="olho">STORAGE</p>
+      <h2 id="t-arm" data-i18n-html="arm.titulo"></h2>
+      <p data-i18n="arm.intro"></p>
+      <div class="selos"><span class="selo" data-estado="pesquisa"><i></i><span data-i18n="estado.pesquisa"></span></span><span class="selo-sim conceito">FUTURE</span></div>
+    </div>
+    <div class="painel revela"><div class="painel-corpo"><ol class="etapas vertical" id="arm-etapas"></ol></div></div>
+  </div>
+</section>
+
+<!-- ================= INTELIGÊNCIA E ECONOMIA ================= -->
+<section class="capitulo largo" id="inteligencia" data-mundo="rede" aria-labelledby="t-ia">
+  <div class="cabeca">
+    <p class="olho">AURON INTELLIGENCE · MACHINE ECONOMY</p>
+    <h2 id="t-ia" data-i18n-html="ia.titulo"></h2>
+    <p data-i18n="ia.intro"></p>
+    <div class="selos"><span class="selo-sim">SIMULATION</span><span class="selo" data-estado="planejado"><i></i><span data-i18n="estado.planejado"></span></span></div>
+  </div>
+  <div class="painel revela">
+    <div class="painel-corpo">
+      <div class="abas" role="tablist" id="ia-abas">
+        <button type="button" role="tab" aria-selected="true" data-aba="agente" data-i18n="ia.aba-agente"></button>
+        <button type="button" role="tab" aria-selected="false" data-aba="maquinas" data-i18n="ia.aba-maquinas"></button>
+        <button type="button" role="tab" aria-selected="false" data-aba="logistica" data-i18n="ia.aba-logistica"></button>
+        <button type="button" role="tab" aria-selected="false" data-aba="mercado" data-i18n="ia.aba-mercado"></button>
+      </div>
+      <div class="grade-2" role="tabpanel" id="ia-painel">
+        <div><ol class="etapas vertical" id="ia-etapas"></ol></div>
+        <div><p class="texto-2" id="ia-explica" aria-live="polite"></p><div class="recursos" id="ia-recursos" hidden></div><div id="ia-estado"></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= ESCALA ================= -->
+<section class="zoom" id="escala" data-mundo="global" aria-labelledby="t-escala">
+  <div class="zoom-fixo">
+    <div class="zoom-rotulos">
+      <p class="olho" id="t-escala">ZOOM OUT</p>
+      <p class="zoom-contagem" id="zoom-contagem" aria-live="polite">ONE NODE</p>
+      <div class="zoom-degraus" id="zoom-degraus"><span>ONE NODE</span><span>TEN NODES</span><span>HUNDREDS</span><span>THOUSANDS</span><span>NETWORK</span><span>GLOBAL INFRASTRUCTURE</span></div>
+      <span class="selo-sim conceito" data-i18n="ui.conceitual"></span>
+    </div>
+  </div>
+</section>
+
+<!-- ================= CAMINHO ================= -->
+<section class="capitulo largo" id="caminho" data-mundo="nucleo" aria-labelledby="t-cam">
+  <div class="cabeca centro">
+    <p class="olho">ROADMAP</p>
+    <h2 id="t-cam" data-i18n-html="cam.titulo"></h2>
+    <p data-i18n="cam.intro"></p>
+  </div>
+  <div class="roteiro-3d revela" id="roteiro-3d"><div class="cena-r" id="cena-r"><svg viewBox="-360 -300 720 600" id="roteiro-svg" role="img" data-i18n-attr="aria-label:cam.mapa"></svg></div></div>
+  <div class="legenda-estados" id="legenda-estados"></div>
+  <div class="roteiro-listas" id="roteiro-listas"></div>
+</section>
+
+<!-- ================= ONDE ESTAMOS ================= -->
+<section class="capitulo largo" id="onde" data-mundo="rede" aria-labelledby="t-onde">
+  <div class="cabeca">
+    <p class="olho">WHERE WE ARE</p>
+    <h2 id="t-onde" data-i18n-html="onde.titulo"></h2>
+    <p data-i18n="onde.intro"></p>
+  </div>
+  <div class="onde revela" id="onde-colunas"></div>
+  <p class="aviso-rede" data-i18n-html="onde.aviso"></p>
+</section>
+
+<!-- ================= ENGENHARIA ABERTA ================= -->
+<section class="capitulo" id="aberto" data-mundo="rede" aria-labelledby="t-aberto">
+  <div class="cabeca">
+    <p class="olho">BUILD IN PUBLIC</p>
+    <h2 id="t-aberto" data-i18n-html="aberto.titulo"></h2>
+    <p lang="en" class="texto-2">Auron is built through open engineering, experimentation and continuous validation.</p>
+    <p data-i18n="aberto.intro"></p>
+  </div>
+  <div class="numeros revela">
+    <div><b class="num">91</b><span data-i18n="aberto.n-python"></span></div>
+    <div><b class="num">40</b><span data-i18n="aberto.n-rust"></span></div>
+    <div><b class="num">14</b><span data-i18n="aberto.n-vetores"></span></div>
+    <div><b class="num">6</b><span data-i18n="aberto.n-falhas"></span></div>
+  </div>
+  <div class="arquivos">
+    <div class="painel arquivo revela"><h3 data-i18n="aberto.codigo"></h3><span class="meta" id="meta-zip"></span><p data-i18n="aberto.codigo-d"></p><button class="botao botao-claro botao-pequeno" type="button" data-baixar="codigo" data-i18n="aberto.baixar-codigo"></button></div>
+    <div class="painel arquivo revela"><h3 data-i18n="aberto.doc"></h3><span class="meta">AURON-APRESENTACAO.md</span><p data-i18n="aberto.doc-d"></p><button class="botao botao-linha botao-pequeno" type="button" data-baixar="apresentacao" data-i18n="aberto.baixar-doc"></button></div>
+    <div class="painel arquivo revela"><h3 data-i18n="aberto.roteiro"></h3><span class="meta">ROTEIRO-VIDEO.md</span><p data-i18n="aberto.roteiro-d"></p><button class="botao botao-linha botao-pequeno" type="button" data-baixar="roteiro" data-i18n="aberto.baixar-roteiro"></button></div>
+  </div>
+  <p class="aviso-baixar" id="aviso-baixar" role="status"></p>
+  <p class="nota" data-i18n-html="aberto.github"></p>
+</section>
+
+<!-- ================= APOIO ================= -->
+<section class="capitulo" id="apoio" data-mundo="rede" aria-labelledby="t-apoio">
+  <div class="grade-2" style="align-items:start">
+    <div class="cabeca" style="margin:0">
+      <p class="olho">SUPPORT</p>
+      <h2 id="t-apoio" data-i18n-html="apoio.titulo"></h2>
+      <p data-i18n="apoio.intro"></p>
+    </div>
+    <div class="painel doacao revela">
+      <div class="qr" id="qr" aria-hidden="true"></div>
+      <div>
+        <p class="mono texto-2" style="margin:0;font-size:.72rem;letter-spacing:.1em">BITCOIN · <span data-i18n="apoio.rede"></span></p>
+        <code class="endereco" id="endereco">bc1qkp7d90t9tnmuv2rwq742pwc8pnet28a59zdzt7</code>
+        <button class="botao botao-claro botao-pequeno" type="button" id="copiar" data-i18n="apoio.copiar"></button>
+        <p class="aviso-baixar" id="aviso-copiar" role="status"></p>
+        <p class="nota" data-i18n-html="apoio.cuidado"></p>
+        <p class="nota" data-i18n-html="apoio.sem-contrapartida"></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= FINAL ================= -->
+<section class="final" id="fim" data-mundo="logo" aria-labelledby="t-fim">
+  <div class="miolo">
+    <h2 id="t-fim" class="so-leitor">Auron</h2>
+    <svg class="palavra" viewBox="0 0 560 100" aria-hidden="true"><use href="#palavra"/></svg>
+    <p class="lema">BUILD THE INFRASTRUCTURE.</p>
+    <p class="quatro">Value. Compute. Communication. Intelligence.</p>
+  </div>
+</section>
+
+<footer class="rodape">
+  <div class="marca-r">
+    <b>AURON TECHNOLOGY</b>
+    <small>© 2026 Auron Technology</small>
+    <small data-i18n="rodape.aviso"></small>
+    <span class="qualidade" id="qualidade"></span>
+  </div>
+  <nav data-i18n-attr="aria-label:nav.rotulo">
+    <a href="#nucleo" data-i18n="nav.tecnologia"></a>
+    <a href="#resonance" data-i18n="nav.rede"></a>
+    <a href="#aur">AUR</a>
+    <a href="#fragmentacao" data-i18n="nav.pesquisa"></a>
+    <a href="#aberto" data-i18n="nav.docs"></a>
+    <a href="#caminho" data-i18n="nav.roadmap"></a>
+  </nav>
+</footer>
+
+</div>
+
+<div class="sessao-video" id="sessao-video" hidden role="dialog" aria-modal="true" aria-labelledby="titulo-v">
+  <div class="topo-v"><span class="selo-sim conceito" id="aviso-voz-v"></span><button class="botao botao-linha botao-pequeno" type="button" id="fecha-video" data-i18n="ui.fechar"></button></div>
+  <div class="centro-v"><div><p class="titulo-v" id="titulo-v"></p><p class="fala-v" id="fala-v" aria-live="polite"></p></div></div>
+  <div class="base-v">
+    <button class="botao botao-claro botao-pequeno" type="button" id="v-play"></button>
+    <button class="botao botao-linha botao-pequeno" type="button" id="v-ant" data-i18n-attr="aria-label:ui.anterior">‹</button>
+    <button class="botao botao-linha botao-pequeno" type="button" id="v-prox" data-i18n-attr="aria-label:ui.proxima">›</button>
+    <button class="botao botao-linha botao-pequeno" type="button" id="v-voz" aria-pressed="true"></button>
+    <div class="progresso-v" id="v-progresso" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+  </div>
+</div>
+
+<noscript><p style="position:relative;z-index:5;padding:2rem;max-width:40rem;margin:0 auto">Auron Technology — infraestrutura distribuída em construção. Ative o JavaScript para ver o site. / Distributed infrastructure under construction. Enable JavaScript to view the site.</p></noscript>
+
+<script src="vendor/qrcode.min.js" defer></script>
+<script type="module" src="js/main.js"></script>
+</body>
+</html>

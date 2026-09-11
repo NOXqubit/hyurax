@@ -52,3 +52,8 @@ desktop.ini
 #   .cargo/      a configuração de build é a mesma nas três máquinas.
 #   spec/        a especificação é o projeto.
 # ---------------------------------------------------------------------------
+
+# ---------------------------------------------------------------------------
+# Site: pacote de downloads gerado por site/tools/build_downloads.py
+# ---------------------------------------------------------------------------
+site/downloads/

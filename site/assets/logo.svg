@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" role="img" aria-label="Auron">
+  <defs>
+    <linearGradient id="metal" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f7f7f5"/>
+      <stop offset="0.34" stop-color="#b4b8be"/>
+      <stop offset="0.52" stop-color="#fdfdfb"/>
+      <stop offset="0.76" stop-color="#7a7e86"/>
+      <stop offset="1" stop-color="#d6d8dc"/>
+    </linearGradient>
+  </defs>
+  <path d="M50 6 L95 92 L76 92 L50 42 L24 92 L5 92 Z" fill="url(#metal)"/>
+  <path d="M8 90 C30 75 51 64 75 57 L78.5 65.5 C56 69.5 33 78 8 90 Z" fill="url(#metal)"/>
+</svg>
