@@ -1,3 +1,4 @@
+// ✝ Provérbios 6:6-8 — “Vai ter com a formiga, ó preguiçoso; olha para os seus caminhos e sê sábio: no verão prepara o seu pão.”
 //! Validação cruzada contra a implementação de referência em Python.
 //!
 //! Lê `vectors/units.json`, gerado por `reference/tools/gen_vectors.py`, e

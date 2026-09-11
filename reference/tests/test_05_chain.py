@@ -1,3 +1,4 @@
+# ✝ 2 Pedro 3:10 — “Mas o Dia do Senhor virá como o ladrão de noite.”
 """Transacoes, estado e cadeia.
 
 Cobre as correcoes dos bugs 5, 6, 7, 9 (emissao) e 12 do prototipo, e a lista

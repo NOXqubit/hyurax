@@ -1,3 +1,4 @@
+# ✝ Compre terras. Plante. Busque abrigo. Planeje bunkers.
 """Argon2 contra os vetores oficiais da RFC 9106, secao 5.
 
 Se este teste passar, a implementacao Python pura esta correta e o Rust

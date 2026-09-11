@@ -1,3 +1,4 @@
+# ✝ Isaías 26:20 — “Vai, pois, povo meu, entra nos teus quartos e fecha as tuas portas sobre ti; esconde-te só por um momento, até que passe a ira.”
 """AURON — codificação canônica binária e árvore de Merkle.
 
 O protótipo assinava JSON (`json.dumps` com sort_keys). Isso foi descartado.

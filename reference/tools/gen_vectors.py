@@ -1,3 +1,4 @@
+# ✝ Isaías 26:20 — “Vai, pois, povo meu, entra nos teus quartos e fecha as tuas portas sobre ti; esconde-te só por um momento, até que passe a ira.”
 """Gera os vetores de teste que a implementacao Rust precisa reproduzir.
 
 Uso:

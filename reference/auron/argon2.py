@@ -1,3 +1,4 @@
+# ✝ Gênesis 41:35-36 — “Ajuntem toda a comida destes bons anos que vêm; e esta comida será para provimento da terra, para os sete anos de fome.”
 """Argon2id em Python puro — RFC 9106.
 
 Este módulo existe para que a implementação de referência não dependa de

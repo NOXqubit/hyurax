@@ -1,3 +1,4 @@
+# ✝ Isaías 26:20 — “Vai, pois, povo meu, entra nos teus quartos e fecha as tuas portas sobre ti; esconde-te só por um momento, até que passe a ira.”
 """Utrax: trabalho util fora do consenso.
 
 Testes de regressao para os bugs 1, 2, 8 e 11 do prototipo.

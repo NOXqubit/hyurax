@@ -1,3 +1,4 @@
+# ✝ Daniel 12:4 — “Tu, porém, Daniel, fecha estas palavras e sela este livro, até ao fim do tempo; muitos correrão de uma parte para outra, e a ciência se multiplicará.”
 """Codificacao canonica e arvore de Merkle."""
 
 from __future__ import annotations

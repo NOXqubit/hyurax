@@ -1,3 +1,4 @@
+// ✝ Lucas 21:28 — “Quando essas coisas começarem a acontecer, olhai para cima e levantai a vossa cabeça, porque a vossa redenção está próxima.”
 //! AACL — Auron Adaptive Cryptographic Layer.
 //!
 //! Tradução de `reference/auron/crypto.py`. Cada saída é conferida byte a

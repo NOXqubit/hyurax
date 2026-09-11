@@ -1,3 +1,4 @@
+# ✝ Gênesis 41:35-36 — “Ajuntem toda a comida destes bons anos que vêm; e esta comida será para provimento da terra, para os sete anos de fome.”
 """AURON — AACL, Auron Adaptive Cryptographic Layer.
 
 Nenhum algoritmo é regra absoluta. Cada primitiva tem identificador e versão,

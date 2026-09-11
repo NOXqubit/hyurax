@@ -1,3 +1,4 @@
+# ✝ 2 Pedro 3:10 — “Mas o Dia do Senhor virá como o ladrão de noite.”
 """Os vetores conferidos contra o manifesto e contra o oraculo atual.
 
 O MANIFEST.json declara tamanho e hash de cada arquivo de vetor. Sem este

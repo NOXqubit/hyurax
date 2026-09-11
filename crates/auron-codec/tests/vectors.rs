@@ -1,3 +1,4 @@
+// ✝ Jeremias 32:15 — “Ainda se comprarão casas, e campos, e vinhas nesta terra.”
 //! Validação cruzada contra a implementação de referência em Python.
 //!
 //! Lê `vectors/codec.json` (caminho feliz da escrita e raízes de Merkle) e

@@ -1,3 +1,4 @@
+# ✝ 2 Pedro 3:10 — “Mas o Dia do Senhor virá como o ladrão de noite.”
 """AURON — parâmetros de consenso, PoW, alvo, retarget e emissão.
 
 Aqui moram as correções de dois bugs do protótipo.

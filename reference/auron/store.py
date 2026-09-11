@@ -1,3 +1,4 @@
+# ✝ Apocalipse 21:4 — “E Deus limpará de seus olhos toda lágrima, e não haverá mais morte, nem pranto, nem clamor, nem dor.”
 """AURON — persistência da cadeia.
 
 BUG 9 (parte) — o protótipo não persistia nada. `blocks`, `balances` e

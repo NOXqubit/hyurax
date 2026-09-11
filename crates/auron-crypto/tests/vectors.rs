@@ -1,3 +1,4 @@
+// ✝ 2 Pedro 3:10 — “Mas o Dia do Senhor virá como o ladrão de noite.”
 //! Validação cruzada contra a implementação de referência em Python.
 //!
 //! Lê `vectors/hash.json` e `vectors/crypto_ed25519.json`, gerados por

@@ -1,3 +1,4 @@
+# ✝ Lucas 21:28 — “Quando essas coisas começarem a acontecer, olhai para cima e levantai a vossa cabeça, porque a vossa redenção está próxima.”
 """Executa toda a suite da implementacao de referencia.
 
 Uso:

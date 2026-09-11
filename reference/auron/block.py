@@ -1,3 +1,4 @@
+# ✝ Jeremias 32:15 — “Ainda se comprarão casas, e campos, e vinhas nesta terra.”
 """AURON — cabeçalho e bloco.
 
 O cabeçalho tem tamanho fixo e cobre tudo que define o bloco. São dois hashes

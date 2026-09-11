@@ -1,3 +1,4 @@
+# ✝ Gênesis 41:35-36 — “Ajuntem toda a comida destes bons anos que vêm; e esta comida será para provimento da terra, para os sete anos de fome.”
 """AURON — Utrax, camada de trabalho útil. FORA DO CONSENSO.
 
 Decisão híbrida: a segurança da cadeia vem do PoW convencional em

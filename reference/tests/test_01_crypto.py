@@ -1,3 +1,4 @@
+# ✝ Mateus 24:36 — “Porém daquele dia e hora ninguém sabe, nem os anjos do céu, mas unicamente meu Pai.”
 """Ed25519 contra os vetores oficiais da RFC 8032, secao 7.1.
 
 Se este teste passar, a implementacao Python pura esta correta e serve como

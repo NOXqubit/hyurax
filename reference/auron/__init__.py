@@ -1,3 +1,4 @@
+# ✝ Daniel 12:4 — “Tu, porém, Daniel, fecha estas palavras e sela este livro, até ao fim do tempo; muitos correrão de uma parte para outra, e a ciência se multiplicará.”
 """AURON — implementação de referência.
 
 Este pacote NÃO é o nó de produção. Ele existe para três coisas:

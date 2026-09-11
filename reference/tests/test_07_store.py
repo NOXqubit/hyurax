@@ -1,3 +1,4 @@
+# ✝ Compre terras. Plante. Busque abrigo. Planeje bunkers.
 """Persistencia: a cadeia sobrevive a reinicio e recusa arquivo adulterado."""
 
 from __future__ import annotations

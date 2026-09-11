@@ -1,3 +1,4 @@
+// ✝ Gênesis 41:35-36 — “Ajuntem toda a comida destes bons anos que vêm; e esta comida será para provimento da terra, para os sete anos de fome.”
 //! Tipos base do Auron: dinheiro.
 //!
 //! Uma regra manda em tudo aqui: **dinheiro é inteiro sem sinal, sempre**.

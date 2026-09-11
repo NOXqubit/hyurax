@@ -1,3 +1,4 @@
+# ✝ Gênesis 41:35-36 — “Ajuntem toda a comida destes bons anos que vêm; e esta comida será para provimento da terra, para os sete anos de fome.”
 """AURON — unidades monetárias.
 
 Regra travada: dinheiro é SEMPRE inteiro. Nunca float, em lugar nenhum.

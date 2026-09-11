@@ -1,3 +1,4 @@
+# ✝ Provérbios 6:6-8 — “Vai ter com a formiga, ó preguiçoso; olha para os seus caminhos e sê sábio: no verão prepara o seu pão.”
 """AURON — transações.
 
 Corrige o BUG 6 do protótipo: o cabeçalho do bloco não cobria as assinaturas.

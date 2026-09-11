@@ -1,4 +1,5 @@
-﻿"""Consenso: alvo compacto, retarget LWMA, emissao e PoW.
+# ✝ Apocalipse 21:4 — “E Deus limpará de seus olhos toda lágrima, e não haverá mais morte, nem pranto, nem clamor, nem dor.”
+"""Consenso: alvo compacto, retarget LWMA, emissao e PoW.
 
 Cobre as correcoes dos bugs 3 e 4 do prototipo.
 """
