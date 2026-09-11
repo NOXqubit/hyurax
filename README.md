@@ -10,12 +10,13 @@ Qualquer pessoa que disser o contrário está mentindo.
 | Parte | Estado |
 |---|---|
 | Especificação `AURON-SPEC-01` | escrita, congelável quando a tokenomics fechar |
-| Implementação de referência (Python) | completa, 77 testes |
+| Implementação de referência (Python) | completa, 80 testes |
 | Vetores de validação cruzada | 12 arquivos |
 | Nó de produção (Rust) | começado: `auron-types`, `auron-crypto` |
 | Rede P2P | não começada |
 | Testnet pública | não começada |
 | Mainnet | não existe |
+| Auron Flux (stablecoins e pagamentos) | arquitetura registrada em [`docs/AURON-FLUX.md`](docs/AURON-FLUX.md); estado RED, nada implementado |
 
 ## Como está organizado
 
