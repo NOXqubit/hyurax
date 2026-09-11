@@ -1,6 +1,6 @@
 [workspace]
 resolver = "3"
-members = ["crates/auron-types"]
+members = ["crates/auron-types", "crates/auron-crypto"]
 
 [workspace.package]
 version = "0.1.0"
@@ -35,6 +35,22 @@ description = "Auron — implementação de nó em Rust"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 hex = "0.4"
+
+# Criptografia. As duas são Rust puro, e isso foi conferido com `cargo tree`
+# em vez de presumido: no fecho transitivo não há `cc`, `ring`, `aws-lc`,
+# `cmake` nem `sha2-asm`. O curve25519-dalek, que vem pelo ed25519-dalek, tem
+# `build.rs`, mas ele só escolhe o backend em Rust com `cargo:rustc-cfg`; não
+# compila nada nativo.
+sha2 = { version = "0.11", default-features = false }
+
+# Versão exata de propósito. Uma versão nova que mude o que a verificação de
+# assinatura aceita é mudança de consenso, e mudança de consenso não entra por
+# `cargo update`.
+#
+# As features ficam explícitas pelo mesmo motivo. `batch` e
+# `legacy_compatibility` mudam o conjunto de assinaturas aceitas e NUNCA podem
+# ser ligadas: a primeira aceita R não-canônico, a segunda aceita S >= L.
+ed25519-dalek = { version = "=3.0.0", default-features = false, features = ["zeroize"] }
 
 [profile.dev]
 debug = 0

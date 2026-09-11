@@ -16,6 +16,10 @@
       "bytes": 2764,
       "sha512_16": "44afc3c527ed563dca973f93fb3d0753"
     },
+    "crypto_ed25519_verify.json": {
+      "bytes": 7256,
+      "sha512_16": "07965468275efa7c823292b3c5227270"
+    },
     "emission.json": {
       "bytes": 1128,
       "sha512_16": "c40df1cad01f84c8041dde2b7effdccd"

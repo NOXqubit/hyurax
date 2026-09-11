@@ -1,0 +1,30 @@
+[package]
+name = "auron-crypto"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+description = "Auron — AACL: SHA-512, XOF, Ed25519 e endereços"
+
+[dependencies]
+sha2.workspace = true
+ed25519-dalek.workspace = true
+
+[dev-dependencies]
+serde_json.workspace = true
+hex.workspace = true
+
+[lints.rust]
+unsafe_code = "forbid"
+missing_docs = "warn"
+
+[lints.clippy]
+# As mesmas regras do auron-types, pelo mesmo motivo: código de consenso não
+# pode derrubar o nó por causa de um `unwrap` esquecido. Erro vira `Result`,
+# ou, na verificação de assinatura, vira `false`.
+unwrap_used = "deny"
+expect_used = "deny"
+panic = "deny"
+indexing_slicing = "deny"
+arithmetic_side_effects = "warn"

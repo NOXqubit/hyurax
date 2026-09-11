@@ -220,6 +220,9 @@ def ed25519_verify(pub: bytes, msg: bytes, sig: bytes) -> bool:
     if s >= _Q:
         # Recusar S fora da faixa fecha a maleabilidade de assinatura.
         return False
+    # Ponto de ordem pequena em A ou em R NAO e recusado, de proposito: e a
+    # regra da AURON-SPEC-01, secao 2. O Rust reproduz, e
+    # vectors/crypto_ed25519_verify.json trava a regra nos dois lados.
     k = _sha512_int(sig[:32] + pub + msg) % _Q
     left = _point_mul(s, _G)
     right = _point_add(point_r, _point_mul(k, point_a))

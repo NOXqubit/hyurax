@@ -28,6 +28,7 @@ MODULES = [
     ("test_05_chain.py", "transacoes, estado, cadeia, ataques"),
     ("test_06_utrax.py", "trabalho util fora do consenso"),
     ("test_07_store.py", "persistencia"),
+    ("test_08_vectors.py", "vetores: manifesto e casos de borda"),
 ]
 
 

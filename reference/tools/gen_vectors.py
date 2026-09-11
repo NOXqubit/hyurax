@@ -368,9 +368,93 @@ def vec_utrax() -> dict:
     return {"matrix": matrix, "knapsack": knapsack, "diffusion": diffusion}
 
 
+def vec_crypto_verify() -> list[dict]:
+    """Casos de borda da verificacao Ed25519, com o veredito do proprio oraculo.
+
+    `vec_crypto` so tem assinaturas honestas, e por isso nao pega um no que
+    aceite ou recuse mais do que o oraculo. Estes pegam, nos dois sentidos:
+
+    - chave publica em encoding nao-canonico e recusada (o ed25519-dalek,
+      sozinho, aceita);
+    - ponto de ordem pequena em A ou em R e aceito (o verify_strict do dalek
+      recusa). Regra escrita na AURON-SPEC-01, secao 2.
+
+    O campo "valid" sai de crypto.verify, nunca de uma suposicao.
+    """
+    P, Q = crypto._P, crypto._Q
+
+    def le(n: int) -> bytes:
+        return n.to_bytes(32, "little")
+
+    def enc(y: int, sign: int) -> bytes:
+        return (y | (sign << 255)).to_bytes(32, "little")
+
+    def forge(pub: bytes, point, msg: bytes) -> bytes:
+        # Sem segredo nenhum: fecha sempre que [k]A for a identidade. O laco e
+        # deterministico (s = 1, 2, 3...), entao o vetor sai sempre igual.
+        for s in range(1, 5000):
+            r = crypto._point_compress(crypto._point_mul(s, crypto._G))
+            k = crypto._sha512_int(r + pub + msg) % Q
+            if crypto._point_equal(crypto._point_mul(k, point), crypto._IDENTITY):
+                return r + le(s)
+        raise RuntimeError("forja nao encontrada em 5000 tentativas")
+
+    msg = b"AURON vetor de borda"
+    pub = crypto.public_key(SEED_A)
+    a, _ = crypto._secret_expand(SEED_A)
+    sig = crypto.sign(SEED_A, msg)
+    s = int.from_bytes(sig[32:], "little")
+
+    def with_r(r: bytes) -> bytes:
+        # Assinatura legitima da chave A, com R escolhido a dedo.
+        k = crypto._sha512_int(r + pub + msg) % Q
+        return r + le(k * a % Q)
+
+    identity = crypto._point_decompress(le(1))
+    order2 = crypto._point_decompress(le(P - 1))
+    order4 = crypto._point_decompress(le(0))
+
+    cases = [
+        ("honesta", pub, msg, sig),
+        ("mensagem trocada", pub, msg + b"!", sig),
+        ("R adulterado em 1 bit", pub, msg, bytes([sig[0] ^ 1]) + sig[1:]),
+        ("S + L (maleavel)", pub, msg, sig[:32] + le(s + Q)),
+        ("S = L", pub, msg, sig[:32] + le(Q)),
+        ("R identidade, chave legitima", pub, msg, with_r(le(1))),
+        ("R identidade nao-canonica (y = p + 1)", pub, msg, with_r(le(P + 1))),
+        ("A identidade, forjada", le(1), msg, forge(le(1), identity, msg)),
+        ("A de ordem 2, forjada", le(P - 1), msg, forge(le(P - 1), order2, msg)),
+        ("A de ordem 4, forjada", le(0), msg, forge(le(0), order4, msg)),
+        ("A identidade nao-canonica (y = p + 1), forjada", le(P + 1), msg,
+         forge(le(P + 1), identity, msg)),
+        ("A identidade com bit de sinal, forjada", enc(1, 1), msg,
+         forge(enc(1, 1), identity, msg)),
+        ("A de ordem 2 com bit de sinal, forjada", enc(P - 1, 1), msg,
+         forge(enc(P - 1, 1), order2, msg)),
+        ("A de ordem 4 nao-canonica (y = p), forjada", le(P), msg,
+         forge(le(P), order4, msg)),
+        ("A fora da curva (y = 2)", le(2), msg, sig),
+        ("assinatura de 63 bytes", pub, msg, sig[:63]),
+        ("assinatura de 65 bytes", pub, msg, sig + bytes(1)),
+        ("chave de 31 bytes", pub[:31], msg, sig),
+        ("chave de 33 bytes", pub + bytes(1), msg, sig),
+    ]
+    return [
+        {
+            "label": label,
+            "public_key": h(p),
+            "message": h(m),
+            "signature": h(sg),
+            "valid": crypto.verify(p, m, sg),
+        }
+        for label, p, m, sg in cases
+    ]
+
+
 FILES = {
     "units.json": vec_units,
     "crypto_ed25519.json": vec_crypto,
+    "crypto_ed25519_verify.json": vec_crypto_verify,
     "hash.json": vec_hash,
     "codec.json": vec_codec,
     "argon2.json": vec_argon2,

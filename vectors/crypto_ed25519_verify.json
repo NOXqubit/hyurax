@@ -1,0 +1,139 @@
+{
+  "data": [
+    {
+      "label": "honesta",
+      "message": "4155524f4e207665746f7220646520626f726461",
+      "public_key": "d04ab232742bb4ab3a1368bd4615e4e6d0224ab71a016baf8520a332c9778737",
+      "signature": "c433116ee945a40230c5a176328dfbd3dd7aa29cd0f21b5e379e5885519f11d211d864e0e04fb8b2426b3771875f75f093a6c7442883fcb66f4b39c631f3db03",
+      "valid": true
+    },
+    {
+      "label": "mensagem trocada",
+      "message": "4155524f4e207665746f7220646520626f72646121",
+      "public_key": "d04ab232742bb4ab3a1368bd4615e4e6d0224ab71a016baf8520a332c9778737",
+      "signature": "c433116ee945a40230c5a176328dfbd3dd7aa29cd0f21b5e379e5885519f11d211d864e0e04fb8b2426b3771875f75f093a6c7442883fcb66f4b39c631f3db03",
+      "valid": false
+    },
+    {
+      "label": "R adulterado em 1 bit",
+      "message": "4155524f4e207665746f7220646520626f726461",
+      "public_key": "d04ab232742bb4ab3a1368bd4615e4e6d0224ab71a016baf8520a332c9778737",
+      "signature": "c533116ee945a40230c5a176328dfbd3dd7aa29cd0f21b5e379e5885519f11d211d864e0e04fb8b2426b3771875f75f093a6c7442883fcb66f4b39c631f3db03",
+      "valid": false
+    },
+    {
+      "label": "S + L (maleavel)",
+      "message": "4155524f4e207665746f7220646520626f726461",
+      "public_key": "d04ab232742bb4ab3a1368bd4615e4e6d0224ab71a016baf8520a332c9778737",
+      "signature": "c433116ee945a40230c5a176328dfbd3dd7aa29cd0f21b5e379e5885519f11d2feab5a3dfbb2ca0a19082f146659540594a6c7442883fcb66f4b39c631f3db13",
+      "valid": false
+    },
+    {
+      "label": "S = L",
+      "message": "4155524f4e207665746f7220646520626f726461",
+      "public_key": "d04ab232742bb4ab3a1368bd4615e4e6d0224ab71a016baf8520a332c9778737",
+      "signature": "c433116ee945a40230c5a176328dfbd3dd7aa29cd0f21b5e379e5885519f11d2edd3f55c1a631258d69cf7a2def9de1400000000000000000000000000000010",
+      "valid": false
+    },
+    {
+      "label": "R identidade, chave legitima",
+      "message": "4155524f4e207665746f7220646520626f726461",
+      "public_key": "d04ab232742bb4ab3a1368bd4615e4e6d0224ab71a016baf8520a332c9778737",
+      "signature": "0100000000000000000000000000000000000000000000000000000000000000d262c74190dbbc67fdfa2d5a68b2527d2c9412d3b72435c85ea4d4d677cbaa03",
+      "valid": true
+    },
+    {
+      "label": "R identidade nao-canonica (y = p + 1)",
+      "message": "4155524f4e207665746f7220646520626f726461",
+      "public_key": "d04ab232742bb4ab3a1368bd4615e4e6d0224ab71a016baf8520a332c9778737",
+      "signature": "eeffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7fa9f9ffe5eff5b1148b94ee03996a7d8c1510987c861a4a3aa6f7ed46affa200f",
+      "valid": false
+    },
+    {
+      "label": "A identidade, forjada",
+      "message": "4155524f4e207665746f7220646520626f726461",
+      "public_key": "0100000000000000000000000000000000000000000000000000000000000000",
+      "signature": "58666666666666666666666666666666666666666666666666666666666666660100000000000000000000000000000000000000000000000000000000000000",
+      "valid": true
+    },
+    {
+      "label": "A de ordem 2, forjada",
+      "message": "4155524f4e207665746f7220646520626f726461",
+      "public_key": "ecffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f",
+      "signature": "58666666666666666666666666666666666666666666666666666666666666660100000000000000000000000000000000000000000000000000000000000000",
+      "valid": true
+    },
+    {
+      "label": "A de ordem 4, forjada",
+      "message": "4155524f4e207665746f7220646520626f726461",
+      "public_key": "0000000000000000000000000000000000000000000000000000000000000000",
+      "signature": "edc876d6831fd2105d0b4389ca2e283166469289146e2ce06faefe98b22548df0500000000000000000000000000000000000000000000000000000000000000",
+      "valid": true
+    },
+    {
+      "label": "A identidade nao-canonica (y = p + 1), forjada",
+      "message": "4155524f4e207665746f7220646520626f726461",
+      "public_key": "eeffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f",
+      "signature": "58666666666666666666666666666666666666666666666666666666666666660100000000000000000000000000000000000000000000000000000000000000",
+      "valid": false
+    },
+    {
+      "label": "A identidade com bit de sinal, forjada",
+      "message": "4155524f4e207665746f7220646520626f726461",
+      "public_key": "0100000000000000000000000000000000000000000000000000000000000080",
+      "signature": "58666666666666666666666666666666666666666666666666666666666666660100000000000000000000000000000000000000000000000000000000000000",
+      "valid": false
+    },
+    {
+      "label": "A de ordem 2 com bit de sinal, forjada",
+      "message": "4155524f4e207665746f7220646520626f726461",
+      "public_key": "ecffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+      "signature": "58666666666666666666666666666666666666666666666666666666666666660100000000000000000000000000000000000000000000000000000000000000",
+      "valid": false
+    },
+    {
+      "label": "A de ordem 4 nao-canonica (y = p), forjada",
+      "message": "4155524f4e207665746f7220646520626f726461",
+      "public_key": "edffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f",
+      "signature": "c9a3f86aae465f0e56513864510f3997561fa2c9e85ea21dc2292309f3cd60220200000000000000000000000000000000000000000000000000000000000000",
+      "valid": false
+    },
+    {
+      "label": "A fora da curva (y = 2)",
+      "message": "4155524f4e207665746f7220646520626f726461",
+      "public_key": "0200000000000000000000000000000000000000000000000000000000000000",
+      "signature": "c433116ee945a40230c5a176328dfbd3dd7aa29cd0f21b5e379e5885519f11d211d864e0e04fb8b2426b3771875f75f093a6c7442883fcb66f4b39c631f3db03",
+      "valid": false
+    },
+    {
+      "label": "assinatura de 63 bytes",
+      "message": "4155524f4e207665746f7220646520626f726461",
+      "public_key": "d04ab232742bb4ab3a1368bd4615e4e6d0224ab71a016baf8520a332c9778737",
+      "signature": "c433116ee945a40230c5a176328dfbd3dd7aa29cd0f21b5e379e5885519f11d211d864e0e04fb8b2426b3771875f75f093a6c7442883fcb66f4b39c631f3db",
+      "valid": false
+    },
+    {
+      "label": "assinatura de 65 bytes",
+      "message": "4155524f4e207665746f7220646520626f726461",
+      "public_key": "d04ab232742bb4ab3a1368bd4615e4e6d0224ab71a016baf8520a332c9778737",
+      "signature": "c433116ee945a40230c5a176328dfbd3dd7aa29cd0f21b5e379e5885519f11d211d864e0e04fb8b2426b3771875f75f093a6c7442883fcb66f4b39c631f3db0300",
+      "valid": false
+    },
+    {
+      "label": "chave de 31 bytes",
+      "message": "4155524f4e207665746f7220646520626f726461",
+      "public_key": "d04ab232742bb4ab3a1368bd4615e4e6d0224ab71a016baf8520a332c97787",
+      "signature": "c433116ee945a40230c5a176328dfbd3dd7aa29cd0f21b5e379e5885519f11d211d864e0e04fb8b2426b3771875f75f093a6c7442883fcb66f4b39c631f3db03",
+      "valid": false
+    },
+    {
+      "label": "chave de 33 bytes",
+      "message": "4155524f4e207665746f7220646520626f726461",
+      "public_key": "d04ab232742bb4ab3a1368bd4615e4e6d0224ab71a016baf8520a332c977873700",
+      "signature": "c433116ee945a40230c5a176328dfbd3dd7aa29cd0f21b5e379e5885519f11d211d864e0e04fb8b2426b3771875f75f093a6c7442883fcb66f4b39c631f3db03",
+      "valid": false
+    }
+  ],
+  "generator": "reference/tools/gen_vectors.py",
+  "spec": "AURON-SPEC-01"
+}

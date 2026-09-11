@@ -11,8 +11,8 @@ Qualquer pessoa que disser o contrário está mentindo.
 |---|---|
 | Especificação `AURON-SPEC-01` | escrita, congelável quando a tokenomics fechar |
 | Implementação de referência (Python) | completa, 77 testes |
-| Vetores de validação cruzada | 11 arquivos |
-| Nó de produção (Rust) | começado: `auron-types` |
+| Vetores de validação cruzada | 12 arquivos |
+| Nó de produção (Rust) | começado: `auron-types`, `auron-crypto` |
 | Rede P2P | não começada |
 | Testnet pública | não começada |
 | Mainnet | não existe |

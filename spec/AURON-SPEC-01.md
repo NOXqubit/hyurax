@@ -76,6 +76,35 @@ mainnet ainda não existe, a troca não custa migração.
 Assinaturas com `S >= L` (ordem do grupo) são **rejeitadas**. Sem essa regra a
 assinatura é maleável e o `txid` deixa de identificar a transação.
 
+### Regra completa de verificação de `SIG-ED25519-V1`
+
+Uma assinatura `R || S` de 64 bytes sobre a mensagem `M`, com a chave pública
+`A` de 32 bytes, é válida se e só se:
+
+1. `A` e `R` estão em encoding canônico: `y < p`, e bit de sinal zero quando
+   `x = 0`. Qualquer outro encoding é recusado, mesmo que represente um ponto
+   da curva.
+2. `S < L`.
+3. `[S]B = R + [k]A`, sem multiplicar pelo cofator, com
+   `k = SHA-512(R || A || M) mod L` calculado sobre os bytes recebidos.
+
+Chave ou assinatura de tamanho errado é recusada, e nunca vira erro: toda
+entrada inválida dá o mesmo resultado, "assinatura inválida".
+
+**Ponto de ordem pequena em `A` ou em `R` não é recusado.** Decisão consciente,
+de 10/09/2026, que preserva o comportamento que a implementação de referência já
+tinha. A consequência, dita na cara: uma chave de ordem pequena não tem segredo
+correspondente, e qualquer um produz assinatura válida para ela. O que for
+enviado ao endereço derivado de uma dessas chaves pode ser gasto por qualquer
+um; o da identidade, por exemplo, é `892d1bf7e0f6107736c32cdc55930f95bf9611f3`.
+Isso não afeta endereço de chave legítima, porque a geração de chave nunca
+produz ponto de ordem pequena.
+
+Esta seção explicita a regra que a referência já seguia; não muda consenso.
+`vectors/crypto_ed25519_verify.json` trava a regra nos dois sentidos: um nó que
+recuse ponto de ordem pequena, ou que aceite encoding não-canônico, falha nos
+vetores.
+
 ## 3. Codificação canônica
 
 Binária, posicional, de largura fixa. JSON foi descartado: escapamento de
