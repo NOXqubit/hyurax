@@ -17,6 +17,7 @@ Qualquer pessoa que disser o contrário está mentindo.
 | Testnet pública | não começada |
 | Mainnet | não existe |
 | Auron Flux (stablecoins e pagamentos) | arquitetura registrada em [`docs/AURON-FLUX.md`](docs/AURON-FLUX.md); estado RED, nada implementado |
+| Auron Direct, Resonance e Transport (pagamentos P2P, offline e mesh) | arquitetura registrada em [`docs/AURON-DIRECT-RESONANCE.md`](docs/AURON-DIRECT-RESONANCE.md); estado RED, nada implementado |
 
 ## Como está organizado
 
