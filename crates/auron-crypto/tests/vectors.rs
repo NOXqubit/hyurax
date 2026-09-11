@@ -199,7 +199,7 @@ fn manifesto_bate_com_os_arquivos() {
     let arquivos = manifesto["files"]
         .as_object()
         .expect("MANIFEST.json precisa ter files");
-    assert!(arquivos.len() >= 12, "poucos arquivos no manifesto: {}", arquivos.len());
+    assert!(arquivos.len() >= 13, "poucos arquivos no manifesto: {}", arquivos.len());
 
     let pasta: PathBuf = [env!("CARGO_MANIFEST_DIR"), "..", "..", "vectors"]
         .iter()

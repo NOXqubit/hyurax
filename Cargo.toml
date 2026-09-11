@@ -1,6 +1,6 @@
 [workspace]
 resolver = "3"
-members = ["crates/auron-types", "crates/auron-crypto"]
+members = ["crates/auron-types", "crates/auron-crypto", "crates/auron-codec"]
 
 [workspace.package]
 version = "0.1.0"
@@ -31,6 +31,11 @@ description = "Auron — implementação de nó em Rust"
 # ---------------------------------------------------------------------------
 
 [workspace.dependencies]
+# Crates do proprio workspace. O auron-tx vai usar os tres.
+auron-types = { path = "crates/auron-types" }
+auron-crypto = { path = "crates/auron-crypto" }
+auron-codec = { path = "crates/auron-codec" }
+
 # Vetores de teste. Rust puro.
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"

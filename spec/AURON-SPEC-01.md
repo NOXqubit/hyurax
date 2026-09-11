@@ -215,6 +215,13 @@ Duas propriedades que o protótipo não tinha:
 No protótipo a impressão digital deixava chave e assinatura de fora, então
 trocar a assinatura não mudava o cabeçalho.
 
+**A prova de inclusão não amarra o total de folhas.** A verificação recebe o
+total como parâmetro, e árvores de totais diferentes podem ter a mesma forma
+no caminho de uma folha: a prova de uma árvore de 3 folhas passa quando
+conferida com total 4. Quem confere uma prova precisa obter o total de uma
+fonte autenticada. `vectors/codec_edge.json` trava esse comportamento. Nota
+de 11/09/2026; não muda consenso.
+
 ## 7. Cabeçalho de bloco
 
 ```

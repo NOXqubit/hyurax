@@ -1,0 +1,31 @@
+[package]
+name = "auron-codec"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+description = "Auron — codificação canônica binária e árvore de Merkle (RFC 6962)"
+
+[dependencies]
+# O H da árvore de Merkle vem do auron-crypto, para existir uma definição só
+# do hash, a que o identificador HASH-SHA512-V1 governa.
+auron-crypto.workspace = true
+
+[dev-dependencies]
+serde_json.workspace = true
+hex.workspace = true
+
+[lints.rust]
+unsafe_code = "forbid"
+missing_docs = "warn"
+
+[lints.clippy]
+# As mesmas regras dos outros crates. Um decodificador que recebe bytes da
+# rede não pode derrubar o nó: erro vira `Result`, e prova inválida vira
+# `false`.
+unwrap_used = "deny"
+expect_used = "deny"
+panic = "deny"
+indexing_slicing = "deny"
+arithmetic_side_effects = "warn"

@@ -12,6 +12,10 @@
       "bytes": 2540,
       "sha512_16": "c68c0072dcdddf7b9a696d8f61807cac"
     },
+    "codec_edge.json": {
+      "bytes": 78361,
+      "sha512_16": "2686b75a904cbccea3085dec03d5adc9"
+    },
     "crypto_ed25519.json": {
       "bytes": 2764,
       "sha512_16": "44afc3c527ed563dca973f93fb3d0753"

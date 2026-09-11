@@ -451,12 +451,172 @@ def vec_crypto_verify() -> list[dict]:
     ]
 
 
+def vec_codec_edge() -> dict:
+    """Leitura e provas de Merkle nos casos de borda, com o veredito do oraculo.
+
+    codec.json so tem o caminho feliz da escrita e raizes de Merkle. Um Reader
+    mais permissivo que o do Python (aceitar sobra, ler alem do fim, UTF-8
+    frouxo), ou uma verificacao de prova que aceite ou recuse diferente,
+    passaria nele sem acusar nada. Estes pegam, nos dois sentidos.
+
+    Veredito, ponto de falha e mensagem saem do proprio Reader, nunca de
+    suposicao. String sai como hex do UTF-8, para o JSON nao reinterpretar.
+    """
+
+    def run(ops: list[str], data: bytes) -> dict:
+        r = codec.Reader(data)
+        values: list = []
+        for i, op in enumerate(ops):
+            try:
+                if op == "finish":
+                    r.finish()
+                    values.append(None)
+                elif op == "string":
+                    values.append(h(r.string().encode("utf-8")))
+                elif op == "var_bytes":
+                    values.append(h(r.var_bytes()))
+                elif op.startswith("fixed:"):
+                    values.append(h(r.fixed(int(op[len("fixed:"):]))))
+                elif op == "list_u32":
+                    values.append(r.read_list(lambda rd: rd.u32()))
+                elif op == "list_var_bytes":
+                    values.append([h(v) for v in r.read_list(lambda rd: rd.var_bytes())])
+                elif op in ("u8", "u16", "u32", "u64"):
+                    values.append(getattr(r, op)())
+                else:
+                    # Erro do gerador, nao do Reader: nao pode virar veredito.
+                    raise ValueError(f"operacao desconhecida: {op}")
+            except codec.CodecError as exc:
+                return {"accepted": False, "failed_at": i, "error": str(exc),
+                        "values": values}
+        return {"accepted": True, "values": values}
+
+    x = bytes.fromhex
+    roundtrip = (codec.enc_u64(2**63) + codec.enc_bytes(b"\x00\x01\x02")
+                 + codec.enc_str("acentuacao: ção") + codec.enc_fixed(b"A" * 20, 20)
+                 + codec.enc_list([1, 2, 3], codec.enc_u32))
+    reads = [  # (rotulo, operacoes, entrada); todo caso ganha "finish" no fim
+        ("u8 maximo", ["u8"], x("ff")),
+        ("u16 e big-endian", ["u16"], x("0102")),
+        ("u32 um", ["u32"], x("00000001")),
+        ("u64 2^63", ["u64"], x("8000000000000000")),
+        ("u64 maximo", ["u64"], x("ff" * 8)),
+        ("bytes vazios", ["var_bytes"], x("00000000")),
+        ("bytes 000102", ["var_bytes"], x("00000003000102")),
+        ("string ção", ["string"], x("00000005c3a7c3a36f")),
+        ("string vazia", ["string"], x("00000000")),
+        ("string com NUL", ["string"], x("0000000100")),
+        ("string so com BOM, que nao e removido", ["string"], x("00000003efbbbf")),
+        ("string U+FFFF, nao-caractere valido", ["string"], x("00000003efbfbf")),
+        ("string U+10FFFF", ["string"], x("00000004f48fbfbf")),
+        ("string de 4 bytes", ["string"], x("00000004f09f9880")),
+        ("fixed 0 em entrada vazia", ["fixed:0"], b""),
+        ("fixed 20", ["fixed:20"], b"A" * 20),
+        ("lista de u32", ["list_u32"], x("00000003000000010000000200000003")),
+        ("lista vazia", ["list_u32"], x("00000000")),
+        ("lista de bytes", ["list_var_bytes"], x("00000002000000000000000161")),
+        ("entrada vazia, so finish", [], b""),
+        ("roundtrip do test_02", ["u64", "var_bytes", "string", "fixed:20", "list_u32"],
+         roundtrip),
+        ("u8 sem nada", ["u8"], b""),
+        ("u16 com 1 byte", ["u16"], x("01")),
+        ("u32 com 2 bytes", ["u32"], x("0000")),
+        ("u64 com 7 bytes", ["u64"], bytes(7)),
+        ("sobra depois do u32", ["u32"], codec.enc_u32(7) + b"sobra"),
+        ("sobra de 1 byte", [], x("00")),
+        ("prefixo mente sobre o conteudo", ["var_bytes"], codec.enc_u32(1000) + b"curto"),
+        ("prefixo de 4 GiB com 3 bytes", ["var_bytes"], x("ffffffff000000")),
+        ("prefixo truncado", ["var_bytes"], x("000000")),
+        ("bytes com 1 a menos", ["var_bytes"], x("0000000261")),
+        ("bytes com sobra", ["var_bytes"], x("000000016162")),
+        ("string: continuacao solta", ["string"], x("0000000180")),
+        ("string: NUL overlong", ["string"], x("00000002c080")),
+        ("string: overlong C1", ["string"], x("00000002c1bf")),
+        ("string: surrogate U+D800", ["string"], x("00000003eda080")),
+        ("string: acima de U+10FFFF", ["string"], x("00000004f4908080")),
+        ("string: prefixo corta o multibyte", ["string"], x("00000001c3a7")),
+        ("string: byte FF", ["string"], x("00000001ff")),
+        ("string: prefixo alem do fim", ["string"], x("00000005c3")),
+        ("fixed 20 com 19", ["fixed:20"], b"A" * 19),
+        ("lista de 2^32-1 sem itens", ["list_u32"], x("ffffffff")),
+        ("lista de 3 com 2", ["list_u32"], x("000000030000000100000002")),
+        ("lista com sobra", ["list_u32"], x("0000000100000001ff")),
+        ("lista com item mentiroso", ["list_var_bytes"], x("0000000200000001610000000561")),
+    ]
+    decode = []
+    for label, ops, data in reads:
+        ops = ops + ["finish"]
+        decode.append({"label": label, "ops": ops, "input": h(data), **run(ops, data)})
+
+    def folhas(n: int) -> list[bytes]:
+        return [f"folha-{i}".encode() for i in range(n)]
+
+    proofs = []
+    for total in (1, 2, 3, 4, 5, 6, 7, 8, 9, 16, 17):
+        leaves = folhas(total)
+        root = codec.merkle_root(leaves)
+        paths = [codec.merkle_path(leaves, i) for i in range(total)]
+        proofs.append({
+            "leaves": [h(v) for v in leaves],
+            "root": h(root),
+            "paths": [[h(s) for s in p] for p in paths],
+            "valid": [codec.merkle_verify_path(leaves[i], i, total, paths[i], root)
+                      for i in range(total)],
+        })
+
+    path_errors = []
+    for total, index in ((0, 0), (1, 1), (3, 3), (17, 17), (17, 1000)):
+        try:
+            codec.merkle_path(folhas(total), index)
+            path_errors.append({"total": total, "index": index, "accepted": True})
+        except codec.CodecError as exc:
+            path_errors.append({"total": total, "index": index, "accepted": False,
+                                "error": str(exc)})
+
+    l5 = folhas(5)
+    r5 = codec.merkle_root(l5)
+    p5 = {i: codec.merkle_path(l5, i) for i in range(5)}
+    l3 = [b"a", b"b", b"c"]
+    r3 = codec.merkle_root(l3)
+    p3 = codec.merkle_path(l3, 0)
+    lh = codec.merkle_leaf_hash
+    verify_cases = [
+        ("honesta, ultima folha promovida", l5[4], 4, 5, p5[4], r5),
+        ("honesta, primeira folha", l5[0], 0, 5, p5[0], r5),
+        ("uma folha, caminho vazio", b"a", 0, 1, [], codec.merkle_root([b"a"])),
+        # A prova nao amarra o total: o oraculo aceita. Travado aqui de proposito.
+        ("total errado com a mesma forma (3 -> 4)", b"a", 0, 4, p3, r3),
+        ("folha impostora", b"impostora", 4, 5, p5[4], r5),
+        ("indice trocado", l5[0], 1, 5, p5[0], r5),
+        ("indice igual ao total", l5[4], 5, 5, p5[4], r5),
+        ("total zero", b"", 0, 0, [], codec.merkle_root([])),
+        ("uma folha com um irmao a mais", b"a", 0, 1, [r3], codec.merkle_root([b"a"])),
+        ("caminho com um a menos", l5[0], 0, 5, p5[0][:-1], r5),
+        ("caminho com um a mais", l5[0], 0, 5, p5[0] + [r5], r5),
+        ("caminho em ordem invertida", l5[0], 0, 5, list(reversed(p5[0])), r5),
+        ("raiz de outra arvore", l5[0], 0, 5, p5[0], r3),
+        ("total errado com outra forma (3 -> 5)", b"a", 0, 5, p3, r3),
+        ("no interno apresentado como folha", lh(b"a") + lh(b"b"), 0, 2, [lh(b"c")], r3),
+        ("indice e total no teto do u64", l5[0], 2**64 - 2, 2**64 - 1, [r5] * 64, r5),
+    ]
+    verify = [
+        {"label": lb, "leaf": h(lf), "index": i, "total": t,
+         "path": [h(s) for s in p], "root": h(rt),
+         "valid": codec.merkle_verify_path(lf, i, t, p, rt)}
+        for lb, lf, i, t, p, rt in verify_cases
+    ]
+
+    return {"decode": decode, "merkle_proofs": proofs,
+            "merkle_path_errors": path_errors, "merkle_verify": verify}
+
+
 FILES = {
     "units.json": vec_units,
     "crypto_ed25519.json": vec_crypto,
     "crypto_ed25519_verify.json": vec_crypto_verify,
     "hash.json": vec_hash,
     "codec.json": vec_codec,
+    "codec_edge.json": vec_codec_edge,
     "argon2.json": vec_argon2,
     "targets.json": vec_targets,
     "emission.json": vec_emission,
