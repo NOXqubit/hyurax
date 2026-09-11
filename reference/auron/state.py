@@ -1,5 +1,5 @@
 # ✝ Isaías 26:20 — “Vai, pois, povo meu, entra nos teus quartos e fecha as tuas portas sobre ti; esconde-te só por um momento, até que passe a ira.”
-"""AURON — estado de contas: saldos, nonces, maturação de coinbase.
+"""AURON — estado de contas: saldos por ativo, nonces, maturação de coinbase.
 
 Corrige três coisas do protótipo.
 
@@ -19,6 +19,11 @@ Maturação de coinbase.
   Aqui a recompensa fica retida por `coinbase_maturity` blocos antes de
   virar saldo gastável.
 
+Vários ativos.
+  O saldo é guardado por conta e por ativo: a chave é o par (endereço,
+  identificador do ativo). O nonce continua por conta. Hoje só o AUR existe,
+  e a invariante recusa qualquer outro ativo que apareça no estado.
+
 `apply_block` devolve um registro de desfazer. Sem ele não existe reorg
 correto, e sem reorg correto não existe rede P2P.
 """
@@ -28,7 +33,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 from .consensus import ChainParams, ConsensusError, block_reward
-from .tx import Coinbase, Transfer, TxError
+from .tx import AUR, KNOWN_ASSETS, Coinbase, Transfer, TxError
 from .units import MAX_SUPPLY, checked_add, checked_sub
 
 
@@ -41,7 +46,7 @@ class Undo:
     """Tudo que é preciso para desfazer exatamente um bloco."""
 
     height: int
-    balances: dict = field(default_factory=dict)   # addr -> valor anterior ou None
+    balances: dict = field(default_factory=dict)   # (addr, ativo) -> valor anterior ou None
     nonces: dict = field(default_factory=dict)     # addr -> valor anterior ou None
     matured_at: int | None = None                  # altura que amadureceu
     matured_entries: list = field(default_factory=list)
@@ -52,16 +57,17 @@ class Undo:
 @dataclass
 class State:
     params: ChainParams
+    # (endereço, identificador do ativo) -> saldo
     balances: dict = field(default_factory=dict)
     nonces: dict = field(default_factory=dict)
-    # altura -> lista de (endereço, valor) esperando maturar
+    # altura -> lista de (endereço, valor em AUR) esperando maturar
     pending_coinbase: dict = field(default_factory=dict)
     total_emitted: int = 0
 
     # -- leitura --
 
-    def balance(self, address: bytes) -> int:
-        return self.balances.get(address, 0)
+    def balance(self, address: bytes, asset: bytes = AUR) -> int:
+        return self.balances.get((address, asset), 0)
 
     def next_nonce(self, address: bytes) -> int:
         return self.nonces.get(address, 0)
@@ -74,18 +80,19 @@ class State:
                     total += amount
         return total
 
-    def total_balance(self) -> int:
-        return sum(self.balances.values())
+    def total_balance(self, asset: bytes = AUR) -> int:
+        return sum(v for (_, a), v in self.balances.items() if a == asset)
 
     # -- escrita interna, com registro de desfazer --
 
-    def _set_balance(self, undo: Undo, address: bytes, value: int) -> None:
-        if address not in undo.balances:
-            undo.balances[address] = self.balances.get(address)
+    def _set_balance(self, undo: Undo, address: bytes, asset: bytes, value: int) -> None:
+        key = (address, asset)
+        if key not in undo.balances:
+            undo.balances[key] = self.balances.get(key)
         if value:
-            self.balances[address] = value
+            self.balances[key] = value
         else:
-            self.balances.pop(address, None)
+            self.balances.pop(key, None)
 
     def _set_nonce(self, undo: Undo, address: bytes, value: int) -> None:
         if address not in undo.nonces:
@@ -142,7 +149,7 @@ class State:
         undo.matured_at = target
         undo.matured_entries = list(entries)
         for address, amount in entries:
-            self._set_balance(undo, address, checked_add(self.balance(address), amount))
+            self._set_balance(undo, address, AUR, checked_add(self.balance(address), amount))
 
     def _apply_transfers(self, undo: Undo, transfers: list,
                          network_magic: bytes) -> int:
@@ -168,14 +175,21 @@ class State:
                     f"nonce inválido: esperado {expected}, veio {tx.nonce} (replay?)"
                 )
 
-            cost = checked_add(tx.amount, tx.fee)
-            if self.balance(tx.sender) < cost:
-                raise StateError("saldo insuficiente")
-
-            self._set_balance(undo, tx.sender, checked_sub(self.balance(tx.sender), cost))
-            self._set_balance(
-                undo, tx.recipient, checked_add(self.balance(tx.recipient), tx.amount)
-            )
+            # Primeiro confere todos os ativos, depois mexe em qualquer um:
+            # uma transferência sem saldo num ativo não pode debitar os outros.
+            costs = tx.costs()
+            for asset, cost in sorted(costs.items()):
+                if self.balance(tx.sender, asset) < cost:
+                    raise StateError("saldo insuficiente")
+            for asset, cost in sorted(costs.items()):
+                self._set_balance(
+                    undo, tx.sender, asset, checked_sub(self.balance(tx.sender, asset), cost)
+                )
+            for output in tx.outputs:
+                self._set_balance(
+                    undo, output.recipient, output.asset_id,
+                    checked_add(self.balance(output.recipient, output.asset_id), output.amount),
+                )
             self._set_nonce(undo, tx.sender, expected + 1)
             total_fees = checked_add(total_fees, tx.fee)
 
@@ -220,11 +234,11 @@ class State:
                 if not entries:
                     self.pending_coinbase.pop(undo.pending_added, None)
 
-        for address, previous in undo.balances.items():
+        for key, previous in undo.balances.items():
             if previous is None:
-                self.balances.pop(address, None)
+                self.balances.pop(key, None)
             else:
-                self.balances[address] = previous
+                self.balances[key] = previous
 
         for address, previous in undo.nonces.items():
             if previous is None:
@@ -250,12 +264,14 @@ class State:
 
     def check_invariants(self) -> None:
         """Invariantes que precisam valer depois de qualquer bloco."""
-        for address, value in self.balances.items():
+        for (address, asset), value in self.balances.items():
             if value < 0:
                 raise StateError(f"saldo negativo em {address.hex()}")
+            if asset not in KNOWN_ASSETS:
+                raise StateError(f"saldo em ativo sem regra de emissão: {asset.hex()}")
         if self.total_emitted > MAX_SUPPLY:
             raise StateError("emissão total passou do teto")
-        circulating = self.total_balance() + sum(
+        circulating = self.total_balance(AUR) + sum(
             amount for entries in self.pending_coinbase.values() for _, amount in entries
         )
         if circulating > MAX_SUPPLY:

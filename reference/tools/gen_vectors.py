@@ -29,7 +29,7 @@ from auron import argon2, codec, consensus, crypto, utrax  # noqa: E402
 from auron.block import BlockHeader  # noqa: E402
 from auron.chain import Chain, make_genesis  # noqa: E402
 from auron.consensus import MAINNET, REGTEST, TESTNET  # noqa: E402
-from auron.tx import Coinbase, sign_transfer  # noqa: E402
+from auron.tx import AUR, Coinbase, Output, sign_transfer, sign_transfer_outputs  # noqa: E402
 from auron.units import MAX_SUPPLY as MAX_SUPPLY_UNITS  # noqa: E402
 from auron.units import to_aur_str, to_units  # noqa: E402
 
@@ -266,18 +266,35 @@ def vec_transactions() -> dict:
     addr_a = crypto.address_from_pubkey(crypto.public_key(SEED_A))
     addr_b = crypto.address_from_pubkey(crypto.public_key(SEED_B))
 
+    # Terceiro destinatario, so para o caso com varias saidas.
+    addr_c = crypto.address_from_pubkey(crypto.public_key(bytes.fromhex("33" * 32)))
+
+    casos = [
+        (sign_transfer(SEED_A, p.magic, sender=addr_a, recipient=addr_b,
+                       amount=amount, fee=fee, nonce=nonce))
+        for amount, fee, nonce in (
+            (to_units("1"), 0, 0),
+            (to_units("1.5"), to_units("0.001"), 1),
+            (to_units("21000000"), to_units("0.00000001"), 2),
+        )
+    ]
+    # Varias saidas, ja na ordem estrita que o consenso exige.
+    saidas = sorted(
+        (Output(recipient=addr_b, asset_id=AUR, amount=to_units("2")),
+         Output(recipient=addr_c, asset_id=AUR, amount=to_units("0.5"))),
+        key=lambda o: (o.recipient, o.asset_id),
+    )
+    casos.append(sign_transfer_outputs(SEED_A, p.magic, sender=addr_a, outputs=saidas,
+                                       fee=to_units("0.01"), nonce=3))
+
     transfers = []
-    for amount, fee, nonce in (
-        (to_units("1"), 0, 0),
-        (to_units("1.5"), to_units("0.001"), 1),
-        (to_units("21000000"), to_units("0.00000001"), 2),
-    ):
-        tx = sign_transfer(SEED_A, p.magic, sender=addr_a, recipient=addr_b,
-                           amount=amount, fee=fee, nonce=nonce)
+    for tx in casos:
         transfers.append({
             "network": p.name,
-            "sender": h(addr_a), "recipient": h(addr_b),
-            "amount": str(amount), "fee": str(fee), "nonce": nonce,
+            "sender": h(tx.sender),
+            "outputs": [{"recipient": h(o.recipient), "asset_id": h(o.asset_id),
+                         "amount": str(o.amount)} for o in tx.outputs],
+            "fee": str(tx.fee), "nonce": tx.nonce,
             "signing_payload": h(tx.signing_payload(p.magic)),
             "signature": h(tx.signature),
             "encoded": h(tx.encode()),
@@ -327,8 +344,9 @@ def vec_chain() -> dict:
             "height": chain.height,
             "tip_hash": h(chain.tip_hash()),
             "total_emitted": str(chain.state.total_emitted),
-            "balances": {a.hex(): str(v)
-                         for a, v in sorted(chain.state.balances.items())},
+            # Chave "endereco:ativo", porque o saldo e por conta e por ativo.
+            "balances": {f"{a.hex()}:{ativo.hex()}": str(v)
+                         for (a, ativo), v in sorted(chain.state.balances.items())},
             "pending_coinbase": {
                 str(height): [[a.hex(), str(v)] for a, v in entries]
                 for height, entries in sorted(chain.state.pending_coinbase.items())

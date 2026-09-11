@@ -10,7 +10,7 @@ Qualquer pessoa que disser o contrário está mentindo.
 | Parte | Estado |
 |---|---|
 | Especificação `AURON-SPEC-01` | escrita, congelável quando a tokenomics fechar |
-| Implementação de referência (Python) | completa, 81 testes |
+| Implementação de referência (Python) | completa, 91 testes |
 | Vetores de validação cruzada | 13 arquivos |
 | Nó de produção (Rust) | começado: `auron-types`, `auron-crypto`, `auron-codec` |
 | Rede P2P | não começada |

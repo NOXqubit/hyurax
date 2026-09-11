@@ -158,17 +158,20 @@ campos.
 `height` precisa bater com a altura do bloco. Isso também torna cada coinbase
 única, mesmo com mesmo destinatário e mesmo valor.
 
-### 5.2 Transferência (`kind = 1`)
+### 5.2 Transferência (`kind = 1`, versão 2)
 
 ```
 u8   kind = 1
-u16  version = 1
+u16  version = 2
 u8   sig_code                 (1 = SIG-ED25519-V1)
 [20] sender
-[20] recipient
-u64  amount
-u64  fee
+u64  fee                      (sempre em AUR)
 u64  nonce                    (nonce de conta, sequencial)
+u32  quantidade de saídas     (de 1 a 16)
+     cada saída:
+       [20] recipient
+       [32] asset_id
+       u64  amount
 var  public_key
 var  signature                (não entra no payload assinado)
 ```
@@ -176,22 +179,45 @@ var  signature                (não entra no payload assinado)
 Mensagem assinada:
 
 ```
-"AURON-TX-v1" || network_magic || <tudo acima menos signature>
+"AURON-TX-v2" || network_magic || <tudo acima menos signature>
 ```
+
+A versão 1 tinha uma saída só, com o ativo implícito. Ela não existe mais: a
+arquitetura do projeto exige que a transação nasça preparada para mais de um
+ativo (`docs/AURON-DIRECT-RESONANCE.md`, §19; decisão de 11/09/2026). O
+domínio da assinatura mudou junto com o formato, de modo que uma assinatura
+feita para a versão 1 nunca vale como assinatura de uma transferência
+versão 2. A coinbase não mudou e continua na versão 1.
+
+**Ativos.** O `asset_id` tem 32 bytes. O AUR, ativo nativo, é o identificador
+todo zero; ativos futuros vão ter um identificador derivado do hash da própria
+emissão. Até existir uma regra de emissão, o consenso aceita só o AUR.
 
 O `network_magic` entra de propósito: sem ele, transação assinada na testnet
 vale na mainnet.
 
 `txid` = SHA-512(codificação completa, assinatura inclusive).
 
-Regras criptográficas, conferidas antes de qualquer regra de saldo:
+Regras estruturais e criptográficas, conferidas antes de qualquer regra de
+saldo, nesta ordem:
 
-1. `amount > 0`.
-2. `amount + fee` não estoura `u64`.
-3. `public_key` e `signature` com o tamanho do algoritmo declarado.
-4. `endereço(public_key) == sender`.
-5. `sender != recipient`.
-6. Assinatura válida sobre o payload acima.
+1. De 1 a 16 saídas. O decodificador recusa a contagem antes de ler qualquer
+   saída, então uma contagem absurda não custa leitura nenhuma.
+2. `fee` e cada `amount` dentro de `u64`, e cada `amount > 0`.
+3. Todo `asset_id` é de um ativo conhecido. Hoje, só o AUR.
+4. Nenhuma saída para o próprio `sender`.
+5. Saídas em ordem estritamente crescente de `(recipient, asset_id)`. Isso
+   proíbe saída repetida e deixa um único jeito de escrever o mesmo
+   pagamento, como pede a regra de unicidade da seção 3.
+6. Para cada ativo, a soma das saídas (mais a taxa, no AUR) não estoura
+   `u64`.
+7. `public_key` e `signature` com o tamanho do algoritmo declarado.
+8. `endereço(public_key) == sender`.
+9. Assinatura válida sobre o payload acima.
+
+A regra de saldo (seção 13) é conferida por ativo: o saldo do `sender` em cada
+ativo precisa cobrir a soma das saídas naquele ativo, mais a taxa no AUR.
+Todos os ativos são conferidos antes de qualquer débito.
 
 ## 6. Árvore de Merkle
 
@@ -362,7 +388,7 @@ passar de `MAX_SUPPLY`.
 
 ## 13. Estado
 
-Modelo de contas: saldo e nonce por endereço.
+Modelo de contas: saldo por endereço e por ativo; nonce por endereço. Nenhum saldo pode existir em ativo sem regra de emissão.
 
 - Nonce começa em 0 e é estritamente sequencial. Nonce fora de ordem é
   rejeitado, o que fecha replay.

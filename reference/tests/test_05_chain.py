@@ -8,6 +8,7 @@ de ataques que o prototipo aceitava.
 from __future__ import annotations
 
 import sys
+from dataclasses import replace
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -17,7 +18,7 @@ from auron.block import Block, BlockHeader  # noqa: E402
 from auron.chain import Chain, ChainError, make_genesis  # noqa: E402
 from auron.consensus import REGTEST, block_reward, target_to_compact  # noqa: E402
 from auron.state import State, StateError  # noqa: E402
-from auron.tx import Coinbase, Transfer, decode_tx, sign_transfer  # noqa: E402
+from auron.tx import AUR, Coinbase, decode_tx, sign_transfer  # noqa: E402
 from auron.units import AUR_UNIT, to_units  # noqa: E402
 
 P = REGTEST
@@ -89,22 +90,19 @@ def test_tampering_rejected():
         sender=alice.address, recipient=bob.address,
         amount=to_units("1"), fee=0, nonce=0,
     )
+    saida = tx.outputs[0]
     for label, bad in (
-        ("valor", Transfer(tx.sender, tx.recipient, to_units("999"), tx.fee,
-                           tx.nonce, tx.public_key, tx.signature)),
-        ("destino", Transfer(tx.sender, mallory.address, tx.amount, tx.fee,
-                             tx.nonce, tx.public_key, tx.signature)),
-        ("nonce", Transfer(tx.sender, tx.recipient, tx.amount, tx.fee,
-                           tx.nonce + 1, tx.public_key, tx.signature)),
-        ("taxa", Transfer(tx.sender, tx.recipient, tx.amount, to_units("5"),
-                          tx.nonce, tx.public_key, tx.signature)),
+        ("valor", replace(tx, outputs=(replace(saida, amount=to_units("999")),))),
+        ("destino", replace(tx, outputs=(replace(saida, recipient=mallory.address),))),
+        ("ativo", replace(tx, outputs=(replace(saida, asset_id=bytes([1]) + AUR[1:]),))),
+        ("nonce", replace(tx, nonce=tx.nonce + 1)),
+        ("taxa", replace(tx, fee=to_units("5"))),
     ):
         ok, _ = bad.check_signature(P.magic)
         assert not ok, f"adulteracao de {label} passou"
 
     # chave publica de outro que nao bate com o sender
-    swapped = Transfer(tx.sender, tx.recipient, tx.amount, tx.fee, tx.nonce,
-                       mallory.pub, tx.signature)
+    swapped = replace(tx, public_key=mallory.pub)
     assert not swapped.check_signature(P.magic)[0], "chave trocada passou"
     print("PASS adulteracao de transacao rejeitada")
 
@@ -205,8 +203,7 @@ def test_merkle_root_covers_signatures():
     # troca 1 bit da assinatura, mantendo tudo o mais igual
     broken_sig = bytearray(tx.signature)
     broken_sig[0] ^= 0x01
-    swapped = Transfer(tx.sender, tx.recipient, tx.amount, tx.fee, tx.nonce,
-                       tx.public_key, bytes(broken_sig))
+    swapped = replace(tx, signature=bytes(broken_sig))
     tampered = Block(block.header, [block.transactions[0], swapped])
 
     assert tampered.computed_merkle_root() != block.header.merkle_root, \

@@ -5,8 +5,8 @@
       "sha512_16": "d4a59d94f99eef9636ea9de908aa0ec3"
     },
     "chain.json": {
-      "bytes": 5539,
-      "sha512_16": "4370e68697260cda3eddfb97996a7d99"
+      "bytes": 5669,
+      "sha512_16": "452b9b791d806d06d00f9cac823fe4a8"
     },
     "codec.json": {
       "bytes": 2540,
@@ -41,8 +41,8 @@
       "sha512_16": "4936e78b3b53e9d74c1fcd802acc16b4"
     },
     "transactions.json": {
-      "bytes": 5017,
-      "sha512_16": "19ce368620409079223c5c3d2eab0c79"
+      "bytes": 7865,
+      "sha512_16": "4c183f7cc73b233a5a1f40a12b8b8c29"
     },
     "units.json": {
       "bytes": 4693,

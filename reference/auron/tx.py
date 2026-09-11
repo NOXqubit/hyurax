@@ -21,17 +21,27 @@ Corrige também a coinbase-como-string do protótipo.
   Aqui coinbase é um TIPO diferente de transação. Ela não tem campo de
   assinatura nem de remetente para preencher. Não existe como forjar uma
   coinbase "de fora" porque a estrutura simplesmente não tem esses campos.
+
+Transferência versão 2: vários ativos e várias saídas.
+
+  A arquitetura do projeto (docs/AURON-DIRECT-RESONANCE.md, §19) exige que a
+  transação nasça preparada para mais de um ativo. Cada saída diz quanto de
+  qual ativo vai para quem, e uma transferência tem de 1 a 16 saídas. Hoje o
+  consenso aceita só o AUR; os outros ativos esperam uma regra de emissão.
+  A taxa é sempre em AUR, e o nonce continua sendo por conta.
 """
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, replace
 
 from . import codec, crypto
-from .codec import CodecError
 from .units import MAX_AMOUNT
 
+# A coinbase não mudou de formato. A transferência mudou, e por isso tem
+# versão própria.
 TX_VERSION = 1
+TRANSFER_VERSION = 2
 
 KIND_COINBASE = 0
 KIND_TRANSFER = 1
@@ -43,6 +53,19 @@ SIG_CODES_REV = {v: k for k, v in SIG_CODES.items()}
 
 MAX_EXTRA_NONCE = 64
 
+ASSET_ID_LEN = 32
+# O AUR, ativo nativo, é o identificador todo zero. Ativos futuros vão ter um
+# identificador derivado do hash da própria emissão, que nunca dá zero.
+AUR = bytes(ASSET_ID_LEN)
+# Ativos que o consenso aceita. Só o AUR, até existir regra de emissão.
+KNOWN_ASSETS = frozenset({AUR})
+
+MAX_OUTPUTS = 16
+
+# O domínio muda junto com o formato: uma assinatura feita para a versão 1
+# nunca pode ser lida como assinatura de uma transferência versão 2.
+SIGNING_DOMAIN = b"AURON-TX-v2"
+
 
 class TxError(Exception):
     """Transação malformada ou inválida."""
@@ -50,7 +73,10 @@ class TxError(Exception):
 
 @dataclass(frozen=True)
 class Coinbase:
-    """Recompensa do bloco. Criada pela cadeia, nunca aceita de fora."""
+    """Recompensa do bloco. Criada pela cadeia, nunca aceita de fora.
+
+    Paga sempre em AUR: é o único ativo que tem emissão.
+    """
 
     height: int
     recipient: bytes
@@ -92,12 +118,44 @@ class Coinbase:
 
 
 @dataclass(frozen=True)
+class Output:
+    """Uma saída da transferência: quanto de qual ativo vai para quem."""
+
+    recipient: bytes
+    asset_id: bytes
+    amount: int
+
+    def encode(self) -> bytes:
+        if len(self.recipient) != crypto.ADDRESS_LEN:
+            raise TxError("endereço de destino inválido")
+        if len(self.asset_id) != ASSET_ID_LEN:
+            raise TxError("identificador de ativo inválido")
+        return (
+            codec.enc_fixed(self.recipient, crypto.ADDRESS_LEN)
+            + codec.enc_fixed(self.asset_id, ASSET_ID_LEN)
+            + codec.enc_u64(self.amount)
+        )
+
+    @staticmethod
+    def decode(r: codec.Reader) -> "Output":
+        return Output(
+            recipient=r.fixed(crypto.ADDRESS_LEN),
+            asset_id=r.fixed(ASSET_ID_LEN),
+            amount=r.u64(),
+        )
+
+
+def _check_output_count(count: int) -> None:
+    if not 1 <= count <= MAX_OUTPUTS:
+        raise TxError(f"transferência precisa de 1 a {MAX_OUTPUTS} saídas, tem {count}")
+
+
+@dataclass(frozen=True)
 class Transfer:
-    """Transferência assinada entre contas."""
+    """Transferência assinada de uma conta, com uma ou mais saídas."""
 
     sender: bytes
-    recipient: bytes
-    amount: int
+    outputs: tuple
     fee: int
     nonce: int
     public_key: bytes
@@ -110,29 +168,27 @@ class Transfer:
         """Tudo menos a assinatura. É isto que é assinado."""
         if len(self.sender) != crypto.ADDRESS_LEN:
             raise TxError("endereço de origem inválido")
-        if len(self.recipient) != crypto.ADDRESS_LEN:
-            raise TxError("endereço de destino inválido")
         if self.sig_code not in SIG_CODES:
             raise TxError(f"algoritmo de assinatura desconhecido: {self.sig_code}")
+        _check_output_count(len(self.outputs))
         return (
             codec.enc_u8(KIND_TRANSFER)
-            + codec.enc_u16(TX_VERSION)
+            + codec.enc_u16(TRANSFER_VERSION)
             + codec.enc_u8(self.sig_code)
             + codec.enc_fixed(self.sender, crypto.ADDRESS_LEN)
-            + codec.enc_fixed(self.recipient, crypto.ADDRESS_LEN)
-            + codec.enc_u64(self.amount)
             + codec.enc_u64(self.fee)
             + codec.enc_u64(self.nonce)
+            + codec.enc_list(list(self.outputs), Output.encode)
             + codec.enc_bytes(self.public_key)
         )
 
     def signing_payload(self, network_magic: bytes) -> bytes:
-        """Mensagem assinada, com separação de domínio por rede.
+        """Mensagem assinada, com separação de domínio por versão e por rede.
 
         O magic da rede entra de propósito: sem ele, uma transação assinada na
         testnet é válida na mainnet. Foi um erro real em várias cadeias.
         """
-        return b"AURON-TX-v1" + network_magic + self._body()
+        return SIGNING_DOMAIN + network_magic + self._body()
 
     def encode(self) -> bytes:
         return self._body() + codec.enc_bytes(self.signature)
@@ -140,17 +196,25 @@ class Transfer:
     @staticmethod
     def decode_body(r: codec.Reader) -> "Transfer":
         version = r.u16()
-        if version != TX_VERSION:
+        if version != TRANSFER_VERSION:
             raise TxError(f"versão de transação desconhecida: {version}")
         sig_code = r.u8()
         if sig_code not in SIG_CODES:
             raise TxError(f"algoritmo de assinatura desconhecido: {sig_code}")
+        sender = r.fixed(crypto.ADDRESS_LEN)
+        fee = r.u64()
+        nonce = r.u64()
+        # A contagem é recusada antes de ler qualquer saída: uma contagem
+        # absurda não custa leitura nenhuma. Os bytes são os mesmos de
+        # codec.enc_list.
+        count = r.u32()
+        _check_output_count(count)
+        outputs = tuple(Output.decode(r) for _ in range(count))
         return Transfer(
-            sender=r.fixed(crypto.ADDRESS_LEN),
-            recipient=r.fixed(crypto.ADDRESS_LEN),
-            amount=r.u64(),
-            fee=r.u64(),
-            nonce=r.u64(),
+            sender=sender,
+            outputs=outputs,
+            fee=fee,
+            nonce=nonce,
             public_key=r.var_bytes(),
             signature=r.var_bytes(),
             sig_code=sig_code,
@@ -159,25 +223,57 @@ class Transfer:
     def txid(self) -> bytes:
         return crypto.H(self.encode())
 
-    # -- validação criptográfica (regras de saldo ficam no estado) --
+    # -- custo --
+
+    def costs(self) -> dict:
+        """Quanto sai do remetente em cada ativo: as saídas, e a taxa no AUR.
+
+        Levanta TxError se o total de algum ativo estourar a faixa.
+        """
+        totals: dict = {}
+        if self.fee:
+            totals[AUR] = self.fee
+        for output in self.outputs:
+            total = totals.get(output.asset_id, 0) + output.amount
+            if total > MAX_AMOUNT:
+                raise TxError("valor mais taxa estoura a faixa")
+            totals[output.asset_id] = total
+        return totals
+
+    # -- validação criptográfica e estrutural (regras de saldo ficam no estado) --
 
     def check_signature(self, network_magic: bytes) -> tuple[bool, str]:
         algo = SIG_CODES[self.sig_code]
 
-        if self.amount <= 0:
-            return False, "valor deve ser positivo"
-        if self.amount > MAX_AMOUNT or self.fee > MAX_AMOUNT:
+        count = len(self.outputs)
+        if not 1 <= count <= MAX_OUTPUTS:
+            return False, f"transferência precisa de 1 a {MAX_OUTPUTS} saídas, tem {count}"
+        if not 0 <= self.fee <= MAX_AMOUNT:
             return False, "valor fora da faixa"
-        if self.amount + self.fee > MAX_AMOUNT:
-            return False, "valor mais taxa estoura a faixa"
+        for output in self.outputs:
+            if output.amount <= 0:
+                return False, "valor deve ser positivo"
+            if output.amount > MAX_AMOUNT:
+                return False, "valor fora da faixa"
+            if output.asset_id not in KNOWN_ASSETS:
+                return False, f"ativo desconhecido: {output.asset_id.hex()}"
+            if output.recipient == self.sender:
+                return False, "origem e destino iguais"
+        # Ordem estrita: sem saída repetida, e um único jeito de escrever o
+        # mesmo pagamento, como pede a regra de unicidade da codificação.
+        keys = [(o.recipient, o.asset_id) for o in self.outputs]
+        if any(a >= b for a, b in zip(keys, keys[1:])):
+            return False, "saídas fora de ordem ou repetidas"
+        try:
+            self.costs()
+        except TxError as exc:
+            return False, str(exc)
         if len(self.public_key) != crypto.pubkey_size(algo):
             return False, "tamanho de chave pública inválido"
         if len(self.signature) != crypto.signature_size(algo):
             return False, "tamanho de assinatura inválido"
         if crypto.address_from_pubkey(self.public_key, algo) != self.sender:
             return False, "chave pública não corresponde ao remetente"
-        if self.sender == self.recipient:
-            return False, "origem e destino iguais"
         if not crypto.verify(
             self.public_key, self.signing_payload(network_magic), self.signature, algo
         ):
@@ -205,27 +301,32 @@ def decode_tx_from(r: codec.Reader):
     raise TxError(f"tipo de transação desconhecido: {kind}")
 
 
-def sign_transfer(secret: bytes, network_magic: bytes, *, sender: bytes,
-                  recipient: bytes, amount: int, fee: int, nonce: int) -> Transfer:
-    """Monta e assina uma transferência."""
+def sign_transfer_outputs(secret: bytes, network_magic: bytes, *, sender: bytes,
+                          outputs, fee: int, nonce: int) -> Transfer:
+    """Monta e assina uma transferência com as saídas dadas, na ordem dada.
+
+    Não reordena nada: saídas fora de ordem geram uma transferência que o
+    consenso recusa, e é assim que os testes provam a regra.
+    """
     pub = crypto.public_key(secret)
     if crypto.address_from_pubkey(pub) != sender:
         raise TxError("segredo não corresponde ao endereço de origem")
     draft = Transfer(
         sender=sender,
-        recipient=recipient,
-        amount=amount,
+        outputs=tuple(outputs),
         fee=fee,
         nonce=nonce,
         public_key=pub,
     )
-    sig = crypto.sign(secret, draft.signing_payload(network_magic))
-    return Transfer(
-        sender=sender,
-        recipient=recipient,
-        amount=amount,
-        fee=fee,
-        nonce=nonce,
-        public_key=pub,
-        signature=sig,
+    return replace(draft, signature=crypto.sign(secret, draft.signing_payload(network_magic)))
+
+
+def sign_transfer(secret: bytes, network_magic: bytes, *, sender: bytes,
+                  recipient: bytes, amount: int, fee: int, nonce: int,
+                  asset_id: bytes = AUR) -> Transfer:
+    """Atalho para a transferência mais comum: uma saída só."""
+    return sign_transfer_outputs(
+        secret, network_magic, sender=sender,
+        outputs=(Output(recipient=recipient, asset_id=asset_id, amount=amount),),
+        fee=fee, nonce=nonce,
     )
