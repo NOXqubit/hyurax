@@ -130,3 +130,9 @@ publicados:
 Este repositório declara o estado real da rede. Enquanto não houver mainnet,
 nenhum material do projeto vai dizer que há. Enquanto o Utrax estiver fora do
 consenso, nenhum material vai apresentá-lo como lastro econômico da moeda.
+
+## Licença
+
+O código do Auron é distribuído sob a licença MIT ou a Apache-2.0, à escolha
+de quem usa. Os textos estão em [LICENSE-MIT](LICENSE-MIT) e
+[LICENSE-APACHE](LICENSE-APACHE).
