@@ -25,8 +25,7 @@ export default {
   hero: {
     sub: "A new infrastructure for a distributed world.",
     explorar: "Explore the architecture",
-    assistir: "Watch in 2 minutes",
-    edit: "Play the edit",
+    assistir: "Watch the presentation",
     verdade: "<span><b>Public network:</b> not live yet</span><span><b>Token sale:</b> none</span><span><b>Profit promise:</b> none</span>",
   },
   visao: {
@@ -283,35 +282,55 @@ export default {
   },
   rodape: { aviso: "Project under development. Nothing on this site is an investment offer." },
   edit: {
-    titulo: "Auron edit",
+    titulo: "Auron presentation",
+    apresentadora: "AURON · synthetic voice",
     gravar: "Record video", gravando: "Stop and save",
-    gravando_aviso: "Recording from the top. The file comes out as .webm, with the track.",
+    gravando_aviso: "Recording from the top. The file comes out as .webm, with the track and the captions.",
     salvando: "Closing the file… {mb} MB",
     sem_gravacao: "This browser cannot record the page. Try Chrome or Edge on a computer.",
-    aviso_movimento: "Fast motion and hard cuts.",
+    voz_on: "Voice: on", voz_off: "Voice: off",
+    sem_voz: "No English voice on this device: the captions carry on.",
     cenas: [
-      { titulo: "ONE NODE", sub: "an ordinary computer, checking everything by itself" },
-      { titulo: "THOUSANDS", sub: "nobody in the middle" },
-      { titulo: "EVERY BLOCK HOLDS THE LAST", sub: "SHA-512 · 158-byte header" },
-      { titulo: "ONE FILE, 256 PIECES", sub: "encrypted before it leaves the device" },
-      { titulo: "VERIFIED BEFORE PAYMENT", sub: "useful work, checked with a few multiplications" },
-      { titulo: "NO INTERNET, STILL ARRIVES", sub: "device to device, all the way there" },
-      { titulo: "FROM ONE NODE TO AN INFRASTRUCTURE", sub: "conceptual visualization" },
-      { titulo: "", sub: "", linhas: ["PUBLIC NETWORK: NOT LIVE YET", "NO SALE. NO PRESALE.", "NO PROMISE OF PROFIT."] },
-      { titulo: "AURON", sub: "Original Auron track. No third-party rights." },
-    ],
-  },
-  video: {
-    titulo: "Presentation",
-    cenas: [
-      { titulo: "The waste", fala: "Every day, computers around the world perform trillions of calculations just to keep cryptocurrencies running. Almost all of that work protects the network, and then it is thrown away.", seg: 13, mundo: "rede" },
-      { titulo: "The question", fala: "Auron was born from a question: what if that computing power could be used for something?", seg: 11, mundo: "logo" },
-      { titulo: "Where we want to go", fala: "Choosing the plant crosses most likely to resist drought. Testing thousands of candidate drug molecules on a computer. Training artificial intelligence. These are the problems Auron wants to help solve.", seg: 20, mundo: "global" },
-      { titulo: "How it works", fala: "Whoever needs computing power publishes a task and locks the payment. A computer on the network does the work. And the network checks the result before paying, without redoing everything.", seg: 20, mundo: "rede" },
-      { titulo: "The check", fala: "If someone delivers a tampered result, a few calculations are enough to notice. A wrong result is not paid, and the task goes back to the queue.", seg: 16, mundo: "grade" },
-      { titulo: "What we do not promise", fala: "Auron is still under construction. The public network does not exist, and the coin has no value. We do not sell coins, we do not run presales, and nobody is going to get rich overnight.", seg: 18, mundo: "nucleo" },
-      { titulo: "The method", fala: "Every rule is written down, tested against attacks and checked byte by byte by two different programs. A security review found six flaws, and all of them were fixed, each with a test that reproduces the attack.", seg: 16, mundo: "cadeia" },
-      { titulo: "The call", fala: "We need people: people who test, people who review, people who bring real problems to solve. Auron. Computing power that is useful for something.", seg: 14, mundo: "logo" },
+      {
+        titulo: "WHAT AURON IS", sub: "a network of equal computers",
+        fala: "Auron is an infrastructure under construction: a network of computers that hold the same rules, verify everything on their own, and need nobody in the middle to work.",
+      },
+      {
+        titulo: "THE PURPOSE", sub: "computing power that is useful for something",
+        fala: "Today, computers around the world spend trillions of calculations just to protect cryptocurrencies, and then that work is thrown away. The purpose of Auron is to turn that effort into useful work.",
+      },
+      {
+        titulo: "WHERE WE WANT TO GO", sub: "a goal, not a promise",
+        fala: "We want that capacity to help choose plant crosses that resist drought, test candidate drug molecules, and train artificial intelligence. That is a goal, not a promise: it depends on research and partnerships.",
+      },
+      {
+        titulo: "HOW THE CURRENCY WORKS", sub: "blocks, hashes and proof of work",
+        fala: "Every block carries the hash of the one before it in a one hundred and fifty eight byte header, so touching an old block breaks every block after it. One block every two minutes, Argon2id mining, a cap of twenty one million AUR.",
+      },
+      {
+        titulo: "HOW WORK GETS PAID", sub: "checking is cheap; redoing is expensive",
+        fala: "Whoever needs computing publishes a task with the payment locked. One node runs it, another checks it with a few multiplications, and only then is the payment released. A wrong result is not paid, and the task goes back to the queue.",
+      },
+      {
+        titulo: "HOW DATA TRAVELS", sub: "internet, Wi-Fi and Bluetooth",
+        fala: "The message is encrypted end to end and hops from device to device until it arrives. If one path disappears, the network looks for another. This is written architecture and does not exist in code yet.",
+      },
+      {
+        titulo: "16×16 FRAGMENTATION", sub: "encrypt, cut and spread",
+        fala: "A file is encrypted, cut into two hundred and fifty six pieces, each with its own hash, and spread across many nodes. It is a research track: today, losing one piece prevents reconstruction.",
+      },
+      {
+        titulo: "HOW IT IS BUILT", sub: "two implementations that must agree",
+        fala: "Every rule is written in the specification and implemented twice: a Python reference and the production program in pure Rust. Both must accept and reject exactly the same things, byte by byte. Ninety eight tests, and the six flaws from the attack review are already fixed.",
+      },
+      {
+        titulo: "", sub: "", linhas: ["PUBLIC NETWORK: NOT LIVE YET", "NO SALE. NO PRESALE.", "NO PROMISE OF PROFIT."],
+        fala: "Before anything else, what we do not promise. The public network does not exist, AUR has no value, there is no sale and no presale, and nobody is getting rich overnight. Anyone saying otherwise does not speak for the project.",
+      },
+      {
+        titulo: "AURON", sub: "",
+        fala: "This is where we need you. A currency is only trustworthy when many independent people check the same code. Test it, review it, run a node once the testnet exists, or bring a real computing problem. That is what turns an idea into infrastructure.",
+      },
     ],
   },
 };

@@ -62,7 +62,7 @@ function navegacao(mundo) {
     const s = secoes.find((x) => { const r = x.getBoundingClientRect(); return r.top <= meio && r.bottom >= meio; }) || secoes[0];
     const modo = s.dataset.mundo;
     document.body.classList.toggle("mundo-ao-fundo", !["topo", "escala", "fim"].includes(s.id));
-    if (modo !== modoAtual && document.getElementById("sessao-video").hidden) { modoAtual = modo; mundo.definirModo(modo); }
+    if (modo !== modoAtual && document.getElementById("palco-edit").hidden) { modoAtual = modo; mundo.definirModo(modo); }
     links.forEach((a) => a.setAttribute("aria-current", String(a.getAttribute("href") === `#${s.id}`)));
   }
   window.addEventListener("scroll", () => { if (!pedido) { pedido = true; requestAnimationFrame(avaliar); } }, { passive: true });
@@ -100,6 +100,8 @@ function musica(audio) {
 async function iniciar() {
   await carregar(idiomaInicial());
   aplicar();
+  // maquina fraca ou celular: sem desfoque de vidro e sem sombras caras
+  document.body.classList.toggle("leve", q.nivel === "LOW" || q.movel);
   if (!q.calmo) document.getElementById("topo").classList.add("entrando");
   if (q.calmo) document.querySelectorAll(".anima").forEach((x) => x.remove());
 
@@ -115,7 +117,7 @@ async function iniciar() {
   const audio = criarAudio();
   musica(audio);
   const ctx = { t, html, engine, mundo, audio, calmo: q.calmo, movel: q.movel, aoMudarIdioma, idioma: idiomaAtual, restaurarMundo };
-  const capitulos = ["nucleo", "cadeia", "nos", "fragmentacao", "radio", "utrax", "direct", "malha", "seguranca", "economia", "escala", "caminho", "aberto", "video", "edit"];
+  const capitulos = ["nucleo", "cadeia", "nos", "fragmentacao", "radio", "utrax", "direct", "malha", "seguranca", "economia", "escala", "caminho", "aberto", "edit"];
   for (const nome of capitulos) {
     try { (await import(`./sections/${nome}.js`)).iniciar(ctx); }
     catch (e) { console.error(`capítulo ${nome}`, e); }

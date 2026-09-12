@@ -25,8 +25,7 @@ export default {
   hero: {
     sub: "Una nueva infraestructura para un mundo distribuido.",
     explorar: "Explorar la arquitectura",
-    assistir: "Ver en 2 minutos",
-    edit: "Ver el edit",
+    assistir: "Ver la presentación",
     verdade: "<span><b>Red pública:</b> todavía no existe</span><span><b>Venta de monedas:</b> ninguna</span><span><b>Promesa de ganancias:</b> ninguna</span>",
   },
   visao: {
@@ -283,35 +282,55 @@ export default {
   },
   rodape: { aviso: "Proyecto en desarrollo. Nada en este sitio es una oferta de inversión." },
   edit: {
-    titulo: "Auron edit",
+    titulo: "Presentación de Auron",
+    apresentadora: "AURON · voz sintética",
     gravar: "Grabar video", gravando: "Parar y guardar",
-    gravando_aviso: "Grabando desde el inicio. El archivo sale en .webm, con la pista.",
+    gravando_aviso: "Grabando desde el inicio. El archivo sale en .webm, con la pista y los subtítulos.",
     salvando: "Cerrando el archivo… {mb} MB",
     sem_gravacao: "Este navegador no graba la página. Prueba con Chrome o Edge en una computadora.",
-    aviso_movimento: "Tiene movimiento rápido y cortes secos.",
+    voz_on: "Voz: activada", voz_off: "Voz: desactivada",
+    sem_voz: "Este dispositivo no tiene voz en español: los subtítulos siguen.",
     cenas: [
-      { titulo: "UN NODO", sub: "una computadora cualquiera, verificando todo por su cuenta" },
-      { titulo: "MILES", sub: "sin nadie en el medio" },
-      { titulo: "CADA BLOQUE SUJETA AL ANTERIOR", sub: "SHA-512 · cabecera de 158 bytes" },
-      { titulo: "UN ARCHIVO, 256 PIEZAS", sub: "cifrado antes de salir del dispositivo" },
-      { titulo: "VERIFICADO ANTES DE PAGAR", sub: "trabajo útil, comprobado con pocas cuentas" },
-      { titulo: "SIN INTERNET, IGUAL LLEGA", sub: "de dispositivo en dispositivo, hasta el destino" },
-      { titulo: "DE UN NODO A UNA INFRAESTRUCTURA", sub: "visualización conceptual" },
-      { titulo: "", sub: "", linhas: ["RED PÚBLICA: TODAVÍA NO EXISTE", "SIN VENTA. SIN PREVENTA.", "SIN PROMESA DE GANANCIAS."] },
-      { titulo: "AURON", sub: "Pista original de Auron. Sin derechos de terceros." },
-    ],
-  },
-  video: {
-    titulo: "Presentación",
-    cenas: [
-      { titulo: "El desperdicio", fala: "Cada día, computadoras de todo el mundo hacen billones de cálculos solo para mantener funcionando las criptomonedas. Casi todo ese trabajo protege la red y luego se tira.", seg: 13, mundo: "rede" },
-      { titulo: "La pregunta", fala: "Auron nació de una pregunta: ¿y si ese poder de cómputo sirviera para algo?", seg: 11, mundo: "logo" },
-      { titulo: "Adónde queremos llegar", fala: "Elegir los cruces de plantas con más posibilidades de resistir la sequía. Probar en la computadora miles de moléculas candidatas a medicamento. Entrenar inteligencia artificial. Esos son los problemas que Auron quiere ayudar a resolver.", seg: 20, mundo: "global" },
-      { titulo: "Cómo funciona", fala: "Quien necesita cómputo publica una tarea y deja el pago bloqueado. Una computadora de la red hace el trabajo. Y la red verifica el resultado antes de pagar, sin tener que rehacerlo todo.", seg: 20, mundo: "rede" },
-      { titulo: "La verificación", fala: "Si alguien entrega un resultado adulterado, bastan unas pocas cuentas para notarlo. Un resultado erróneo no cobra, y la tarea vuelve a la cola.", seg: 16, mundo: "grade" },
-      { titulo: "Lo que no prometemos", fala: "Auron todavía está en construcción. La red pública no existe y la moneda no tiene valor. No vendemos monedas, no hacemos preventas y nadie se va a hacer rico de la noche a la mañana.", seg: 18, mundo: "nucleo" },
-      { titulo: "El método", fala: "Cada regla se escribe, se prueba contra ataques y se verifica byte a byte con dos programas distintos. Una revisión de seguridad encontró seis fallos, y todos fueron corregidos, cada uno con una prueba que rehace el ataque.", seg: 16, mundo: "cadeia" },
-      { titulo: "La invitación", fala: "Necesitamos personas: quien pruebe, quien revise, quien traiga problemas reales para resolver. Auron. Poder de cómputo que sirve para algo.", seg: 14, mundo: "logo" },
+      {
+        titulo: "QUÉ ES AURON", sub: "una red de computadoras iguales",
+        fala: "Auron es una infraestructura en construcción: una red de computadoras que guardan las mismas reglas, verifican todo por su cuenta y no necesitan a nadie en el medio para funcionar.",
+      },
+      {
+        titulo: "EL PROPÓSITO", sub: "capacidad de cálculo que sirve para algo",
+        fala: "Hoy, computadoras de todo el mundo gastan billones de cálculos solo para proteger criptomonedas, y después ese trabajo se tira. El propósito de Auron es convertir ese esfuerzo en trabajo útil.",
+      },
+      {
+        titulo: "ADÓNDE QUEREMOS LLEGAR", sub: "un objetivo, no una promesa",
+        fala: "Queremos que esa capacidad ayude a elegir cruces de plantas resistentes a la sequía, a probar moléculas candidatas a medicamento y a entrenar inteligencia artificial. Es un objetivo, no una promesa: depende de investigación y de alianzas.",
+      },
+      {
+        titulo: "CÓMO FUNCIONA LA MONEDA", sub: "bloques, hashes y prueba de trabajo",
+        fala: "Cada bloque lleva el hash del anterior en una cabecera de ciento cincuenta y ocho bytes, así que tocar un bloque antiguo rompe todos los siguientes. Un bloque cada dos minutos, minería Argon2id, límite de veintiún millones de AUR.",
+      },
+      {
+        titulo: "CÓMO SE PAGA EL TRABAJO", sub: "verificar cuesta poco; rehacer cuesta mucho",
+        fala: "Quien necesita cálculo publica una tarea con el pago bloqueado. Un nodo la ejecuta, otro la verifica con pocas cuentas, y solo entonces se libera el pago. Un resultado erróneo no cobra, y la tarea vuelve a la cola.",
+      },
+      {
+        titulo: "CÓMO VIAJAN LOS DATOS", sub: "internet, Wi-Fi y Bluetooth",
+        fala: "El mensaje va cifrado de extremo a extremo y salta de dispositivo en dispositivo hasta llegar. Si un camino desaparece, la red busca otro. Esto es arquitectura escrita y todavía no existe en código.",
+      },
+      {
+        titulo: "FRAGMENTACIÓN 16×16", sub: "cifrar, cortar y repartir",
+        fala: "Un archivo se cifra, se corta en doscientas cincuenta y seis piezas, cada una con su propio hash, y se reparte entre muchos nodos. Es una línea de investigación: hoy, perder una pieza impide la reconstrucción.",
+      },
+      {
+        titulo: "CÓMO ESTÁ CONSTRUIDO", sub: "dos implementaciones que deben coincidir",
+        fala: "Cada regla se escribe en la especificación y se implementa dos veces: una referencia en Python y el programa de producción en Rust puro. Los dos deben aceptar y rechazar exactamente lo mismo, byte a byte. Noventa y ocho pruebas, y los seis fallos de la revisión de ataques ya están corregidos.",
+      },
+      {
+        titulo: "", sub: "", linhas: ["RED PÚBLICA: TODAVÍA NO EXISTE", "SIN VENTA. SIN PREVENTA.", "SIN PROMESA DE GANANCIAS."],
+        fala: "Antes que nada, lo que no prometemos. La red pública no existe, AUR no tiene valor, no hay venta ni preventa, y nadie se va a hacer rico de la noche a la mañana. Quien diga lo contrario no habla por el proyecto.",
+      },
+      {
+        titulo: "AURON", sub: "",
+        fala: "Aquí es donde te necesitamos. Una moneda solo es confiable cuando mucha gente independiente verifica el mismo código. Pruébalo, revísalo, ejecuta un nodo cuando exista la red de pruebas, o trae un problema real de cálculo. Eso es lo que convierte una idea en infraestructura.",
+      },
     ],
   },
 };

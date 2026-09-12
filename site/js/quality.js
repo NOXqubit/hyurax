@@ -2,9 +2,12 @@
 // O mundo 3D ainda rebaixa o perfil sozinho se os quadros ficarem lentos.
 
 export const PERFIS = {
-  HIGH: { nos: 1500, pacotes: 140, dpr: 2, antialias: true },
-  MEDIUM: { nos: 780, pacotes: 80, dpr: 1.5, antialias: true },
-  LOW: { nos: 320, pacotes: 36, dpr: 1, antialias: false },
+  HIGH: { nos: 1500, pacotes: 140, dpr: 2, antialias: true, fps: 60 },
+  MEDIUM: { nos: 700, pacotes: 70, dpr: 1.25, antialias: true, fps: 40 },
+  // Numa maquina fraca, 24 quadros por segundo com menos nos e a diferenca
+  // entre navegar e travar. O movimento continua suave porque tudo aqui e
+  // lento de proposito.
+  LOW: { nos: 240, pacotes: 24, dpr: 1, antialias: false, fps: 24 },
 };
 
 export function detectarQualidade() {

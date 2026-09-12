@@ -208,7 +208,11 @@ void main() {
 
 export function criarMundo(canvas, q) {
   const perfil = q.perfil, calmo = q.calmo, N = perfil.nos;
-  const renderer = new THREE.WebGLRenderer({ canvas, antialias: perfil.antialias, alpha: false, powerPreference: "high-performance" });
+  const renderer = new THREE.WebGLRenderer({
+    canvas, antialias: perfil.antialias, alpha: false,
+    powerPreference: q.nivel === "LOW" ? "low-power" : "high-performance",
+  });
+  const intervaloQuadro = 1000 / (perfil.fps || 60);
   renderer.setClearColor(0x030303, 1);
   let dpr = Math.min(window.devicePixelRatio || 1, perfil.dpr);
   renderer.setPixelRatio(dpr);
@@ -335,6 +339,8 @@ export function criarMundo(canvas, q) {
 
   function quadro(agora) {
     if (!rodando) return;
+    // teto de quadros por segundo: o resto do navegador precisa de folga
+    if (agora - ultimo < intervaloQuadro - 1) { requestAnimationFrame(quadro); return; }
     const bruto = (agora - ultimo) / 1000; ultimo = agora;
     const dt = Math.min(0.1, bruto); tempo += dt;
     medir(bruto);

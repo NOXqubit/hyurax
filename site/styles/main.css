@@ -456,20 +456,7 @@ html[lang="ja"] .zoom-contagem { font-variation-settings: "wdth" 100; }
 .qr svg { display: block; width: 100%; height: auto; }
 .endereco { display: block; font-family: var(--mono); font-size: 0.86rem; word-break: break-all; background: var(--breu); border: 1px dashed var(--fio-forte); border-radius: 8px; padding: 0.75rem 0.9rem; user-select: all; -webkit-user-select: all; margin: 0.4rem 0 0.8rem; }
 
-/* ---------- apresentação ---------- */
-.sessao-video { position: fixed; inset: 0; z-index: 50; display: grid; grid-template-rows: auto 1fr auto; background: rgba(3, 3, 3, 0.5); }
-.sessao-video .topo-v { display: flex; justify-content: space-between; align-items: center; padding: 1rem var(--lado); gap: 1rem; }
-.sessao-video .centro-v { display: grid; place-items: center; text-align: center; padding: 0 var(--lado); }
-.sessao-video .titulo-v { font-family: var(--marca); font-size: 0.72rem; letter-spacing: 0.4em; color: var(--prata); text-transform: uppercase; margin: 0 0 1.2rem; }
-.sessao-video .fala-v { font-size: clamp(1.25rem, 3.2vw, 2.3rem); line-height: 1.3; font-weight: 500; max-width: 34ch; margin: 0; text-wrap: balance; text-shadow: 0 2px 30px rgba(0, 0, 0, 0.9); }
-html[lang="ja"] .sessao-video .fala-v { max-width: 26em; }
-.sessao-video .base-v { display: flex; align-items: center; gap: 0.7rem; padding: 1.1rem var(--lado) 1.4rem; flex-wrap: wrap; }
-.progresso-v { flex: 1; min-width: 8rem; display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; }
-.progresso-v i { height: 2px; background: var(--fio-forte); position: relative; overflow: hidden; }
-.progresso-v i.feito { background: var(--texto); }
-.progresso-v i.atual::after { content: ""; position: absolute; inset: 0; background: var(--texto); transform-origin: left; transform: scaleX(var(--p, 0)); }
-
-/* ---------- edit em tela cheia ---------- */
+/* ---------- vídeo em tela cheia ---------- */
 .palco-edit { position: fixed; inset: 0; z-index: 60; background: #030303; }
 .palco-edit canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
 .edit-controles { position: absolute; left: 0; right: 0; bottom: 0; z-index: 2; display: flex; align-items: center; gap: 0.7rem; padding: 1rem var(--lado); flex-wrap: wrap; }
@@ -502,6 +489,18 @@ html[lang="ja"] .sessao-video .fala-v { max-width: 26em; }
 /* revelar ao rolar: parte de um estado visível, nunca de opacidade zero */
 .revela.visto { animation: sobe 900ms var(--curva) both; }
 @keyframes sobe { from { transform: translateY(18px); opacity: 0.4; } to { transform: none; opacity: 1; } }
+
+/* ---------- modo leve ----------
+   Em maquina fraca, o que mais pesa nao e o 3D: e o desfoque de vidro atras de
+   cada painel e da barra. Cada um deles obriga a placa a reler a tela inteira.
+   Aqui eles saem, e os fundos viram cor cheia. */
+.leve .painel, .leve .barra.rolou, .leve .gaveta, .leve .sessao-video { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
+.leve .painel { background: #0c0d0f; }
+.leve .barra.rolou { background: #060608; }
+.leve .gaveta { background: #030303; }
+.leve .instrumento, .leve .palco-caixa, .leve .camada.base, .leve .nao-e,
+.leve .botao-claro, .leve .botao-claro:hover, .leve .selo[data-estado="implementado"] i { box-shadow: none; }
+.leve .tela { background: #08090b; }
 
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
