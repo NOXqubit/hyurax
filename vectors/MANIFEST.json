@@ -5,8 +5,8 @@
       "sha512_16": "d4a59d94f99eef9636ea9de908aa0ec3"
     },
     "chain.json": {
-      "bytes": 5669,
-      "sha512_16": "452b9b791d806d06d00f9cac823fe4a8"
+      "bytes": 7965,
+      "sha512_16": "4e1c43a73887810f86151a845c4e4487"
     },
     "codec.json": {
       "bytes": 2540,
@@ -29,8 +29,8 @@
       "sha512_16": "c40df1cad01f84c8041dde2b7effdccd"
     },
     "genesis.json": {
-      "bytes": 3640,
-      "sha512_16": "3cf530f0cc19ae26a64ba0ca9b1109dd"
+      "bytes": 41650,
+      "sha512_16": "6579a76daba7c651fdefb56dbcf12165"
     },
     "hash.json": {
       "bytes": 1957,
@@ -47,6 +47,10 @@
     "units.json": {
       "bytes": 5226,
       "sha512_16": "8e9e3e0175555f9d77ba0057773a6971"
+    },
+    "usefulpow.json": {
+      "bytes": 17744,
+      "sha512_16": "87a44323e1cd1d38be6d2e78ea760820"
     },
     "utrax.json": {
       "bytes": 14643,

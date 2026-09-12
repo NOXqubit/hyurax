@@ -10,6 +10,9 @@ Decisões desta versão:
   HASH-SHA512-V1   hash geral, identificadores, Merkle
   SIG-ED25519-V1   assinatura padrão (substitui Brainpool P-512)
   SIG-BP512-V1     registrado apenas como legado do protótipo, NÃO utilizável
+  SIG-MLDSA65-V1   segunda assinatura do modo híbrido pós-quântico (planejada)
+
+A tabela PRIMITIVAS, logo abaixo, dá o nível real de segurança de cada uma.
 
 Por que Ed25519 no lugar de Brainpool P-512:
 
@@ -49,6 +52,112 @@ ADDRESS_LEN = 20  # bytes
 
 class CryptoError(Exception):
     """Falha criptográfica ou algoritmo desconhecido."""
+
+
+# ---------------------------------------------------------------------------
+# Política criptográfica — números reais, por primitiva
+# ---------------------------------------------------------------------------
+#
+# "Segurança de N bits" não é o nome de um algoritmo nem um campo que se
+# escolhe: é o custo estimado do melhor ataque conhecido contra UMA primitiva
+# específica. Por isso cada primitiva declara o próprio nível, a suposição em
+# que ele se apoia e o que acontece diante de um computador quântico.
+#
+# A META de arquitetura do Auron é "classe 1024 bits": buscar o nível mais alto
+# que primitivas padronizadas permitam e deixar a arquitetura pronta para
+# trocar e combinar primitivas. É uma META, não um nível atingido. Nenhuma
+# primitiva padronizada hoje oferece 1024 bits de segurança, e o projeto não
+# inventa algoritmo próprio (nada de "SHA-1024").
+
+META_DE_ARQUITETURA = "classe 1024 bits (meta experimental, não é nível atingido)"
+
+# Nenhuma primitiva ATIVA pode oferecer menos que isto contra ataque clássico.
+NIVEL_MINIMO_CLASSICO_BITS = 128
+
+POLITICA_VERSAO = 1
+
+# estados possíveis de uma primitiva
+ATIVA = "ativa"
+PLANEJADA = "planejada"
+LEGADO = "legado, não utilizável"
+
+PRIMITIVAS = {
+    HASH_SHA512_V1: {
+        "algoritmo": "SHA-512 (FIPS 180-4)",
+        "uso": "hash geral, identificadores, Merkle, derivação de desafios",
+        "tamanho": "saída de 512 bits",
+        "classico_bits": 256,
+        "quantico_bits": 256,
+        "detalhe": "256 bits contra colisão (paradoxo do aniversário); 512 contra "
+                   "pré-imagem. Diante de computador quântico, Grover reduz a "
+                   "pré-imagem para 256; colisão fica acima de 128.",
+        "suposicao": "SHA-512 se comporta como função de hash sem atalho conhecido",
+        "estado": ATIVA,
+    },
+    SIG_ED25519_V1: {
+        "algoritmo": "Ed25519 (RFC 8032), curva Edwards25519",
+        "uso": "assinatura de transação",
+        "tamanho": "chave pública 32 bytes, assinatura 64 bytes",
+        "classico_bits": 128,
+        "quantico_bits": 0,
+        "detalhe": "O algoritmo de Shor quebra curva elíptica por completo num "
+                   "computador quântico grande. Por isso o modo híbrido "
+                   "pós-quântico está planejado.",
+        "suposicao": "dificuldade do logaritmo discreto na curva Edwards25519",
+        "estado": ATIVA,
+    },
+    SIG_BP512_V1: {
+        "algoritmo": "ECDSA sobre Brainpool P-512r1 (RFC 5639)",
+        "uso": "assinatura do protótipo antigo",
+        "tamanho": "chave de 512 bits",
+        "classico_bits": 256,
+        "quantico_bits": 0,
+        "detalhe": "Nível clássico maior que o do Ed25519, mas ECDSA exige nonce "
+                   "perfeito a cada assinatura (nonce ruim vaza a chave), a "
+                   "verificação é muito mais lenta e não há implementação em "
+                   "Rust puro. Também cai diante de computador quântico.",
+        "suposicao": "logaritmo discreto na curva brainpoolP512r1",
+        "estado": LEGADO,
+    },
+    "SIG-MLDSA65-V1": {
+        "algoritmo": "ML-DSA-65 (NIST FIPS 204)",
+        "uso": "segunda assinatura do modo híbrido pós-quântico",
+        "tamanho": "chave pública 1952 bytes, assinatura 3309 bytes",
+        "classico_bits": 192,
+        "quantico_bits": 192,
+        "detalhe": "Categoria 3 do NIST. No modo híbrido a transação leva as duas "
+                   "assinaturas e só vale se as duas conferirem: quebrar uma só "
+                   "não basta.",
+        "suposicao": "dificuldade de problemas em reticulados (Module-LWE/SIS)",
+        "estado": PLANEJADA,
+    },
+    "AEAD-XCHACHA20POLY1305-V1": {
+        "algoritmo": "XChaCha20-Poly1305",
+        "uso": "cifra autenticada das mensagens (Resonance) e dos dados locais",
+        "tamanho": "chave de 256 bits, nonce de 192 bits",
+        "classico_bits": 256,
+        "quantico_bits": 128,
+        "detalhe": "Grover reduz a chave simétrica pela metade.",
+        "suposicao": "ChaCha20 como cifra de fluxo segura; Poly1305 como MAC",
+        "estado": PLANEJADA,
+    },
+}
+
+
+def politica_valida() -> list[str]:
+    """Problemas na política. Lista vazia quer dizer que está coerente."""
+    problemas = []
+    obrigatorios = ("algoritmo", "uso", "tamanho", "classico_bits", "quantico_bits",
+                    "suposicao", "estado")
+    for nome, p in PRIMITIVAS.items():
+        for campo in obrigatorios:
+            if campo not in p:
+                problemas.append(f"{nome}: falta {campo}")
+        if p.get("estado") == ATIVA and p.get("classico_bits", 0) < NIVEL_MINIMO_CLASSICO_BITS:
+            problemas.append(f"{nome}: ativa abaixo do mínimo de {NIVEL_MINIMO_CLASSICO_BITS} bits")
+        if p.get("classico_bits", 0) >= 1024 or p.get("quantico_bits", 0) >= 1024:
+            problemas.append(f"{nome}: declara 1024 bits, e nenhuma primitiva padronizada entrega isso")
+    return problemas
 
 
 # ---------------------------------------------------------------------------

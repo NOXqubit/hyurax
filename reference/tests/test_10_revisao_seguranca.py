@@ -56,7 +56,7 @@ def bloco_com_coinbase(chain: Chain, coinbase: Coinbase) -> Block:
     for nonce in range(1 << 32):
         h = cabecalho.with_nonce(nonce)
         if check_pow_target(h.pow_hash(P), alvo):
-            return Block(header=h, transactions=txs)
+            return Block(header=h, transactions=txs, useful_proof=candidato.useful_proof)
     raise AssertionError("nao achou nonce")
 
 
@@ -96,7 +96,8 @@ def test_erro_de_transacao_no_bloco_vira_ChainError():
     impossivel = Coinbase(height=1, recipient=ENDERECO, amount=1,
                           extra_nonce=b"x" * (MAX_EXTRA_NONCE + 1))
     bloco = Block(header=valido.header,
-                  transactions=[impossivel] + list(valido.transactions[1:]))
+                  transactions=[impossivel] + list(valido.transactions[1:]),
+                  useful_proof=valido.useful_proof)
     try:
         chain.validate_block(bloco, now=bloco.header.timestamp + 10)
     except ChainError as exc:

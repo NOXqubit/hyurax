@@ -14,6 +14,23 @@ escolher entre um índice lento e uma prova barata.
 
 BUG 6 fechado aqui: `merkle_root` é calculada sobre a codificação COMPLETA de
 cada transação, assinatura inclusive.
+
+VERSÃO 2 (consenso híbrido): o cabeçalho ganha `useful_root`, o compromisso da
+prova de trabalho útil que vem no corpo do bloco. Como o Argon2id é calculado
+sobre o cabeçalho inteiro, a prova útil fica presa ao sorteio: trocar a prova
+depois de achar o nonce muda o cabeçalho e invalida o Argon2id.
+
+  u16  version = 2
+  u64  height
+  [64] prev_hash
+  [64] merkle_root
+  [64] useful_root   = H("AURON-UPOW-PROOF-v1" || prova)
+  u64  timestamp
+  u32  bits
+  u64  nonce
+                     total: 222 bytes
+
+Corpo: cabeçalho || prova útil (com prefixo de tamanho) || lista de transações.
 """
 
 from __future__ import annotations
@@ -23,9 +40,12 @@ from dataclasses import dataclass, field
 from . import codec, crypto
 from .consensus import ChainParams, compact_to_target, pow_hash
 from .tx import Coinbase, decode_tx_from, encode_tx
+from .usefulpow import UsefulWorkProof
 
-BLOCK_VERSION = 1
+BLOCK_VERSION = 2
 HASH_LEN = 64  # SHA-512
+HEADER_LEN = 222
+SEM_PROVA = b"\x00" * HASH_LEN
 
 
 @dataclass(frozen=True)
@@ -36,6 +56,7 @@ class BlockHeader:
     timestamp: int
     bits: int
     nonce: int
+    useful_root: bytes = SEM_PROVA
     version: int = BLOCK_VERSION
 
     def encode(self) -> bytes:
@@ -44,6 +65,7 @@ class BlockHeader:
             + codec.enc_u64(self.height)
             + codec.enc_fixed(self.prev_hash, HASH_LEN)
             + codec.enc_fixed(self.merkle_root, HASH_LEN)
+            + codec.enc_fixed(self.useful_root, HASH_LEN)
             + codec.enc_u64(self.timestamp)
             + codec.enc_u32(self.bits)
             + codec.enc_u64(self.nonce)
@@ -56,6 +78,7 @@ class BlockHeader:
             height=r.u64(),
             prev_hash=r.fixed(HASH_LEN),
             merkle_root=r.fixed(HASH_LEN),
+            useful_root=r.fixed(HASH_LEN),
             timestamp=r.u64(),
             bits=r.u32(),
             nonce=r.u64(),
@@ -87,6 +110,7 @@ class BlockHeader:
             timestamp=self.timestamp,
             bits=self.bits,
             nonce=nonce,
+            useful_root=self.useful_root,
             version=self.version,
         )
 
@@ -95,17 +119,27 @@ class BlockHeader:
 class Block:
     header: BlockHeader
     transactions: list = field(default_factory=list)
+    useful_proof: UsefulWorkProof | None = None
 
     def encode(self) -> bytes:
-        return self.header.encode() + codec.enc_list(self.transactions, encode_tx)
+        # Sem prova, o corpo leva um campo vazio: o bloco continua decodificável
+        # e é a validação que o recusa, com o motivo certo.
+        prova = self.useful_proof.encode() if self.useful_proof is not None else b""
+        return (
+            self.header.encode()
+            + codec.enc_bytes(prova)
+            + codec.enc_list(self.transactions, encode_tx)
+        )
 
     @staticmethod
     def decode(data: bytes) -> "Block":
         r = codec.Reader(data)
         header = BlockHeader.decode_from(r)
+        bruto = r.var_bytes()
+        prova = UsefulWorkProof.decode(bruto) if bruto else None
         txs = r.read_list(decode_tx_from)
         r.finish()
-        return Block(header=header, transactions=txs)
+        return Block(header=header, transactions=txs, useful_proof=prova)
 
     def block_hash(self) -> bytes:
         return self.header.block_hash()

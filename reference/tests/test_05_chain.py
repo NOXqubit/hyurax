@@ -225,11 +225,11 @@ def test_inflated_coinbase_rejected():
     greedy = Coinbase(height=height, recipient=alice.address,
                       amount=block_reward(height, P) * 2)
     txs = [greedy]
-    header = BlockHeader(
-        height=height, prev_hash=chain.tip_hash(),
-        merkle_root=codec.merkle_root([t.encode() for t in txs]),
-        timestamp=ts, bits=chain.expected_bits(), nonce=0,
-    )
+    # parte de um candidato legitimo, para o bloco trazer trabalho util valido
+    # e a recusa sair pelo motivo que este teste cobra: a coinbase inflada
+    candidato = chain.build_candidate(alice.address, timestamp=ts)
+    header = replace(candidato.header,
+                     merkle_root=codec.merkle_root([t.encode() for t in txs]))
     from auron.consensus import check_pow_target
     target = chain.expected_bits()
     from auron.consensus import compact_to_target
@@ -241,7 +241,7 @@ def test_inflated_coinbase_rejected():
             break
 
     try:
-        chain.accept_block(Block(header, txs), now=ts + 10)
+        chain.accept_block(Block(header, txs, candidato.useful_proof), now=ts + 10)
         raise AssertionError("coinbase inflada foi aceita")
     except ChainError as exc:
         assert "coinbase" in str(exc).lower()

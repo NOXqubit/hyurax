@@ -19,13 +19,14 @@ from __future__ import annotations
 
 import json
 import sys
+from dataclasses import replace
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 OUT_DIR = ROOT.parent / "vectors"
 
-from auron import argon2, codec, consensus, crypto, utrax  # noqa: E402
+from auron import argon2, codec, consensus, crypto, usefulpow, utrax  # noqa: E402
 from auron.block import BlockHeader  # noqa: E402
 from auron.chain import Chain, make_genesis  # noqa: E402
 from auron.consensus import MAINNET, REGTEST, TESTNET  # noqa: E402
@@ -414,6 +415,53 @@ def vec_utrax() -> dict:
     return {"matrix": matrix, "knapsack": knapsack, "diffusion": diffusion}
 
 
+def vec_usefulpow() -> dict:
+    """Trabalho util no consenso: regra do tamanho, semente, prova e recusas."""
+    tamanhos = []
+    for p in (MAINNET, TESTNET, REGTEST):
+        for delta in range(0, 13):
+            alvo = p.max_target >> delta
+            tamanhos.append({"network": p.name, "delta_bits": delta,
+                             "target": f"{alvo:#x}", "n": usefulpow.useful_work_size(alvo, p)})
+
+    p = REGTEST
+    minerador = crypto.address_from_pubkey(crypto.public_key(SEED_A))
+    outro = crypto.address_from_pubkey(crypto.public_key(SEED_B))
+    prev = crypto.H(b"vetor usefulpow prev")
+    provas = []
+    for height, delta in ((1, 0), (2, 3), (9, 7)):
+        alvo = p.max_target >> delta
+        prova = usefulpow.solve(p, height, prev, minerador, alvo)
+        provas.append({
+            "network": p.name, "height": height, "prev_hash": h(prev),
+            "miner": h(minerador), "target": f"{alvo:#x}",
+            "seed": h(usefulpow.task_seed(p, height, prev, minerador)),
+            "n": prova.n, "encoded": h(prova.encode()), "commitment": h(prova.commitment()),
+            "verifies": usefulpow.verify(prova, p, height, prev, minerador, alvo)[0],
+        })
+
+    alvo = p.max_target
+    certa = usefulpow.solve(p, 1, prev, minerador, alvo)
+    bruto = bytearray(certa.result)
+    bruto[-1] ^= 1
+    fora = bytearray(certa.result)
+    fora[0:4] = b"\xff\xff\xff\xff"
+    recusas = []
+    for nome, prova, miner in (
+        ("resultado_alterado", replace(certa, result=bytes(bruto)), minerador),
+        ("fora_da_faixa", replace(certa, result=bytes(fora)), minerador),
+        ("outro_minerador", certa, outro),
+        ("familia_desconhecida", replace(certa, family=2), minerador),
+        ("versao_desconhecida", replace(certa, version=2), minerador),
+        ("resultado_truncado", replace(certa, result=certa.result[:-4]), minerador),
+    ):
+        ok, motivo = usefulpow.verify(prova, p, 1, prev, miner, alvo)
+        recusas.append({"case": nome, "encoded": h(prova.encode()), "miner": h(miner),
+                        "prev_hash": h(prev), "height": 1, "target": f"{alvo:#x}",
+                        "verifies": ok, "reason": motivo})
+    return {"sizes": tamanhos, "proofs": provas, "rejections": recusas}
+
+
 def vec_crypto_verify() -> list[dict]:
     """Casos de borda da verificacao Ed25519, com o veredito do proprio oraculo.
 
@@ -670,6 +718,7 @@ FILES = {
     "transactions.json": vec_transactions,
     "chain.json": vec_chain,
     "utrax.json": vec_utrax,
+    "usefulpow.json": vec_usefulpow,
 }
 
 

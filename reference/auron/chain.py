@@ -33,7 +33,7 @@ import time
 from dataclasses import dataclass, field
 
 from . import codec, crypto
-from .block import Block, BlockHeader
+from .block import BLOCK_VERSION, Block, BlockHeader
 from .consensus import (
     ChainParams,
     ConsensusError,
@@ -46,6 +46,8 @@ from .consensus import (
 )
 from .state import State, StateError
 from .tx import Coinbase, Transfer, TxError
+from . import usefulpow
+from .usefulpow import UsefulWorkError
 
 GENESIS_PREV_HASH = b"\x00" * 64
 
@@ -74,6 +76,9 @@ def make_genesis(params: ChainParams) -> Block:
         extra_nonce=b"AURON GENESIS " + params.name.encode("ascii"),
     )
     merkle = codec.merkle_root([coinbase.encode()])
+    # A gênese também leva prova de trabalho útil: o formato é um só, sem
+    # exceção para o primeiro bloco.
+    prova = usefulpow.solve(params, 0, GENESIS_PREV_HASH, coinbase.recipient, params.max_target)
     header = BlockHeader(
         height=0,
         prev_hash=GENESIS_PREV_HASH,
@@ -81,8 +86,9 @@ def make_genesis(params: ChainParams) -> Block:
         timestamp=1_788_912_000,  # 2026-09-09T00:00:00Z, congelado
         bits=target_to_compact(params.max_target),
         nonce=0,
+        useful_root=prova.commitment(),
     )
-    return Block(header=header, transactions=[coinbase])
+    return Block(header=header, transactions=[coinbase], useful_proof=prova)
 
 
 @dataclass
@@ -163,6 +169,9 @@ class Chain:
 
         Verificar o PoW era exatamente o que o protótipo pulava ao receber
         bloco de peer.
+
+        Só o cabeçalho: a prova de trabalho útil viaja no corpo, e quem aceita
+        o bloco inteiro passa por validate_block, que a confere.
         """
         self._check_header_cheap(header, now=now)
         self._check_header_pow(header)
@@ -170,7 +179,7 @@ class Chain:
     def _check_header_cheap(self, header: BlockHeader, *,
                             now: int | None = None) -> None:
         """Tudo do cabeçalho que custa quase nada de conferir."""
-        if header.version != 1:
+        if header.version != BLOCK_VERSION:
             raise ChainError(f"versão de bloco desconhecida: {header.version}")
 
         if header.height != self.height + 1:
@@ -182,6 +191,8 @@ class Chain:
 
         if len(header.merkle_root) != 64:
             raise ChainError("merkle_root com tamanho inválido")
+        if len(header.useful_root) != 64:
+            raise ChainError("useful_root com tamanho inválido")
 
         expected = self.expected_bits()
         if header.bits != expected:
@@ -231,11 +242,33 @@ class Chain:
         # escapando por baixo derrubava o nó em vez de rejeitar o bloco.
         try:
             self._validate_transactions(block)
-        except (TxError, codec.CodecError) as exc:
+        except (TxError, codec.CodecError, UsefulWorkError) as exc:
             raise ChainError(f"transação inválida no bloco: {exc}") from exc
+
+        # Trabalho útil: custa O(n²), mais que as checagens baratas e bem menos
+        # que o Argon2id. Por isso fica no meio.
+        self._check_useful_work(block)
 
         # Só agora, com tudo o mais conferido, vale gastar o Argon2id.
         self._check_header_pow(block.header)
+
+    def _check_useful_work(self, block: Block) -> None:
+        """Todo bloco precisa provar trabalho útil suficiente e conferível."""
+        prova = block.useful_proof
+        if prova is None:
+            raise ChainError("bloco sem prova de trabalho útil")
+        if prova.commitment() != block.header.useful_root:
+            raise ChainError("useful_root do cabeçalho não corresponde à prova")
+        try:
+            alvo = compact_to_target(block.header.bits)
+            ok, motivo = usefulpow.verify(
+                prova, self.params, block.header.height, block.header.prev_hash,
+                block.coinbase().recipient, alvo,
+            )
+        except (ConsensusError, UsefulWorkError, ValueError) as exc:
+            raise ChainError(f"prova de trabalho útil inválida: {exc}") from exc
+        if not ok:
+            raise ChainError(f"prova de trabalho útil inválida: {motivo}")
 
     def _validate_transactions(self, block: Block) -> None:
         size = block.size()
@@ -324,15 +357,21 @@ class Chain:
         if timestamp is None:
             timestamp = max(int(time.time()), self.median_time_past() + 1)
 
+        bits = self.expected_bits()
+        # O trabalho útil vem ANTES da busca pelo nonce: a instância depende do
+        # bloco anterior e do minerador, e o tamanho sai do alvo deste bloco.
+        prova = usefulpow.solve(self.params, height, self.tip_hash(), miner,
+                                compact_to_target(bits))
         header = BlockHeader(
             height=height,
             prev_hash=self.tip_hash(),
             merkle_root=codec.merkle_root([tx.encode() for tx in txs]),
             timestamp=timestamp,
-            bits=self.expected_bits(),
+            bits=bits,
             nonce=0,
+            useful_root=prova.commitment(),
         )
-        return Block(header=header, transactions=txs)
+        return Block(header=header, transactions=txs, useful_proof=prova)
 
     def mine(self, miner: bytes, transfers: list | None = None,
              *, max_nonce: int = 1 << 32, timestamp: int | None = None) -> Block:
@@ -344,7 +383,8 @@ class Chain:
         for nonce in range(max_nonce):
             header = candidate.header.with_nonce(nonce)
             if check_pow_target(header.pow_hash(self.params), target):
-                return Block(header=header, transactions=candidate.transactions)
+                return Block(header=header, transactions=candidate.transactions,
+                             useful_proof=candidate.useful_proof)
         raise ChainError(f"nenhum nonce válido em {max_nonce} tentativas")
 
 

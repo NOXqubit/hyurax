@@ -3,6 +3,12 @@
 **Estado:** rascunho de trabalho. Congela quando o documento oficial do projeto
 definir a tokenomics. Tudo marcado `PROVISÓRIO` depende desse documento.
 
+**Revisão de 12/09/2026 — `consensus_version = 2`.** Consenso híbrido (seção
+9A): todo bloco exige prova de trabalho útil; cabeçalho passa a 222 bytes;
+política criptográfica com nível real por primitiva (seção 2). Como a rede
+ainda não existe e o documento não está congelado, a mudança entra aqui em vez
+de abrir `AURON-SPEC-02`.
+
 **Escopo:** regras de consenso da rede Auron. O que está aqui, dois nós
 precisam calcular igual, bit a bit, ou a rede racha.
 
@@ -65,11 +71,49 @@ Cada primitiva tem identificador e versão, e o protocolo carrega o
 identificador junto com o dado. Trocar de algoritmo é registrar um novo
 identificador, nunca reescrever o protocolo.
 
-| Identificador | Uso | Código binário | Estado |
-|---|---|---|---|
-| `HASH-SHA512-V1` | hash geral, ids, Merkle | — | ativo |
-| `SIG-ED25519-V1` | assinatura de transação | `1` | ativo |
-| `SIG-BP512-V1` | Brainpool P-512 | — | legado, **não utilizável** |
+| Identificador | Uso | Código binário | Clássico | Quântico | Estado |
+|---|---|---|---|---|---|
+| `HASH-SHA512-V1` | hash geral, ids, Merkle | — | 256 bits (colisão) | ~256 bits (pré-imagem)¹ | ativo |
+| `SIG-ED25519-V1` | assinatura de transação | `1` | ~128 bits | nenhum | ativo |
+| `SIG-BP512-V1` | Brainpool P-512 | — | ~256 bits | nenhum | legado, **não utilizável** |
+| `SIG-MLDSA65-V1` | ML-DSA-65 (FIPS 204), par híbrido | — | ~192 bits | ~192 bits | **planejado, sem código** |
+| `AEAD-XCHACHA20POLY1305-V1` | cifragem de dados fora da cadeia | — | 256 bits | ~128 bits | **planejado, sem código** |
+
+¹ Como está em `crypto.PRIMITIVAS`: colisão sob Grover/BHT fica abaixo disso;
+o número é a referência de pré-imagem.
+
+A tabela é a mesma de `reference/auron/crypto.py` (`PRIMITIVAS`, política
+versão 1), e `politica_valida()` recusa: primitiva ativa abaixo de
+128 bits clássicos, campo faltando, e **qualquer nível declarado igual ou
+acima de 1024 bits**.
+
+### Meta de arquitetura "classe 1024 bits"
+
+É **meta interna de projeto**, experimental, e não um nível atingido. Nenhuma
+primitiva real entrega 1024 bits de segurança, e o projeto não inventa uma
+("SHA-1024" não existe). Em comunicação pública valem os números da tabela.
+Segurança criptográfica nunca é um campo genérico de tamanho fixo (o protótipo
+tinha "8 bits"): é declarada por primitiva, com o algoritmo de verdade.
+
+### Modo híbrido pós-quântico (planejado)
+
+Assinatura híbrida = Ed25519 **e** ML-DSA-65 sobre a mesma mensagem, ambas
+obrigatórias; quebrar uma não basta. Entra por novo código de algoritmo na
+transação e nova `crypto_policy_version`. Tamanhos: chave pública 1952 bytes,
+assinatura 3309 bytes. Nada disso está implementado, e a biblioteca precisa ser
+auditada e em Rust puro antes de entrar.
+
+### Regras ainda sem código (valem para quando existir)
+
+- **CryptoProvider:** todo uso de primitiva passa por uma interface que recebe
+  o identificador; nenhum módulo chama algoritmo pelo nome.
+- **Separação de domínio:** toda mensagem assinada ou hash de compromisso leva
+  um prefixo próprio (`AURON-TX-v2`, `AURON-UPOW-TASK-v1`, ...). Hoje já vale e
+  é testado em `test_11`.
+- **Hierarquia de chaves:** chave de identidade separada da chave de carteira;
+  chave de dispositivo derivada, revogável.
+- **Data Chain:** dado pessoal bruto nunca vai para a cadeia. Na cadeia, só
+  compromisso (hash com sal) e referência; o dado cifrado fica fora.
 
 O PoW usa Argon2id e é definido na seção 9. Ele não é intercambiável pelo
 mesmo mecanismo: trocar o PoW é um hard fork, não uma troca de identificador.
@@ -264,16 +308,17 @@ de 11/09/2026; não muda consenso.
 ## 7. Cabeçalho de bloco
 
 ```
-u16  version = 1
+u16  version = 2
 u64  height
 [64] prev_hash        (SHA-512 do cabeçalho anterior)
 [64] merkle_root
+[64] useful_root      (compromisso da prova de trabalho útil, seção 9A)
 u64  timestamp        (segundos Unix)
 u32  bits             (alvo em forma compacta)
 u64  nonce
 ```
 
-Tamanho fixo: 158 bytes.
+Tamanho fixo: 222 bytes. A versão 1 (158 bytes, sem `useful_root`) é recusada.
 
 Dois hashes diferentes sobre o mesmo cabeçalho, de propósito:
 
@@ -286,7 +331,12 @@ Separar importa: a identidade é calculada milhões de vezes ao sincronizar e
 precisa ser barata; a prova precisa ser cara. Uma função só obrigaria a
 escolher entre índice lento e prova barata.
 
-Bloco = cabeçalho seguido da lista de transações.
+```
+bloco = cabeçalho || var_bytes(prova de trabalho útil) || lista de transações
+```
+
+A prova vai com prefixo de tamanho. Bloco sem prova ainda decodifica (campo
+vazio) para a validação recusar com o motivo certo.
 
 ## 8. Alvo em forma compacta
 
@@ -311,7 +361,7 @@ para baixo, isto é, nunca deixa o alvo mais fácil que o pretendido.
 
 ```
 pow_hash = Argon2id(
-    password = cabeçalho serializado (158 bytes),
+    password = cabeçalho serializado (222 bytes, useful_root incluído),
     salt     = "AURON-POW-v1\0\0\0\0"   (16 bytes, fixo e público),
     m        = pow_memory_kib,
     t        = pow_time_cost,
@@ -331,15 +381,129 @@ problema, tornando o custo super-exponencial e o retarget impossível.
 
 | Grandeza | O que é | Onde vive | Muda a cada bloco? |
 |---|---|---|---|
+| `TARGET_BLOCK_INTERVAL` | tempo **desejado** entre blocos | `target_spacing` | não; é só o alvo do retarget |
 | `CONSENSUS_DIFFICULTY` | `target` | campo `bits` do cabeçalho | sim, pelo retarget |
 | `WORK_SIZE` | parâmetros do Argon2id | `ChainParams`, por rede | não |
 | `VERIFICATION_COST` | uma avaliação Argon2id | constante | não |
+| `USEFUL_WORK_SIZE` | lado `n` das matrizes do trabalho útil | regra da seção 9A | sim, segue o trabalho validado |
+| `USEFUL_VERIFICATION_COST` | Freivalds, O(n² · rodadas) | `useful_rounds` | acompanha `n` |
+| `CRYPTO_SECURITY_LEVEL` | nível real de cada primitiva | tabela da seção 2 | não; muda por versão de política |
+
+O intervalo de bloco não define dificuldade, nem tamanho de trabalho, nem custo
+de verificação. Nenhuma dessas grandezas é derivada de outra por acidente.
 
 `pow_hash` não conhece o alvo. Verificar custa o mesmo com alvo fácil ou
 difícil, e é isso que torna o custo de validação previsível.
 
 Comparação é numérica contra o alvo, não contagem de bits zero. Contar zeros só
 permitiria dificuldade em potências de 2.
+
+## 9A. Trabalho útil no consenso — UsefulPoW híbrido
+
+Desde `consensus_version = 2`, **todo bloco** precisa trazer uma prova
+verificável de trabalho útil. O Argon2id da seção 9 continua, como camada
+complementar de segurança; um não substitui o outro. Implementação:
+`reference/auron/usefulpow.py`. Vetores: `vectors/usefulpow.json`.
+
+### Família 1 — `MATRIX-FREIVALDS-V1`
+
+**Tarefa.** `C = A · B`, com `A` e `B` matrizes `n×n` de inteiros em
+`[0, 999]`, geradas por SHA-512 em modo contador (mesmo gerador da seção 18).
+
+**Instância, derivada do estado anterior do consenso:**
+
+```
+semente = SHA-512("AURON-UPOW-TASK-v1" || magic || u64 altura
+                  || prev_hash || endereço do minerador)
+```
+
+- `prev_hash` só existe depois do bloco anterior: ninguém resolve antes.
+- O endereço é o `recipient` da coinbase: copiar a prova de outro minerador
+  não serve.
+- `n` sai da regra abaixo, nunca de escolha do minerador: não há tarefa fácil
+  para escolher.
+
+**Tamanho exigido (`USEFUL_WORK_SIZE`).** Multiplicar matrizes custa `n³`. Para
+o trabalho útil crescer na mesma razão que o trabalho de consenso, `n` cresce
+com a raiz cúbica, em inteiro:
+
+```
+delta = max(0, bits_de_trabalho(alvo) - bits_de_trabalho(max_target))
+        onde bits_de_trabalho(t) = 256 - bit_length(t)
+n = useful_size_base << (delta / 3)
+n = n * (1000, 1260, 1587)[delta % 3] / 1000
+n = clamp(n, useful_size_min, useful_size_max)
+```
+
+O alvo reflete o trabalho que a rede de fato validou, porque o retarget o
+ajusta pelo ritmo observado. Rede mais forte, mais trabalho útil por bloco.
+Mudar `target_spacing` não muda `n` para o mesmo alvo.
+
+| Rede | mín | base | máx |
+|---|---|---|---|
+| mainnet / testnet | 32 | 48 | 256 |
+| regtest | 4 | 6 | 16 |
+
+Na mainnet: `delta` 0 → n 48; 3 → 96; 6 → 192; 9 ou mais → 256.
+
+**Prova.**
+
+```
+u8   family  = 1
+u16  version = 1
+u32  n
+var  result  = C, n·n entradas u32 big-endian, linha a linha
+useful_root  = SHA-512("AURON-UPOW-PROOF-v1" || prova codificada)
+```
+
+Como o Argon2id é calculado sobre o cabeçalho que contém `useful_root`, trocar
+a prova depois de achar o nonce invalida o Argon2id.
+
+**Conferência, nesta ordem** (a primeira falha recusa o bloco):
+
+1. prova presente;
+2. `useful_root` do cabeçalho igual ao compromisso da prova;
+3. `family == 1` e `version == 1`;
+4. `n` **igual** ao exigido. Menor é trabalho insuficiente; maior também é
+   recusado, para a regra ser uma só e o tamanho do bloco previsível;
+5. `result` com exatamente `n·n·4` bytes;
+6. cada entrada em `[0, n · 998²]` (faixa de um produto honesto; fecha o
+   estouro de inteiro, como na seção 18);
+7. Freivalds, `useful_rounds = 4` rodadas, vetores de 20 bits tirados de
+   `XOF("AURON-UPOW-CHALLENGE-v1", SHA-512(semente || result))`. Erro de aceitar
+   resultado falso `<= 2^-80`.
+
+Custo: fazer é `n³`; conferir é `4 · 3 · n²`. Para n = 256, cerca de
+16,7 milhões de operações contra 786 mil.
+
+**O que esta prova demonstra.** Que o minerador calculou um produto de matrizes
+do tamanho exigido para aquele bloco, o mesmo tipo de conta que sustenta
+treino e inferência de IA.
+
+**O que ela NÃO demonstra.** Utilidade externa. A instância é gerada pela rede,
+não trazida por um cliente, porque nenhum bloco pode depender de alguém de fora
+aparecer com uma tarefa na hora certa. Problemas reais de terceiros continuam no
+mercado UTRAX da seção 18.
+
+**Limite conhecido, dito com todas as letras.** A prova viaja inteira no bloco:
+n = 48 ocupa 9,2 KB; n = 256 ocupa 262 KB, um quarto de `max_block_bytes`. Na
+mainnet o teto de `n` chega com apenas 9 bits de trabalho acima do mínimo; a
+partir daí o trabalho útil para de acompanhar a rede. A família 2 (várias
+instâncias por bloco, ou compromisso de Merkle sobre `C` com abertura por
+amostragem) é **planejada**, e entra por nova `task_rules_version`.
+
+### Versões de regra
+
+`ChainParams` declara, em todas as redes: `consensus_version = 2`,
+`task_rules_version = 1`, `verification_rules_version = 1`,
+`reward_schedule_version = 1`, `crypto_policy_version = 1`. Toda mudança de
+regra muda um desses números.
+
+### Fraude
+
+Prova inválida faz o bloco ser recusado; o minerador perde o custo do trabalho
+e a recompensa daquele bloco. **Confisco automático de fundos não é regra
+padrão.** Não existe, nesta versão, stake ou saldo que o consenso tome de volta.
 
 ## 10. Retarget — LWMA-1
 
@@ -449,7 +613,7 @@ dentro do teto.
 Do mais barato para o mais caro. Um bloco malformado é recusado sem gastar um
 Argon2id — o contrário é vetor de negação de serviço.
 
-1. `version == 1`
+1. `version == 2`
 2. `height == ponta.height + 1`
 3. `prev_hash == hash da ponta`
 4. `bits` igual ao esperado pelo retarget
@@ -460,9 +624,11 @@ Argon2id — o contrário é vetor de negação de serviço.
 9. Primeira transação é coinbase; nenhuma outra é
 10. `merkle_root` bate com as transações
 11. Codificação é canônica
-12. **Prova de trabalho bate o alvo**
-13. Estado aceita o bloco inteiro
-14. Invariantes continuam valendo
+12. **Prova de trabalho útil confere** (seção 9A): O(n²), mais cara que o que
+    vem antes e bem mais barata que o Argon2id
+13. **Prova de trabalho Argon2id bate o alvo**
+14. Estado aceita o bloco inteiro
+15. Invariantes continuam valendo
 
 Existe **um único** caminho de entrada, `accept_block`. Não há função que
 aplique um bloco sem validar. No protótipo, `broadcast_block` conferia altura e
@@ -488,6 +654,9 @@ Uma só por rede, derivada dos parâmetros, nunca lida de arquivo.
 - `height = 0`, `prev_hash = 64 bytes zero`
 - `timestamp = 1788912000` (2026-09-09T00:00:00Z), congelado
 - `bits = target_to_compact(max_target)`, `nonce = 0`
+- Prova de trabalho útil como qualquer bloco (altura 0, `prev_hash` zero,
+  minerador = endereço nulo, alvo `max_target`), e `useful_root` dela. O formato
+  é um só, sem exceção para o primeiro bloco.
 - Uma coinbase de 1 unidade para o endereço nulo, com `extra_nonce`
   identificando a rede. Ninguém tem a chave do endereço nulo: nenhuma conta
   começa com dinheiro.
@@ -514,10 +683,15 @@ A memória menor no regtest existe porque a implementação Python leva dezenas 
 segundos em 32 MiB. O algoritmo é o mesmo; só o `WORK_SIZE` muda. É exatamente
 por isso que `WORK_SIZE` precisava estar separado da dificuldade.
 
-## 18. Utrax — trabalho útil, **fora do consenso**
+## 18. Utrax — mercado de trabalho útil
 
-A segurança da cadeia vem do PoW da seção 9. O Utrax é camada econômica de
-tarefas verificáveis. **A cadeia não precisa do Utrax para sobreviver.**
+Duas coisas diferentes, que não se confundem:
+
+- **Dentro do consenso:** a família `MATRIX-FREIVALDS-V1` da seção 9A. Instância
+  gerada pela rede, exigida em todo bloco.
+- **Fora do consenso (esta seção):** o mercado UTRAX, onde alguém publica uma
+  tarefa de verdade e paga por ela. Nenhum bloco depende de haver tarefa
+  publicada.
 
 Consequência de projeto: quem paga a verificação é quem publicou a tarefa.
 Verificação cara vira decisão de negócio do publicador, não vetor de negação de
@@ -568,8 +742,9 @@ Não está nesta especificação, e não é esquecimento:
   registro de dispositivo e reivindicação de recompensa por época, e o desenho
   era inviável: a prova era amarrada ao hash exato da ponta, então cada bloco
   novo invalidava toda prova em andamento e o celular sempre perdia a corrida.
-  Com PoW convencional, celular e desktop rodam o **mesmo** minerador, e o
-  Argon2id com pressão de memória já nivela bastante a disputa. Menos código,
+  Com um minerador só (trabalho útil da seção 9A mais Argon2id), celular e
+  desktop rodam o **mesmo** programa, e o Argon2id com pressão de memória já nivela bastante
+  a disputa. Menos código,
   menos superfície, mesmo resultado.
 - **Fusion.** Congelado no protótipo, sem manutenção nesta janela.
 - **Air Storage, Recovery, Space Relay, ponte Bitcoin.** Roadmap.

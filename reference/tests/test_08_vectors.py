@@ -29,7 +29,7 @@ def _manifest() -> dict:
 
 def test_manifest_matches_files():
     files = _manifest()["files"]
-    assert len(files) >= 13, f"poucos arquivos no manifesto: {len(files)}"
+    assert len(files) >= 14,f"poucos arquivos no manifesto: {len(files)}"
     for name, expected in sorted(files.items()):
         # Bytes crus: ler como texto esconderia uma conversao de fim de linha.
         raw = (VECTORS / name).read_bytes()
@@ -102,9 +102,25 @@ def test_codec_edge_vectors_match_oracle():
           f"{rejected} recusadas; {valid} provas aceitas, {len(verify) - valid} recusadas)")
 
 
+def test_usefulpow_vectors_match_oracle():
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools"))
+    from gen_vectors import vec_usefulpow  # noqa: E402
+
+    doc = json.loads((VECTORS / "usefulpow.json").read_text(encoding="utf-8"))
+    fresh = vec_usefulpow()
+    assert doc["data"] == fresh, (
+        "usefulpow.json diverge do oraculo atual: rode tools/gen_vectors.py"
+    )
+    assert all(c["verifies"] for c in fresh["proofs"])
+    assert not any(c["verifies"] for c in fresh["rejections"])
+    print(f"PASS usefulpow bate com o oraculo ({len(fresh['sizes'])} tamanhos, "
+          f"{len(fresh['proofs'])} provas, {len(fresh['rejections'])} recusas)")
+
+
 if __name__ == "__main__":
     test_manifest_matches_files()
     test_manifest_lists_every_vector_file()
     test_verify_edge_vectors_match_oracle()
     test_codec_edge_vectors_match_oracle()
+    test_usefulpow_vectors_match_oracle()
     print("=== VETORES OK ===")

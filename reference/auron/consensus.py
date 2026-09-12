@@ -141,9 +141,11 @@ class ChainParams:
     pow_lanes: int
 
     # --- CONSENSUS_DIFFICULTY ---
+    # target_spacing é só o ALVO de tempo entre blocos, que o retarget persegue.
+    # Ele não define dificuldade, nem tamanho de trabalho, nem custo de conferir.
     max_target: int              # alvo mais fácil permitido (dificuldade mínima)
-    target_spacing: int          # segundos desejados entre blocos
-    lwma_window: int             # janela do retarget, em blocos
+    target_spacing: int          # TARGET_BLOCK_INTERVAL, em segundos
+    lwma_window: int             # DIFFICULTY_ADJUSTMENT_WINDOW, em blocos
 
     # --- emissão (PROVISÓRIO, aguardando o documento oficial) ---
     initial_reward: int
@@ -154,6 +156,24 @@ class ChainParams:
     max_future_drift: int        # quanto um timestamp pode furar o relógio
     median_time_span: int        # blocos usados no median-time-past
     coinbase_maturity: int       # blocos até a recompensa poder ser gasta
+
+    # --- trabalho útil no consenso (UsefulPoW híbrido, ver usefulpow.py) ---
+    # USEFUL_WORK_SIZE é o lado n das matrizes que todo bloco precisa provar
+    # que multiplicou. NÃO é fixo: cresce com o trabalho validado da rede, pela
+    # regra de useful_work_size(). Os três números são só os limites da regra.
+    useful_size_min: int = 32
+    useful_size_base: int = 48
+    useful_size_max: int = 256
+    # VERIFICATION: rodadas de Freivalds. 4 rodadas com vetores de 20 bits dão
+    # chance de aceitar resultado errado de no máximo 2^-80.
+    useful_rounds: int = 4
+
+    # --- versões das regras: toda mudança de regra muda um número ---
+    consensus_version: int = 2
+    task_rules_version: int = 1
+    verification_rules_version: int = 1
+    reward_schedule_version: int = 1
+    crypto_policy_version: int = 1
 
     def __post_init__(self) -> None:
         # O alvo máximo precisa ser canônico, senão ele não sobrevive à ida e
@@ -243,6 +263,10 @@ REGTEST = ChainParams(
     max_future_drift=120,
     median_time_span=11,
     coinbase_maturity=2,
+    # matrizes pequenas: a regra é a mesma, só os limites encolhem
+    useful_size_min=4,
+    useful_size_base=6,
+    useful_size_max=16,
 )
 
 NETWORKS = {p.name: p for p in (MAINNET, TESTNET, REGTEST)}

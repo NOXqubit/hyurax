@@ -8,8 +8,12 @@ existe para três coisas:
 3. Servir de oráculo em testes cruzados Python ↔ Rust.
 
 Por isso prioriza clareza e determinismo sobre velocidade, e **não tem
-dependência externa em nada que seja consenso**. A única biblioteca de
-terceiros é o numpy, e só na camada Utrax, que está fora do consenso.
+dependência externa na regra de consenso**. A única biblioteca de terceiros é
+o numpy. Desde o consenso híbrido (`usefulpow.py`) ela também roda na
+validação de bloco, mas só como calculadora de multiplicação **inteira** exata
+(`int64`, sem ponto flutuante, com faixa conferida antes para não estourar): a
+geração das matrizes e o desafio são SHA-512, e o resultado é travado por
+`vectors/usefulpow.json`. No Rust (ainda não migrado) a mesma conta será laço simples.
 
 ## Rodar
 
@@ -17,7 +21,7 @@ terceiros é o numpy, e só na camada Utrax, que está fora do consenso.
 python tests/run_all_tests.py
 ```
 
-98 testes. Entre 2 e 4 minutos nesta máquina, conforme a memória livre. Não
+119 testes. Entre 2 e 4 minutos nesta máquina, conforme a memória livre. Não
 precisa instalar nada além do numpy.
 
 ## Achados próprios, depois do protótipo

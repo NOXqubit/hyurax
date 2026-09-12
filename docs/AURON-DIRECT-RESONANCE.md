@@ -13,7 +13,7 @@
 | Estado | O que está nele hoje |
 |---|---|
 | **GREEN** — implementado e comprovado no Rust, contra os vetores do gabarito | Codificação canônica e árvore de Merkle (`auron-codec`). Assinatura Ed25519, endereço, SHA-512 e XOF (`auron-crypto`). Dinheiro inteiro (`auron-types`). |
-| **YELLOW** — testado só na referência em Python | Transação com nonce por conta e assinatura presa à rede. Estado, cadeia, prova de trabalho Argon2id. UTRAX (o "UsefulPoW" dos §49 e §51, fase 10), fora do consenso. |
+| **YELLOW** — testado só na referência em Python | Transação com nonce por conta e assinatura presa à rede. Estado, cadeia, prova de trabalho Argon2id. UsefulPoW híbrido no consenso (família matriz + Freivalds, todo bloco); mercado UTRAX fora do consenso. |
 | **RED** — hipótese | Tudo o que é próprio deste documento: Identity, Packet, ATAP, Bluetooth, Wi-Fi, Direct, Payment Intent, vouchers offline, Resonance, mesh, canais, pagamentos de máquinas. |
 
 ### Como o documento se encaixa no que já existe
@@ -68,8 +68,9 @@
 
 - O **Flux** (`docs/AURON-FLUX.md`) é o item 15 da ordem do §64: vem por
   último.
-- O **UTRAX** existe na referência em Python, fora do consenso (§18 da
-  AURON-SPEC-01), e é o que os §49 e §51 chamam de UsefulPoW.
+- O **UsefulPoW** dos §49 e §51 entrou no consenso em 12/09/2026 (§9A da
+  AURON-SPEC-01): todo bloco prova trabalho útil. O mercado **UTRAX**, de
+  tarefas de clientes, continua fora do consenso (§18).
 
 ---
 

@@ -10,7 +10,7 @@ Qualquer pessoa que disser o contrário está mentindo.
 | Parte | Estado |
 |---|---|
 | Especificação `AURON-SPEC-01` | escrita, congelável quando a tokenomics fechar |
-| Implementação de referência (Python) | completa, 98 testes |
+| Implementação de referência (Python) | completa, 119 testes |
 | Vetores de validação cruzada | 13 arquivos |
 | Nó de produção (Rust) | começado: `auron-types`, `auron-crypto`, `auron-codec` |
 | Rede P2P | não começada |
@@ -101,10 +101,19 @@ avaliação, sempre, independente da dificuldade.
 **Assinatura Ed25519**, RFC 8032. Verificação em microssegundos, determinística
 por construção, sem nonce aleatório que possa vazar a chave.
 
-**Trabalho útil fora do consenso.** A segurança da cadeia vem do PoW
-convencional. O Utrax é camada econômica de tarefas verificáveis. A cadeia não
-precisa do Utrax para sobreviver, e é justamente isso que permite ao Utrax
-evoluir sem colocar a moeda em risco.
+**Consenso híbrido: trabalho útil em todo bloco.** Cada bloco prova que o
+minerador multiplicou matrizes do tamanho exigido (a mesma conta que sustenta
+IA), com instância derivada do bloco anterior e do minerador, conferida por
+Freivalds. O tamanho cresce com o trabalho validado da rede, separado do
+intervalo de bloco. O Argon2id continua como camada complementar. Tarefas de
+clientes de verdade ficam no mercado Utrax, fora do consenso: nenhum bloco
+depende de alguém publicar tarefa. Limite atual, na spec (§9A): a prova viaja
+no bloco, então o tamanho tem teto (n = 256).
+
+**Criptografia com números reais.** Ed25519 dá ~128 bits clássicos; SHA-512,
+256. "Classe 1024 bits" é meta interna de arquitetura, não nível atingido, e o
+código recusa qualquer primitiva que declare isso. Assinatura híbrida com
+ML-DSA-65 está planejada, sem código ainda.
 
 **Só dependência Rust pura.** Nada que precise de compilador C. Sem `ring`,
 sem `aws-lc-rs`. É o que permite compilar o mesmo código num PC Linux velho e
