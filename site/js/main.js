@@ -2,6 +2,7 @@
 import { carregar, aplicar, t, html, idiomaInicial, idiomaAtual, IDIOMAS } from "./i18n.js";
 import { detectarQualidade } from "./quality.js";
 import { SimulationEngine } from "./simulation/engine.js";
+import { criarAudio } from "./audio.js";
 import { el } from "./ui.js";
 
 const q = detectarQualidade();
@@ -75,6 +76,27 @@ function revelar() {
   document.querySelectorAll(".revela").forEach((x) => { if (x.getBoundingClientRect().top > window.innerHeight) obs.observe(x); });
 }
 
+// Musica de fundo: trilha propria, desligada por padrao. Som so comeca com um
+// toque da pessoa, que e o que o navegador exige e o que a boa educacao pede.
+function musica(audio) {
+  const botao = document.getElementById("som");
+  if (!botao) return;
+  if (!audio) { botao.hidden = true; return; }
+  let ligada = false;
+  botao.addEventListener("click", async () => {
+    ligada = !ligada;
+    botao.setAttribute("aria-pressed", String(ligada));
+    if (ligada) {
+      const pronto = await audio.iniciar();
+      if (pronto) audio.tocar({ volume: 0.32 });
+      else { ligada = false; botao.setAttribute("aria-pressed", "false"); }
+    } else {
+      audio.parar({ suave: true });
+    }
+    try { localStorage.setItem("auron-musica", ligada ? "1" : "0"); } catch { /* sem armazenamento */ }
+  });
+}
+
 async function iniciar() {
   await carregar(idiomaInicial());
   aplicar();
@@ -90,8 +112,10 @@ async function iniciar() {
   revelar();
 
   const engine = new SimulationEngine(2026);
-  const ctx = { t, html, engine, mundo, calmo: q.calmo, movel: q.movel, aoMudarIdioma, idioma: idiomaAtual, restaurarMundo };
-  const capitulos = ["nucleo", "cadeia", "nos", "fragmentacao", "radio", "utrax", "direct", "malha", "seguranca", "economia", "escala", "caminho", "aberto", "video"];
+  const audio = criarAudio();
+  musica(audio);
+  const ctx = { t, html, engine, mundo, audio, calmo: q.calmo, movel: q.movel, aoMudarIdioma, idioma: idiomaAtual, restaurarMundo };
+  const capitulos = ["nucleo", "cadeia", "nos", "fragmentacao", "radio", "utrax", "direct", "malha", "seguranca", "economia", "escala", "caminho", "aberto", "video", "edit"];
   for (const nome of capitulos) {
     try { (await import(`./sections/${nome}.js`)).iniciar(ctx); }
     catch (e) { console.error(`capítulo ${nome}`, e); }

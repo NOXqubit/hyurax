@@ -21,11 +21,13 @@ export default {
     fechar: "Fechar", anterior: "Anterior", proxima: "Próxima", assistir: "Assistir", voz_on: "Voz: ligada", voz_off: "Voz: desligada",
     sem_voz: "Sem voz em português neste aparelho: só legenda", voz_sintetica: "Narração: voz sintética do aparelho",
     qualidade: "Qualidade 3D", sem_webgl: "3D indisponível: versão 2D",
+    musica: "Música: trilha original do projeto",
   },
   hero: {
     sub: "Uma nova infraestrutura para um mundo distribuído.",
     explorar: "Explorar a arquitetura",
     assistir: "Assistir em 2 minutos",
+    edit: "Ver o edit",
     verdade: "<span><b>Rede pública:</b> ainda não existe</span><span><b>Venda de moeda:</b> nenhuma</span><span><b>Promessa de lucro:</b> nenhuma</span>",
   },
   visao: {
@@ -281,6 +283,25 @@ export default {
     "sem-contrapartida": "<strong>Doação não é compra nem investimento.</strong> Não dá direito a moeda, retorno ou prioridade. O projeto vai publicar o que recebeu e como usou.",
   },
   rodape: { aviso: "Projeto em desenvolvimento. Nada neste site é oferta de investimento." },
+  edit: {
+    titulo: "Auron edit",
+    gravar: "Gravar vídeo", gravando: "Parar e salvar",
+    gravando_aviso: "Gravando do início. O arquivo sai em .webm, com a trilha.",
+    salvando: "Fechando o arquivo… {mb} MB",
+    sem_gravacao: "Este navegador não grava vídeo da página. Tente pelo Chrome ou Edge no computador.",
+    aviso_movimento: "Tem movimento rápido e cortes.",
+    cenas: [
+      { titulo: "UM NÓ", sub: "um computador qualquer, conferindo tudo sozinho" },
+      { titulo: "MILHARES", sub: "sem ninguém no meio" },
+      { titulo: "CADA BLOCO PRENDE O ANTERIOR", sub: "SHA-512 · cabeçalho de 158 bytes" },
+      { titulo: "UM ARQUIVO, 256 PEDAÇOS", sub: "cifrado antes de sair do aparelho" },
+      { titulo: "CONFERIDO ANTES DE PAGAR", sub: "trabalho útil, verificado em poucas contas" },
+      { titulo: "SEM INTERNET, AINDA CHEGA", sub: "de aparelho em aparelho, até o destino" },
+      { titulo: "DE UM NÓ A UMA INFRAESTRUTURA", sub: "visualização conceitual" },
+      { titulo: "", sub: "", linhas: ["REDE PÚBLICA: AINDA NÃO EXISTE", "SEM VENDA. SEM PRÉ-VENDA.", "SEM PROMESSA DE LUCRO."] },
+      { titulo: "AURON", sub: "Trilha original da Auron. Sem direitos de terceiros." },
+    ],
+  },
   video: {
     titulo: "Apresentação",
     cenas: [

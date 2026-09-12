@@ -84,6 +84,9 @@
         <button class="atual" type="button" aria-haspopup="true" aria-expanded="false" id="idioma-atual">PT</button>
         <ul id="idioma-lista" hidden></ul>
       </div>
+      <button class="som" type="button" id="som" aria-pressed="false" data-i18n-attr="aria-label:ui.musica;title:ui.musica">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9.5h3.5L12 5.5v13L7.5 14.5H4z" fill="currentColor"/><path class="onda" d="M15.5 9.2a4 4 0 0 1 0 5.6M18 6.8a7.5 7.5 0 0 1 0 10.4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path class="corte" d="M15.5 9.5l5 5m0-5l-5 5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+      </button>
       <a class="botao botao-claro botao-pequeno explorar" href="#visao" data-i18n="nav.explorar"></a>
       <button class="abre-menu" type="button" id="abre-menu" aria-expanded="false" data-i18n-attr="aria-label:nav.abrir"><i></i><i></i><i></i></button>
     </div>
@@ -112,6 +115,7 @@
     <div class="acoes">
       <a class="botao botao-claro" href="#visao" data-i18n="hero.explorar"></a>
       <button class="botao botao-linha" type="button" id="abre-video" data-i18n="hero.assistir"></button>
+      <button class="botao botao-linha" type="button" id="abre-edit" data-i18n="hero.edit"></button>
     </div>
     <div class="verdade" data-i18n-html="hero.verdade"></div>
   </div>
@@ -622,6 +626,15 @@
     <button class="botao botao-linha botao-pequeno" type="button" id="v-prox" data-i18n-attr="aria-label:ui.proxima">›</button>
     <button class="botao botao-linha botao-pequeno" type="button" id="v-voz" aria-pressed="true"></button>
     <div class="progresso-v" id="v-progresso" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+  </div>
+</div>
+
+<div class="palco-edit" id="palco-edit" hidden role="dialog" aria-modal="true" data-i18n-attr="aria-label:edit.titulo">
+  <canvas id="tela-edit"></canvas>
+  <div class="edit-controles">
+    <button class="botao botao-linha botao-pequeno" type="button" id="edit-gravar"></button>
+    <span class="mono" id="edit-aviso" role="status"></span>
+    <button class="botao botao-claro botao-pequeno" type="button" id="edit-fechar" data-i18n="ui.fechar"></button>
   </div>
 </div>
 

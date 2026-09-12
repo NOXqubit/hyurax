@@ -469,6 +469,20 @@ html[lang="ja"] .sessao-video .fala-v { max-width: 26em; }
 .progresso-v i.feito { background: var(--texto); }
 .progresso-v i.atual::after { content: ""; position: absolute; inset: 0; background: var(--texto); transform-origin: left; transform: scaleX(var(--p, 0)); }
 
+/* ---------- edit em tela cheia ---------- */
+.palco-edit { position: fixed; inset: 0; z-index: 60; background: #030303; }
+.palco-edit canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.edit-controles { position: absolute; left: 0; right: 0; bottom: 0; z-index: 2; display: flex; align-items: center; gap: 0.7rem; padding: 1rem var(--lado); flex-wrap: wrap; }
+.edit-controles .mono { flex: 1; min-width: 6rem; font-family: var(--mono); font-size: 0.72rem; color: var(--texto-2); }
+.som { display: grid; place-items: center; width: 2.2rem; height: 2.2rem; border-radius: 999px; border: 1px solid var(--fio-forte); background: transparent; color: var(--texto-2); cursor: pointer; transition: color 200ms, border-color 200ms; }
+.som:hover { color: var(--texto); border-color: var(--texto-3); }
+.som svg { width: 1.05rem; height: 1.05rem; }
+.som .onda { opacity: 0; }
+.som .corte { opacity: 1; }
+.som[aria-pressed="true"] { color: var(--luz); border-color: var(--ouro-escuro, rgba(243, 226, 196, 0.45)); }
+.som[aria-pressed="true"] .onda { opacity: 1; }
+.som[aria-pressed="true"] .corte { opacity: 0; }
+
 /* ---------- final e rodapé ---------- */
 .final { min-height: 90vh; display: grid; place-items: center; text-align: center; padding: 6rem var(--lado); }
 .final .miolo { display: grid; justify-items: center; gap: 1.4rem; }

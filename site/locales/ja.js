@@ -20,11 +20,13 @@ export default {
     fechar: "閉じる", anterior: "前へ", proxima: "次へ", assistir: "再生", voz_on: "音声：オン", voz_off: "音声：オフ",
     sem_voz: "この端末には日本語の音声がありません：字幕のみ", voz_sintetica: "ナレーション：端末の合成音声",
     qualidade: "3D品質", sem_webgl: "3D非対応：2D版を表示中",
+    musica: "音楽：プロジェクトのオリジナル曲",
   },
   hero: {
     sub: "分散する世界のための、新しいインフラストラクチャ。",
     explorar: "アーキテクチャを見る",
     assistir: "2分で見る",
+    edit: "エディットを見る",
     verdade: "<span><b>公開ネットワーク：</b>まだ存在しません</span><span><b>トークン販売：</b>なし</span><span><b>利益の約束：</b>なし</span>",
   },
   visao: {
@@ -280,6 +282,25 @@ export default {
     "sem-contrapartida": "<strong>寄付は購入でも投資でもありません。</strong>通貨、見返り、優先権を得る権利はありません。プロジェクトは受け取った金額とその使い道を公開します。",
   },
   rodape: { aviso: "開発中のプロジェクトです。このサイトの内容は投資の勧誘ではありません。" },
+  edit: {
+    titulo: "Auron edit",
+    gravar: "動画を録画", gravando: "停止して保存",
+    gravando_aviso: "最初から録画しています。ファイルは .webm で、曲付きです。",
+    salvando: "ファイルを書き出し中… {mb} MB",
+    sem_gravacao: "このブラウザーはページを録画できません。パソコンの Chrome か Edge をお試しください。",
+    aviso_movimento: "速い動きとカットがあります。",
+    cenas: [
+      { titulo: "ひとつのノード", sub: "ごく普通のコンピューターが、すべてを自ら検証する" },
+      { titulo: "数千のノード", sub: "あいだに誰もいない" },
+      { titulo: "ブロックが前のブロックを固定する", sub: "SHA-512 · 158 バイトのヘッダー" },
+      { titulo: "1 つのファイルが 256 の断片に", sub: "端末を出る前に暗号化" },
+      { titulo: "支払う前に検証", sub: "有用な計算を、わずかな計算で確認" },
+      { titulo: "インターネットがなくても届く", sub: "端末から端末へ、宛先まで" },
+      { titulo: "ひとつのノードからインフラへ", sub: "概念的な可視化" },
+      { titulo: "", sub: "", linhas: ["公開ネットワーク：まだ存在しません", "販売なし。プレセールなし。", "利益の約束なし。"] },
+      { titulo: "AURON", sub: "Auron のオリジナル曲。第三者の権利はありません。" },
+    ],
+  },
   video: {
     titulo: "紹介",
     cenas: [

@@ -20,11 +20,13 @@ export default {
     fechar: "Cerrar", anterior: "Anterior", proxima: "Siguiente", assistir: "Ver", voz_on: "Voz: activada", voz_off: "Voz: desactivada",
     sem_voz: "Este dispositivo no tiene voz en español: solo subtítulos", voz_sintetica: "Narración: voz sintética del dispositivo",
     qualidade: "Calidad 3D", sem_webgl: "3D no disponible: versión 2D",
+    musica: "Música: pista original del proyecto",
   },
   hero: {
     sub: "Una nueva infraestructura para un mundo distribuido.",
     explorar: "Explorar la arquitectura",
     assistir: "Ver en 2 minutos",
+    edit: "Ver el edit",
     verdade: "<span><b>Red pública:</b> todavía no existe</span><span><b>Venta de monedas:</b> ninguna</span><span><b>Promesa de ganancias:</b> ninguna</span>",
   },
   visao: {
@@ -280,6 +282,25 @@ export default {
     "sem-contrapartida": "<strong>Una donación no es una compra ni una inversión.</strong> No da derecho a monedas, rendimientos ni prioridad. El proyecto publicará lo que recibió y cómo lo usó.",
   },
   rodape: { aviso: "Proyecto en desarrollo. Nada en este sitio es una oferta de inversión." },
+  edit: {
+    titulo: "Auron edit",
+    gravar: "Grabar video", gravando: "Parar y guardar",
+    gravando_aviso: "Grabando desde el inicio. El archivo sale en .webm, con la pista.",
+    salvando: "Cerrando el archivo… {mb} MB",
+    sem_gravacao: "Este navegador no graba la página. Prueba con Chrome o Edge en una computadora.",
+    aviso_movimento: "Tiene movimiento rápido y cortes secos.",
+    cenas: [
+      { titulo: "UN NODO", sub: "una computadora cualquiera, verificando todo por su cuenta" },
+      { titulo: "MILES", sub: "sin nadie en el medio" },
+      { titulo: "CADA BLOQUE SUJETA AL ANTERIOR", sub: "SHA-512 · cabecera de 158 bytes" },
+      { titulo: "UN ARCHIVO, 256 PIEZAS", sub: "cifrado antes de salir del dispositivo" },
+      { titulo: "VERIFICADO ANTES DE PAGAR", sub: "trabajo útil, comprobado con pocas cuentas" },
+      { titulo: "SIN INTERNET, IGUAL LLEGA", sub: "de dispositivo en dispositivo, hasta el destino" },
+      { titulo: "DE UN NODO A UNA INFRAESTRUCTURA", sub: "visualización conceptual" },
+      { titulo: "", sub: "", linhas: ["RED PÚBLICA: TODAVÍA NO EXISTE", "SIN VENTA. SIN PREVENTA.", "SIN PROMESA DE GANANCIAS."] },
+      { titulo: "AURON", sub: "Pista original de Auron. Sin derechos de terceros." },
+    ],
+  },
   video: {
     titulo: "Presentación",
     cenas: [

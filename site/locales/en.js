@@ -20,11 +20,13 @@ export default {
     fechar: "Close", anterior: "Previous", proxima: "Next", assistir: "Watch", voz_on: "Voice: on", voz_off: "Voice: off",
     sem_voz: "No English voice on this device: captions only", voz_sintetica: "Narration: this device's synthetic voice",
     qualidade: "3D quality", sem_webgl: "3D unavailable: 2D version",
+    musica: "Music: the project’s own track",
   },
   hero: {
     sub: "A new infrastructure for a distributed world.",
     explorar: "Explore the architecture",
     assistir: "Watch in 2 minutes",
+    edit: "Play the edit",
     verdade: "<span><b>Public network:</b> not live yet</span><span><b>Token sale:</b> none</span><span><b>Profit promise:</b> none</span>",
   },
   visao: {
@@ -280,6 +282,25 @@ export default {
     "sem-contrapartida": "<strong>A donation is not a purchase or an investment.</strong> It gives no right to coins, returns or priority. The project will publish what it received and how it was used.",
   },
   rodape: { aviso: "Project under development. Nothing on this site is an investment offer." },
+  edit: {
+    titulo: "Auron edit",
+    gravar: "Record video", gravando: "Stop and save",
+    gravando_aviso: "Recording from the top. The file comes out as .webm, with the track.",
+    salvando: "Closing the file… {mb} MB",
+    sem_gravacao: "This browser cannot record the page. Try Chrome or Edge on a computer.",
+    aviso_movimento: "Fast motion and hard cuts.",
+    cenas: [
+      { titulo: "ONE NODE", sub: "an ordinary computer, checking everything by itself" },
+      { titulo: "THOUSANDS", sub: "nobody in the middle" },
+      { titulo: "EVERY BLOCK HOLDS THE LAST", sub: "SHA-512 · 158-byte header" },
+      { titulo: "ONE FILE, 256 PIECES", sub: "encrypted before it leaves the device" },
+      { titulo: "VERIFIED BEFORE PAYMENT", sub: "useful work, checked with a few multiplications" },
+      { titulo: "NO INTERNET, STILL ARRIVES", sub: "device to device, all the way there" },
+      { titulo: "FROM ONE NODE TO AN INFRASTRUCTURE", sub: "conceptual visualization" },
+      { titulo: "", sub: "", linhas: ["PUBLIC NETWORK: NOT LIVE YET", "NO SALE. NO PRESALE.", "NO PROMISE OF PROFIT."] },
+      { titulo: "AURON", sub: "Original Auron track. No third-party rights." },
+    ],
+  },
   video: {
     titulo: "Presentation",
     cenas: [
