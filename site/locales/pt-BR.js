@@ -58,7 +58,7 @@ export default {
       consenso: {
         nome: "CONSENSUS", estado: "desenvolvimento",
         texto: "As regras que decidem qual cadeia vale. Vence a cadeia válida com maior trabalho acumulado.",
-        itens: ["Prova de trabalho Argon2id com 32 MiB por tentativa: celular e computador mineram com o mesmo programa.", "Dificuldade ajustada a cada bloco pelo LWMA, com defesas contra horários falsos.", "A recompensa de mineração só pode ser gasta depois de 100 blocos."],
+        itens: ["Todo bloco prova trabalho útil: um produto de matrizes gerado a partir do bloco anterior e do minerador, conferido por Freivalds.", "O tamanho desse trabalho cresce com a capacidade validada da rede, separado do intervalo de bloco.", "Argon2id com 32 MiB por tentativa como camada complementar: celular e computador mineram com o mesmo programa.", "Dificuldade ajustada a cada bloco pelo LWMA, com defesas contra horários falsos.", "A recompensa de mineração só pode ser gasta depois de 100 blocos."],
       },
       protocolo: {
         nome: "PROTOCOL", estado: "implementado",
@@ -115,7 +115,7 @@ export default {
     titulo: "Trabalho útil, <em>conferido</em> antes de pagar",
     intro: "Uma tarefa entra no mercado com o pagamento travado. Vários nós se oferecem, um é escolhido e calcula, outro confere com poucas contas, e a rede só libera o pagamento se o resultado estiver certo. A conferência abaixo usa o algoritmo de Freivalds de verdade, rodando no seu navegador.",
     rodar: "Enviar tarefa", trapaca: "Executor desonesto", c: "C = A × B (entregue)", tarefas: "Tipos de tarefa",
-    nota: "O UTRAX roda <strong>fora do consenso</strong>: um defeito numa tarefa nunca trava a moeda. Juntar trabalho útil com a segurança da mineração é pesquisa em aberto, não promessa.",
+    nota: "Duas camadas. <strong>No consenso</strong>, todo bloco já exige um produto de matrizes conferido assim, gerado pela própria rede. <strong>No mercado UTRAX</strong>, a tarefa vem de quem paga e fica fora do consenso: um defeito numa tarefa nunca trava a moeda. Levar problemas reais de clientes para dentro do bloco é pesquisa, não promessa.",
     etapas: ["Tarefa publicada: multiplicar duas matrizes 8×8. Pagamento travado.", "Cinco nós se oferecem para executar.", "O nó {n} é escolhido; o nó {v} vai conferir.", "O nó {n} calcula C = A × B.", "O verificador sorteia vetores a partir do próprio resultado e confere A·(B·r) = C·r.", "Prova registrada: resultado, vetores e contas.", "Pagamento liberado para o nó {n}."],
     aceito: "Aceito: as contas batem nas {k} rodadas.", aceito_s: "Aqui, conferir custou {c} multiplicações e refazer custaria {r}: numa matriz pequena não compensa. Numa de 1000×1000, conferir custa cerca de 9 milhões, contra 1 bilhão para refazer.",
     recusado: "Recusado: na rodada {k}, A·(B·r) ≠ C·r.", recusado_s: "Sem pagamento. A tarefa volta para a fila.",
@@ -255,7 +255,7 @@ export default {
     titulo: "Onde estamos, <em>sem enfeite</em>",
     intro: "Estado em 11/09/2026. Esta seção existe para que ninguém confunda visão com produto pronto.",
     colunas: {
-      live: { titulo: "Implementado", itens: [["Programa de produção (Rust)", "dinheiro, criptografia e codificação; 40 testes"], ["Especificação AURON-SPEC-01", "regras byte a byte"], ["6 correções de segurança", "da revisão de 11/09/2026, com teste para cada ataque"], ["Gabarito em Python", "completo; 91 testes"]] },
+      live: { titulo: "Implementado", itens: [["Programa de produção (Rust)", "dinheiro, criptografia e codificação; 40 testes"], ["Especificação AURON-SPEC-01", "regras byte a byte"], ["6 correções de segurança", "da revisão de 11/09/2026, com teste para cada ataque"], ["Gabarito em Python", "completo, com trabalho útil em todo bloco; 119 testes"]] },
       building: { titulo: "Em desenvolvimento", itens: [["Transação multiativo", "pronta no gabarito, indo para o Rust"], ["Cadeia, estado e mineração", "no gabarito, indo para o Rust"], ["UTRAX", "protótipo com três tipos de tarefa"], ["Transação em Rust", "próximo passo do programa de produção"]] },
       research: { titulo: "Pesquisa", itens: [["Fragmentação 16×16", "modelo lógico"], ["Transporte por rádio", "ideia experimental"], ["Armazenamento distribuído", "com redundância"], ["Trabalho útil na segurança", "questão em aberto"]] },
       future: { titulo: "Futuro", itens: [["Rede entre nós e rede de teste", "depois do núcleo"], ["Auron Direct e Resonance", "arquitetura escrita"], ["IA e economia de máquinas", "visão"], ["Auron Flux", "só com autorização do Banco Central"]] },
@@ -306,7 +306,7 @@ export default {
       },
       {
         titulo: "COMO A MOEDA FUNCIONA", sub: "blocos, hashes e prova de trabalho",
-        fala: "Cada bloco carrega o hash do anterior num cabeçalho de cento e cinquenta e oito bytes, então mexer num bloco antigo quebra todos os seguintes. Um bloco a cada dois minutos, mineração Argon2id, teto de vinte e um milhões de AUR.",
+        fala: "Cada bloco carrega o hash do anterior num cabeçalho de duzentos e vinte e dois bytes, então mexer num bloco antigo quebra todos os seguintes. Todo bloco também prova trabalho útil, uma multiplicação de matrizes que qualquer nó confere com poucas contas. Alvo de dois minutos por bloco, Argon2id como camada extra, teto de vinte e um milhões de AUR.",
       },
       {
         titulo: "COMO SE PAGA O TRABALHO", sub: "conferir custa pouco; refazer custa muito",
@@ -322,7 +322,7 @@ export default {
       },
       {
         titulo: "COMO É CONSTRUÍDO", sub: "duas implementações que precisam concordar",
-        fala: "Cada regra é escrita na especificação e implementada duas vezes: um gabarito em Python e o programa de produção em Rust puro. Os dois precisam aceitar e recusar exatamente as mesmas coisas, byte a byte. São noventa e oito testes, e as seis falhas da revisão de ataque já foram corrigidas.",
+        fala: "Cada regra é escrita na especificação e implementada duas vezes: um gabarito em Python e o programa de produção em Rust puro. Os dois precisam aceitar e recusar exatamente as mesmas coisas, byte a byte. São cento e dezenove testes no gabarito, e as seis falhas da revisão de ataque já foram corrigidas.",
       },
       {
         titulo: "", sub: "", linhas: ["REDE PÚBLICA: AINDA NÃO EXISTE", "SEM VENDA. SEM PRÉ-VENDA.", "SEM PROMESSA DE LUCRO."],

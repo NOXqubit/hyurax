@@ -174,7 +174,7 @@ feito para que tudo possa ser conferido:
 | Parte | Situação |
 |---|---|
 | Especificação técnica | escrita; ainda é rascunho, porque a tokenomics não está definida |
-| Programa de referência (Python) | completo, 91 testes passando |
+| Programa de referência (Python) | completo, 119 testes passando |
 | Programa de produção (Rust) | começado: dinheiro, criptografia e codificação prontos, 40 testes |
 | Transação com vários ativos e vários destinatários | pronta no programa de referência |
 | UTRAX (trabalho útil) | protótipo com três tipos de tarefa |

@@ -57,7 +57,7 @@ export default {
       consenso: {
         nome: "CONSENSUS", estado: "desenvolvimento",
         texto: "Las reglas que deciden qué cadena vale. Gana la cadena válida con más trabajo acumulado.",
-        itens: ["Prueba de trabajo Argon2id con 32 MiB por intento: celulares y computadoras minan con el mismo programa.", "Dificultad ajustada en cada bloque con LWMA, además de defensas contra marcas de tiempo falsas.", "Las recompensas de minería solo se pueden gastar tras 100 bloques."],
+        itens: ["Cada bloque prueba trabajo útil: un producto de matrices generado a partir del bloque anterior y del minero, verificado con Freivalds.", "El tamaño de ese trabajo crece con la capacidad validada de la red, separado del intervalo de bloque.", "Argon2id con 32 MiB por intento como capa complementaria: celulares y computadoras minan con el mismo programa.", "Dificultad ajustada en cada bloque con LWMA, además de defensas contra marcas de tiempo falsas.", "Las recompensas de minería solo se pueden gastar tras 100 bloques."],
       },
       protocolo: {
         nome: "PROTOCOL", estado: "implementado",
@@ -114,7 +114,7 @@ export default {
     titulo: "Trabajo útil, <em>verificado</em> antes de pagar",
     intro: "Una tarea entra en el mercado con el pago bloqueado. Varios nodos se ofrecen, se elige uno que hace el cálculo, otro lo verifica con pocas operaciones y la red solo libera el pago si el resultado es correcto. La verificación de abajo usa el algoritmo de Freivalds de verdad, ejecutándose en tu navegador.",
     rodar: "Enviar tarea", trapaca: "Ejecutor deshonesto", c: "C = A × B (entregada)", tarefas: "Tipos de tarea",
-    nota: "UTRAX funciona <strong>fuera del consenso</strong>: un fallo en una tarea nunca detiene la moneda. Unir el trabajo útil con la seguridad de la minería es investigación abierta, no una promesa.",
+    nota: "Dos capas. <strong>En el consenso</strong>, cada bloque ya exige un producto de matrices verificado así, generado por la propia red. <strong>En el mercado UTRAX</strong>, la tarea viene de quien paga y queda fuera del consenso: un fallo en una tarea nunca detiene la moneda. Llevar problemas reales de clientes dentro del bloque es investigación, no una promesa.",
     etapas: ["Tarea publicada: multiplicar dos matrices de 8×8. Pago bloqueado.", "Cinco nodos se ofrecen para ejecutarla.", "Se elige el nodo {n}; el nodo {v} verificará.", "El nodo {n} calcula C = A × B.", "El verificador elige vectores al azar a partir del propio resultado y comprueba A·(B·r) = C·r.", "Prueba registrada: resultado, vectores y cuentas.", "Pago liberado al nodo {n}."],
     aceito: "Aceptado: las cuentas coinciden en las {k} rondas.", aceito_s: "Aquí, verificar costó {c} multiplicaciones y rehacerlo costaría {r}: en una matriz pequeña no compensa. En una de 1000×1000, verificar cuesta unos 9 millones, frente a 1000 millones para rehacerla.",
     recusado: "Rechazado: en la ronda {k}, A·(B·r) ≠ C·r.", recusado_s: "Sin pago. La tarea vuelve a la cola.",
@@ -254,7 +254,7 @@ export default {
     titulo: "Dónde estamos, <em>sin adornos</em>",
     intro: "Estado al 11/09/2026. Esta sección existe para que nadie confunda una visión con un producto terminado.",
     colunas: {
-      live: { titulo: "Implementado", itens: [["Programa de producción (Rust)", "dinero, criptografía y codificación; 40 pruebas"], ["Especificación AURON-SPEC-01", "reglas byte a byte"], ["6 correcciones de seguridad", "de la revisión del 11/09/2026, con una prueba por ataque"], ["Referencia en Python", "completa; 91 pruebas"]] },
+      live: { titulo: "Implementado", itens: [["Programa de producción (Rust)", "dinero, criptografía y codificación; 40 pruebas"], ["Especificación AURON-SPEC-01", "reglas byte a byte"], ["6 correcciones de seguridad", "de la revisión del 11/09/2026, con una prueba por ataque"], ["Referencia en Python", "completa, con trabajo útil en cada bloque; 119 pruebas"]] },
       building: { titulo: "En desarrollo", itens: [["Transacción multiactivo", "lista en la referencia, pasando a Rust"], ["Cadena, estado y minería", "en la referencia, pasando a Rust"], ["UTRAX", "prototipo con tres tipos de tarea"], ["Transacción en Rust", "siguiente paso del programa de producción"]] },
       research: { titulo: "Investigación", itens: [["Fragmentación 16×16", "modelo lógico"], ["Transporte por radio", "idea experimental"], ["Almacenamiento distribuido", "con redundancia"], ["Trabajo útil en la seguridad", "pregunta abierta"]] },
       future: { titulo: "Futuro", itens: [["Red entre nodos y red de pruebas", "después del núcleo"], ["Auron Direct y Resonance", "arquitectura escrita"], ["IA y economía de máquinas", "visión"], ["Auron Flux", "solo con autorización del banco central"]] },
@@ -305,7 +305,7 @@ export default {
       },
       {
         titulo: "CÓMO FUNCIONA LA MONEDA", sub: "bloques, hashes y prueba de trabajo",
-        fala: "Cada bloque lleva el hash del anterior en una cabecera de ciento cincuenta y ocho bytes, así que tocar un bloque antiguo rompe todos los siguientes. Un bloque cada dos minutos, minería Argon2id, límite de veintiún millones de AUR.",
+        fala: "Cada bloque lleva el hash del anterior en una cabecera de doscientos veintidós bytes, así que tocar un bloque antiguo rompe todos los siguientes. Cada bloque también prueba trabajo útil, una multiplicación de matrices que cualquier nodo verifica con pocas cuentas. Objetivo de dos minutos por bloque, Argon2id como capa extra, límite de veintiún millones de AUR.",
       },
       {
         titulo: "CÓMO SE PAGA EL TRABAJO", sub: "verificar cuesta poco; rehacer cuesta mucho",
@@ -321,7 +321,7 @@ export default {
       },
       {
         titulo: "CÓMO ESTÁ CONSTRUIDO", sub: "dos implementaciones que deben coincidir",
-        fala: "Cada regla se escribe en la especificación y se implementa dos veces: una referencia en Python y el programa de producción en Rust puro. Los dos deben aceptar y rechazar exactamente lo mismo, byte a byte. Noventa y ocho pruebas, y los seis fallos de la revisión de ataques ya están corregidos.",
+        fala: "Cada regla se escribe en la especificación y se implementa dos veces: una referencia en Python y el programa de producción en Rust puro. Los dos deben aceptar y rechazar exactamente lo mismo, byte a byte. Ciento diecinueve pruebas en la referencia, y los seis fallos de la revisión de ataques ya están corregidos.",
       },
       {
         titulo: "", sub: "", linhas: ["RED PÚBLICA: TODAVÍA NO EXISTE", "SIN VENTA. SIN PREVENTA.", "SIN PROMESA DE GANANCIAS."],
