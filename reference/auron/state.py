@@ -201,9 +201,11 @@ class State:
             raise StateError(
                 f"coinbase declara altura {coinbase.height}, bloco está em {height}"
             )
-        if coinbase.amount <= 0:
-            raise StateError("coinbase sem valor")
-
+        # A regra é 0 <= amount <= subsídio + taxas. Coinbase de valor zero é
+        # válida: o minerador pode abrir mão da recompensa, e isso só reduz a
+        # emissão. Recusar o zero aqui, com a especificação falando apenas em
+        # máximo, faria o Rust aceitar um bloco que o gabarito recusa — dois
+        # programas discordando sobre o mesmo bloco é o que racha uma rede.
         subsidy = block_reward(height, self.params)
         allowed = checked_add(subsidy, fees)
         if coinbase.amount > allowed:

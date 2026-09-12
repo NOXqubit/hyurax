@@ -21,6 +21,18 @@ MAX_SUPPLY = 21_000_000 * AUR_UNIT
 # Limite de sanidade para qualquer valor serializado (cabe em u64).
 MAX_AMOUNT = 2**64 - 1
 
+# Tamanho máximo do texto aceito por `to_units`.
+#
+# O maior valor representável tem 20 dígitos inteiros e 8 decimais. 64
+# caracteres dão folga de sobra para sinal, ponto e zeros à esquerda.
+#
+# Sem este limite, uma string com milhões de dígitos fazia o `int()` do Python
+# levantar ValueError (acima de 4300 dígitos ele recusa a conversão), que não é
+# AmountError e escapava de quem só tratava erro de valor; e, no caminho sem
+# esse limite, gastava CPU à toa. O Rust recusa por não caber em u64. Cortar
+# cedo, pelo tamanho, faz os dois recusarem a mesma coisa pelo mesmo motivo.
+MAX_AMOUNT_TEXT = 64
+
 if MAX_SUPPLY > MAX_AMOUNT:
     raise AssertionError("MAX_SUPPLY não cabe em u64")
 
@@ -75,6 +87,10 @@ def to_units(aur: str | int) -> int:
     if not aur.isascii():
         raise AmountError(
             f"valor deve conter apenas caracteres ASCII: {aur!r}"
+        )
+    if len(aur) > MAX_AMOUNT_TEXT:
+        raise AmountError(
+            f"texto de valor tem {len(aur)} caracteres, máximo é {MAX_AMOUNT_TEXT}"
         )
     s = aur.strip(" \t\n\r\f\v")
     if not s:

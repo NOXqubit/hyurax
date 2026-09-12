@@ -31,6 +31,7 @@ MODULES = [
     ("test_07_store.py", "persistencia"),
     ("test_08_vectors.py", "vetores: manifesto e casos de borda"),
     ("test_09_multiativo.py", "transferencia v2: varios ativos e varias saidas"),
+    ("test_10_revisao_seguranca.py", "as 6 correcoes da revisao de ataque"),
 ]
 
 

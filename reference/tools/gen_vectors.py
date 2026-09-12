@@ -53,7 +53,8 @@ def vec_units() -> list[dict]:
     um lado que do outro e uma divergencia de consenso esperando acontecer.
     """
     aceitos = ("0", "1", "0.1", "0.00000001", "1.5", "50", "21000000",
-               "+2", ".5", "7.", "123.45678901", "  3.25  ")
+               "+2", ".5", "7.", "123.45678901", "  3.25  ",
+               "0" * 55 + "21000000")   # 63 caracteres: no limite, aceito
     recusados = (
         "-1", "-1.5",            # negativo: dinheiro e u64
         "1.123456789",           # mais de 8 casas: recusar em vez de truncar
@@ -66,6 +67,8 @@ def vec_units() -> list[dict]:
         "1.5 ",
         "1​.5",          # espaco de largura zero no meio
         "184467440737.09551616",  # acima de u64
+        "1" * 65,        # texto longo demais: o limite e 64 caracteres
+        "0" * 70 + "1",  # zeros a esquerda nao compram tamanho
     )
 
     parse = []
@@ -230,6 +233,30 @@ def vec_targets() -> dict:
             "timestamps": ts,
             "targets_in": [hex(start)] * n,
             "next_target": hex(consensus.next_target(ts, [start] * n, p)),
+        })
+
+    # Horarios que andam para tras. O retarget usa a sequencia tornada nao
+    # decrescente, entao estes casos travam a regra nova: o tempo negativo
+    # conta como zero, e a alternacao nao derruba a dificuldade.
+    base = 1_000_000
+    passo = p.target_spacing
+    alternado = []
+    for i in range(n):
+        t = base + i * passo
+        alternado.append(t - 3 * passo if i % 2 else t + 3 * passo)
+    para_tras = [base + i * passo for i in range(n)]
+    para_tras[n // 2] = base  # um bloco no meio com horario bem antigo
+    iguais = [base] * n       # todos no mesmo segundo
+    for name, ts in (("horario_alternado", alternado),
+                     ("horario_para_tras", para_tras),
+                     ("horarios_iguais", iguais)):
+        scenarios.append({
+            "name": name,
+            "network": p.name,
+            "timestamps": ts,
+            "targets_in": [hex(start)] * n,
+            "next_target": hex(consensus.next_target(ts, [start] * n, p)),
+            "note": "timestamps nao monotonicos; a regra os torna nao decrescentes",
         })
     return {"compact": compact, "lwma": scenarios}
 

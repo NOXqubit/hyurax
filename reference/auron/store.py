@@ -23,6 +23,7 @@ from pathlib import Path
 from . import codec
 from .block import Block
 from .chain import Chain, ChainError
+from .tx import TxError
 from .consensus import NETWORKS, ChainParams
 
 STORE_MAGIC = b"AURONDB1"
@@ -85,7 +86,10 @@ def load_chain(path: str | Path, *, trust_pow: bool = False,
         try:
             raw = r.var_bytes()
             block = Block.decode(raw)
-        except codec.CodecError as exc:
+        except (codec.CodecError, TxError) as exc:
+            # Um arquivo adulterado pode trazer uma transação malformada, e
+            # isso é erro de arquivo, não queda do programa: TxError precisa
+            # virar StoreError igual ao erro de codificação.
             raise StoreError(f"bloco {index + 1} corrompido: {exc}") from exc
 
         try:

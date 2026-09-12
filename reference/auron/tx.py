@@ -102,11 +102,23 @@ class Coinbase:
         version = r.u16()
         if version != TX_VERSION:
             raise TxError(f"versão de transação desconhecida: {version}")
+        height = r.u64()
+        recipient = r.fixed(crypto.ADDRESS_LEN)
+        amount = r.u64()
+        extra_nonce = r.var_bytes()
+        # A leitura precisa recusar exatamente o que a escrita recusa. Sem isto,
+        # uma coinbase com extra_nonce de 65 bytes era decodificada, e só
+        # estourava TxError mais tarde, ao recodificar para o txid — fora de
+        # qualquer caminho preparado para tratar o erro.
+        if len(extra_nonce) > MAX_EXTRA_NONCE:
+            raise TxError(
+                f"extra_nonce tem {len(extra_nonce)} bytes, máximo é {MAX_EXTRA_NONCE}"
+            )
         return Coinbase(
-            height=r.u64(),
-            recipient=r.fixed(crypto.ADDRESS_LEN),
-            amount=r.u64(),
-            extra_nonce=r.var_bytes(),
+            height=height,
+            recipient=recipient,
+            amount=amount,
+            extra_nonce=extra_nonce,
         )
 
     def txid(self) -> bytes:

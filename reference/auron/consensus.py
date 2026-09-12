@@ -312,13 +312,33 @@ def next_target(timestamps: list[int], targets: list[int],
     spacing = params.target_spacing
     k = window * (window + 1) // 2 * spacing
 
+    # Os timestamps da janela viram uma sequência não decrescente ANTES da
+    # conta. Um bloco com horário menor que o anterior passa a contar zero, e
+    # não um tempo negativo.
+    #
+    # Timestamps não são monotônicos por regra de rede: só o median-time-past
+    # é. Com tempo negativo valendo na conta, um minerador com parte do poder
+    # da rede publica blocos com horário para trás — cada um válido sozinho,
+    # porque o median-time-past continua andando — e derruba a soma ponderada.
+    # Soma ponderada menor significa alvo menor, ou seja DIFICULDADE MAIOR
+    # para todo mundo. Medido na regra antiga: intercalar horários antigos
+    # cortava o alvo pela metade, que é o limite por bloco. Repetido, isso
+    # trava a cadeia sem precisar de maioria de poder.
+    #
+    # Tornando a janela não decrescente, o horário para trás vira tempo zero:
+    # o pior que o atacante faz é não contribuir com tempo, e a manipulação
+    # no outro sentido fica em poucos por cento.
+    mono = []
+    maior = ts[0]
+    for t in ts:
+        maior = max(maior, t)
+        mono.append(maior)
+
     weighted = 0
     for i in range(1, window + 1):
-        solvetime = ts[i] - ts[i - 1]
-        # Timestamps não são monotônicos por regra de rede; só o
-        # median-time-past é. Então o tempo negativo precisa ser tolerado e
-        # limitado, não rejeitado.
-        solvetime = max(-6 * spacing, min(solvetime, 6 * spacing))
+        solvetime = mono[i] - mono[i - 1]
+        # Agora o tempo nunca é negativo; o teto continua valendo.
+        solvetime = min(solvetime, 6 * spacing)
         weighted += solvetime * i
 
     # Piso do denominador: sem ele, uma sequência de timestamps colados faz o

@@ -45,6 +45,12 @@ para que os dois recusem exatamente as mesmas entradas.
 5. `+` inicial é aceito. `.5` e `7.` são aceitos. Espaço nas pontas é
    ignorado. Espaço no meio, vírgula, notação científica e prefixo hexadecimal
    são recusados.
+6. **No máximo 64 caracteres.** O maior valor representável tem 20 dígitos
+   inteiros e 8 decimais, então 64 dá folga de sobra. O limite é conferido
+   antes de qualquer conversão. Sem ele, uma entrada com milhões de dígitos
+   fazia o `int()` do Python levantar `ValueError` (acima de 4300 dígitos ele
+   recusa converter), que não é o erro de valor que quem chama trata, e ainda
+   gastava CPU à toa. Corrigido em 12/09/2026, na revisão de ataque.
 
 A formatação (`to_aur_str`) aceita inteiro negativo de propósito, porque é
 função de exibição e às vezes é preciso mostrar a diferença entre dois saldos.
@@ -157,6 +163,13 @@ campos.
 
 `height` precisa bater com a altura do bloco. Isso também torna cada coinbase
 única, mesmo com mesmo destinatário e mesmo valor.
+
+O limite de 64 bytes do `extra_nonce` vale **na leitura e na escrita**. Uma
+coinbase com `extra_nonce` maior é recusada ao ser decodificada. Antes da
+revisão de 12/09/2026, a leitura aceitava e o erro só aparecia depois, ao
+recodificar para calcular o `txid` — fora de qualquer caminho preparado para
+tratá-lo. Todo erro de transação dentro de um bloco é motivo de rejeição do
+bloco, e precisa chegar a quem valida como erro de cadeia.
 
 ### 5.2 Transferência (`kind = 1`, versão 2)
 
@@ -336,9 +349,14 @@ A cada bloco, sobre uma janela de `lwma_window` blocos.
 T = target_spacing
 k = window * (window + 1) / 2 * T
 
+# a janela vira uma sequência não decrescente antes da conta
+mono[0] = timestamp[0]
 para i em 1..window:
-    st = timestamp[i] - timestamp[i-1]
-    st = clamp(st, -6T, +6T)
+    mono[i] = max(timestamp[i], mono[i-1])
+
+para i em 1..window:
+    st = mono[i] - mono[i-1]          # nunca negativo
+    st = min(st, 6T)
     weighted += st * i
 
 weighted = max(weighted, k / 3)
@@ -355,8 +373,20 @@ Três defesas contra timestamp mentiroso: o limite de `±6T` por intervalo, o
 piso `k/3` no denominador (sem ele, timestamps colados fazem o alvo explodir), e
 a trava de fator 2 por bloco nos dois sentidos.
 
-Tempo de solução negativo é tolerado e limitado, não rejeitado: timestamps não
-são monotônicos por regra de rede, só o median-time-past é.
+**Timestamps não decrescentes no cálculo.** Timestamps não são monotônicos por
+regra de rede, só o median-time-past é. Mas aceitar tempo de solução negativo
+na conta abre um ataque de parada: um minerador sem maioria publica blocos com
+horário para trás, cada um válido sozinho, e derruba a soma ponderada. Soma
+menor significa alvo menor, ou seja **dificuldade maior para a rede inteira**.
+Medido na regra anterior, intercalar horários antigos batia no limite de
+metade do alvo por bloco; repetido, trava a cadeia.
+
+Por isso a janela é tornada não decrescente antes da conta: horário para trás
+vira tempo zero. O pior que o atacante consegue é não contribuir com tempo, e
+a manipulação no outro sentido fica em poucos por cento. Corrigido em
+12/09/2026, na revisão de ataque; os casos `horario_alternado`,
+`horario_para_tras` e `horarios_iguais` em `vectors/targets.json` travam a
+regra.
 
 ## 11. Timestamps
 
@@ -381,10 +411,17 @@ Valores atuais, sujeitos ao documento oficial:
 
 O protótipo pagava 50 AUR para sempre, sem halving e sem teto.
 
-A coinbase pode pagar no máximo `block_reward(altura) + soma das taxas do
-bloco`. Só a parte de subsídio conta como emissão nova; a parte de taxa é
-dinheiro que já existia. O estado recusa qualquer bloco que faria a emissão
-passar de `MAX_SUPPLY`.
+A coinbase paga `amount`, com `0 <= amount <= block_reward(altura) + soma das
+taxas do bloco`. **Zero é válido:** o minerador pode abrir mão da recompensa, e
+isso só reduz a emissão. A regra está escrita nos dois limites de propósito: o
+gabarito recusava o zero enquanto esta seção falava apenas em máximo, e um nó
+em Rust seguindo o texto aceitaria um bloco que o gabarito recusa. Dois
+programas discordando sobre o mesmo bloco racha a rede. Alinhado em
+12/09/2026, na revisão de ataque.
+
+Só a parte de subsídio conta como emissão nova; a parte de taxa é dinheiro que
+já existia. O estado recusa qualquer bloco que faria a emissão passar de
+`MAX_SUPPLY`.
 
 ## 13. Estado
 
@@ -493,6 +530,14 @@ derivado de `H(semente || tamanho || resultado)`. Vetores em `[0, 2^20)`,
 4 rodadas, erro `<= 2^-80`. O desafio depender do próprio resultado alegado é o
 que impede grinding contra vetores fixos. O protótipo sorteava sem semente, e
 dois nós honestos podiam discordar.
+
+**Faixa obrigatória do resultado.** Antes de qualquer conta, cada entrada de
+`C` precisa estar em `[0, n * (MATRIX_ENTRY_MAX - 1)^2]`, que é a faixa de um
+produto honesto. Sem essa checagem, um executor entrega entradas perto de
+`2^63`: a multiplicação `C·r` estoura o inteiro de 64 bits, dá a volta em
+silêncio, e um resultado errado pode coincidir com o certo no que sobra. A
+checagem custa O(n²), a mesma ordem da verificação. Corrigido em 12/09/2026,
+na revisão de ataque.
 
 **Mochila.** A especificação exige o **ótimo**, e a verificação recomputa a
 programação dinâmica. Custo O(n·C), igual à execução. O protótipo conferia só

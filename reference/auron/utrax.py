@@ -181,6 +181,14 @@ def freivalds_verify(a: np.ndarray, b: np.ndarray, c: np.ndarray,
     if n > MATRIX_MAX_SIZE:
         return False
 
+    # C precisa estar na faixa que um produto honesto pode gerar. Sem isto, um
+    # executor entrega entradas perto de 2^63: a conta `c @ r` estoura o int64
+    # e o numpy dá a volta em silêncio, então um resultado errado pode bater
+    # com o certo naquilo que sobra. A faixa fecha essa porta e custa O(n²).
+    limite = n * (MATRIX_ENTRY_MAX - 1) ** 2
+    if int(c.min()) < 0 or int(c.max()) > limite:
+        return False
+
     modulus = 1 << FREIVALDS_BITS
     values = _ints_from_seed(
         challenge_seed, FREIVALDS_ROUNDS * n, modulus, DOMAIN_FREIVALDS

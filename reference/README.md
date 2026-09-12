@@ -17,7 +17,7 @@ terceiros é o numpy, e só na camada Utrax, que está fora do consenso.
 python tests/run_all_tests.py
 ```
 
-91 testes. Entre 2 e 4 minutos nesta máquina, conforme a memória livre. Não
+98 testes. Entre 2 e 4 minutos nesta máquina, conforme a memória livre. Não
 precisa instalar nada além do numpy.
 
 ## Achados próprios, depois do protótipo

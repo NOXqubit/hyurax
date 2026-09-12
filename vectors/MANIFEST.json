@@ -37,16 +37,16 @@
       "sha512_16": "69eabb2b570cdf3a0eff62d824c6247c"
     },
     "targets.json": {
-      "bytes": 11466,
-      "sha512_16": "4936e78b3b53e9d74c1fcd802acc16b4"
+      "bytes": 21281,
+      "sha512_16": "8aa438895406d54d5a093cd2af447aed"
     },
     "transactions.json": {
       "bytes": 7865,
       "sha512_16": "4c183f7cc73b233a5a1f40a12b8b8c29"
     },
     "units.json": {
-      "bytes": 4693,
-      "sha512_16": "8ce6719ecb7c371dae9510f6c38dc93b"
+      "bytes": 5226,
+      "sha512_16": "8e9e3e0175555f9d77ba0057773a6971"
     },
     "utrax.json": {
       "bytes": 14643,

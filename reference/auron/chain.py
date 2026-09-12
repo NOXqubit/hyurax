@@ -45,7 +45,7 @@ from .consensus import (
     target_to_work,
 )
 from .state import State, StateError
-from .tx import Coinbase, Transfer
+from .tx import Coinbase, Transfer, TxError
 
 GENESIS_PREV_HASH = b"\x00" * 64
 
@@ -225,6 +225,19 @@ class Chain:
         """
         self._check_header_cheap(block.header, now=now)
 
+        # Daqui para baixo se mexe nas transações do bloco. Qualquer erro de
+        # transação ou de codificação é motivo de RECUSA do bloco, e precisa
+        # sair como ChainError: quem chama trata ChainError, e uma TxError
+        # escapando por baixo derrubava o nó em vez de rejeitar o bloco.
+        try:
+            self._validate_transactions(block)
+        except (TxError, codec.CodecError) as exc:
+            raise ChainError(f"transação inválida no bloco: {exc}") from exc
+
+        # Só agora, com tudo o mais conferido, vale gastar o Argon2id.
+        self._check_header_pow(block.header)
+
+    def _validate_transactions(self, block: Block) -> None:
         size = block.size()
         if size > self.params.max_block_bytes:
             raise ChainError(
@@ -251,9 +264,6 @@ class Chain:
         if Block.decode(raw).encode() != raw:
             raise ChainError("codificação do bloco não é canônica")
 
-        # Só agora, com tudo o mais conferido, vale gastar o Argon2id.
-        self._check_header_pow(block.header)
-
     # -- entrada única --
 
     def accept_block(self, block: Block, *, now: int | None = None) -> None:
@@ -263,7 +273,7 @@ class Chain:
         height = block.header.height
         try:
             undo = self.state.apply_block(height, block.transactions, self.params.magic)
-        except (StateError, ValueError) as exc:
+        except (StateError, TxError, codec.CodecError, ValueError) as exc:
             raise ChainError(f"estado rejeitou o bloco: {exc}") from exc
 
         try:

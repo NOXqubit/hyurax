@@ -39,6 +39,13 @@ pub const MAX_SUPPLY: u64 = 21_000_000 * AUR_UNIT;
 /// Maior valor representável. Todo campo monetário é `u64` na codificação.
 pub const MAX_AMOUNT: u64 = u64::MAX;
 
+/// Tamanho máximo do texto aceito por [`Amount::from_aur_str`].
+///
+/// Vinte dígitos inteiros e oito decimais cobrem qualquer valor possível; 64
+/// dá folga para sinal, ponto e zeros à esquerda. Ver seção 1 da
+/// `spec/AURON-SPEC-01.md`.
+pub const MAX_AMOUNT_TEXT: usize = 64;
+
 /// Motivo pelo qual um valor monetário foi recusado.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum AmountError {
@@ -58,6 +65,8 @@ pub enum AmountError {
     PrecisaoDemais,
     /// O valor não cabe em `u64`.
     ForaDaFaixa,
+    /// O texto passa de [`MAX_AMOUNT_TEXT`] caracteres.
+    TextoLongoDemais,
 }
 
 impl fmt::Display for AmountError {
@@ -71,6 +80,7 @@ impl fmt::Display for AmountError {
                  (saldo, valor e taxa são sem sinal no protocolo)"
             }
             Self::CaractereInvalido => "caractere que não é dígito ASCII",
+            Self::TextoLongoDemais => "texto de valor longo demais",
             Self::SeparadorRepetido => "mais de um separador decimal",
             Self::PrecisaoDemais => {
                 "mais de 8 casas decimais (truncar seria perder dinheiro)"
@@ -132,6 +142,15 @@ impl Amount {
         // simplesmente não aceita nada fora do ASCII.
         if !entrada.is_ascii() {
             return Err(AmountError::NaoAscii);
+        }
+
+        // Limite de tamanho antes de qualquer conversão. O maior valor
+        // representável tem 20 dígitos inteiros e 8 decimais, então 64 dá
+        // folga de sobra. No Python, sem este corte, uma entrada com milhões
+        // de dígitos levantava `ValueError` no `int()` em vez do erro de
+        // valor, e gastava CPU à toa. Os dois lados recusam pelo mesmo motivo.
+        if entrada.len() > MAX_AMOUNT_TEXT {
+            return Err(AmountError::TextoLongoDemais);
         }
 
         let texto = entrada.trim_matches([' ', '\t', '\n', '\r', '\x0c', '\x0b']);
@@ -284,6 +303,17 @@ mod testes {
             ("١", AmountError::NaoAscii),
             ("184467440737.09551616", AmountError::ForaDaFaixa),
         ];
+        // Texto longo demais: o limite é conferido antes de qualquer conversão.
+        let longo = "1".repeat(MAX_AMOUNT_TEXT + 1);
+        let zeros = format!("{}1", "0".repeat(70));
+        for texto in [longo.as_str(), zeros.as_str()] {
+            assert_eq!(
+                Amount::from_aur_str(texto),
+                Err(AmountError::TextoLongoDemais),
+                "texto de {} caracteres deveria ser recusado pelo tamanho",
+                texto.len()
+            );
+        }
         for (texto, esperado) in casos {
             match Amount::from_aur_str(texto) {
                 Ok(v) => panic!("{texto:?} deveria falhar, devolveu {}", v.units()),
