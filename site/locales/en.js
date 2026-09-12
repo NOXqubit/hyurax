@@ -216,7 +216,7 @@ export default {
       ["Reputation", "A behavior history for each node.", "planejado"],
       ["Quarantine", "Isolate suspicious nodes without taking the network down.", "planejado"],
     ],
-    revisao: "Attack review on 09/11/2026: 6 flaws found, none allowing coins to be created or spent twice. Fixes in progress.",
+    revisao: "Attack review on 09/11/2026: 6 flaws found, none allowing coins to be created or spent twice. All fixed on 09/12/2026, with a test that reproduces each attack.",
   },
   arm: {
     titulo: "Files kept <em>in many places</em>",
@@ -253,8 +253,8 @@ export default {
     titulo: "Where we are, <em>plainly</em>",
     intro: "Status on September 11, 2026. This section exists so nobody mistakes a vision for a finished product.",
     colunas: {
-      live: { titulo: "Implemented", itens: [["Production program (Rust)", "money, cryptography and encoding; 40 tests"], ["AURON-SPEC-01 specification", "byte-by-byte rules"], ["Python reference", "complete; 91 tests"]] },
-      building: { titulo: "In development", itens: [["Multi-asset transaction", "done in the reference, moving to Rust"], ["Chain, state and mining", "in the reference, moving to Rust"], ["UTRAX", "prototype with three task types"], ["6 security fixes", "from the 09/11/2026 review"]] },
+      live: { titulo: "Implemented", itens: [["Production program (Rust)", "money, cryptography and encoding; 40 tests"], ["AURON-SPEC-01 specification", "byte-by-byte rules"], ["6 security fixes", "from the 09/11/2026 review, each with its own test"], ["Python reference", "complete; 91 tests"]] },
+      building: { titulo: "In development", itens: [["Multi-asset transaction", "done in the reference, moving to Rust"], ["Chain, state and mining", "in the reference, moving to Rust"], ["UTRAX", "prototype with three task types"], ["Transaction in Rust", "next step for the production program"]] },
       research: { titulo: "Research", itens: [["16×16 fragmentation", "logical model"], ["Radio transport", "experimental idea"], ["Distributed storage", "with redundancy"], ["Useful work in security", "open question"]] },
       future: { titulo: "Future", itens: [["Node network and testnet", "after the core"], ["Auron Direct and Resonance", "architecture written"], ["AI and machine economy", "vision"], ["Auron Flux", "only with central bank authorization"]] },
     },
@@ -263,7 +263,7 @@ export default {
   aberto: {
     titulo: "Built <em>in public</em>",
     intro: "The code, the specification, the tests and the documents are here to download and check. MIT or Apache-2.0 license.",
-    "n-python": "tests in the Python reference", "n-rust": "tests in the Rust production program", "n-vetores": "shared test vector files", "n-falhas": "flaws found in the attack review, being fixed",
+    "n-python": "tests in the Python reference", "n-rust": "tests in the Rust production program", "n-vetores": "shared test vector files", "n-falhas": "flaws from the attack review, all fixed",
     codigo: "Full source code", "codigo-d": "Specification, Python reference, Rust program, vectors, documents and this website.", "baixar-codigo": "Download the code",
     doc: "Presentation document", "doc-d": "What Auron is, its focus, what we do not promise and where it stands. In Portuguese.", "baixar-doc": "Download the document",
     roteiro: "Video script", "roteiro-d": "The eight scenes of the presentation, to record or generate a video. In Portuguese.", "baixar-roteiro": "Download the script",
@@ -289,7 +289,7 @@ export default {
       { titulo: "How it works", fala: "Whoever needs computing power publishes a task and locks the payment. A computer on the network does the work. And the network checks the result before paying, without redoing everything.", seg: 20, mundo: "rede" },
       { titulo: "The check", fala: "If someone delivers a tampered result, a few calculations are enough to notice. A wrong result is not paid, and the task goes back to the queue.", seg: 16, mundo: "grade" },
       { titulo: "What we do not promise", fala: "Auron is still under construction. The public network does not exist, and the coin has no value. We do not sell coins, we do not run presales, and nobody is going to get rich overnight.", seg: 18, mundo: "nucleo" },
-      { titulo: "The method", fala: "Every rule is written down, tested against attacks and checked byte by byte by two different programs. A security review has already found flaws, and they are being fixed before any launch.", seg: 16, mundo: "cadeia" },
+      { titulo: "The method", fala: "Every rule is written down, tested against attacks and checked byte by byte by two different programs. A security review found six flaws, and all of them were fixed, each with a test that reproduces the attack.", seg: 16, mundo: "cadeia" },
       { titulo: "The call", fala: "We need people: people who test, people who review, people who bring real problems to solve. Auron. Computing power that is useful for something.", seg: 14, mundo: "logo" },
     ],
   },

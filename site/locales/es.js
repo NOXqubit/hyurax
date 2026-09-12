@@ -216,7 +216,7 @@ export default {
       ["Reputación", "Historial de comportamiento de cada nodo.", "planejado"],
       ["Cuarentena", "Aislar nodos sospechosos sin tumbar la red.", "planejado"],
     ],
-    revisao: "Revisión de ataques el 11/09/2026: 6 fallos encontrados, ninguno que permitiera crear monedas o gastar dos veces. Correcciones en curso.",
+    revisao: "Revisión de ataques el 11/09/2026: 6 fallos encontrados, ninguno que permitiera crear monedas o gastar dos veces. Todos corregidos el 12/09/2026, con una prueba que reproduce cada ataque.",
   },
   arm: {
     titulo: "Archivos guardados <em>en muchos lugares</em>",
@@ -253,8 +253,8 @@ export default {
     titulo: "Dónde estamos, <em>sin adornos</em>",
     intro: "Estado al 11/09/2026. Esta sección existe para que nadie confunda una visión con un producto terminado.",
     colunas: {
-      live: { titulo: "Implementado", itens: [["Programa de producción (Rust)", "dinero, criptografía y codificación; 40 pruebas"], ["Especificación AURON-SPEC-01", "reglas byte a byte"], ["Referencia en Python", "completa; 91 pruebas"]] },
-      building: { titulo: "En desarrollo", itens: [["Transacción multiactivo", "lista en la referencia, pasando a Rust"], ["Cadena, estado y minería", "en la referencia, pasando a Rust"], ["UTRAX", "prototipo con tres tipos de tarea"], ["6 correcciones de seguridad", "de la revisión del 11/09/2026"]] },
+      live: { titulo: "Implementado", itens: [["Programa de producción (Rust)", "dinero, criptografía y codificación; 40 pruebas"], ["Especificación AURON-SPEC-01", "reglas byte a byte"], ["6 correcciones de seguridad", "de la revisión del 11/09/2026, con una prueba por ataque"], ["Referencia en Python", "completa; 91 pruebas"]] },
+      building: { titulo: "En desarrollo", itens: [["Transacción multiactivo", "lista en la referencia, pasando a Rust"], ["Cadena, estado y minería", "en la referencia, pasando a Rust"], ["UTRAX", "prototipo con tres tipos de tarea"], ["Transacción en Rust", "siguiente paso del programa de producción"]] },
       research: { titulo: "Investigación", itens: [["Fragmentación 16×16", "modelo lógico"], ["Transporte por radio", "idea experimental"], ["Almacenamiento distribuido", "con redundancia"], ["Trabajo útil en la seguridad", "pregunta abierta"]] },
       future: { titulo: "Futuro", itens: [["Red entre nodos y red de pruebas", "después del núcleo"], ["Auron Direct y Resonance", "arquitectura escrita"], ["IA y economía de máquinas", "visión"], ["Auron Flux", "solo con autorización del banco central"]] },
     },
@@ -263,7 +263,7 @@ export default {
   aberto: {
     titulo: "Construido <em>en público</em>",
     intro: "El código, la especificación, las pruebas y los documentos están aquí para descargar y verificar. Licencia MIT o Apache-2.0.",
-    "n-python": "pruebas en la referencia en Python", "n-rust": "pruebas en el programa de producción en Rust", "n-vetores": "archivos de vectores de prueba compartidos", "n-falhas": "fallos hallados en la revisión de ataques, en corrección",
+    "n-python": "pruebas en la referencia en Python", "n-rust": "pruebas en el programa de producción en Rust", "n-vetores": "archivos de vectores de prueba compartidos", "n-falhas": "fallos de la revisión de ataques, todos corregidos",
     codigo: "Código completo", "codigo-d": "Especificación, referencia en Python, programa en Rust, vectores, documentos y este sitio.", "baixar-codigo": "Descargar el código",
     doc: "Documento de presentación", "doc-d": "Qué es Auron, su enfoque, lo que no prometemos y su estado real. En portugués.", "baixar-doc": "Descargar el documento",
     roteiro: "Guion del video", "roteiro-d": "Las ocho escenas de la presentación, para grabar o generar un video. En portugués.", "baixar-roteiro": "Descargar el guion",
@@ -289,7 +289,7 @@ export default {
       { titulo: "Cómo funciona", fala: "Quien necesita cómputo publica una tarea y deja el pago bloqueado. Una computadora de la red hace el trabajo. Y la red verifica el resultado antes de pagar, sin tener que rehacerlo todo.", seg: 20, mundo: "rede" },
       { titulo: "La verificación", fala: "Si alguien entrega un resultado adulterado, bastan unas pocas cuentas para notarlo. Un resultado erróneo no cobra, y la tarea vuelve a la cola.", seg: 16, mundo: "grade" },
       { titulo: "Lo que no prometemos", fala: "Auron todavía está en construcción. La red pública no existe y la moneda no tiene valor. No vendemos monedas, no hacemos preventas y nadie se va a hacer rico de la noche a la mañana.", seg: 18, mundo: "nucleo" },
-      { titulo: "El método", fala: "Cada regla se escribe, se prueba contra ataques y se verifica byte a byte con dos programas distintos. Una revisión de seguridad ya encontró fallos, y se están corrigiendo antes de cualquier lanzamiento.", seg: 16, mundo: "cadeia" },
+      { titulo: "El método", fala: "Cada regla se escribe, se prueba contra ataques y se verifica byte a byte con dos programas distintos. Una revisión de seguridad encontró seis fallos, y todos fueron corregidos, cada uno con una prueba que rehace el ataque.", seg: 16, mundo: "cadeia" },
       { titulo: "La invitación", fala: "Necesitamos personas: quien pruebe, quien revise, quien traiga problemas reales para resolver. Auron. Poder de cómputo que sirve para algo.", seg: 14, mundo: "logo" },
     ],
   },
