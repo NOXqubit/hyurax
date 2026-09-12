@@ -2,7 +2,7 @@
 export default {
   meta: {
     titulo: "Auron Technology — Infraestructura distribuida",
-    descricao: "Auron está construyendo una infraestructura en evolución para valor, computación, comunicación y recursos distribuidos.",
+    descricao: "Auron está construyendo una infraestructura en evolución para el valor, la computación, la comunicación y los recursos distribuidos.",
   },
   nav: {
     rotulo: "Secciones", tecnologia: "Tecnología", rede: "Red", pesquisa: "Investigación",
@@ -11,7 +11,7 @@ export default {
   estado: {
     implementado: "Implementado", desenvolvimento: "En desarrollo", pesquisa: "Investigación", planejado: "Planificado",
     implementado_d: "Existe en código y pasa sus pruebas.",
-    desenvolvimento_d: "En construcción o en migración al programa de producción.",
+    desenvolvimento_d: "En construcción o pasando al programa de producción.",
     pesquisa_d: "Hipótesis en estudio. Puede cambiar o no llegar a existir.",
     planejado_d: "Arquitectura escrita. Todavía sin código.",
   },
@@ -52,12 +52,12 @@ export default {
       nos: {
         nome: "NODES", estado: "planejado",
         texto: "Cada nodo guarda la cadena y verifica cada bloque y cada transacción por su cuenta. Nadie necesita confiar en nadie.",
-        itens: ["Programa de producción en Rust puro, sin código en C, para funcionar en móviles y en cualquier computadora.", "Comunicación entre nodos por internet sobre TCP con cifrado Noise.", "La red entre computadoras aún no empezó: viene justo después del núcleo."],
+        itens: ["Programa de producción en Rust puro, sin código en C, para funcionar en celulares y en cualquier computadora.", "Comunicación entre nodos por internet sobre TCP con cifrado Noise.", "La red entre computadoras todavía no ha empezado: viene justo después del núcleo."],
       },
       consenso: {
         nome: "CONSENSUS", estado: "desenvolvimento",
         texto: "Las reglas que deciden qué cadena vale. Gana la cadena válida con más trabajo acumulado.",
-        itens: ["Prueba de trabajo Argon2id con 32 MiB por intento: móviles y computadoras minan con el mismo programa.", "Dificultad ajustada en cada bloque con LWMA, con defensas contra marcas de tiempo falsas.", "Las recompensas de minería solo se pueden gastar tras 100 bloques."],
+        itens: ["Prueba de trabajo Argon2id con 32 MiB por intento: celulares y computadoras minan con el mismo programa.", "Dificultad ajustada en cada bloque con LWMA, además de defensas contra marcas de tiempo falsas.", "Las recompensas de minería solo se pueden gastar tras 100 bloques."],
       },
       protocolo: {
         nome: "PROTOCOL", estado: "implementado",
@@ -92,7 +92,7 @@ export default {
   },
   frag: {
     titulo: "Un archivo se convierte en <em>256 piezas</em>",
-    intro: "Escribe cualquier texto. Se cifra de verdad (AES-GCM, en tu navegador), se corta en 256 fragmentos de 16 bytes, se reparte en un tablero de 16×16 y cada pieza recibe su propio hash SHA-512.",
+    intro: "Escribe cualquier texto. Se cifra de verdad (AES-GCM, en tu navegador), se corta en 256 fragmentos de 16 bytes, que se reparten en un tablero de 16×16, y cada pieza recibe su propio hash SHA-512.",
     rotulo: "Texto a fragmentar", fragmentar: "Fragmentar", reconstruir: "Reconstruir", corromper: "Corromper un fragmento",
     escolha: "Toca una casilla del tablero para ver el fragmento.",
     nota: "<strong>Modelo en investigación.</strong> Es una capa lógica de distribución y fragmentación, no el consenso. Hoy, perder un fragmento impide la reconstrucción; la redundancia (erasure coding) es un tema de investigación (§36).",
@@ -106,16 +106,16 @@ export default {
   },
   radio: {
     titulo: "Datos que viajan <em>por el aire</em>",
-    intro: "Una línea de investigación: fragmentar datos y enviar las piezas por caminos distintos, aprovechando transmisores inalámbricos que ya existen, y reconstruirlos en el destino.",
+    intro: "Una línea de investigación: fragmentar datos y enviar las piezas por caminos distintos, aprovechando transmisores inalámbricos que ya existen, y reconstruir los datos en el destino.",
     canvas: "Visualización conceptual de ondas de radio llevando fragmentos por caminos distintos.",
     estados: ["Emitiendo fragmentos", "Fragmentos por caminos distintos", "Recibiendo", "Reconstruido en el destino"],
   },
   utrax: {
     titulo: "Trabajo útil, <em>verificado</em> antes de pagar",
-    intro: "Una tarea entra al mercado con el pago bloqueado. Los nodos se ofrecen, se elige uno, calcula, otro verifica con pocas operaciones y la red solo libera el pago si el resultado es correcto. La verificación de abajo es el algoritmo de Freivalds real, ejecutándose en tu navegador.",
+    intro: "Una tarea entra en el mercado con el pago bloqueado. Varios nodos se ofrecen, se elige uno que hace el cálculo, otro lo verifica con pocas operaciones y la red solo libera el pago si el resultado es correcto. La verificación de abajo usa el algoritmo de Freivalds de verdad, ejecutándose en tu navegador.",
     rodar: "Enviar tarea", trapaca: "Ejecutor deshonesto", c: "C = A × B (entregada)", tarefas: "Tipos de tarea",
     nota: "UTRAX funciona <strong>fuera del consenso</strong>: un fallo en una tarea nunca detiene la moneda. Unir el trabajo útil con la seguridad de la minería es investigación abierta, no una promesa.",
-    etapas: ["Tarea publicada: multiplicar dos matrices de 8×8. Pago bloqueado.", "Cinco nodos se ofrecen para ejecutarla.", "Se elige el nodo {n}; el nodo {v} verificará.", "El nodo {n} calcula C = A × B.", "El verificador obtiene vectores del propio resultado y comprueba A·(B·r) = C·r.", "Prueba registrada: resultado, vectores y cuentas.", "Pago liberado al nodo {n}."],
+    etapas: ["Tarea publicada: multiplicar dos matrices de 8×8. Pago bloqueado.", "Cinco nodos se ofrecen para ejecutarla.", "Se elige el nodo {n}; el nodo {v} verificará.", "El nodo {n} calcula C = A × B.", "El verificador elige vectores al azar a partir del propio resultado y comprueba A·(B·r) = C·r.", "Prueba registrada: resultado, vectores y cuentas.", "Pago liberado al nodo {n}."],
     aceito: "Aceptado: las cuentas coinciden en las {k} rondas.", aceito_s: "Aquí, verificar costó {c} multiplicaciones y rehacerlo costaría {r}: en una matriz pequeña no compensa. En una de 1000×1000, verificar cuesta unos 9 millones, frente a 1000 millones para rehacerla.",
     recusado: "Rechazado: en la ronda {k}, A·(B·r) ≠ C·r.", recusado_s: "Sin pago. La tarea vuelve a la cola.",
     prova: { tarefa: "Tarea", executor: "Ejecutor", verificador: "Verificador", rodadas: "Rondas", custo: "Costo de verificación", resultado: "Hash del resultado", recompensa: "Recompensa" },
@@ -146,7 +146,7 @@ export default {
     limite: "offline_single_tx_limit = 5 AUR",
     online: [
       ["SENDER", "Alice quiere pagarle 12,5 AUR a Bob."],
-      ["PAYMENT INTENT", "La solicitud de pago describe activo, monto, destino y plazo."],
+      ["PAYMENT INTENT", "La intención de pago describe activo, monto, destino y plazo."],
       ["NEGOTIATION", "Ambas partes acuerdan monto, comisión y forma de liquidación."],
       ["AUTHORIZATION", "Alice firma con la clave de su cartera. Nunca con la clave maestra."],
       ["LOCK", "El monto queda bloqueado hasta que la transferencia se complete o expire."],
@@ -169,14 +169,14 @@ export default {
   },
   res: {
     titulo: "Mensajes que <em>encuentran</em> un camino",
-    intro: "Auron Resonance lleva mensajes cifrados de dispositivo en dispositivo hasta su destino. Quien los transporta no puede leerlos. Si un dispositivo desaparece, la red busca otra ruta.",
-    canvas: "Red mesh simulada con una ruta de A a Z. Tira un nodo para ver cómo cambia la ruta.",
-    derrubar: "Tirar un nodo de la ruta", restaurar: "Restaurar",
+    intro: "Auron Resonance lleva mensajes cifrados de dispositivo en dispositivo hasta su destino. Quien los reenvía no puede leerlos. Si un dispositivo desaparece, la red busca otra ruta.",
+    canvas: "Red mesh simulada con una ruta de A a Z. Desactiva un nodo para ver cómo cambia la ruta.",
+    derrubar: "Desactivar un nodo de la ruta", restaurar: "Restaurar",
     rota: "Ruta", sem_rota: "Sin ruta por ahora: el paquete espera guardado (store-and-forward).",
     futuros: "+ transportes futuros",
     "abrir-pacote": "Abrir el paquete",
-    campos: "Campos del paquete", "visao-dono": "Destinatario", "visao-relay": "Relay",
-    "nota-pacote": "El <strong>packet_id</strong> es el SHA-512 de la codificación canónica de la cabecera con el contenido, y sirve para descartar duplicados. Quien solo transporta ve la cabecera y el contenido cifrado, nunca el texto.",
+    campos: "Campos del paquete", "visao-dono": "Destinatario", "visao-relay": "Quien reenvía",
+    "nota-pacote": "El <strong>packet_id</strong> es el SHA-512 de la codificación canónica de la cabecera con el contenido, y sirve para descartar duplicados. Quien solo reenvía ve la cabecera y el contenido cifrado, nunca el texto.",
     identidade: "Quién eres al comunicarte. Una identidad puede tener varios dispositivos.",
     carteira: "Lo que posees. Separada de la identidad: una persona puede tener varias carteras.",
     sf: [
@@ -188,8 +188,8 @@ export default {
       ["NET", "El paquete atraviesa internet."],
       ["Z", "DESTINO: Z lo recibe, verifica la firma y lo descifra."],
     ],
-    rotulos: { cifrado: "cifrado", so_cabecalho: "el relay no puede leer esto" },
-    conteudo: "Hola, Z. Llegó por la malla.",
+    rotulos: { cifrado: "cifrado", so_cabecalho: "quien reenvía no puede leer esto" },
+    conteudo: "Hola, Z. Llegó por la red mesh.",
   },
   seg: {
     titulo: "Seguridad que <em>se puede comprobar</em>",
@@ -201,13 +201,13 @@ export default {
       normal: "Red normal: cada nodo habla con pares diversos.",
       suspeito: "Cientos de nodos nuevos, del mismo origen, intentan rodear la red. Comportamiento sospechoso.",
       quarentena: "Los nodos sospechosos quedan en cuarentena: no reciben prioridad ni reenvían paquetes.",
-      revalidacao: "Quien se comporta bien con el tiempo vuelve a ser evaluado. El resto sigue aislado.",
+      revalidacao: "Con el tiempo, quien se comporta bien vuelve a ser evaluado. El resto sigue aislado.",
     },
     mecanismos: [
       ["SHA-512", "Hash de bloques, transacciones y direcciones.", "implementado"],
       ["Firmas Ed25519", "Cada transferencia la firma la cuenta que envía.", "implementado"],
       ["Claves y direcciones", "Dirección derivada de la clave pública, verificada por los dos programas.", "implementado"],
-      ["Codificación canónica", "Todo campo variable lleva su tamaño delante. Su ausencia tumbó la red Liquid el 06/09/2026.", "implementado"],
+      ["Codificación canónica", "Todo campo variable lleva su tamaño delante. Su ausencia provocó la caída de la red Liquid el 06/09/2026.", "implementado"],
       ["Hashes y Merkle", "Pruebas de inclusión según RFC 6962.", "implementado"],
       ["Nonce", "Cada cuenta tiene una secuencia: la misma transacción no cuenta dos veces.", "desenvolvimento"],
       ["Protección contra repetición", "La firma incluye el identificador de la red: no se puede reutilizar en otra.", "desenvolvimento"],
@@ -215,7 +215,7 @@ export default {
       ["Verificación de trabajo", "Freivalds comprueba matrices sin rehacer el cálculo.", "desenvolvimento"],
       ["Expiración", "Paquetes y vouchers offline con validez.", "planejado"],
       ["Reputación", "Historial de comportamiento de cada nodo.", "planejado"],
-      ["Cuarentena", "Aislar nodos sospechosos sin tumbar la red.", "planejado"],
+      ["Cuarentena", "Aislar nodos sospechosos sin provocar la caída de la red.", "planejado"],
     ],
     revisao: "Revisión de ataques el 11/09/2026: 6 fallos encontrados, ninguno que permitiera crear monedas o gastar dos veces. Todos corregidos el 12/09/2026, con una prueba que reproduce cada ataque.",
   },
@@ -231,7 +231,7 @@ export default {
     agente: [["AI AGENT", "Un agente necesita ejecutar un análisis pesado."], ["REQUEST RESOURCE", "Pide capacidad de cómputo a la red."], ["QUOTE", "Recibe ofertas con precio y plazo."], ["PAY", "Bloquea el pago, dentro del límite que fijó su dueño."], ["COMPUTE", "Un nodo ejecuta la tarea."], ["VERIFY", "El resultado se verifica antes de liberar el pago."], ["RESULT", "El agente recibe el resultado verificado."]],
     maquinas: [["REQUEST", "Un sensor pide procesamiento de imágenes."], ["PAY", "Paga a un nodo de cómputo."], ["RECEIVE", "Recibe el resultado."], ["VERIFY", "Verifica la prueba."], ["PAY NEXT", "Paga un servicio de almacenamiento para guardar el resultado."]],
     logistica: [["REQUEST", "Entra una carga digital: datos o una tarea."], ["ROUTING", "La red elige su camino."], ["PROCESSING", "Los nodos la procesan."], ["VERIFICATION", "Se verifica el resultado."], ["DISTRIBUTION", "Se entrega a quien lo necesita."], ["DELIVERY", "Llega a su destino."], ["SETTLEMENT", "Cada participante cobra por su parte."]],
-    mercado: "Oferta y demanda simuladas de cinco recursos. Nada de esto son datos reales de la red.",
+    mercado: "Oferta y demanda simuladas de cinco recursos. Nada de esto corresponde a datos reales de la red.",
     oferta: "oferta", procura: "demanda",
     politica: "Todo gasto de una máquina sigue una política definida por su dueño: límites por pago, por día y por proveedor (§47).",
   },
@@ -241,7 +241,7 @@ export default {
     mapa: "Hoja de ruta con seis ramas que salen de Auron: blockchain, cómputo, comunicación, almacenamiento, IA y economía.",
     ramos: { blockchain: "BLOCKCHAIN", compute: "COMPUTE", communication: "COMMUNICATION", storage: "STORAGE", ai: "AI", economy: "ECONOMY" },
     itens: {
-      codec: "Codificación canónica y Merkle", cripto: "SHA-512, Ed25519 y direcciones", dinheiro: "Dinero en enteros",
+      codec: "Codificación canónica y Merkle", cripto: "SHA-512, Ed25519 y direcciones", dinheiro: "Dinero en números enteros",
       tx: "Transacción multiactivo", cadeia: "Cadena, estado y Argon2id", redep2p: "Red entre nodos", testnet: "Red de pruebas pública", auditoria: "Auditoría externa", mainnet: "Red principal",
       freivalds: "Verificación de Freivalds", mercado: "Mercado de tareas", tarefas_ia: "Cargas de IA", usefulpow: "Trabajo útil en la seguridad",
       packet: "Auron Packet", resonance: "Auron Resonance", mesh: "Mesh y store-and-forward", radio: "Investigación de radio",
@@ -268,15 +268,15 @@ export default {
     codigo: "Código completo", "codigo-d": "Especificación, referencia en Python, programa en Rust, vectores, documentos y este sitio.", "baixar-codigo": "Descargar el código",
     doc: "Documento de presentación", "doc-d": "Qué es Auron, su enfoque, lo que no prometemos y su estado real. En portugués.", "baixar-doc": "Descargar el documento",
     roteiro: "Guion del video", "roteiro-d": "Las ocho escenas de la presentación, para grabar o generar un video. En portugués.", "baixar-roteiro": "Descargar el guion",
-    github: "El repositorio público en GitHub todavía no se abrió. Cuando exista, el enlace aparecerá aquí y en el pie de página.",
+    github: "El repositorio público en GitHub todavía no se ha abierto. Cuando exista, el enlace aparecerá aquí y en el pie de página.",
     arquivos: "{n} archivos",
     confirmar: "Confirma la descarga en la ventana que se abrió.", salvo: "{f} guardado.", cancelado: "Descarga cancelada.",
     ocupado: "Ya hay una confirmación de descarga abierta.", indisponivel: "La descarga no está disponible aquí.", carregando: "Preparando el archivo…",
   },
   apoio: {
     titulo: "Apoya con trabajo o con una <em>donación voluntaria</em>",
-    intro: "El proyecto necesita personas que prueben, revisen, ejecuten un nodo cuando exista la red de pruebas o traigan un problema real de cómputo. Las donaciones ayudan a pagar computadoras de prueba, servidores y la auditoría.",
-    rede: "red Bitcoin", copiar: "Copiar dirección", copiado: "Dirección copiada.", selecionado: "Dirección seleccionada: usa Ctrl+C, o mantén pulsado y copia en el móvil.",
+    intro: "El proyecto necesita personas que prueben, revisen, ejecuten un nodo cuando exista la red de pruebas o traigan un problema real de cálculo. Las donaciones ayudan a pagar computadoras de prueba, servidores y la auditoría.",
+    rede: "red Bitcoin", copiar: "Copiar dirección", copiado: "Dirección copiada.", selecionado: "Dirección seleccionada: usa Ctrl+C, o mantén presionado y copia en el celular.",
     cuidado: "<strong>Envía solo bitcoin, por la red Bitcoin.</strong> Después de pegar, revisa el inicio y el final: bc1qkp7d … zdzt7.",
     "sem-contrapartida": "<strong>Una donación no es una compra ni una inversión.</strong> No da derecho a monedas, rendimientos ni prioridad. El proyecto publicará lo que recibió y cómo lo usó.",
   },
@@ -289,15 +289,15 @@ export default {
     salvando: "Cerrando el archivo… {mb} MB",
     sem_gravacao: "Este navegador no graba la página. Prueba con Chrome o Edge en una computadora.",
     voz_on: "Voz: activada", voz_off: "Voz: desactivada",
-    sem_voz: "Este dispositivo no tiene voz en español: los subtítulos siguen.",
+    sem_voz: "Este dispositivo no tiene voz en español: los subtítulos siguen funcionando.",
     cenas: [
       {
         titulo: "QUÉ ES AURON", sub: "una red de computadoras iguales",
-        fala: "Auron es una infraestructura en construcción: una red de computadoras que guardan las mismas reglas, verifican todo por su cuenta y no necesitan a nadie en el medio para funcionar.",
+        fala: "Auron es una infraestructura en construcción: una red de computadoras que guardan las mismas reglas, verifican todo por su cuenta y no necesitan intermediarios para funcionar.",
       },
       {
         titulo: "EL PROPÓSITO", sub: "capacidad de cálculo que sirve para algo",
-        fala: "Hoy, computadoras de todo el mundo gastan billones de cálculos solo para proteger criptomonedas, y después ese trabajo se tira. El propósito de Auron es convertir ese esfuerzo en trabajo útil.",
+        fala: "Hoy, computadoras de todo el mundo hacen billones de cálculos solo para proteger criptomonedas, y después ese trabajo se pierde. El propósito de Auron es convertir ese esfuerzo en trabajo útil.",
       },
       {
         titulo: "ADÓNDE QUEREMOS LLEGAR", sub: "un objetivo, no una promesa",
@@ -309,11 +309,11 @@ export default {
       },
       {
         titulo: "CÓMO SE PAGA EL TRABAJO", sub: "verificar cuesta poco; rehacer cuesta mucho",
-        fala: "Quien necesita cálculo publica una tarea con el pago bloqueado. Un nodo la ejecuta, otro la verifica con pocas cuentas, y solo entonces se libera el pago. Un resultado erróneo no cobra, y la tarea vuelve a la cola.",
+        fala: "Quien necesita cálculo publica una tarea con el pago bloqueado. Un nodo la ejecuta, otro la verifica con pocas cuentas, y solo entonces se libera el pago. Un resultado incorrecto no se paga, y la tarea vuelve a la cola.",
       },
       {
         titulo: "CÓMO VIAJAN LOS DATOS", sub: "internet, Wi-Fi y Bluetooth",
-        fala: "El mensaje va cifrado de extremo a extremo y salta de dispositivo en dispositivo hasta llegar. Si un camino desaparece, la red busca otro. Esto es arquitectura escrita y todavía no existe en código.",
+        fala: "El mensaje va cifrado de extremo a extremo y salta de dispositivo en dispositivo hasta llegar. Si un camino desaparece, la red busca otro. Esto está en la arquitectura escrita y todavía no existe en código.",
       },
       {
         titulo: "FRAGMENTACIÓN 16×16", sub: "cifrar, cortar y repartir",

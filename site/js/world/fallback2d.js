@@ -46,5 +46,11 @@ export function criarMundo2D(canvas, calmo) {
     rodando = true; requestAnimationFrame(passo);
     document.addEventListener("visibilitychange", () => { rodando = !document.hidden; if (rodando) requestAnimationFrame(passo); });
   }
-  return { nivel: "2D", definirModo() {}, definirZoom() {}, introducao: () => Promise.resolve() };
+    // Mesma interface do mundo 3D, para o vídeo não precisar saber em qual dos
+  // dois está rodando.
+  return {
+    nivel: "2D", fps: 30,
+    definirModo() {}, definirZoom() {}, objeto() {}, hudEscala() {},
+    introducao: () => Promise.resolve(),
+  };
 }

@@ -12,14 +12,14 @@ export default {
   estado: {
     implementado: "Implementado", desenvolvimento: "Em desenvolvimento", pesquisa: "Pesquisa", planejado: "Planejado",
     implementado_d: "Existe em código e passa nos testes.",
-    desenvolvimento_d: "Sendo construído ou levado para o programa de produção.",
+    desenvolvimento_d: "Em construção ou sendo levado para o programa de produção.",
     pesquisa_d: "Hipótese em estudo. Pode mudar ou não acontecer.",
     planejado_d: "Arquitetura escrita. Ainda sem código.",
   },
   ui: {
     pausar: "Pausar", continuar: "Continuar", conceitual: "Visualização conceitual", provisorio: "provisório",
     fechar: "Fechar", anterior: "Anterior", proxima: "Próxima", assistir: "Assistir", voz_on: "Voz: ligada", voz_off: "Voz: desligada",
-    sem_voz: "Sem voz em português neste aparelho: só legenda", voz_sintetica: "Narração: voz sintética do aparelho",
+    sem_voz: "Sem voz em português neste aparelho: só a legenda", voz_sintetica: "Narração: voz sintética do aparelho",
     qualidade: "Qualidade 3D", sem_webgl: "3D indisponível: versão 2D",
     musica: "Música: trilha original do projeto",
   },
@@ -48,17 +48,17 @@ export default {
       blockchain: {
         nome: "BLOCKCHAIN", estado: "desenvolvimento",
         texto: "Uma sequência de blocos em que cada um aponta para o hash do anterior. Mudar um bloco antigo muda todos os seguintes.",
-        itens: ["Um bloco a cada 120 segundos, em média.", "Cabeçalho de tamanho fixo: 158 bytes.", "Hash SHA-512, e árvore de Merkle no padrão RFC 6962.", "Transações com vários ativos e até 16 destinatários."],
+        itens: ["Um bloco a cada 120 segundos, em média.", "Cabeçalho de tamanho fixo: 158 bytes.", "Hash SHA-512 e árvore de Merkle no padrão RFC 6962.", "Transações com vários ativos e até 16 destinatários."],
       },
       nos: {
         nome: "NODES", estado: "planejado",
         texto: "Cada nó guarda a cadeia e confere cada bloco e cada transação por conta própria. Ninguém precisa confiar em ninguém.",
-        itens: ["Programa de produção em Rust puro, sem código em C, para rodar em celular e em qualquer computador.", "Comunicação entre nós pela internet em TCP com cifra Noise.", "A rede entre os computadores ainda não começou: vem logo depois do núcleo."],
+        itens: ["Programa de produção em Rust puro, sem código em C, para rodar em celular e em qualquer computador.", "Comunicação entre nós pela internet, por TCP com cifra Noise.", "A rede entre os computadores ainda não começou: vem logo depois do núcleo."],
       },
       consenso: {
         nome: "CONSENSUS", estado: "desenvolvimento",
         texto: "As regras que decidem qual cadeia vale. Vence a cadeia válida com maior trabalho acumulado.",
-        itens: ["Prova de trabalho Argon2id com 32 MiB por tentativa: celular e computador mineram com o mesmo programa.", "Dificuldade ajustada a cada bloco pelo LWMA, com defesas contra horário mentiroso.", "Recompensa de mineração só pode ser gasta depois de 100 blocos."],
+        itens: ["Prova de trabalho Argon2id com 32 MiB por tentativa: celular e computador mineram com o mesmo programa.", "Dificuldade ajustada a cada bloco pelo LWMA, com defesas contra horários falsos.", "A recompensa de mineração só pode ser gasta depois de 100 blocos."],
       },
       protocolo: {
         nome: "PROTOCOL", estado: "implementado",
@@ -69,7 +69,7 @@ export default {
   },
   cadeia: {
     titulo: "Veja um bloco <em>nascer</em>",
-    intro: "Transações chegam, esperam na fila (mempool), entram num bloco candidato, passam pela validação e só então entram na cadeia. Os hashes são SHA-512 reais, calculados agora no seu navegador sobre o cabeçalho de 158 bytes da especificação.",
+    intro: "As transações chegam, esperam na fila (mempool), vão para um bloco candidato, passam pela validação e só então entram na cadeia. Os hashes são SHA-512 reais, calculados agora no seu navegador sobre o cabeçalho de 158 bytes da especificação.",
     nova: "Nova transação", "nova-tx": "Adicionar transação", candidato: "Bloco candidato",
     "escolha-tx": "Toque numa transação da fila ou de um bloco para abrir os campos.",
     "regras-titulo": "O que a validação confere",
@@ -89,17 +89,17 @@ export default {
     contagem: "{n} nós simulados",
     ficha: { status: "Status", identidade: "Identidade", computacao: "Computação", rede: "Rede", reputacao: "Reputação", vizinhos: "Vizinhos", altura: "Altura" },
     valores: { online: "ONLINE", verificada: "VERIFICADA", disponivel: "DISPONÍVEL", ocupada: "PROCESSANDO TAREFA", conectado: "CONECTADO", ativa: "ATIVA" },
-    nota: "Dados de demonstração. Reputação de nós está planejada na arquitetura (§41) e não existe em código.",
+    nota: "Dados de demonstração. A reputação de nós está planejada na arquitetura (§41) e não existe em código.",
   },
   frag: {
     titulo: "Um arquivo vira <em>256 pedaços</em>",
-    intro: "Digite qualquer texto. Ele é cifrado de verdade (AES-GCM, no seu navegador), cortado em 256 fragmentos de 16 bytes, espalhado num tabuleiro 16×16 e cada pedaço ganha o próprio hash SHA-512.",
+    intro: "Digite qualquer texto. Ele é cifrado de verdade (AES-GCM, no seu navegador) e cortado em 256 fragmentos de 16 bytes, espalhados num tabuleiro 16×16, e cada pedaço ganha o próprio hash SHA-512.",
     rotulo: "Texto para fragmentar", fragmentar: "Fragmentar", reconstruir: "Reconstruir", corromper: "Corromper um fragmento",
     escolha: "Toque numa casa do tabuleiro para ver o fragmento.",
-    nota: "<strong>Modelo em pesquisa.</strong> Esta é uma camada lógica de distribuição e fragmentação, não o consenso. Hoje, perder um fragmento impede a reconstrução; redundância (erasure coding) é um tema de pesquisa (§36).",
+    nota: "<strong>Modelo em pesquisa.</strong> Esta é uma camada lógica de distribuição e fragmentação, não o consenso. Hoje, perder um fragmento impede a reconstrução; a redundância (erasure coding) é um tema de pesquisa (§36).",
     cifrando: "Cifrando…", pronto: "{n} bytes cifrados · 256 fragmentos distribuídos por {m} nós simulados.",
     ok: "Todos os 256 hashes conferem. Texto recuperado: “{t}”",
-    falhou: "Fragmento {c} não confere com o hash registrado. Reconstrução recusada.",
+    falhou: "O fragmento {c} não confere com o hash registrado. Reconstrução recusada.",
     corrompido: "Um bit do fragmento {c} foi trocado. Tente reconstruir.",
     sem_cripto: "Este navegador não liberou a criptografia (é preciso uma conexão segura).",
     ficha: { fragmento: "Fragmento", hash: "Hash SHA-512", no: "Nó", estado: "Estado", bytes: "Bytes" },
@@ -113,7 +113,7 @@ export default {
   },
   utrax: {
     titulo: "Trabalho útil, <em>conferido</em> antes de pagar",
-    intro: "Uma tarefa entra no mercado com o pagamento travado. Nós se oferecem, um é escolhido, calcula, outro confere com poucas contas e a rede só libera o pagamento se o resultado estiver certo. A conferência abaixo é o algoritmo de Freivalds de verdade, rodando no seu navegador.",
+    intro: "Uma tarefa entra no mercado com o pagamento travado. Vários nós se oferecem, um é escolhido e calcula, outro confere com poucas contas, e a rede só libera o pagamento se o resultado estiver certo. A conferência abaixo usa o algoritmo de Freivalds de verdade, rodando no seu navegador.",
     rodar: "Enviar tarefa", trapaca: "Executor desonesto", c: "C = A × B (entregue)", tarefas: "Tipos de tarefa",
     nota: "O UTRAX roda <strong>fora do consenso</strong>: um defeito numa tarefa nunca trava a moeda. Juntar trabalho útil com a segurança da mineração é pesquisa em aberto, não promessa.",
     etapas: ["Tarefa publicada: multiplicar duas matrizes 8×8. Pagamento travado.", "Cinco nós se oferecem para executar.", "O nó {n} é escolhido; o nó {v} vai conferir.", "O nó {n} calcula C = A × B.", "O verificador sorteia vetores a partir do próprio resultado e confere A·(B·r) = C·r.", "Prova registrada: resultado, vetores e contas.", "Pagamento liberado para o nó {n}."],
@@ -122,8 +122,8 @@ export default {
     prova: { tarefa: "Tarefa", executor: "Executor", verificador: "Verificador", rodadas: "Rodadas", custo: "Custo da conferência", resultado: "Hash do resultado", recompensa: "Recompensa" },
     recompensa_v: "liberada (valor simulado)", retida: "retida",
     tipos: [
-      { nome: "Multiplicação de matrizes", texto: "Conferida pelo algoritmo de Freivalds, sem refazer o cálculo. Base de treino de IA.", estado: "desenvolvimento" },
-      { nome: "Otimização", texto: "Problema da mochila: escolher itens com o maior valor que cabe no limite.", estado: "desenvolvimento" },
+      { nome: "Multiplicação de matrizes", texto: "Conferida pelo algoritmo de Freivalds, sem refazer o cálculo. É a base do treino de IA.", estado: "desenvolvimento" },
+      { nome: "Otimização", texto: "Problema da mochila: escolher os itens de maior valor que cabem no limite.", estado: "desenvolvimento" },
       { nome: "Simulação", texto: "Difusão numa grade. Hoje a conferência refaz o cálculo.", estado: "desenvolvimento" },
       { nome: "Cargas de IA", texto: "Treino e inferência de modelos. Depende de parcerias e de pesquisa.", estado: "planejado" },
     ],
@@ -138,16 +138,16 @@ export default {
     grafico: "Emissão acumulada, parâmetros provisórios: 10,5 milhões em cerca de 0,8 ano, 15,75 milhões em 1,6 ano, 18,4 milhões em 2,4 anos, perto de 21 milhões em 6,4 anos.",
     "grafico-t": "Emissão acumulada de AUR · parâmetros provisórios",
     g16: "1,6 ano", g32: "3,2 anos", g48: "4,8 anos", g64: "6,4 anos",
-    "nota-grafico": "Cada período de 210 000 blocos emite metade do anterior. Recompensa e halving ainda estão em definição.",
+    "nota-grafico": "Cada período de 210 000 blocos emite metade do anterior. A recompensa e o halving ainda estão em definição.",
   },
   direct: {
     titulo: "Valor que viaja <em>como dado</em>",
-    intro: "No Auron Direct, um pagamento não começa pela transação: começa por uma intenção de pagamento, negociada e autorizada entre as partes, e termina na liquidação na blockchain.",
+    intro: "No Auron Direct, um pagamento não começa pela transação: começa por uma intenção de pagamento, negociada e autorizada entre as partes, e termina com a liquidação na blockchain.",
     modo: "Modo de conexão", enviar: "Enviar 12,5 AUR", duplo: "Tentar gastar duas vezes",
     limite: "offline_single_tx_limit = 5 AUR",
     online: [
       ["SENDER", "Alice quer pagar 12,5 AUR a Bob."],
-      ["PAYMENT INTENT", "O pedido de pagamento descreve ativo, valor, destino e prazo."],
+      ["PAYMENT INTENT", "A intenção de pagamento descreve ativo, valor, destino e prazo."],
       ["NEGOTIATION", "As duas partes concordam com valor, taxa e forma de liquidação."],
       ["AUTHORIZATION", "Alice assina com a chave da carteira. Nunca com a chave principal."],
       ["LOCK", "O valor fica travado até a transferência se completar ou expirar."],
@@ -165,19 +165,19 @@ export default {
       ["SETTLEMENT", "Sem conflito, a transferência é liquidada na blockchain."],
     ],
     offline_valor: "Valor offline: 4 AUR (dentro do limite de 5 AUR por pagamento)",
-    duplo_msg: "Alice usou o mesmo estado para dois vouchers. Na reconciliação, a rede registra CONFLICT. Como compensar quem ficou sem receber é regra de consenso ainda em definição (uma caução travada antes é a opção mais estudada).",
+    duplo_msg: "Alice usou o mesmo estado para dois vouchers. Na reconciliação, a rede registra CONFLICT. Como compensar quem ficou sem receber é uma regra de consenso ainda em definição (uma caução travada antes é a opção mais estudada).",
     campos: { ativo: "Ativo", valor: "Valor", de: "De", para: "Para", voucher: "Voucher", contador: "Contador offline", validade: "Validade", assinatura: "Assinatura" },
   },
   res: {
     titulo: "Mensagens que <em>encontram</em> um caminho",
-    intro: "O Auron Resonance leva mensagens cifradas de aparelho em aparelho até o destino. Quem transporta não consegue ler o conteúdo. Se um aparelho some, a rede procura outra rota.",
+    intro: "O Auron Resonance leva mensagens cifradas de aparelho em aparelho até o destino. Quem repassa não consegue ler o conteúdo. Se um aparelho some, a rede procura outra rota.",
     canvas: "Rede mesh simulada, com rota de A até Z. Derrube um nó para ver a rota mudar.",
     derrubar: "Derrubar um nó da rota", restaurar: "Restaurar",
     rota: "Rota", sem_rota: "Sem rota agora: o pacote espera guardado (store-and-forward).",
     futuros: "+ transportes futuros",
     "abrir-pacote": "Abrir o pacote",
-    campos: "Campos do pacote", "visao-dono": "Destinatário", "visao-relay": "Relay",
-    "nota-pacote": "O <strong>packet_id</strong> é o SHA-512 da codificação canônica do cabeçalho com o conteúdo, e serve para descartar duplicatas. Quem só transporta enxerga o cabeçalho e o conteúdo cifrado, nunca o texto.",
+    campos: "Campos do pacote", "visao-dono": "Destinatário", "visao-relay": "Quem repassa",
+    "nota-pacote": "O <strong>packet_id</strong> é o SHA-512 da codificação canônica do cabeçalho com o conteúdo, e serve para descartar duplicatas. Quem só repassa enxerga o cabeçalho e o conteúdo cifrado, nunca o texto.",
     identidade: "Quem você é para se comunicar. Uma identidade pode ter vários aparelhos.",
     carteira: "O que você possui. Separada da identidade: uma pessoa pode ter várias carteiras.",
     sf: [
@@ -189,8 +189,8 @@ export default {
       ["NET", "O pacote atravessa a internet."],
       ["Z", "DESTINO: Z recebe, confere a assinatura e decifra."],
     ],
-    rotulos: { cifrado: "cifrado", so_cabecalho: "o relay não lê isto" },
-    conteudo: "Olá, Z. Chegou pela malha.",
+    rotulos: { cifrado: "cifrado", so_cabecalho: "quem repassa não lê isto" },
+    conteudo: "Olá, Z. Chegou pela rede mesh.",
   },
   seg: {
     titulo: "Segurança que <em>se confere</em>",
@@ -202,7 +202,7 @@ export default {
       normal: "Rede normal: cada nó conversa com pares diversos.",
       suspeito: "Centenas de nós novos, da mesma origem, tentando cercar a rede. Comportamento suspeito.",
       quarentena: "Os nós suspeitos ficam em quarentena: não recebem prioridade nem repassam pacotes.",
-      revalidacao: "Quem se comporta bem com o tempo volta a ser avaliado. O resto continua isolado.",
+      revalidacao: "Com o tempo, quem se comporta bem volta a ser avaliado. O resto continua isolado.",
     },
     mecanismos: [
       ["SHA-512", "Hash de blocos, transações e endereços.", "implementado"],
@@ -231,14 +231,14 @@ export default {
     "aba-agente": "Agente de IA", "aba-maquinas": "Máquina a máquina", "aba-logistica": "Modelo logístico", "aba-mercado": "Mercado de recursos",
     agente: [["AI AGENT", "Um agente precisa rodar uma análise pesada."], ["REQUEST RESOURCE", "Pede capacidade de cálculo à rede."], ["QUOTE", "Recebe ofertas com preço e prazo."], ["PAY", "Trava o pagamento, dentro do limite que o dono definiu."], ["COMPUTE", "Um nó executa a tarefa."], ["VERIFY", "O resultado é conferido antes de liberar o pagamento."], ["RESULT", "O agente recebe o resultado conferido."]],
     maquinas: [["REQUEST", "Um sensor pede processamento de imagens."], ["PAY", "Paga um nó de cálculo."], ["RECEIVE", "Recebe o resultado."], ["VERIFY", "Confere a prova."], ["PAY NEXT", "Paga um serviço de armazenamento para guardar o resultado."]],
-    logistica: [["REQUEST", "Uma carga digital entra: dados ou tarefa."], ["ROUTING", "A rede escolhe por onde ela vai."], ["PROCESSING", "Nós processam."], ["VERIFICATION", "O resultado é conferido."], ["DISTRIBUTION", "É entregue a quem precisa."], ["DELIVERY", "Chega ao destino."], ["SETTLEMENT", "Cada participante recebe pela sua parte."]],
+    logistica: [["REQUEST", "Uma carga digital entra: dados ou tarefa."], ["ROUTING", "A rede escolhe por onde ela vai."], ["PROCESSING", "Os nós processam."], ["VERIFICATION", "O resultado é conferido."], ["DISTRIBUTION", "É entregue a quem precisa."], ["DELIVERY", "Chega ao destino."], ["SETTLEMENT", "Cada participante recebe pela sua parte."]],
     mercado: "Oferta e procura simuladas de cinco recursos. Nada aqui é dado real da rede.",
     oferta: "oferta", procura: "procura",
     politica: "Todo gasto de uma máquina segue uma política definida pelo dono: limite por pagamento, por dia e por fornecedor (§47).",
   },
   cam: {
     titulo: "Seis ramos, <em>um centro</em>",
-    intro: "Cada ramo cresce a partir do núcleo, na ordem da arquitetura. O estado de cada item é o real, sem data prometida. Mova o cursor sobre o mapa para girá-lo.",
+    intro: "Cada ramo cresce a partir do núcleo, na ordem da arquitetura. Cada item mostra o estado real, sem data prometida. Mova o cursor sobre o mapa para girá-lo.",
     mapa: "Mapa do caminho com seis ramos a partir do Auron: blockchain, computação, comunicação, armazenamento, IA e economia.",
     ramos: { blockchain: "BLOCKCHAIN", compute: "COMPUTE", communication: "COMMUNICATION", storage: "STORAGE", ai: "AI", economy: "ECONOMY" },
     itens: {
@@ -253,7 +253,7 @@ export default {
   },
   onde: {
     titulo: "Onde estamos, <em>sem enfeite</em>",
-    intro: "Estado em 11/09/2026. Esta seção existe para ninguém confundir visão com produto pronto.",
+    intro: "Estado em 11/09/2026. Esta seção existe para que ninguém confunda visão com produto pronto.",
     colunas: {
       live: { titulo: "Implementado", itens: [["Programa de produção (Rust)", "dinheiro, criptografia e codificação; 40 testes"], ["Especificação AURON-SPEC-01", "regras byte a byte"], ["6 correções de segurança", "da revisão de 11/09/2026, com teste para cada ataque"], ["Gabarito em Python", "completo; 91 testes"]] },
       building: { titulo: "Em desenvolvimento", itens: [["Transação multiativo", "pronta no gabarito, indo para o Rust"], ["Cadeia, estado e mineração", "no gabarito, indo para o Rust"], ["UTRAX", "protótipo com três tipos de tarefa"], ["Transação em Rust", "próximo passo do programa de produção"]] },
@@ -277,7 +277,7 @@ export default {
   apoio: {
     titulo: "Apoie com trabalho ou com uma <em>doação voluntária</em>",
     intro: "O projeto precisa de quem teste, revise, rode um nó quando a rede de teste existir, ou traga um problema real de cálculo. Doações ajudam a pagar computadores de teste, servidores e a auditoria.",
-    rede: "rede Bitcoin", copiar: "Copiar endereço", copiado: "Endereço copiado.", selecionado: "Endereço selecionado: use Ctrl+C, ou segure e copie no celular.",
+    rede: "rede Bitcoin", copiar: "Copiar endereço", copiado: "Endereço copiado.", selecionado: "Endereço selecionado: use Ctrl+C ou segure e copie no celular.",
     cuidado: "<strong>Envie só bitcoin, pela rede Bitcoin.</strong> Confira o começo e o fim depois de colar: bc1qkp7d … zdzt7.",
     "sem-contrapartida": "<strong>Doação não é compra nem investimento.</strong> Não dá direito a moeda, retorno ou prioridade. O projeto vai publicar o que recebeu e como usou.",
   },
@@ -298,7 +298,7 @@ export default {
       },
       {
         titulo: "O PROPÓSITO", sub: "poder de cálculo que serve para alguma coisa",
-        fala: "Hoje, computadores do mundo inteiro gastam trilhões de cálculos só para proteger criptomoedas, e depois esse trabalho vai embora. O propósito do Auron é transformar esse esforço em trabalho útil.",
+        fala: "Hoje, computadores do mundo inteiro fazem trilhões de cálculos só para proteger criptomoedas, e depois esse trabalho se perde. O propósito do Auron é transformar esse esforço em trabalho útil.",
       },
       {
         titulo: "ONDE QUEREMOS CHEGAR", sub: "objetivo, não promessa",
@@ -310,7 +310,7 @@ export default {
       },
       {
         titulo: "COMO SE PAGA O TRABALHO", sub: "conferir custa pouco; refazer custa muito",
-        fala: "Quem precisa de cálculo publica uma tarefa com o pagamento travado. Um nó executa, outro confere com poucas contas, e só então o pagamento é liberado. Resultado errado não recebe, e a tarefa volta para a fila.",
+        fala: "Quem precisa de cálculo publica uma tarefa com o pagamento travado. Um nó executa, outro confere com poucas contas, e só então o pagamento é liberado. Resultado errado não é pago, e a tarefa volta para a fila.",
       },
       {
         titulo: "COMO OS DADOS VIAJAM", sub: "internet, Wi-Fi e Bluetooth",
@@ -318,7 +318,7 @@ export default {
       },
       {
         titulo: "FRAGMENTAÇÃO 16×16", sub: "cifrar, cortar e espalhar",
-        fala: "Um arquivo é cifrado, cortado em duzentos e cinquenta e seis pedaços, cada um com seu próprio hash, e espalhado por muitos nós. É uma linha de pesquisa: hoje, perder um pedaço impede a reconstrução.",
+        fala: "Um arquivo é cifrado e cortado em duzentos e cinquenta e seis pedaços, cada um com seu próprio hash. Os pedaços são espalhados por muitos nós. É uma linha de pesquisa: hoje, perder um pedaço impede a reconstrução.",
       },
       {
         titulo: "COMO É CONSTRUÍDO", sub: "duas implementações que precisam concordar",

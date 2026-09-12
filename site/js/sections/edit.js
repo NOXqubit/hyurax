@@ -11,16 +11,16 @@
 // Cada cena tem um mínimo de compassos; a troca só acontece quando a narração
 // termina E o compasso fecha, para o corte cair na batida.
 const CENAS = [
-  { chave: "oque", compassos: 3, mundo: "rede", zoom: [3.2, 1.3] },
-  { chave: "proposito", compassos: 3, mundo: "rede", zoom: [1.2, 1.0] },
-  { chave: "onde", compassos: 3, mundo: "global", zoom: [1.1, 1.0], global: [0.08, 1] },
-  { chave: "moeda", compassos: 3, mundo: "cadeia", zoom: [1.25, 1.02], objeto: "moeda" },
-  { chave: "trabalho", compassos: 3, mundo: "nucleo", zoom: [1.15, 1.0], objeto: "tarefa", tag: "simulacao" },
-  { chave: "dados", compassos: 3, mundo: "malha", zoom: [1.25, 1.0], objeto: "pacote", tag: "planejado" },
-  { chave: "fragmento", compassos: 3, mundo: "grade", zoom: [1.3, 1.0], tag: "pesquisa" },
-  { chave: "engenharia", compassos: 3, mundo: "nucleo", zoom: [1.15, 1.0], objeto: "blocos" },
-  { chave: "verdade", compassos: 3, mundo: "nucleo", zoom: [1.1, 1.0], tres: true },
-  { chave: "ajuda", compassos: 3, mundo: "logo", zoom: [1.4, 1.0], marca: true },
+  { chave: "oque", compassos: 3, mundo: "rede", zoom: [2.2, 1.15], objeto: "nos" },
+  { chave: "proposito", compassos: 3, mundo: "rede", zoom: [1.12, 1.0], objeto: "calculo" },
+  { chave: "onde", compassos: 3, mundo: "global", zoom: [1.1, 1.0], global: [0.08, 1], objeto: "ciencia" },
+  { chave: "moeda", compassos: 3, mundo: "cadeia", zoom: [1.15, 1.02], objeto: "cadeia3d" },
+  { chave: "trabalho", compassos: 3, mundo: "nucleo", zoom: [1.1, 1.0], objeto: "freivalds", tag: "simulacao" },
+  { chave: "dados", compassos: 3, mundo: "malha", zoom: [1.15, 1.0], objeto: "pacote", tag: "planejado" },
+  { chave: "fragmento", compassos: 3, mundo: "grade", zoom: [1.15, 1.0], objeto: "fragmentos", tag: "pesquisa" },
+  { chave: "engenharia", compassos: 3, mundo: "nucleo", zoom: [1.1, 1.0], objeto: "dois" },
+  { chave: "verdade", compassos: 3, mundo: "nucleo", zoom: [1.08, 1.0], tres: true },
+  { chave: "ajuda", compassos: 3, mundo: "logo", zoom: [1.25, 1.0], objeto: "gente", marca: true },
 ];
 
 /** Caminho do arquivo de narração de uma cena, no idioma escolhido. */
@@ -88,10 +88,16 @@ export function iniciar({ t, audio, mundo, idioma, movel, aoMudarIdioma, restaur
   let rodando = false, raf = 0, pulso = 0, pulsoFala = 0;
   let cenaAtual = -1, inicioCena = 0, inicioTudo = 0, cortePedido = 0;
   let narrouAcabou = true, falaAtual = null, comVoz = !!voz;
+  // Cada entrada em cena recebe um número. Uma narração que termina depois de
+  // a cena já ter mudado carrega o número antigo e é ignorada — sem isso, uma
+  // fala atrasada deixava o vídeo parado na cena para sempre.
+  let geracao = 0;
   let gravador = null, pedacos = [], gravando = false, foco = null;
-  let larg = 0, alt = 0, escala = 1, vinheta = null, ultimoQuadro = 0;
+  let larg = 0, alt = 0, escala = 1, vinheta = null, ultimoQuadro = 0, quadros = 0;
   const compasso = audio ? audio.compasso : 3.871;
-  const alvoFPS = movel ? 24 : 30;
+  // O vídeo desenha o quadro do mundo. Correr mais rápido que ele só repete
+  // quadro e gasta bateria à toa.
+  const alvoFPS = mundo.fps || (movel ? 24 : 30);
 
   // ---------------------------------------------------------------- tamanho
   function medir() {
@@ -123,33 +129,45 @@ export function iniciar({ t, audio, mundo, idioma, movel, aoMudarIdioma, restaur
   //    aparelho, entra na gravação do vídeo e dá o nível para mexer a boca;
   // 2. a voz do navegador, quando não existe arquivo naquele idioma.
   async function narrarCena(indice) {
+    const minha = ++geracao;
     narrouAcabou = false;
     if (!comVoz) { narrouAcabou = true; return; }
     const texto = textoDaCena("fala", indice);
     if (audio) {
-      const url = arquivoDeVoz(idioma(), indice);
-      const tocou = await audio.narrar(url);
-      if (tocou) { if (indice === cenaAtual) narrouAcabou = true; return; }
-      // prepara a próxima enquanto esta fala
-      const proxima = arquivoDeVoz(idioma(), indice + 1);
-      if (indice + 1 < CENAS.length) audio.carregarVoz(proxima).catch(() => {});
+      let tocou = false;
+      try {
+        const fim = audio.narrar(arquivoDeVoz(idioma(), indice));
+        // se em três segundos a voz não estiver tocando, o arquivo não vai vir:
+        // segue com a voz do navegador em vez de esperar calado
+        const comecou = await Promise.race([
+          fim.then(() => "fim"),
+          new Promise((r) => setTimeout(() => r(audio.falando() ? "tocando" : "nada"), 3000)),
+        ]);
+        if (minha !== geracao) return;            // a cena já mudou: ignora
+        if (comecou === "fim") { narrouAcabou = true; return; }
+        if (comecou === "tocando") {
+          fim.then(() => { if (minha === geracao) narrouAcabou = true; }).catch(() => {});
+          return;
+        }
+      } catch { tocou = false; }
+      if (minha !== geracao) return;
+      void tocou;
     }
-    falar(texto);
+    falar(texto, minha);
   }
 
-  function falar(texto) {
-    narrouAcabou = !comVoz;
-    if (!comVoz || !voz) return;
+  function falar(texto, minha = geracao) {
+    if (!comVoz || !voz) { narrouAcabou = true; return; }
     const v = vozEscolhida();
-    if (!v) { narrouAcabou = true; return; }
+    if (!v) { narrouAcabou = true; return; }      // sem voz: só a legenda
     const fala = new SpeechSynthesisUtterance(texto);
     fala.voice = v;
     fala.lang = v.lang;
     fala.rate = 0.92;    // calma: é explicação, não propaganda
-    fala.pitch = 1.12;   // um pouco acima, para soar sintética e clara
+    fala.pitch = 1.05;
     fala.onboundary = () => { pulsoFala = 1; };
-    fala.onend = () => { if (falaAtual === fala) narrouAcabou = true; };
-    fala.onerror = () => { narrouAcabou = true; };
+    fala.onend = () => { if (minha === geracao) narrouAcabou = true; };
+    fala.onerror = () => { if (minha === geracao) narrouAcabou = true; };
     falaAtual = fala;
     voz.cancel();
     voz.speak(fala);
@@ -182,16 +200,30 @@ export function iniciar({ t, audio, mundo, idioma, movel, aoMudarIdioma, restaur
     if (audio && i + 1 < CENAS.length) audio.carregarVoz(arquivoDeVoz(idioma(), i + 1)).catch(() => {});
   }
 
-  function quadro(agora) {
+  function quadro() {
     if (!rodando) return;
     raf = requestAnimationFrame(quadro);
+    // Um relógio só. O horário que vem no quadro de animação e o do sistema
+    // podem andar separados, e misturar os dois fazia a conta do tempo de cena
+    // dar errado: ora pulava cenas, ora travava para sempre numa delas.
+    const agora = performance.now();
     if (agora - ultimoQuadro < 1000 / alvoFPS - 1) return;   // limita os quadros
     const dt = (agora - ultimoQuadro) / 1000;
     ultimoQuadro = agora;
+    quadros++;
 
     const cena = CENAS[cenaAtual];
     const naCena = (agora - inicioCena) / 1000;
-    const minimo = cena.compassos * compasso;
+    // Sem narração, a cena precisa durar o tempo de LER a legenda: umas duas
+    // palavras e meia por segundo, arredondado para cima em compassos.
+    const palavras = String(textoDaCena("fala", cenaAtual) || "").split(/\s+/).length;
+    const paraLer = comVoz ? 0 : Math.ceil((palavras / 2.5) / compasso) * compasso;
+    const minimo = Math.max(cena.compassos * compasso, paraLer);
+
+    // Trava de segurança: se a narração não terminar (som bloqueado, arquivo
+    // que não carrega, voz que nunca dispara o fim), a cena passa assim mesmo.
+    // O vídeo nunca fica preso.
+    if (!narrouAcabou && naCena > minimo + 45) narrouAcabou = true;
 
     // pronto para trocar: espera o compasso fechar, para o corte cair na batida
     if (!cortePedido && naCena >= minimo && narrouAcabou) {
@@ -238,11 +270,9 @@ export function iniciar({ t, audio, mundo, idioma, movel, aoMudarIdioma, restaur
     ctx.fillStyle = vinheta;
     ctx.fillRect(0, 0, larg, alt);
 
-    // a boca do modelo 3D segue o som da voz; sem arquivo, segue as sílabas
-    mundo.definirBoca(audio && audio.falando() ? audio.nivelVoz() : pulsoFala * 0.7);
     if (mundo.hudEscala) mundo.hudEscala(k);
 
-    desenharTitulo(cenaAtual, cena, naCena, minimo);
+    desenharTitulo(cenaAtual, cena, naCena, agora);
     desenharRotuloDaVoz();
     desenharLegenda(cenaAtual);
 
@@ -267,10 +297,12 @@ export function iniciar({ t, audio, mundo, idioma, movel, aoMudarIdioma, restaur
     pulsoFala = Math.max(0, pulsoFala - dt * 3.2);
   }
 
-  function desenharTitulo(i, cena, naCena, minimo) {
+  function desenharTitulo(i, cena, naCena, agora) {
     const entrada = Math.min(1, naCena / 0.5);
-    const saida = cortePedido ? 1 : Math.min(1, (minimo * 1.6 - naCena) * 2);
-    const alfa = ease(entrada) * Math.max(0.15, Math.min(1, saida));
+    // O título fica de pé a cena inteira e só apaga nos últimos instantes,
+    // quando o corte já está marcado. Antes ele desbotava no meio da fala.
+    const saida = cortePedido ? Math.max(0, Math.min(1, (cortePedido - agora) / 400)) : 1;
+    const alfa = ease(entrada) * saida;
     const base = Math.min(larg, alt * 1.6);
     ctx.textAlign = "center";
     ctx.globalAlpha = alfa;
@@ -278,10 +310,10 @@ export function iniciar({ t, audio, mundo, idioma, movel, aoMudarIdioma, restaur
     if (cena.marca) {
       const tam = base * 0.1;
       ctx.fillStyle = "#eceae6";
-      escreveCabendo(ctx, "AURON", larg / 2, alt * 0.42, tam, "900", larg * 0.86);
+      escreveCabendo(ctx, "AURON", larg / 2, alt * 0.30, tam, "900", larg * 0.86);
       ctx.font = `500 ${tam * 0.2}px Michroma, Archivo, Arial`;
       ctx.fillStyle = "#f3e2c4";
-      ctx.fillText("BUILD THE INFRASTRUCTURE.", larg / 2, alt * 0.42 + tam * 0.6);
+      ctx.fillText("BUILD THE INFRASTRUCTURE.", larg / 2, alt * 0.30 + tam * 0.6);
     } else if (cena.tres) {
       const linhas = textoDaCena("linhas", i) || [];
       const tam = base * 0.046;
@@ -289,15 +321,15 @@ export function iniciar({ t, audio, mundo, idioma, movel, aoMudarIdioma, restaur
         const chega = Math.min(1, Math.max(0, (naCena - quantos * 0.7) / 0.4));
         ctx.globalAlpha = alfa * ease(chega);
         ctx.fillStyle = quantos === linhas.length - 1 ? "#f3e2c4" : "#eceae6";
-        escreveCabendo(ctx, linha, larg / 2, alt * 0.33 + quantos * tam * 1.6, tam, "700", larg * 0.86);
+        escreveCabendo(ctx, linha, larg / 2, alt * 0.30 + quantos * tam * 1.6, tam, "700", larg * 0.86);
       });
       ctx.globalAlpha = alfa;
     } else {
       const tam = base * 0.062;
       ctx.fillStyle = "#eceae6";
-      escreveCabendo(ctx, textoDaCena("titulo", i), larg / 2, alt * 0.38, tam, "900", larg * 0.86);
+      escreveCabendo(ctx, textoDaCena("titulo", i), larg / 2, alt * 0.28, tam, "900", larg * 0.86);
       ctx.fillStyle = "#95989f";
-      escreveCabendo(ctx, textoDaCena("sub", i), larg / 2, alt * 0.38 + tam * 0.62, tam * 0.26, "400", larg * 0.8);
+      escreveCabendo(ctx, textoDaCena("sub", i), larg / 2, alt * 0.28 + tam * 0.62, tam * 0.26, "400", larg * 0.8);
     }
 
     if (cena.tag) {
@@ -311,14 +343,15 @@ export function iniciar({ t, audio, mundo, idioma, movel, aoMudarIdioma, restaur
     ctx.globalAlpha = 1;
   }
 
-  // O rosto agora é um modelo 3D, desenhado pelo mundo. Aqui fica só o rótulo,
-  // embaixo dele: quem ouve precisa saber que a voz é sintética.
+  // Não há personagem na tela. Fica só o aviso, no canto, de que a voz é
+  // sintética: quem ouve tem o direito de saber.
   function desenharRotuloDaVoz() {
     const base = Math.min(larg, alt * 1.6);
+    ctx.textAlign = "right";
+    ctx.font = `500 ${Math.max(9, base * 0.013)}px "IBM Plex Mono", monospace`;
+    ctx.fillStyle = "rgba(143,146,153,0.75)";
+    ctx.fillText(t("edit.apresentadora"), larg * 0.94, alt * 0.145);
     ctx.textAlign = "center";
-    ctx.font = `500 ${Math.max(9, base * 0.014)}px "IBM Plex Mono", monospace`;
-    ctx.fillStyle = "rgba(143,146,153,0.9)";
-    ctx.fillText(t("edit.apresentadora"), larg * 0.216, alt * 0.73);
   }
 
   function desenharLegenda(i) {
@@ -337,28 +370,36 @@ export function iniciar({ t, audio, mundo, idioma, movel, aoMudarIdioma, restaur
   }
 
   // -------------------------------------------------------------- controle
-  async function abrir() {
+  function abrir() {
+    if (rodando) return;                 // já está aberto: não abre de novo
+    cancelAnimationFrame(raf);
     foco = document.activeElement;
     palco.hidden = false;
     document.body.style.overflow = "hidden";
     medir();
     aviso.textContent = "";
-    if (audio) {
-      const pronto = await audio.iniciar();
-      // a trilha fica BAIXA: é fundo para a narração, não show de música
-      if (pronto) audio.tocar({ volume: 0.22, batida: () => { pulso = 1; } });
-    }
-    try {
-      await Promise.all([document.fonts.load("900 80px Archivo"), document.fonts.load("400 20px Archivo")]);
-    } catch { /* segue com a fonte de reserva */ }
     atualizarVoz();
-    mundo.assistente(true);
+
+    // O vídeo começa AGORA. Som e fontes entram quando ficarem prontos, cada um
+    // no seu tempo. Esperar por eles aqui era o que deixava a tela preta parada
+    // quando o navegador demorava a liberar o áudio.
     rodando = true;
     inicioTudo = performance.now();
     ultimoQuadro = 0;
     entrarNaCena(0);
     botaoFechar.focus();
     raf = requestAnimationFrame(quadro);
+
+    if (audio) {
+      audio.iniciar().then((pronto) => {
+        // a trilha fica BAIXA: é fundo para a narração, não show de música
+        if (pronto && rodando) audio.tocar({ volume: 0.22, batida: () => { pulso = 1; } });
+      }).catch(() => {});
+    }
+    if (document.fonts && document.fonts.load) {
+      document.fonts.load("900 80px Archivo").catch(() => {});
+      document.fonts.load("400 20px Archivo").catch(() => {});
+    }
   }
 
   function encerrar() {
@@ -366,8 +407,9 @@ export function iniciar({ t, audio, mundo, idioma, movel, aoMudarIdioma, restaur
     cancelAnimationFrame(raf);
     if (voz) voz.cancel();
     if (audio) audio.pararNarracao();
-    mundo.assistente(false);
-    mundo.definirBoca(0);
+    geracao++;                     // cancela qualquer narração pendente
+    mundo.objeto(null);
+    if (mundo.hudEscala) mundo.hudEscala(1);
     if (gravando) pararGravacao();
     if (audio) audio.parar({ suave: true });
     palco.hidden = true;
@@ -387,7 +429,11 @@ export function iniciar({ t, audio, mundo, idioma, movel, aoMudarIdioma, restaur
 
   function comecarGravacao() {
     const tipo = tipoSuportado();
-    if (!tipo || !tela.captureStream) { aviso.textContent = t("edit.sem_gravacao"); return; }
+    if (!tipo || !tela.captureStream) { aviso.textContent = t("edit.sem_gravacao"); gravando = false; return; }
+    // o tamanho do quadro precisa estar definido ANTES de abrir o fluxo:
+    // redimensionar depois deixa o vídeo gravado com o tamanho errado
+    gravando = true;
+    medir();
     const fluxo = tela.captureStream(30);
     const trilha = audio ? audio.trilhaDeGravacao() : null;
     if (trilha) fluxo.addTrack(trilha);
@@ -396,8 +442,6 @@ export function iniciar({ t, audio, mundo, idioma, movel, aoMudarIdioma, restaur
     gravador.ondataavailable = (e) => { if (e.data.size) pedacos.push(e.data); };
     gravador.onstop = salvar;
     gravador.start(1000);
-    gravando = true;
-    medir();
     botaoGravar.textContent = t("edit.gravando");
     aviso.textContent = t("edit.gravando_aviso");
     inicioTudo = performance.now();
@@ -437,6 +481,11 @@ export function iniciar({ t, audio, mundo, idioma, movel, aoMudarIdioma, restaur
   }
 
   abrirBotao.addEventListener("click", abrir);
+  // ?debug=1&auto=1 abre o vídeo sozinho: serve para os testes automáticos.
+  try {
+    const busca = new URLSearchParams(location.search);
+    if (busca.get("debug") && busca.get("auto")) setTimeout(abrir, 600);
+  } catch { /* sem URL utilizável */ }
   botaoFechar.addEventListener("click", encerrar);
   botaoGravar.addEventListener("click", () => (gravando ? pararGravacao() : comecarGravacao()));
   if (botaoVoz) {
@@ -451,10 +500,18 @@ export function iniciar({ t, audio, mundo, idioma, movel, aoMudarIdioma, restaur
     });
   }
   palco.addEventListener("keydown", (e) => { if (e.key === "Escape") encerrar(); });
-  window.addEventListener("resize", () => { if (rodando) medir(); });
+  // Durante a gravação o tamanho do quadro não pode mudar: o fluxo de vídeo
+  // já foi aberto com o tamanho atual.
+  window.addEventListener("resize", () => { if (rodando && !gravando) medir(); });
 
   botaoGravar.textContent = t("edit.gravar");
   atualizarVoz();
+  // Estado do vídeo para depuração, só com ?debug=1 na URL.
+  try {
+    if (new URLSearchParams(location.search).get("debug")) {
+      globalThis.__video = () => ({ cenaAtual, rodando, narrouAcabou, cortePedido, gravando, comVoz, quadros, naCena: (performance.now() - inicioCena) / 1000, minimo: CENAS[Math.max(0, cenaAtual)].compassos * compasso });
+    }
+  } catch { /* sem URL utilizável */ }
   aoMudarIdioma(() => {
     botaoGravar.textContent = gravando ? t("edit.gravando") : t("edit.gravar");
     atualizarVoz();

@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><title>teste do vídeo</title>
+<!--
+  Teste automático do vídeo de apresentação.
+
+  Abre o site num quadro, desliga a voz (para o teste não depender de áudio),
+  manda tocar e acompanha a troca de cenas até o fim. Serve para pegar o pior
+  defeito possível: o vídeo travar numa cena e não sair mais dela.
+
+  Como rodar (com o servidor de desenvolvimento no ar):
+    msedge --headless=new --virtual-time-budget=600000 --dump-dom \
+      http://127.0.0.1:PORTA/tools/teste_video.html
+
+  O resultado sai em <pre id="saida">, uma linha por cena e um veredito no fim.
+-->
+<style>body { font: 14px monospace; }</style>
+</head>
+<body>
+<pre id="saida">rodando…</pre>
+<iframe id="alvo" src="../index.html?lang=pt-BR&debug=1" width="900" height="600" style="border:0"></iframe>
+<script>
+  const saida = document.getElementById("saida");
+  const linhas = [];
+  const anota = (texto) => { linhas.push(texto); saida.textContent = linhas.join("\n"); };
+
+  const quadro = document.getElementById("alvo");
+  quadro.addEventListener("load", async () => {
+    const j = quadro.contentWindow, d = quadro.contentDocument;
+    j.addEventListener("error", (e) => anota(`ERRO: ${e.message} (${e.filename}:${e.lineno})`));
+    j.addEventListener("unhandledrejection", (e) => anota(`PROMESSA: ${e.reason && e.reason.message}`));
+    const espera = (ms) => new Promise((r) => j.setTimeout(r, ms));
+
+    // dá tempo de o site montar os capítulos
+    for (let i = 0; i < 40 && !j.__video; i++) await espera(250);
+    if (!j.__video) { anota("FALHA: o vídeo não se registrou (sem ?debug=1?)"); return; }
+
+    // desliga a voz: o teste mede a máquina de cenas, não o áudio
+    d.getElementById("edit-voz").click();
+    d.getElementById("abre-edit").click();
+
+    let anterior = -1, paradoDesde = 0, ultimo = j.performance.now();
+    for (let passo = 0; passo < 4000; passo++) {
+      await espera(250);
+      const v = j.__video();
+      const agora = j.performance.now();
+      if (v.cenaAtual !== anterior) {
+        anota(`cena ${v.cenaAtual} em ${(agora / 1000).toFixed(1)}s (quadros ${v.quadros})`);
+        anterior = v.cenaAtual;
+        paradoDesde = agora;
+      } else if (agora - paradoDesde > 90000) {
+        anota(`FALHA: travou na cena ${v.cenaAtual} por mais de 90 s · quadros=${v.quadros} naCena=${v.naCena.toFixed(1)}s minimo=${v.minimo.toFixed(1)}s narrou=${v.narrouAcabou} corte=${!!v.cortePedido} voz=${v.comVoz}`);
+        return;
+      }
+      if (d.getElementById("palco-edit").hidden && v.cenaAtual >= 0 && !v.rodando) {
+        anota(`fim em ${(agora / 1000).toFixed(1)}s, última cena ${v.cenaAtual}`);
+        anota(anterior === 9 ? "OK: passou pelas 10 cenas e fechou sozinho" : `FALHA: fechou na cena ${anterior}`);
+        return;
+      }
+      ultimo = agora;
+    }
+    anota(`FALHA: não terminou (última cena ${anterior}, ${(ultimo / 1000).toFixed(1)}s)`);
+  });
+</script>
+</body></html>

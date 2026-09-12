@@ -92,6 +92,25 @@ idioma do navegador.
 - Com `prefers-reduced-motion`, nada se move e o mundo é desenhado parado.
 - Cada animação de capítulo só roda enquanto está visível na tela.
 
+## Testes
+
+Com o servidor de desenvolvimento no ar, os dois testes rodam sem interface,
+no Edge, em tempo acelerado:
+
+```
+msedge --headless=new --virtual-time-budget=500000 --dump-dom http://127.0.0.1:8766/tools/teste_video.html
+msedge --headless=new --virtual-time-budget=30000  --dump-dom http://127.0.0.1:8766/tools/teste_idiomas.html
+```
+
+- **teste_video.html** abre o vídeo, desliga a voz e acompanha as dez cenas até
+  o fim. Pega o pior defeito possível: travar numa cena e não sair mais.
+- **teste_idiomas.html** confere que os quatro idiomas carregam, têm as mesmas
+  chaves e mantêm os marcadores `{x}`. Uma chave faltando faz aparecer
+  português no meio do inglês.
+
+`?debug=1` na URL do site expõe `__auron` (mundo e perfil) e `__video`
+(estado do vídeo) no console. Com `&auto=1` o vídeo abre sozinho.
+
 ## Antes de publicar num domínio
 
 1. Trocar `SEU-DOMINIO` em `sitemap.xml` e `robots.txt`.

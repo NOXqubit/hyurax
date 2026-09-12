@@ -110,6 +110,11 @@ async function iniciar() {
   aoMudarIdioma(() => { document.getElementById("qualidade").textContent = mundo.nivel === "2D" ? t("ui.sem_webgl") : `${t("ui.qualidade")}: ${mundo.nivel}`; });
 
   const restaurarMundo = navegacao(mundo);
+  // Atalho de depuração, só com ?debug=1 na URL: permite inspecionar o mundo e
+  // o áudio pelo console sem mexer no código.
+  try {
+    if (new URLSearchParams(location.search).get("debug")) globalThis.__auron = { mundo, q };
+  } catch { /* sem URL utilizável */ }
   menuIdiomas();
   revelar();
 

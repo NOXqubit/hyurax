@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><title>teste dos idiomas</title>
+<!--
+  Confere os arquivos de idioma: se carregam, se têm exatamente as mesmas
+  chaves do pt-BR, se nenhum texto ficou vazio e se os marcadores {x} foram
+  preservados. Uma chave faltando faz o site mostrar português no meio do
+  inglês; um marcador perdido faz aparecer "{n}" na tela.
+
+  Como rodar (com o servidor de desenvolvimento no ar):
+    msedge --headless=new --virtual-time-budget=30000 --dump-dom \
+      http://127.0.0.1:PORTA/tools/teste_idiomas.html
+-->
+<style>body { font: 14px monospace; }</style>
+</head>
+<body>
+<pre id="saida">carregando…</pre>
+<script type="module">
+  const saida = document.getElementById("saida");
+  const linhas = [];
+  const anota = (t) => { linhas.push(t); saida.textContent = linhas.join("\n"); };
+
+  const IDIOMAS = ["pt-BR", "en", "es", "ja"];
+  const MARCADOR = /\{(\w+)\}/g;
+
+  const caminhos = (o, p = "") => Object.entries(o).flatMap(([k, v]) =>
+    v && typeof v === "object" && !Array.isArray(v)
+      ? caminhos(v, `${p}${k}.`)
+      : [`${p}${k}${Array.isArray(v) ? `[${v.length}]` : ""}`]);
+
+  const textos = (o, p = "") => Object.entries(o).flatMap(([k, v]) => {
+    if (typeof v === "string") return [[`${p}${k}`, v]];
+    if (Array.isArray(v)) return v.flatMap((x, i) => typeof x === "string" ? [[`${p}${k}[${i}]`, x]] : textos(x, `${p}${k}[${i}].`));
+    if (v && typeof v === "object") return textos(v, `${p}${k}.`);
+    return [];
+  });
+
+  const dicionarios = {};
+  let falhou = false;
+  for (const codigo of IDIOMAS) {
+    try {
+      dicionarios[codigo] = (await import(`../locales/${codigo}.js`)).default;
+      anota(`${codigo}: carregou`);
+    } catch (e) {
+      falhou = true;
+      anota(`${codigo}: NÃO CARREGA — ${e.message}`);
+    }
+  }
+  if (falhou) { anota("FALHA: arquivo de idioma quebrado"); throw new Error("parou");}
+
+  const base = new Set(caminhos(dicionarios["pt-BR"]));
+  const marcadoresBase = new Map(textos(dicionarios["pt-BR"]).map(([k, v]) => [k, (v.match(MARCADOR) || []).sort().join(",")]));
+  let problemas = 0;
+
+  for (const codigo of IDIOMAS.slice(1)) {
+    const meus = new Set(caminhos(dicionarios[codigo]));
+    const falta = [...base].filter((k) => !meus.has(k));
+    const sobra = [...meus].filter((k) => !base.has(k));
+    if (falta.length) { anota(`${codigo}: FALTAM ${falta.length} chaves → ${falta.slice(0, 6).join(", ")}`); problemas += falta.length; }
+    if (sobra.length) { anota(`${codigo}: SOBRAM ${sobra.length} chaves → ${sobra.slice(0, 6).join(", ")}`); problemas += sobra.length; }
+  }
+
+  for (const codigo of IDIOMAS) {
+    for (const [chave, valor] of textos(dicionarios[codigo])) {
+      if (!valor.trim() && !chave.endsWith("titulo") && !chave.endsWith("sub")) {
+        anota(`${codigo}: texto vazio em ${chave}`); problemas++;
+      }
+      const esperados = marcadoresBase.get(chave);
+      if (esperados === undefined) continue;
+      const meus = (valor.match(MARCADOR) || []).sort().join(",");
+      if (esperados !== meus) { anota(`${codigo}: marcador diferente em ${chave} — pt-BR tem "${esperados}", aqui "${meus}"`); problemas++; }
+    }
+  }
+
+  const cenas = IDIOMAS.map((c) => (dicionarios[c].edit.cenas || []).length);
+  if (new Set(cenas).size !== 1) { anota(`FALHA: número de cenas diferente: ${cenas.join(" / ")}`); problemas++; }
+
+  anota(problemas ? `FALHA: ${problemas} problemas` : "OK: quatro idiomas, mesmas chaves, marcadores no lugar");
+</script>
+</body></html>
