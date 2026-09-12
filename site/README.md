@@ -8,8 +8,14 @@ HTML, CSS e módulos JavaScript servidos como estão.
 
 ```
 python site/tools/build_downloads.py
+python site/tools/build_narracao.py
 python site/tools/servidor_dev.py
 ```
+
+O `build_narracao.py` grava a narração do vídeo em `assets/voz/pt-BR/*.wav`
+com a voz Microsoft Maria do Windows. Só roda no Windows, e os arquivos ficam
+fora do Git por serem gerados. Sem eles, o vídeo cai na voz do navegador e,
+não havendo nenhuma, mostra só a legenda.
 
 Abra `http://127.0.0.1:8766`. O servidor de desenvolvimento desliga o cache,
 para cada alteração aparecer no próximo recarregamento. Os módulos JavaScript

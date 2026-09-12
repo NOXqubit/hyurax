@@ -222,6 +222,11 @@ export function criarMundo(canvas, q) {
   const camera = new THREE.PerspectiveCamera(48, 1, 0.1, 3000);
   const grupo = new THREE.Group();
   cena.add(grupo);
+  // O que fica preso à câmera: a assistente e os objetos de explicação. Assim
+  // eles ficam sempre no mesmo lugar da tela, em qualquer modo do mundo.
+  cena.add(camera);
+  const hud = new THREE.Group();
+  camera.add(hud);
 
   const F = formas(N, 1187);
   const pos = new Float32Array(F.rede);
@@ -406,6 +411,7 @@ export function criarMundo(canvas, q) {
     if (P) { geoP.attributes.position.needsUpdate = true; geoP.setDrawRange(0, pacotes.length); }
     pontosP.visible = comPacotes;
 
+    animarHud(dt, tempo);
     uni.uTempo.value = tempo; uniP.uTempo.value = tempo;
     uni.uOnda.value += ((modo === "cadeia" ? 1 : 0) - uni.uOnda.value) * suave(3);
     if (intro >= 1) {
@@ -460,6 +466,168 @@ export function criarMundo(canvas, q) {
   }, { passive: true });
   document.addEventListener("visibilitychange", () => (document.hidden ? desligar() : ligar()));
 
+  // ------------------------------------------------------------------------
+  // Assistente: um rosto de máquina, feito de arames. Nenhum rosto humano
+  // inventado. A boca abre com o nível da voz.
+  // ------------------------------------------------------------------------
+  let cabeca = null, boca = 0, bocaAlvo = 0, bocaMalha = null;
+  const aneis = [];
+
+  function criarAssistente() {
+    if (cabeca) return cabeca;
+    cabeca = new THREE.Group();
+    cabeca.position.set(-1.42, -0.48, -3.2);
+
+    const prata = new THREE.LineBasicMaterial({ color: 0xc9ccd1, transparent: true, opacity: 0.6 });
+    const arame = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.IcosahedronGeometry(0.42, 1)), prata);
+    const casco = new THREE.Mesh(new THREE.IcosahedronGeometry(0.4, 1), new THREE.MeshBasicMaterial({ color: 0x0a0b0d }));
+    cabeca.add(casco, arame);
+
+    const luz = new THREE.MeshBasicMaterial({ color: 0xfff3df });
+    for (const lado of [-1, 1]) {
+      const olho = new THREE.Mesh(new THREE.SphereGeometry(0.042, 8, 8), luz);
+      olho.position.set(lado * 0.14, 0.08, 0.3);
+      cabeca.add(olho);
+    }
+    bocaMalha = new THREE.Mesh(new THREE.BoxGeometry(0.26, 1, 0.03), new THREE.MeshBasicMaterial({ color: 0xf3e2c4 }));
+    bocaMalha.position.set(0, -0.14, 0.3);
+    bocaMalha.scale.y = 0.02;
+    cabeca.add(bocaMalha);
+
+    const quente = new THREE.MeshBasicMaterial({ color: 0xf3e2c4, transparent: true, opacity: 0.45 });
+    for (let i = 0; i < 2; i++) {
+      const anel = new THREE.Mesh(new THREE.TorusGeometry(0.5 + i * 0.08, 0.004, 4, 48), quente);
+      anel.rotation.set(i ? 1.1 : 0.35, i ? 0.4 : 0.9, 0);
+      cabeca.add(anel);
+      aneis.push(anel);
+    }
+    hud.add(cabeca);
+    return cabeca;
+  }
+
+  // ------------------------------------------------------------------------
+  // Objetos de explicação: peças 3D presas ao lado direito da tela, uma por
+  // cena. São poucas malhas de propósito, para não pesar.
+  // ------------------------------------------------------------------------
+  const OBJETOS = {};
+  let objetoAtual = null;
+
+  function baseDoObjeto() {
+    const g = new THREE.Group();
+    g.position.set(1.42, -0.05, -3.2);
+    g.visible = false;
+    hud.add(g);
+    return g;
+  }
+  function arames(geometria, cor, opacidade = 0.85) {
+    return new THREE.LineSegments(
+      new THREE.EdgesGeometry(geometria),
+      new THREE.LineBasicMaterial({ color: cor, transparent: true, opacity: opacidade }),
+    );
+  }
+
+  function criarObjeto(nome) {
+    if (OBJETOS[nome]) return OBJETOS[nome];
+    const g = baseDoObjeto();
+    let atualizar = () => {};
+
+    if (nome === "moeda") {
+      const disco = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.42, 0.06, 40), new THREE.MeshBasicMaterial({ color: 0x15171a }));
+      disco.rotation.x = Math.PI / 2;
+      const aro = new THREE.Mesh(new THREE.TorusGeometry(0.42, 0.012, 6, 48), new THREE.MeshBasicMaterial({ color: 0xc9ccd1 }));
+      const barra = (x, y, ang, comp) => {
+        const m = new THREE.Mesh(new THREE.BoxGeometry(0.045, comp, 0.02), new THREE.MeshBasicMaterial({ color: 0xeceae6 }));
+        m.position.set(x, y, 0.045);
+        m.rotation.z = ang;
+        return m;
+      };
+      g.add(disco, aro, barra(-0.1, 0, 0.3, 0.44), barra(0.1, 0, -0.3, 0.44), barra(0, -0.12, -0.32, 0.28));
+      atualizar = (dt) => { g.rotation.y += dt * 0.7; };
+    } else if (nome === "blocos") {
+      const cubos = [];
+      for (let i = 0; i < 4; i++) {
+        const c = arames(new THREE.BoxGeometry(0.26, 0.26, 0.26), 0xc9ccd1, 0.8);
+        c.position.set(-0.42 + i * 0.28, 0, 0);
+        g.add(c);
+        cubos.push(c);
+      }
+      const elo = new THREE.Mesh(new THREE.SphereGeometry(0.035, 8, 8), new THREE.MeshBasicMaterial({ color: 0xfff3df }));
+      g.add(elo);
+      let t = 0;
+      atualizar = (dt) => {
+        t = (t + dt * 0.35) % 1;
+        elo.position.set(-0.42 + t * 0.84, 0, 0);
+        cubos.forEach((c, i) => { c.rotation.y += dt * (0.2 + i * 0.05); });
+        g.rotation.y = Math.sin(t * 6.283) * 0.25;
+      };
+    } else if (nome === "tarefa") {
+      const origem = new THREE.Mesh(new THREE.TorusGeometry(0.16, 0.008, 6, 32), new THREE.MeshBasicMaterial({ color: 0xc9ccd1 }));
+      origem.position.set(-0.45, 0, 0);
+      const executor = new THREE.Mesh(new THREE.TorusGeometry(0.2, 0.01, 6, 32), new THREE.MeshBasicMaterial({ color: 0xc9ccd1 }));
+      const carga = arames(new THREE.BoxGeometry(0.14, 0.14, 0.14), 0xfff3df, 1);
+      const aceito = new THREE.Mesh(new THREE.TorusGeometry(0.28, 0.012, 6, 40), new THREE.MeshBasicMaterial({ color: 0x9fd6b4, transparent: true, opacity: 0 }));
+      g.add(origem, executor, carga, aceito);
+      let t = 0;
+      atualizar = (dt) => {
+        t = (t + dt * 0.28) % 1;
+        const ida = Math.min(1, t / 0.5);
+        carga.position.set(-0.45 + ida * 0.45, Math.sin(ida * Math.PI) * 0.12, 0);
+        carga.rotation.x += dt * 1.2;
+        carga.rotation.y += dt * 0.9;
+        executor.rotation.z += dt * 0.6;
+        const surge = t > 0.62 ? Math.min(0.9, (t - 0.62) * 6) : 0;
+        aceito.material.opacity = surge * (1 - Math.max(0, t - 0.9) * 10);
+        aceito.scale.setScalar(t > 0.62 ? 1 + (t - 0.62) * 0.3 : 1);
+      };
+    } else if (nome === "pacote") {
+      const pontos = [[-0.42, -0.12], [0, 0.16], [0.42, -0.12]];
+      for (const [x, y] of pontos) {
+        const aparelho = arames(new THREE.BoxGeometry(0.16, 0.24, 0.02), 0xc9ccd1, 0.75);
+        aparelho.position.set(x, y, 0);
+        g.add(aparelho);
+      }
+      const pacote = new THREE.Mesh(new THREE.SphereGeometry(0.05, 10, 10), new THREE.MeshBasicMaterial({ color: 0xfff3df }));
+      g.add(pacote);
+      let t = 0;
+      atualizar = (dt) => {
+        t = (t + dt * 0.3) % 1;
+        const i = t < 0.5 ? 0 : 1;
+        const f = t < 0.5 ? t * 2 : t * 2 - 1;
+        const [x1, y1] = pontos[i], [x2, y2] = pontos[i + 1];
+        pacote.position.set(x1 + (x2 - x1) * f, y1 + (y2 - y1) * f + Math.sin(f * Math.PI) * 0.18, 0.05);
+      };
+    }
+    OBJETOS[nome] = { grupo: g, atualizar };
+    return OBJETOS[nome];
+  }
+
+  function objeto(nome) {
+    if (objetoAtual) objetoAtual.grupo.visible = false;
+    objetoAtual = nome ? criarObjeto(nome) : null;
+    if (objetoAtual) objetoAtual.grupo.visible = true;
+  }
+
+  function assistente(mostrar) {
+    if (!mostrar) {
+      if (cabeca) cabeca.visible = false;
+      objeto(null);
+      return;
+    }
+    criarAssistente().visible = true;
+  }
+
+  function animarHud(dt, t) {
+    if (cabeca && cabeca.visible) {
+      boca += (bocaAlvo - boca) * (1 - Math.exp(-dt * 18));
+      bocaMalha.scale.y = 0.02 + boca * 0.9;
+      cabeca.rotation.y = Math.sin(t * 0.6) * 0.18;
+      cabeca.rotation.x = Math.sin(t * 0.4) * 0.06;
+      cabeca.position.y = -0.48 + Math.sin(t * 0.8) * 0.015;
+      aneis.forEach((anel, i) => { anel.rotation.z += dt * (0.4 + i * 0.25); });
+    }
+    if (objetoAtual) objetoAtual.atualizar(dt, t);
+  }
+
   tamanho();
   if (calmo) { intro = 1; modo = "logo"; mirar(); pos.set(F.logo); atrPos.needsUpdate = true; desenharParado(); }
   else { cam.pos.set(0, 0, 7); ligar(); }
@@ -467,6 +635,13 @@ export function criarMundo(canvas, q) {
   return {
     nivel: q.nivel,
     definirModo, definirZoom,
+    assistente, objeto,
+    // O video desenha o quadro ampliado a partir do centro. A assistente e os
+    // objetos precisam encolher na mesma medida para nao sairem da tela: uma
+    // escala uniforme em torno da camera nao muda nem o tamanho aparente nem a
+    // posicao na tela depois da ampliacao.
+    hudEscala: (v) => hud.scale.setScalar(v > 0 ? 1 / v : 1),
+    definirBoca: (v) => { bocaAlvo = Math.max(0, Math.min(1, v)); },
     introducao: () => (intro >= 1 ? Promise.resolve() : new Promise((res) => { introResolve = res; })),
   };
 }

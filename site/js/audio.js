@@ -61,7 +61,11 @@ export function criarAudio() {
   if (!Ctx) return null;
 
   let ctx = null, mestre = null, sala = null, duque = null, chiado = null;
-  let destinoGravacao = null;
+  let destinoGravacao = null, compressor = null;
+  // A narração tem barramento próprio: o volume da música não pode abaixar a
+  // voz, e a voz precisa entrar na gravação junto com a música.
+  let vozGanho = null, vozMedidor = null, vozFonte = null, vozDados = null;
+  const vozesEmCache = new Map();
   let rodando = false, relogio = 0, proximoCompasso = 0, compasso = 0;
   let volumeAlvo = 0.8, aoBatida = null, aoCompasso = null;
   let ruidoCurto = null, saturacao = null;
@@ -74,7 +78,7 @@ export function criarAudio() {
 
     mestre = ctx.createGain();
     mestre.gain.value = 0;
-    const compressor = ctx.createDynamicsCompressor();
+    compressor = ctx.createDynamicsCompressor();
     compressor.threshold.value = -14;
     compressor.ratio.value = 4;
     compressor.attack.value = 0.006;
@@ -83,6 +87,14 @@ export function criarAudio() {
 
     destinoGravacao = ctx.createMediaStreamDestination();
     compressor.connect(destinoGravacao);
+
+    vozGanho = ctx.createGain();
+    vozGanho.gain.value = 1;
+    vozMedidor = ctx.createAnalyser();
+    vozMedidor.fftSize = 512;
+    vozMedidor.smoothingTimeConstant = 0.6;
+    vozDados = new Float32Array(vozMedidor.fftSize);
+    vozGanho.connect(vozMedidor).connect(compressor);
 
     // Sala: reverberacao longa, como toda faixa lenta tem.
     sala = ctx.createConvolver();
@@ -352,8 +364,66 @@ export function criarAudio() {
     mestre.gain.linearRampToValueAtTime(v, ctx.currentTime + 0.6);
   }
 
+  // ------------------------------------------------------------- narração
+  async function carregarVoz(url) {
+    if (vozesEmCache.has(url)) return vozesEmCache.get(url);
+    const promessa = fetch(url)
+      .then((r) => { if (!r.ok) throw new Error(String(r.status)); return r.arrayBuffer(); })
+      .then((dados) => new Promise((ok, erro) => ctx.decodeAudioData(dados, ok, erro)));
+    vozesEmCache.set(url, promessa);
+    return promessa;
+  }
+
+  /** Toca um trecho de narração. Resolve quando termina (ou se não deu para tocar). */
+  async function narrar(url) {
+    montar();
+    if (ctx.state === "suspended") await ctx.resume();
+    pararNarracao();
+    let buffer;
+    try { buffer = await carregarVoz(url); } catch { return false; }
+    // a música recua enquanto a voz fala
+    if (rodando) {
+      mestre.gain.cancelScheduledValues(ctx.currentTime);
+      mestre.gain.setValueAtTime(mestre.gain.value, ctx.currentTime);
+      mestre.gain.linearRampToValueAtTime(volumeAlvo * 0.55, ctx.currentTime + 0.4);
+    }
+    return new Promise((pronto) => {
+      vozFonte = ctx.createBufferSource();
+      vozFonte.buffer = buffer;
+      vozFonte.connect(vozGanho);
+      vozFonte.onended = () => {
+        if (rodando) {
+          mestre.gain.cancelScheduledValues(ctx.currentTime);
+          mestre.gain.setValueAtTime(mestre.gain.value, ctx.currentTime);
+          mestre.gain.linearRampToValueAtTime(volumeAlvo, ctx.currentTime + 0.8);
+        }
+        vozFonte = null;
+        pronto(true);
+      };
+      vozFonte.start();
+    });
+  }
+
+  function pararNarracao() {
+    if (!vozFonte) return;
+    vozFonte.onended = null;
+    try { vozFonte.stop(); } catch { /* já parou */ }
+    vozFonte = null;
+  }
+
+  /** Nível da voz agora, de 0 a 1. É o que abre e fecha a boca do modelo. */
+  function nivelVoz() {
+    if (!vozMedidor || !vozFonte) return 0;
+    vozMedidor.getFloatTimeDomainData(vozDados);
+    let soma = 0;
+    for (let i = 0; i < vozDados.length; i++) soma += vozDados[i] * vozDados[i];
+    return Math.min(1, Math.sqrt(soma / vozDados.length) * 7);
+  }
+
   return {
     iniciar, tocar, parar, volume, subida, impacto,
+    narrar, pararNarracao, nivelVoz, carregarVoz,
+    falando: () => !!vozFonte,
     get tocando() { return rodando; },
     get compasso() { return COMPASSO; },
     get batida() { return BATIDA; },

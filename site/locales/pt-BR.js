@@ -298,7 +298,7 @@ export default {
       },
       {
         titulo: "O PROPÓSITO", sub: "poder de cálculo que serve para alguma coisa",
-        fala: "Hoje, computadores do mundo inteiro gastam trilhões de cálculos só para proteger criptomoedas, e depois esse trabalho vai fora. O propósito do Auron é transformar esse esforço em trabalho útil.",
+        fala: "Hoje, computadores do mundo inteiro gastam trilhões de cálculos só para proteger criptomoedas, e depois esse trabalho vai embora. O propósito do Auron é transformar esse esforço em trabalho útil.",
       },
       {
         titulo: "ONDE QUEREMOS CHEGAR", sub: "objetivo, não promessa",

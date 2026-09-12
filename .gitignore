@@ -57,3 +57,6 @@ desktop.ini
 # Site: pacote de downloads gerado por site/tools/build_downloads.py
 # ---------------------------------------------------------------------------
 site/downloads/
+
+# Narracao gerada por site/tools/build_narracao.py
+site/assets/voz/

@@ -14,14 +14,17 @@ const CENAS = [
   { chave: "oque", compassos: 3, mundo: "rede", zoom: [3.2, 1.3] },
   { chave: "proposito", compassos: 3, mundo: "rede", zoom: [1.2, 1.0] },
   { chave: "onde", compassos: 3, mundo: "global", zoom: [1.1, 1.0], global: [0.08, 1] },
-  { chave: "moeda", compassos: 3, mundo: "cadeia", zoom: [1.25, 1.02] },
-  { chave: "trabalho", compassos: 3, mundo: "nucleo", zoom: [1.15, 1.0], tag: "simulacao" },
-  { chave: "dados", compassos: 3, mundo: "malha", zoom: [1.25, 1.0], tag: "planejado" },
+  { chave: "moeda", compassos: 3, mundo: "cadeia", zoom: [1.25, 1.02], objeto: "moeda" },
+  { chave: "trabalho", compassos: 3, mundo: "nucleo", zoom: [1.15, 1.0], objeto: "tarefa", tag: "simulacao" },
+  { chave: "dados", compassos: 3, mundo: "malha", zoom: [1.25, 1.0], objeto: "pacote", tag: "planejado" },
   { chave: "fragmento", compassos: 3, mundo: "grade", zoom: [1.3, 1.0], tag: "pesquisa" },
-  { chave: "engenharia", compassos: 3, mundo: "nucleo", zoom: [1.15, 1.0] },
+  { chave: "engenharia", compassos: 3, mundo: "nucleo", zoom: [1.15, 1.0], objeto: "blocos" },
   { chave: "verdade", compassos: 3, mundo: "nucleo", zoom: [1.1, 1.0], tres: true },
   { chave: "ajuda", compassos: 3, mundo: "logo", zoom: [1.4, 1.0], marca: true },
 ];
+
+/** Caminho do arquivo de narração de uma cena, no idioma escolhido. */
+const arquivoDeVoz = (lingua, indice) => `assets/voz/${lingua}/${String(indice + 1).padStart(2, "0")}.wav`;
 
 // Nomes de voz feminina por idioma. A lista não é exaustiva: é o que aparece
 // nos aparelhos mais comuns. Sem nenhuma delas, vale a primeira voz do idioma.
@@ -115,6 +118,25 @@ export function iniciar({ t, audio, mundo, idioma, movel, aoMudarIdioma, restaur
     if (!todas.length) return null;
     return todas.find((v) => VOZES_FEMININAS.test(v.name)) || todas[0];
   }
+  // A narração tem duas fontes, nesta ordem:
+  // 1. arquivo de áudio gravado com a voz do projeto — toca igual em qualquer
+  //    aparelho, entra na gravação do vídeo e dá o nível para mexer a boca;
+  // 2. a voz do navegador, quando não existe arquivo naquele idioma.
+  async function narrarCena(indice) {
+    narrouAcabou = false;
+    if (!comVoz) { narrouAcabou = true; return; }
+    const texto = textoDaCena("fala", indice);
+    if (audio) {
+      const url = arquivoDeVoz(idioma(), indice);
+      const tocou = await audio.narrar(url);
+      if (tocou) { if (indice === cenaAtual) narrouAcabou = true; return; }
+      // prepara a próxima enquanto esta fala
+      const proxima = arquivoDeVoz(idioma(), indice + 1);
+      if (indice + 1 < CENAS.length) audio.carregarVoz(proxima).catch(() => {});
+    }
+    falar(texto);
+  }
+
   function falar(texto) {
     narrouAcabou = !comVoz;
     if (!comVoz || !voz) return;
@@ -134,7 +156,7 @@ export function iniciar({ t, audio, mundo, idioma, movel, aoMudarIdioma, restaur
   }
   function atualizarVoz() {
     if (!botaoVoz) return;
-    const tem = !!vozEscolhida();
+    const tem = !!vozEscolhida() || !!audio;
     botaoVoz.textContent = comVoz && tem ? t("edit.voz_on") : t("edit.voz_off");
     botaoVoz.setAttribute("aria-pressed", String(comVoz && tem));
     if (!tem && comVoz) aviso.textContent = t("edit.sem_voz");
@@ -152,9 +174,12 @@ export function iniciar({ t, audio, mundo, idioma, movel, aoMudarIdioma, restaur
     cortePedido = 0;
     const cena = CENAS[i];
     mundo.definirModo(cena.mundo);
+    mundo.objeto(cena.objeto || null);
     if (cena.global) mundo.definirZoom(cena.global[0]);
     if (audio) audio.impacto();
-    falar(textoDaCena("fala", i));
+    narrarCena(i);
+    // adianta o carregamento da próxima fala, para não haver silêncio no corte
+    if (audio && i + 1 < CENAS.length) audio.carregarVoz(arquivoDeVoz(idioma(), i + 1)).catch(() => {});
   }
 
   function quadro(agora) {
@@ -213,8 +238,12 @@ export function iniciar({ t, audio, mundo, idioma, movel, aoMudarIdioma, restaur
     ctx.fillStyle = vinheta;
     ctx.fillRect(0, 0, larg, alt);
 
+    // a boca do modelo 3D segue o som da voz; sem arquivo, segue as sílabas
+    mundo.definirBoca(audio && audio.falando() ? audio.nivelVoz() : pulsoFala * 0.7);
+    if (mundo.hudEscala) mundo.hudEscala(k);
+
     desenharTitulo(cenaAtual, cena, naCena, minimo);
-    desenharApresentadora(agora / 1000);
+    desenharRotuloDaVoz();
     desenharLegenda(cenaAtual);
 
     const tarja = alt * 0.085 + estalo * 5;
@@ -282,45 +311,14 @@ export function iniciar({ t, audio, mundo, idioma, movel, aoMudarIdioma, restaur
     ctx.globalAlpha = 1;
   }
 
-  // A apresentadora é um rosto de máquina: anéis que giram e barras que pulsam
-  // com a fala. Nenhum rosto humano inventado; a legenda diz que a voz é
-  // sintética, e é isso que ela é.
-  function desenharApresentadora(tempo) {
-    const r = Math.min(larg, alt) * 0.055;
-    const cx = larg * 0.085 + r, cy = alt * 0.28;
-    const vivo = comVoz && !!vozEscolhida();
-
-    ctx.save();
-    ctx.translate(cx, cy);
-    ctx.strokeStyle = "rgba(201,204,209,0.5)";
-    ctx.lineWidth = Math.max(1, r * 0.03);
-    ctx.beginPath();
-    ctx.arc(0, 0, r, 0, Math.PI * 2);
-    ctx.stroke();
-
-    ctx.strokeStyle = "rgba(243,226,196,0.85)";
-    ctx.lineWidth = Math.max(1, r * 0.06);
-    const giro = tempo * 0.6;
-    for (let i = 0; i < 3; i++) {
-      ctx.beginPath();
-      ctx.arc(0, 0, r * (0.72 + i * 0.14), giro + i * 2.1, giro + i * 2.1 + 1.1 + pulsoFala * 0.5);
-      ctx.stroke();
-    }
-
-    // olhos e boca: três barras, a do meio acompanha a fala
-    ctx.fillStyle = "#fff3df";
-    const olho = r * 0.12;
-    ctx.fillRect(-r * 0.36, -r * 0.2, olho, olho * 1.6);
-    ctx.fillRect(r * 0.24, -r * 0.2, olho, olho * 1.6);
-    const boca = r * (0.06 + pulsoFala * 0.34);
-    ctx.fillStyle = vivo ? "#f3e2c4" : "rgba(143,146,153,0.7)";
-    ctx.fillRect(-r * 0.34, r * 0.26 - boca / 2, r * 0.68, boca);
-    ctx.restore();
-
+  // O rosto agora é um modelo 3D, desenhado pelo mundo. Aqui fica só o rótulo,
+  // embaixo dele: quem ouve precisa saber que a voz é sintética.
+  function desenharRotuloDaVoz() {
+    const base = Math.min(larg, alt * 1.6);
     ctx.textAlign = "center";
-    ctx.font = `500 ${Math.max(9, r * 0.2)}px "IBM Plex Mono", monospace`;
+    ctx.font = `500 ${Math.max(9, base * 0.014)}px "IBM Plex Mono", monospace`;
     ctx.fillStyle = "rgba(143,146,153,0.9)";
-    ctx.fillText(t("edit.apresentadora"), cx, cy + r * 1.5);
+    ctx.fillText(t("edit.apresentadora"), larg * 0.216, alt * 0.73);
   }
 
   function desenharLegenda(i) {
@@ -354,6 +352,7 @@ export function iniciar({ t, audio, mundo, idioma, movel, aoMudarIdioma, restaur
       await Promise.all([document.fonts.load("900 80px Archivo"), document.fonts.load("400 20px Archivo")]);
     } catch { /* segue com a fonte de reserva */ }
     atualizarVoz();
+    mundo.assistente(true);
     rodando = true;
     inicioTudo = performance.now();
     ultimoQuadro = 0;
@@ -366,6 +365,9 @@ export function iniciar({ t, audio, mundo, idioma, movel, aoMudarIdioma, restaur
     rodando = false;
     cancelAnimationFrame(raf);
     if (voz) voz.cancel();
+    if (audio) audio.pararNarracao();
+    mundo.assistente(false);
+    mundo.definirBoca(0);
     if (gravando) pararGravacao();
     if (audio) audio.parar({ suave: true });
     palco.hidden = true;
@@ -440,8 +442,11 @@ export function iniciar({ t, audio, mundo, idioma, movel, aoMudarIdioma, restaur
   if (botaoVoz) {
     botaoVoz.addEventListener("click", () => {
       comVoz = !comVoz && !!voz;
-      if (!comVoz && voz) { voz.cancel(); narrouAcabou = true; }
-      else if (rodando) falar(textoDaCena("fala", cenaAtual));
+      if (!comVoz) {
+        if (voz) voz.cancel();
+        if (audio) audio.pararNarracao();
+        narrouAcabou = true;
+      } else if (rodando) narrarCena(cenaAtual);
       atualizarVoz();
     });
   }
