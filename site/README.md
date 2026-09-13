@@ -27,6 +27,12 @@ O vídeo procura a narração nesta ordem, por cena (`01` a `10`):
    `build_narracao.py`;
 3. a voz do navegador; sem nenhuma, só a legenda.
 
+A narração atual em `.mp3` foi gerada em 13/09/2026 no ElevenLabs, com a voz
+de biblioteca "Will - For institutional videos" (`IKpiSijWzlhOL6uX83EH`),
+modelo `eleven_multilingual_v2`. No texto enviado à voz, "AUR" vira "A U R" e
+"Argon2id" vira "Argon dois I D". Os arquivos ficam fora do Git, como os
+`.wav`; antes de uso comercial, confira a licença do plano da conta.
+
 Para trocar a voz, basta pôr os `.mp3` na pasta, um por cena, com o texto de
 `edit.cenas[n].fala` em `locales/pt-BR.js`. A legenda acompanha qualquer um
 deles pelo tempo do áudio. Se a voz não for de uma pessoa real, o rótulo
