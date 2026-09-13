@@ -9,6 +9,8 @@ description = "Auron — prova de trabalho Argon2id e minerador que roda no celu
 
 [dependencies]
 argon2.workspace = true
+# só o programa auron-minerar usa, para medir o trabalho útil no aparelho
+auron-usefulpow.workspace = true
 
 [dev-dependencies]
 serde_json.workspace = true

@@ -12,7 +12,8 @@ nada além do próprio Rust.
 | Medir a velocidade do aparelho (`medir`) | pronto |
 | Achar o nonce de um cabeçalho montado pelo nó (`cabecalho`) | pronto; acha o mesmo nonce que o Python |
 | Várias linhas de execução, pausa contra aquecimento | pronto |
-| Prova de trabalho útil (seção 9A) em Rust | **ainda não**; hoje é o gabarito em Python que monta o cabeçalho com ela |
+| Prova de trabalho útil (seção 9A) em Rust | pronto (`crates/auron-usefulpow`), igual ao gabarito; o `medir` mostra quanto custa no aparelho |
+| Montar o cabeçalho com a prova útil | **ainda não**; depende do bloco e da cadeia em Rust |
 | Receber blocos da rede e minerar sozinho | **ainda não**; depende do nó e da rede P2P |
 
 Ou seja: o celular já faz a parte pesada do Argon2id e já dá para medir quanto
@@ -27,10 +28,16 @@ existir.
   computador. Os 32 MiB por tentativa fazem a memória pesar tanto quanto o
   processador, e isso tira parte da vantagem de máquinas especializadas.
 - **Trabalho útil:** o produto de matrizes do bloco vai até 256 × 256, cerca de
-  17 milhões de contas, coisa de décimos de segundo num celular.
+  17 milhões de contas, e é feito uma vez por bloco, não por tentativa.
 
-Referência medida: num PC com Atom (processador fraco, de 2012), 5,7 a 6
-tentativas por segundo por linha. Celulares recentes costumam ser mais rápidos
+Referência medida num PC com Atom (processador fraco, de 2012):
+
+| Medida | Resultado |
+|---|---|
+| Argon2id, mainnet | 5,7 a 6 tentativas por segundo por linha |
+| Trabalho útil 256 × 256, fazer | 0,08 s |
+| Trabalho útil 256 × 256, conferir | 0,04 s |
+ Celulares recentes costumam ser mais rápidos
 por núcleo, mas isso é estimativa: o número que vale é o do `medir` no seu
 aparelho.
 

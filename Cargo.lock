@@ -37,6 +37,7 @@ name = "auron-pow"
 version = "0.1.0"
 dependencies = [
  "argon2",
+ "auron-usefulpow",
  "hex",
  "serde_json",
 ]
@@ -45,6 +46,16 @@ dependencies = [
 name = "auron-types"
 version = "0.1.0"
 dependencies = [
+ "serde_json",
+]
+
+[[package]]
+name = "auron-usefulpow"
+version = "0.1.0"
+dependencies = [
+ "auron-codec",
+ "auron-crypto",
+ "hex",
  "serde_json",
 ]
 

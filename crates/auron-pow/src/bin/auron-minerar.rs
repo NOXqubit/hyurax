@@ -130,6 +130,34 @@ fn rodar(
     })
 }
 
+/// Mede o trabalho útil do bloco (seção 9A) no maior tamanho que a rede exige:
+/// quanto custa fazer e quanto custa conferir.
+fn medir_trabalho_util(rede: &str) -> Result<(), String> {
+    use auron_usefulpow::{ParametrosUteis, solve, verify};
+
+    let p = ParametrosUteis::da_rede(rede).ok_or(format!("rede desconhecida: {rede}"))?;
+    // alvo 1: o mais difícil possível, então o tamanho sai no teto da rede
+    let mut alvo = [0u8; 32];
+    if let Some(ultimo) = alvo.last_mut() {
+        *ultimo = 1;
+    }
+    let (prev, minerador) = ([7u8; 64], [9u8; 20]);
+
+    let inicio = Instant::now();
+    let prova = solve(&p, 1, &prev, &minerador, &alvo).map_err(|e| e.to_string())?;
+    let fazer = inicio.elapsed().as_secs_f64();
+
+    let inicio = Instant::now();
+    verify(&prova, &p, 1, &prev, &minerador, &alvo)?;
+    let conferir = inicio.elapsed().as_secs_f64();
+
+    println!("\nTrabalho útil no teto da rede ({} × {})", prova.n, prova.n);
+    println!("  fazer (C = A·B):        {:.3} s", fazer);
+    println!("  conferir (Freivalds):   {:.3} s", conferir);
+    println!("  tamanho da prova:       {:.1} KB", prova.result.len() as f64 / 1000.0);
+    Ok(())
+}
+
 fn cabecalho_vazio_com_bits(bits: u32) -> Vec<u8> {
     let mut c = vec![0u8; HEADER_LEN];
     if let Some(campo) = c.get_mut(BITS_OFFSET..NONCE_OFFSET) {
@@ -166,6 +194,7 @@ fn principal(args: &[String]) -> Result<(), String> {
             println!("  tentativas por segundo: {taxa:.2}");
             println!("  por linha:              {:.2}", taxa / f64::from(o.linhas));
             println!("  memória reservada:      {:.1} MiB", mib(p.memoria_bytes() * u64::from(o.linhas)));
+            medir_trabalho_util(&o.rede)?;
             Ok(())
         }
         "cabecalho" => {
