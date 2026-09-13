@@ -10,9 +10,9 @@ Qualquer pessoa que disser o contrário está mentindo.
 | Parte | Estado |
 |---|---|
 | Especificação `AURON-SPEC-01` | escrita, congelável quando a tokenomics fechar |
-| Implementação de referência (Python) | completa, 119 testes |
-| Vetores de validação cruzada | 15 arquivos |
-| Nó de produção (Rust) | começado: `auron-types`, `auron-crypto`, `auron-codec`, `auron-pow`, `auron-usefulpow`, `auron-tx`, `auron-block`, `auron-consensus` |
+| Implementação de referência (Python) | completa, 121 testes |
+| Vetores de validação cruzada | 17 arquivos |
+| Nó de produção (Rust) | núcleo migrado e igual ao gabarito: `auron-types`, `auron-crypto`, `auron-codec`, `auron-pow`, `auron-usefulpow`, `auron-tx`, `auron-block`, `auron-consensus`, `auron-state`, `auron-chain` (70 testes). Falta: persistência, rede P2P, mempool |
 | Minerador Argon2id no celular | `auron-minerar`, roda no Termux; ver [`docs/MINERAR-NO-CELULAR.md`](docs/MINERAR-NO-CELULAR.md) |
 | Rede P2P | não começada |
 | Testnet pública | não começada |

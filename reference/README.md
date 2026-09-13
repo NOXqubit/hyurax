@@ -21,7 +21,7 @@ geração das matrizes e o desafio são SHA-512, e o resultado é travado por
 python tests/run_all_tests.py
 ```
 
-119 testes. Entre 2 e 4 minutos nesta máquina, conforme a memória livre. Não
+121 testes. Entre 2 e 4 minutos nesta máquina, conforme a memória livre. Não
 precisa instalar nada além do numpy.
 
 ## Achados próprios, depois do protótipo

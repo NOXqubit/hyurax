@@ -448,6 +448,197 @@ def vec_transactions_edge() -> list[dict]:
 MAX_AMOUNT_U64 = 2**64 - 1
 
 
+def vec_state() -> dict:
+    """Estado de contas: uma sequência de blocos aplicados e desfeitos.
+
+    Cada passo grava as transações do bloco, o resultado (`ok` ou a mensagem
+    da recusa) e a fotografia do estado depois. Bloco recusado precisa deixar
+    o estado exatamente como estava; desfazer precisa voltar byte a byte.
+    """
+    from auron.state import State, StateError
+    from auron.tx import Transfer, TxError
+    from auron.units import AmountError
+
+    p = REGTEST
+    a = crypto.address_from_pubkey(crypto.public_key(SEED_A))
+    b = crypto.address_from_pubkey(crypto.public_key(SEED_B))
+    c = crypto.address_from_pubkey(crypto.public_key(bytes.fromhex("33" * 32)))
+    estado = State(params=p)
+    desfazer = []
+    passos = []
+
+    def foto():
+        return {
+            "balances": [[k[0].hex(), k[1].hex(), str(v)] for k, v in sorted(estado.balances.items())],
+            "nonces": [[k.hex(), v] for k, v in sorted(estado.nonces.items())],
+            "pending_coinbase": [[h, [[x.hex(), str(v)] for x, v in e]]
+                                 for h, e in sorted(estado.pending_coinbase.items())],
+            "total_emitted": str(estado.total_emitted),
+        }
+
+    def cb(altura, valor=None, dest=a):
+        return Coinbase(height=altura, recipient=dest,
+                        amount=consensus.block_reward(altura, p) if valor is None else valor,
+                        extra_nonce=b"estado")
+
+    def envio(saidas, fee, nonce, segredo=SEED_A, origem=a):
+        return sign_transfer_outputs(segredo, p.magic, sender=origem, outputs=saidas,
+                                     fee=fee, nonce=nonce)
+
+    def aplicar(nome, altura, txs):
+        try:
+            desfazer.append(estado.apply_block(altura, txs, p.magic))
+            resultado = "ok"
+        except (StateError, TxError, AmountError) as exc:
+            resultado = str(exc)
+        passos.append({"name": nome, "op": "apply", "height": altura,
+                       "transactions": [h(t.encode()) for t in txs],
+                       "result": resultado, "state": foto()})
+
+    def reverter(nome):
+        estado.revert_block(desfazer.pop())
+        passos.append({"name": nome, "op": "revert", "state": foto()})
+
+    um = to_units("1")
+    aplicar("coinbase_0", 0, [cb(0)])
+    aplicar("coinbase_1", 1, [cb(1)])
+    aplicar("coinbase_2_amadurece_0", 2, [cb(2)])
+    t1 = envio([Output(recipient=b, asset_id=AUR, amount=10 * um)], fee=um, nonce=0)
+    aplicar("transferencia_com_taxa", 3, [cb(3, consensus.block_reward(3, p) + um), t1])
+    aplicar("replay_recusado", 4, [cb(4), t1])
+    aplicar("saldo_insuficiente", 4,
+            [cb(4), envio([Output(recipient=b, asset_id=AUR, amount=500 * um)], fee=0, nonce=1)])
+    t2 = envio([Output(recipient=c, asset_id=AUR, amount=um)], fee=0, nonce=1)
+    aplicar("duplicada_no_bloco", 4, [cb(4), t2, t2])
+    aplicar("coinbase_acima_do_permitido", 4, [cb(4, consensus.block_reward(4, p) + 1)])
+    aplicar("coinbase_altura_errada", 4, [cb(5)])
+    aplicar("bloco_vazio", 4, [])
+    aplicar("primeira_nao_e_coinbase", 4, [t2])
+    aplicar("coinbase_extra", 4, [cb(4), cb(4)])
+    assinatura_ruim = Transfer(sender=a, outputs=t2.outputs, fee=0, nonce=1,
+                               public_key=t2.public_key,
+                               signature=t2.signature[:-1] + bytes([t2.signature[-1] ^ 1]))
+    aplicar("assinatura_invalida", 4, [cb(4), assinatura_ruim])
+    saidas = sorted([Output(recipient=b, asset_id=AUR, amount=2 * um),
+                     Output(recipient=c, asset_id=AUR, amount=3 * um)],
+                    key=lambda o: (o.recipient, o.asset_id))
+    aplicar("duas_saidas_e_coinbase_zero", 4, [cb(4, 0), envio(saidas, fee=5, nonce=1)])
+    aplicar("b_gasta_o_que_recebeu", 5,
+            [cb(5, dest=c), envio([Output(recipient=a, asset_id=AUR, amount=um)], fee=0,
+                                  nonce=0, segredo=SEED_B, origem=b)])
+    reverter("desfaz_5")
+    reverter("desfaz_4")
+    aplicar("reaplica_4", 4, [cb(4, 0), envio(saidas, fee=5, nonce=1)])
+    aplicar("ativo_desconhecido", 5,
+            [cb(5), envio([Output(recipient=b, asset_id=b"\x07" * 32, amount=1)], fee=0, nonce=2)])
+    return {"network": p.name, "steps": passos}
+
+
+def vec_chain_edge() -> dict:
+    """A cadeia recebendo blocos: aceitos, recusados por cada regra, e rollback.
+
+    Cada recusa é montada a partir de um candidato honesto, com UMA coisa
+    errada, e com o nonce do Argon2id achado de novo quando a regra testada
+    vem depois dele na ordem de validação. Assim o motivo gravado é o da regra,
+    e não um efeito colateral.
+    """
+    from dataclasses import replace as trocar
+    from auron.block import Block
+    from auron.chain import ChainError
+    from auron.consensus import check_pow_target, compact_to_target, target_to_compact
+    from auron.tx import Transfer
+
+    p = REGTEST
+    a = crypto.address_from_pubkey(crypto.public_key(SEED_A))
+    b = crypto.address_from_pubkey(crypto.public_key(SEED_B))
+    cadeia = Chain(params=p)
+    passos = []
+
+    def minerar_cabecalho(cab, passar=True):
+        alvo = compact_to_target(cab.bits)
+        for nonce in range(1 << 20):
+            c = cab.with_nonce(nonce)
+            if check_pow_target(c.pow_hash(p), alvo) == passar:
+                return c
+        raise AssertionError("sem nonce")
+
+    def ponta():
+        return {"height": cadeia.height, "tip_hash": h(cadeia.tip_hash()),
+                "total_work": str(cadeia.total_work)}
+
+    def tentar(nome, bloco, agora):
+        try:
+            cadeia.accept_block(bloco, now=agora)
+            resultado = "ok"
+        except ChainError as exc:
+            resultado = str(exc)
+        passos.append({"name": nome, "op": "accept", "block": h(bloco.encode()),
+                       "now": agora, "result": resultado, "tip": ponta()})
+
+    def proximo_ts():
+        return cadeia.tip.header.timestamp + p.target_spacing
+
+    def honesto(transfers=None, minerador=a):
+        ts = proximo_ts()
+        return cadeia.mine(minerador, transfers, timestamp=ts), ts + 10
+
+    def com_cabecalho(nome, mudanca, minerar=True):
+        ts = proximo_ts()
+        cand = cadeia.build_candidate(a, timestamp=ts)
+        cab = trocar(cand.header, **mudanca)
+        cab = minerar_cabecalho(cab) if minerar else cab
+        tentar(nome, Block(cab, cand.transactions, cand.useful_proof), ts + 10)
+
+    for nome in ("bloco_1", "bloco_2"):
+        bloco, agora = honesto()
+        tentar(nome, bloco, agora)
+
+    ts = proximo_ts()
+    cand = cadeia.build_candidate(a, timestamp=ts)
+    esperado = cadeia.expected_bits()
+    outros_bits = target_to_compact(compact_to_target(esperado) // 2)
+
+    com_cabecalho("versao_1", {"version": 1}, minerar=False)
+    com_cabecalho("altura_errada", {"height": cadeia.height + 3}, minerar=False)
+    com_cabecalho("prev_hash_errado", {"prev_hash": b"\x07" * 64}, minerar=False)
+    com_cabecalho("dificuldade_errada", {"bits": outros_bits}, minerar=False)
+    com_cabecalho("timestamp_no_passado", {"timestamp": cadeia.median_time_past()}, minerar=False)
+    tentar("timestamp_no_futuro", Block(trocar(cand.header, timestamp=ts + 10_000),
+                                        cand.transactions, cand.useful_proof), ts)
+
+    def com_corpo(nome, txs, prova, merkle=None, useful_root=None):
+        cab = trocar(cand.header,
+                     merkle_root=codec.merkle_root([t.encode() for t in txs]) if merkle is None else merkle,
+                     useful_root=(prova.commitment() if prova else cand.header.useful_root)
+                     if useful_root is None else useful_root)
+        tentar(nome, Block(minerar_cabecalho(cab), txs, prova), ts + 10)
+
+    cb = cand.transactions[0]
+    com_corpo("sem_transacoes", [], cand.useful_proof)
+    envio = sign_transfer(SEED_A, p.magic, sender=a, recipient=b, amount=1, fee=0, nonce=0)
+    com_corpo("primeira_nao_e_coinbase", [envio], cand.useful_proof)
+    com_corpo("coinbase_extra", [cb, cb], cand.useful_proof)
+    com_corpo("merkle_errado", [cb], cand.useful_proof, merkle=b"\x05" * 64)
+    com_corpo("sem_prova_util", [cb], None, useful_root=cand.header.useful_root)
+    com_corpo("useful_root_divergente", [cb], cand.useful_proof, useful_root=b"\x06" * 64)
+    bruto = bytearray(cand.useful_proof.result)
+    bruto[-1] ^= 1
+    com_corpo("prova_util_fraudada", [cb], trocar(cand.useful_proof, result=bytes(bruto)))
+    tentar("argon2_nao_bate", Block(minerar_cabecalho(cand.header, passar=False),
+                                    cand.transactions, cand.useful_proof), ts + 10)
+    gulosa = Coinbase(height=cb.height, recipient=a, amount=cb.amount + 1)
+    com_corpo("coinbase_inflada", [gulosa], cand.useful_proof)
+
+    # recompensa da altura 1 amadurece na 3: dá para gastar
+    bloco3, agora3 = honesto([sign_transfer(SEED_A, p.magic, sender=a, recipient=b,
+                                            amount=to_units("7"), fee=to_units("0.5"), nonce=0)])
+    tentar("bloco_3_com_transferencia", bloco3, agora3)
+    cadeia.rollback(1)
+    passos.append({"name": "rollback_1", "op": "rollback", "count": 1, "tip": ponta()})
+    tentar("bloco_3_de_novo", bloco3, agora3)
+    return {"network": p.name, "steps": passos}
+
+
 def vec_chain() -> dict:
     """Minera uma cadeia curta e congela cada bloco. Se o Rust divergir, aparece aqui."""
     p = REGTEST
@@ -823,6 +1014,8 @@ FILES = {
     "genesis.json": vec_genesis,
     "transactions.json": vec_transactions,
     "transactions_edge.json": vec_transactions_edge,
+    "state.json": vec_state,
+    "chain_edge.json": vec_chain_edge,
     "chain.json": vec_chain,
     "utrax.json": vec_utrax,
     "usefulpow.json": vec_usefulpow,

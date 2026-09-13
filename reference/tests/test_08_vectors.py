@@ -29,7 +29,7 @@ def _manifest() -> dict:
 
 def test_manifest_matches_files():
     files = _manifest()["files"]
-    assert len(files) >= 15, f"poucos arquivos no manifesto: {len(files)}"
+    assert len(files) >= 17, f"poucos arquivos no manifesto: {len(files)}"
     for name, expected in sorted(files.items()):
         # Bytes crus: ler como texto esconderia uma conversao de fim de linha.
         raw = (VECTORS / name).read_bytes()
@@ -133,6 +133,19 @@ def test_transactions_edge_vectors_match_oracle():
           f"{conferencia} de conferencia)")
 
 
+def test_state_and_chain_edge_vectors_match_oracle():
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools"))
+    from gen_vectors import vec_chain_edge, vec_state  # noqa: E402
+
+    for nome, gerar in (("state.json", vec_state), ("chain_edge.json", vec_chain_edge)):
+        doc = json.loads((VECTORS / nome).read_text(encoding="utf-8"))
+        assert doc["data"] == gerar(), f"{nome} diverge do oraculo atual: rode tools/gen_vectors.py"
+        passos = doc["data"]["steps"]
+        recusas = sum(1 for s in passos if s.get("result") not in (None, "ok"))
+        assert recusas >= 9, f"{nome}: poucas recusas ({recusas})"
+        print(f"PASS {nome} bate com o oraculo ({len(passos)} passos, {recusas} recusas)")
+
+
 if __name__ == "__main__":
     test_manifest_matches_files()
     test_manifest_lists_every_vector_file()
@@ -140,4 +153,5 @@ if __name__ == "__main__":
     test_codec_edge_vectors_match_oracle()
     test_usefulpow_vectors_match_oracle()
     test_transactions_edge_vectors_match_oracle()
+    test_state_and_chain_edge_vectors_match_oracle()
     print("=== VETORES OK ===")

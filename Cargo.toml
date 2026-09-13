@@ -9,6 +9,8 @@ members = [
     "crates/auron-tx",
     "crates/auron-block",
     "crates/auron-consensus",
+    "crates/auron-state",
+    "crates/auron-chain",
 ]
 
 [workspace.package]
@@ -49,6 +51,8 @@ auron-tx = { path = "crates/auron-tx" }
 auron-block = { path = "crates/auron-block" }
 auron-pow = { path = "crates/auron-pow" }
 auron-consensus = { path = "crates/auron-consensus" }
+auron-state = { path = "crates/auron-state" }
+auron-chain = { path = "crates/auron-chain" }
 
 # Vetores de teste. Rust puro.
 serde = { version = "1", features = ["derive"] }

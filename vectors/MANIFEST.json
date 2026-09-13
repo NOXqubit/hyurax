@@ -8,6 +8,10 @@
       "bytes": 7965,
       "sha512_16": "4e1c43a73887810f86151a845c4e4487"
     },
+    "chain_edge.json": {
+      "bytes": 25534,
+      "sha512_16": "bf8f1e4d2979e4c072717aaa41209e16"
+    },
     "codec.json": {
       "bytes": 2540,
       "sha512_16": "c68c0072dcdddf7b9a696d8f61807cac"
@@ -35,6 +39,10 @@
     "hash.json": {
       "bytes": 1957,
       "sha512_16": "69eabb2b570cdf3a0eff62d824c6247c"
+    },
+    "state.json": {
+      "bytes": 30478,
+      "sha512_16": "ec6a9fe7f03587f47653e1367bc52cc5"
     },
     "targets.json": {
       "bytes": 21281,
