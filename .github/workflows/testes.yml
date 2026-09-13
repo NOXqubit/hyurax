@@ -1,0 +1,53 @@
+# Testes automáticos a cada envio e a cada pedido de mudança.
+#
+# Roda as duas pontas do contrato: o gabarito Python (que também regera os
+# vetores e confere que nada mudou) e o nó Rust (testes e clippy). Um vetor que
+# não bate derruba o build: é assim que uma mudança de consenso não passa
+# despercebida.
+
+name: testes
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  python:
+    name: gabarito Python
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install numpy
+      - run: python reference/tests/run_all_tests.py
+
+  rust:
+    name: nó Rust
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+      - run: cargo test --workspace --locked
+      - run: cargo clippy --workspace --all-targets --locked -- -D warnings
+      # Regra do projeto: nenhuma dependência com código em C.
+      - name: sem compilador C na árvore de dependências
+        run: |
+          if cargo tree -i cc --workspace 2>/dev/null | grep -q cc; then
+            echo "uma dependência passou a exigir compilador C"; exit 1
+          fi
+
+  rede:
+    name: cenários de rede (ataques e auto-reanimação)
+    runs-on: ubuntu-latest
+    needs: rust
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - run: cargo test -p auron-net --locked -- --ignored --test-threads=1

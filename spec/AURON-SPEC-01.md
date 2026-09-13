@@ -828,15 +828,16 @@ pública e transações assinadas, que já são públicas por natureza. Ainda as
 sem cifra um intermediário vê o tráfego e pode censurar seletivamente, então o
 uso hoje é **rede local ou de confiança**, não a internet aberta.
 
-O que falta decidir antes de a cifra entrar, medido em 13/09/2026:
+Decidido em 13/09/2026 (ver `docs/ROTEIRO-LANCAMENTO.md`):
 
-- **Qual padrão Noise.** `XX` autentica os dois lados sem conhecimento prévio;
-  `IK` exige saber a chave do par antes de falar. `XX` casa melhor com
-  descoberta aberta de pares.
-- **Identidade de nó.** A cifra traz uma chave estática por nó, que é uma
-  identidade persistente. Isso é bom (autentica o par) e tem custo de
-  privacidade (o nó passa a ser reconhecível entre conexões). Precisa de decisão
-  explícita, e é separada da chave da carteira (seção 2, hierarquia de chaves).
+- **Padrão Noise: `XX`.** Autentica os dois lados sem conhecimento prévio, o
+  que casa com descoberta aberta de pares. `IK` foi descartado porque exige
+  saber a chave do par antes de falar.
+- **Identidade de nó: persistente**, num arquivo próprio e separado da chave da
+  carteira (seção 2, hierarquia de chaves). Benefício: autentica o par e permite
+  banir um nó malicioso entre conexões. Custo declarado: o nó passa a ser
+  reconhecível entre conexões. Quem quiser evitar isso apaga o arquivo e ganha
+  identidade nova.
 - **Gerador aleatório.** Nesta máquina o `getrandom` não compila no alvo
   Windows GNU, então o nó fornece o próprio gerador, semeado pela entropia do
   sistema operacional. A biblioteca Noise em Rust puro compila sem `getrandom`.

@@ -15,7 +15,7 @@ Qualquer pessoa que disser o contrário está mentindo.
 | Nó de produção (Rust) | núcleo migrado e igual ao gabarito: `auron-types`, `auron-crypto`, `auron-codec`, `auron-pow`, `auron-usefulpow`, `auron-tx`, `auron-block`, `auron-consensus`, `auron-state`, `auron-chain`, `auron-store`, `auron-wire`, `auron-net` (80 testes) |
 | Rede entre nós | conexão TCP, aperto de mão, sincronização, propagação de blocos e transações, mempool, descoberta de pares (um nó novo acha a rede a partir de uma semente) e retomada automática — tudo em `auron-net`, mais reorganização profunda entre pares (a cadeia com mais trabalho vence, mesmo bifurcando fundo). Falta a cifra da conexão (Noise) |
 | Nó local e minerador no celular | `auron-no` (carteira de teste, nó em rede com `--porta`/`--semente`, mineração de blocos inteiros, saldo) e `auron-minerar` (medição); rodam no Termux. Ver [`docs/MINERAR-NO-CELULAR.md`](docs/MINERAR-NO-CELULAR.md) |
-| Testnet pública | não começada |
+| Testnet pública | não começada; roteiro de 12 semanas em [`docs/ROTEIRO-LANCAMENTO.md`](docs/ROTEIRO-LANCAMENTO.md) |
 | Mainnet | não existe |
 | Auron Flux (stablecoins e pagamentos) | arquitetura registrada em [`docs/AURON-FLUX.md`](docs/AURON-FLUX.md); estado RED, nada implementado |
 | Auron Direct, Resonance e Transport (pagamentos P2P, offline e mesh) | arquitetura registrada em [`docs/AURON-DIRECT-RESONANCE.md`](docs/AURON-DIRECT-RESONANCE.md); estado RED, nada implementado |
@@ -149,6 +149,25 @@ publicados:
 Este repositório declara o estado real da rede. Enquanto não houver mainnet,
 nenhum material do projeto vai dizer que há. Enquanto o Utrax estiver fora do
 consenso, nenhum material vai apresentá-lo como lastro econômico da moeda.
+
+## Contribuir e atacar
+
+Tentar quebrar o Auron é bem-vindo: veja [SECURITY.md](SECURITY.md) para saber
+como relatar. Ataque só nós seus ou a testnet do projeto.
+
+## Doação
+
+O Auron é feito por um desenvolvedor independente. Se quiser ajudar a manter o
+trabalho, o endereço é da **rede Bitcoin** (envie só bitcoin):
+
+```
+bc1qkp7d90t9tnmuv2rwq742pwc8pnet28a59zdzt7
+```
+
+Depois de colar, confira o começo e o fim: `bc1qkp7d … zdzt7`.
+
+**Doação é voluntária e não dá direito a nada:** nem token, nem participação,
+nem retorno.
 
 ## Licença
 

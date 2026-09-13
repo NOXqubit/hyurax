@@ -87,9 +87,12 @@ dependencies = [
 name = "auron-no"
 version = "0.1.0"
 dependencies = [
+ "auron-block",
  "auron-chain",
  "auron-consensus",
  "auron-crypto",
+ "auron-net",
+ "auron-pow",
  "auron-store",
  "auron-tx",
 ]
