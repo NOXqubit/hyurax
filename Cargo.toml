@@ -1,6 +1,6 @@
 [workspace]
 resolver = "3"
-members = ["crates/auron-types", "crates/auron-crypto", "crates/auron-codec"]
+members = ["crates/auron-types", "crates/auron-crypto", "crates/auron-codec", "crates/auron-pow"]
 
 [workspace.package]
 version = "0.1.0"
@@ -57,9 +57,27 @@ sha2 = { version = "0.11", default-features = false }
 # ser ligadas: a primeira aceita R não-canônico, a segunda aceita S >= L.
 ed25519-dalek = { version = "=3.0.0", default-features = false, features = ["zeroize"] }
 
+# Prova de trabalho. Rust puro (RustCrypto, a mesma família do sha2): o
+# Cargo.toml dele declara `build = false`, e as dependências são blake2 e
+# base64ct, também puras. Versão exata pelo mesmo motivo do ed25519-dalek:
+# mudar o hash de PoW é mudança de consenso.
+#
+# Sem `default-features`: dispensa `getrandom` e `password-hash`, que um
+# minerador não usa, e a memória de 32 MiB é alocada por nós, uma vez só.
+argon2 = { version = "=0.6.0", default-features = false }
+
 [profile.dev]
 debug = 0
 incremental = true
+
+# Argon2id sem otimização é dezenas de vezes mais lento, e os testes de vetor
+# rodam os 32 MiB da mainnet. Otimizar só essas dependências deixa o teste
+# rápido sem mudar o resto do build de desenvolvimento.
+[profile.dev.package.argon2]
+opt-level = 3
+
+[profile.dev.package.blake2]
+opt-level = 3
 
 [profile.release]
 debug = 0

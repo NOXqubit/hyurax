@@ -11,8 +11,9 @@ Qualquer pessoa que disser o contrário está mentindo.
 |---|---|
 | Especificação `AURON-SPEC-01` | escrita, congelável quando a tokenomics fechar |
 | Implementação de referência (Python) | completa, 119 testes |
-| Vetores de validação cruzada | 13 arquivos |
-| Nó de produção (Rust) | começado: `auron-types`, `auron-crypto`, `auron-codec` |
+| Vetores de validação cruzada | 14 arquivos |
+| Nó de produção (Rust) | começado: `auron-types`, `auron-crypto`, `auron-codec`, `auron-pow` |
+| Minerador Argon2id no celular | `auron-minerar`, roda no Termux; ver [`docs/MINERAR-NO-CELULAR.md`](docs/MINERAR-NO-CELULAR.md) |
 | Rede P2P | não começada |
 | Testnet pública | não começada |
 | Mainnet | não existe |

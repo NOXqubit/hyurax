@@ -281,6 +281,10 @@ def vec_genesis() -> list[dict]:
         g = make_genesis(p)
         out.append({
             "network": p.name,
+            # Argon2id com os parâmetros de verdade de cada rede (32 MiB na
+            # mainnet): é o que o minerador em Rust precisa reproduzir.
+            "pow_hash": h(g.header.pow_hash(p)),
+            "pow_memory_kib": p.pow_memory_kib,
             "header_bytes": h(g.header.encode()),
             "block_hash": h(g.block_hash()),
             "merkle_root": h(g.header.merkle_root),
