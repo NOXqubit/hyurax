@@ -1,0 +1,27 @@
+[package]
+name = "auron-net"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+description = "Auron — transporte da rede entre nós: conexões TCP, aperto de mão, sincronização e mempool"
+
+[dependencies]
+auron-wire.workspace = true
+auron-block.workspace = true
+auron-tx.workspace = true
+auron-chain.workspace = true
+auron-consensus.workspace = true
+auron-crypto.workspace = true
+
+[lints.rust]
+unsafe_code = "forbid"
+missing_docs = "warn"
+
+[lints.clippy]
+unwrap_used = "deny"
+expect_used = "deny"
+panic = "deny"
+indexing_slicing = "deny"
+arithmetic_side_effects = "warn"

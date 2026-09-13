@@ -144,6 +144,62 @@ impl Chain {
         self.entries.get(inicio..).unwrap_or(&[])
     }
 
+    /// Altura de um bloco pelo hash, se estiver no ramo ativo. Busca linear,
+    /// que basta para o laboratório; um índice entra quando a cadeia crescer.
+    pub fn altura_de(&self, hash: &[u8; HASH_LEN]) -> Option<u64> {
+        self.entries.iter().position(|e| &e.block.block_hash() == hash).map(|i| i as u64)
+    }
+
+    /// O bloco de um hash, se estiver no ramo ativo.
+    pub fn bloco_por_hash(&self, hash: &[u8; HASH_LEN]) -> Option<&Block> {
+        self.entries.iter().find(|e| &e.block.block_hash() == hash).map(|e| &e.block)
+    }
+
+    /// Cabeçalhos a partir do bloco seguinte a `apos` (exclusivo), até `max`.
+    ///
+    /// Para a sincronização: o par pede "o que veio depois deste hash que eu
+    /// tenho". Hash desconhecido devolve lista vazia. Se `apos` é o
+    /// `GENESIS_PREV_HASH`, começa da própria gênese.
+    pub fn headers_a_partir_de(&self, apos: &[u8; HASH_LEN], max: usize) -> Vec<BlockHeader> {
+        let inicio = if apos == &GENESIS_PREV_HASH {
+            0
+        } else {
+            match self.altura_de(apos) {
+                Some(h) => h.saturating_add(1) as usize,
+                None => return Vec::new(),
+            }
+        };
+        self.entries
+            .get(inicio..)
+            .unwrap_or(&[])
+            .iter()
+            .take(max)
+            .map(|e| e.block.header)
+            .collect()
+    }
+
+    /// Os hashes da ponta para trás, recuando em passos que dobram, mais a
+    /// gênese. É o "locator" que um par manda para o outro achar o ancestral
+    /// comum mesmo depois de uma bifurcação.
+    pub fn locator(&self) -> Vec<[u8; HASH_LEN]> {
+        let mut hashes = Vec::new();
+        let ultimo = self.entries.len().saturating_sub(1);
+        let (mut i, mut passo) = (ultimo as i64, 1i64);
+        while i > 0 {
+            if let Some(e) = self.entries.get(i as usize) {
+                hashes.push(e.block.block_hash());
+            }
+            if hashes.len() > 10 {
+                passo = passo.saturating_mul(2);
+            }
+            i = i.saturating_sub(passo);
+        }
+        if let Some(e) = self.entries.first() {
+            hashes.push(e.block.block_hash());
+        }
+        hashes
+    }
+
     /// `bits` que o PRÓXIMO bloco precisa declarar.
     pub fn expected_bits(&self) -> Result<u32, ChainError> {
         let janela = self.recentes(self.params.lwma_window.saturating_add(1));

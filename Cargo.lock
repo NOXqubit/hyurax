@@ -72,6 +72,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "auron-net"
+version = "0.1.0"
+dependencies = [
+ "auron-block",
+ "auron-chain",
+ "auron-consensus",
+ "auron-crypto",
+ "auron-tx",
+ "auron-wire",
+]
+
+[[package]]
 name = "auron-no"
 version = "0.1.0"
 dependencies = [
