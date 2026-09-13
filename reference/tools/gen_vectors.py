@@ -562,7 +562,7 @@ def vec_wire() -> dict:
 
     hello = (codec.enc_u16(PROTO) + codec.enc_fixed(MAGIC, 4)
              + codec.enc_u64(chain.height) + codec.enc_fixed(trabalho, 32)
-             + codec.enc_u64(0x0102030405060708))
+             + codec.enc_u64(0x0102030405060708) + codec.enc_u16(8333))
     hello_ack = hello + codec.enc_u64(0x1122334455667788)
     get_headers = codec.enc_fixed(chain.entries[0].block.block_hash(), 64) + codec.enc_u32(500)
     headers = codec.enc_list(cabecalhos, lambda c: c)

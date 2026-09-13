@@ -794,8 +794,12 @@ conexão, não o nó.
 
 | Tipo | Nome | Corpo | Para quê |
 |---|---|---|---|
-| 1 | `HELLO` | versão, magic, altura da ponta, trabalho acumulado, nonce aleatório | abre a conversa |
+| 1 | `HELLO` | versão, magic, altura da ponta, trabalho acumulado, nonce aleatório, porta de escuta | abre a conversa |
 | 2 | `HELLO_ACK` | o mesmo, mais o eco do nonce recebido | fecha o aperto de mão |
+
+A **porta de escuta** no `HELLO` diz onde este nó aceita conexões (`0` = só
+disca). É o que a descoberta usa para anunciar um par: a porta da conexão de
+saída é efêmera e não serve para reconectar.
 | 3 | `GET_HEADERS` | hash inicial conhecido, quantidade pedida | sincronizar por cabeçalhos primeiro |
 | 4 | `HEADERS` | lista de cabeçalhos (até 2000) | resposta |
 | 5 | `GET_BLOCKS` | lista de hashes de bloco | pedir os blocos inteiros |

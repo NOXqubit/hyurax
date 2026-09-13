@@ -107,6 +107,10 @@ pub struct Ponta {
     pub trabalho: [u8; 32],
     /// Nonce aleatório da conexão.
     pub nonce: u64,
+    /// Porta em que este nó escuta conexões. `0` = não escuta (só disca), e o
+    /// par não deve anunciá-lo para outros. É o que deixa a descoberta dizer
+    /// "conecte neste nó AQUI", em vez de na porta efêmera da conexão de saída.
+    pub porta_escuta: u16,
 }
 
 /// Um endereço de outro nó, para descoberta.
@@ -172,6 +176,7 @@ fn escreve_ponta(w: &mut Writer, p: &Ponta) {
     w.u64(p.altura);
     w.fixed(&p.trabalho);
     w.u64(p.nonce);
+    w.u16(p.porta_escuta);
 }
 
 fn le_ponta(r: &mut Reader<'_>) -> Result<Ponta, WireError> {
@@ -181,6 +186,7 @@ fn le_ponta(r: &mut Reader<'_>) -> Result<Ponta, WireError> {
         altura: r.u64()?,
         trabalho: r.fixed()?,
         nonce: r.u64()?,
+        porta_escuta: r.u16()?,
     })
 }
 
