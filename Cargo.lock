@@ -14,6 +14,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "auron-block"
+version = "0.1.0"
+dependencies = [
+ "auron-codec",
+ "auron-crypto",
+ "auron-pow",
+ "auron-tx",
+ "auron-usefulpow",
+ "hex",
+ "serde_json",
+]
+
+[[package]]
 name = "auron-codec"
 version = "0.1.0"
 dependencies = [
