@@ -48,6 +48,15 @@ Nó Rust:
 cargo test --workspace
 ```
 
+Os testes de integração da rede sobem nós de verdade em sockets e disputam CPU
+com os testes de mineração, então ficam marcados como `ignored` e rodam sob
+demanda, isolados (aperto de mão, sincronização, propagação, ataques e
+auto-reanimação):
+
+```bash
+cargo test -p auron-net -- --ignored --test-threads=1
+```
+
 Terminal que não achar `cargo` ou `git`:
 
 ```bash

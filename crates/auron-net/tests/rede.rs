@@ -48,6 +48,7 @@ fn ponta(rede: &Arc<Rede>) -> [u8; 64] {
 }
 
 #[test]
+#[ignore = "integração de rede: sobe sockets; rode isolado com: cargo test -p auron-net -- --ignored --test-threads=1"]
 fn no_atrasado_alcanca_o_no_a_frente() {
     let a = Rede::nova(No::novo(cadeia_com(4)));
     let b = Rede::nova(No::novo(cadeia_com(0)));
@@ -55,7 +56,7 @@ fn no_atrasado_alcanca_o_no_a_frente() {
     let porta = a.escutar("127.0.0.1:0").unwrap();
     b.conectar(("127.0.0.1", porta)).unwrap();
 
-    assert!(esperar(Duration::from_secs(120), || altura(&b) == 4), "B não sincronizou: {}", altura(&b));
+    assert!(esperar(Duration::from_secs(60), || altura(&b) == 4), "B não sincronizou: {}", altura(&b));
     assert_eq!(ponta(&a), ponta(&b), "pontas diferentes depois de sincronizar");
 
     a.desligar();
@@ -63,13 +64,14 @@ fn no_atrasado_alcanca_o_no_a_frente() {
 }
 
 #[test]
+#[ignore = "integração de rede: sobe sockets; rode isolado com: cargo test -p auron-net -- --ignored --test-threads=1"]
 fn bloco_novo_se_espalha_para_os_pares() {
     let a = Rede::nova(No::novo(cadeia_com(2)));
     let b = Rede::nova(No::novo(cadeia_com(2)));
 
     let porta = a.escutar("127.0.0.1:0").unwrap();
     b.conectar(("127.0.0.1", porta)).unwrap();
-    assert!(esperar(Duration::from_secs(30), || a.pares_conectados() == 1 && b.pares_conectados() == 1));
+    assert!(esperar(Duration::from_secs(60), || a.pares_conectados() == 1 && b.pares_conectados() == 1));
 
     // A minera um bloco e o injeta. Deve chegar em B pela difusão.
     let bloco = {
@@ -82,7 +84,7 @@ fn bloco_novo_se_espalha_para_os_pares() {
 
     // Prazos folgados de propósito: nesta máquina fraca os testes rodam em
     // paralelo e o Argon2id de um satura os núcleos do outro.
-    assert!(esperar(Duration::from_secs(120), || altura(&b) == 3), "B não recebeu o bloco: {}", altura(&b));
+    assert!(esperar(Duration::from_secs(60), || altura(&b) == 3), "B não recebeu o bloco: {}", altura(&b));
     assert_eq!(ponta(&a), ponta(&b));
 
     a.desligar();
@@ -90,6 +92,7 @@ fn bloco_novo_se_espalha_para_os_pares() {
 }
 
 #[test]
+#[ignore = "integração de rede: sobe sockets; rode isolado com: cargo test -p auron-net -- --ignored --test-threads=1"]
 fn rede_errada_nao_conecta() {
     // A é regtest; um cliente testnet tenta conectar. O magic não bate e o
     // aperto de mão fecha antes de virar par.
