@@ -116,6 +116,70 @@ fn rede_errada_nao_conecta() {
     b.desligar();
 }
 
+/// Duas cadeias que saem do mesmo tronco e divergem: `base` blocos em comum,
+/// depois `extra` blocos minerados por `minerador` (minerador diferente = ramo
+/// diferente).
+fn ramo(base: &Chain, extra: u64, minerador: [u8; 20]) -> Chain {
+    let p = ParametrosRede::REGTEST;
+    let mut chain = base.clone();
+    for _ in 0..extra {
+        let ts = chain.tip().unwrap().header.timestamp + p.target_spacing;
+        let bloco = chain.mine(minerador, vec![], Some(ts), 2).unwrap();
+        chain.accept_block(bloco, Some(ts + 10)).unwrap();
+    }
+    chain
+}
+
+#[test]
+#[ignore = "sobe sockets — ver cabeçalho do arquivo"]
+fn cadeia_com_mais_trabalho_vence_mesmo_bifurcando_fundo() {
+    // Tronco comum de 2 blocos. A segue com 3 (altura 5); B segue com 6
+    // (altura 8), num ramo diferente. A precisa abandonar os seus 3 e adotar
+    // os 6 de B: reorganização profunda.
+    let tronco = cadeia_com(2);
+    let cadeia_a = ramo(&tronco, 3, [0xA1; 20]);
+    let cadeia_b = ramo(&tronco, 6, [0xB2; 20]);
+    assert_eq!(cadeia_a.height(), 5);
+    assert_eq!(cadeia_b.height(), 8);
+    assert_ne!(cadeia_a.tip_hash(), cadeia_b.tip_hash(), "os ramos precisam divergir");
+    let ponta_b = cadeia_b.tip_hash();
+
+    let a = Rede::nova(No::novo(cadeia_a));
+    let b = Rede::nova(No::novo(cadeia_b));
+    let porta = b.escutar("127.0.0.1:0").unwrap();
+    a.conectar(("127.0.0.1", porta)).unwrap();
+
+    assert!(esperar(Duration::from_secs(60), || altura(&a) == 8),
+        "A não reorganizou: altura {}", altura(&a));
+    assert_eq!(ponta(&a), ponta_b, "A adotou uma cadeia diferente da de B");
+    // B não muda: tem mais trabalho.
+    assert_eq!(altura(&b), 8);
+    a.desligar();
+    b.desligar();
+}
+
+#[test]
+#[ignore = "sobe sockets — ver cabeçalho do arquivo"]
+fn ramo_mais_curto_nao_desvia_a_cadeia() {
+    // O contrário: B tem MENOS trabalho. A não pode trocar.
+    let tronco = cadeia_com(2);
+    let cadeia_a = ramo(&tronco, 5, [0xA1; 20]);
+    let cadeia_b = ramo(&tronco, 2, [0xB2; 20]);
+    let ponta_a = cadeia_a.tip_hash();
+
+    let a = Rede::nova(No::novo(cadeia_a));
+    let b = Rede::nova(No::novo(cadeia_b));
+    let porta = b.escutar("127.0.0.1:0").unwrap();
+    a.conectar(("127.0.0.1", porta)).unwrap();
+
+    // Dá tempo de trocarem tudo o que quiserem; B é que deve alcançar A.
+    assert!(esperar(Duration::from_secs(60), || altura(&b) == 7), "B não alcançou A: {}", altura(&b));
+    assert_eq!(altura(&a), 7, "A trocou por um ramo mais fraco");
+    assert_eq!(ponta(&a), ponta_a, "A mudou de ponta sem precisar");
+    a.desligar();
+    b.desligar();
+}
+
 // ==================================================================== ATAQUES
 
 fn conectar_e_apertar_mao(porta: u16, magic: [u8; 4]) -> Conexao {

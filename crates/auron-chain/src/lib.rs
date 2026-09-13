@@ -178,6 +178,22 @@ impl Chain {
             .collect()
     }
 
+    /// Cabeçalhos a partir do primeiro hash do locator que esta cadeia conhece.
+    /// Se nenhum for conhecido (ou o locator vier vazio), começa da gênese.
+    pub fn headers_do_locator(&self, locator: &[[u8; HASH_LEN]], max: usize) -> Vec<BlockHeader> {
+        for hash in locator {
+            if self.altura_de(hash).is_some() {
+                return self.headers_a_partir_de(hash, max);
+            }
+        }
+        self.headers_a_partir_de(&GENESIS_PREV_HASH, max)
+    }
+
+    /// Trabalho acumulado até uma altura, inclusive.
+    pub fn trabalho_ate(&self, altura: u64) -> Option<U512> {
+        self.entries.get(usize::try_from(altura).ok()?).map(|e| e.total_work)
+    }
+
     /// Os hashes da ponta para trás, recuando em passos que dobram, mais a
     /// gênese. É o "locator" que um par manda para o outro achar o ancestral
     /// comum mesmo depois de uma bifurcação.

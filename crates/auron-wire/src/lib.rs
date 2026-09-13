@@ -138,10 +138,13 @@ pub enum Message {
         /// Eco do nonce que veio no `Hello`.
         eco: u64,
     },
-    /// Pede cabeçalhos a partir de um hash conhecido.
+    /// Pede cabeçalhos a partir do primeiro hash conhecido do locator.
     GetHeaders {
-        /// Último hash em comum.
-        inicio: Hash,
+        /// Hashes da própria cadeia, da ponta para trás em passos que dobram,
+        /// terminando na gênese. Quem responde procura o primeiro que conhece:
+        /// é assim que dois nós acham o ancestral comum mesmo depois de uma
+        /// bifurcação. Lista vazia, ou nenhum hash conhecido, começa da gênese.
+        locator: Vec<Hash>,
         /// Quantos cabeçalhos, no máximo.
         quantidade: u32,
     },
@@ -217,8 +220,11 @@ impl Message {
                 escreve_ponta(&mut w, ponta);
                 w.u64(*eco);
             }
-            Self::GetHeaders { inicio, quantidade } => {
-                w.fixed(inicio);
+            Self::GetHeaders { locator, quantidade } => {
+                w.list(locator, |w, h| {
+                    w.fixed(h);
+                    Ok::<(), CodecError>(())
+                })?;
                 w.u32(*quantidade);
             }
             Self::Headers(cabecalhos) => {
@@ -256,7 +262,10 @@ impl Message {
         let msg = match tipo {
             TIPO_HELLO => Self::Hello(le_ponta(&mut r)?),
             TIPO_HELLO_ACK => Self::HelloAck { ponta: le_ponta(&mut r)?, eco: r.u64()? },
-            TIPO_GET_HEADERS => Self::GetHeaders { inicio: r.fixed()?, quantidade: r.u32()? },
+            TIPO_GET_HEADERS => Self::GetHeaders {
+                locator: r.read_list(|r| r.fixed::<64>())?,
+                quantidade: r.u32()?,
+            },
             TIPO_HEADERS => {
                 let brutos = r.read_list(|r| r.take(HEADER_LEN).map(<[u8]>::to_vec))?;
                 let mut cabecalhos = Vec::with_capacity(brutos.len());

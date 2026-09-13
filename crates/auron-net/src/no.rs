@@ -9,9 +9,17 @@
 use std::collections::BTreeMap;
 
 use auron_block::Block;
-use auron_chain::{Chain, GENESIS_PREV_HASH};
+use auron_chain::Chain;
+use auron_consensus::{U512, alvo_de_bits, target_to_work};
 use auron_tx::{Endereco, Transfer, Tx};
 use auron_wire::{Hash, MAX_GET_BLOCKS, MAX_HEADERS, Message};
+
+/// Teto de blocos guardados que ainda não encaixam na cadeia.
+///
+/// É defesa: um par hostil poderia mandar órfãos sem parar para encher a
+/// memória. Ao estourar, o nó **descarta todos** e recomeça a sincronizar —
+/// perder um ramo em construção é barato; ficar sem memória, não.
+const MAX_ORFAOS: usize = 512;
 
 /// O que o nó decidiu fazer com uma mensagem.
 #[derive(Debug, Default)]
@@ -32,18 +40,26 @@ impl std::fmt::Display for Malicia {
     }
 }
 
-/// O nó: cadeia mais mempool.
+/// O nó: cadeia, mempool e os blocos que ainda não encaixam.
 pub struct No {
     /// A cadeia validada.
     pub chain: Chain,
     /// Transferências esperando entrar num bloco, por `(remetente, nonce)`.
     mempool: BTreeMap<(Endereco, u64), Transfer>,
+    /// Blocos recebidos que não estendem a ponta, por `block_hash`. Podem ser
+    /// de um ramo concorrente que ainda está chegando.
+    orfaos: BTreeMap<Hash, Block>,
 }
 
 impl No {
     /// Nó novo em cima de uma cadeia.
     pub fn novo(chain: Chain) -> Self {
-        Self { chain, mempool: BTreeMap::new() }
+        Self { chain, mempool: BTreeMap::new(), orfaos: BTreeMap::new() }
+    }
+
+    /// Quantos blocos estão guardados esperando encaixe.
+    pub fn orfaos_len(&self) -> usize {
+        self.orfaos.len()
     }
 
     fn magic(&self) -> [u8; 4] {
@@ -123,6 +139,140 @@ impl No {
         });
     }
 
+    /// Guarda um bloco que ainda não encaixa, respeitando o teto.
+    fn guardar_orfao(&mut self, bloco: Block) {
+        if self.orfaos.len() >= MAX_ORFAOS {
+            self.orfaos.clear();
+        }
+        self.orfaos.insert(bloco.block_hash(), bloco);
+    }
+
+    /// Aplica, em sequência, os órfãos que já encaixam na ponta atual.
+    fn encaixar_orfaos(&mut self) {
+        loop {
+            let ponta = self.chain.tip_hash();
+            let Some(hash) = self
+                .orfaos
+                .iter()
+                .find(|(_, b)| b.header.prev_hash == ponta)
+                .map(|(h, _)| *h)
+            else {
+                return;
+            };
+            let Some(bloco) = self.orfaos.remove(&hash) else {
+                return;
+            };
+            if self.chain.accept_block(bloco, None).is_err() {
+                return; // não encaixou de verdade; para aqui
+            }
+            self.limpar_mempool();
+        }
+    }
+
+    /// O trabalho somado de um ramo de blocos.
+    fn trabalho_do_ramo(ramo: &[Block]) -> Option<U512> {
+        let mut total = U512::ZERO;
+        for bloco in ramo {
+            let alvo = alvo_de_bits(bloco.header.bits).ok()?;
+            total = total.checked_add(&target_to_work(&alvo).ok()?)?;
+        }
+        Some(total)
+    }
+
+    /// Monta, a partir de um órfão, o ramo que vai de um ancestral da minha
+    /// cadeia até ele. Devolve `(altura do ancestral, ramo em ordem)`.
+    fn montar_ramo(&self, folha: &Hash) -> Option<(u64, Vec<Block>)> {
+        let mut ramo = Vec::new();
+        let mut atual = *folha;
+        for _ in 0..=MAX_ORFAOS {
+            let bloco = self.orfaos.get(&atual)?;
+            ramo.push(bloco.clone());
+            let prev = bloco.header.prev_hash;
+            if let Some(altura) = self.chain.altura_de(&prev) {
+                ramo.reverse();
+                return Some((altura, ramo));
+            }
+            if !self.orfaos.contains_key(&prev) {
+                return None; // ramo incompleto: faltam blocos no meio
+            }
+            atual = prev;
+        }
+        None
+    }
+
+    /// Se algum ramo guardado tiver MAIS trabalho que a minha cauda desde o
+    /// ancestral comum, troca de cadeia (seção 15 e 21.5).
+    ///
+    /// Se a cadeia nova falhar no meio da aplicação, o nó volta para a que
+    /// tinha: uma reorganização que não completa não pode deixar o nó pior.
+    fn tentar_reorganizar(&mut self) -> Result<bool, Malicia> {
+        // Escolhe o ramo completo de maior trabalho.
+        let folhas: Vec<Hash> = self.orfaos.keys().copied().collect();
+        let mut melhor: Option<(u64, Vec<Block>, U512)> = None;
+        for folha in folhas {
+            let Some((altura_ancestral, ramo)) = self.montar_ramo(&folha) else {
+                continue;
+            };
+            let Some(trabalho) = Self::trabalho_do_ramo(&ramo) else {
+                continue;
+            };
+            if melhor.as_ref().is_none_or(|(_, _, t)| trabalho > *t) {
+                melhor = Some((altura_ancestral, ramo, trabalho));
+            }
+        }
+        let Some((altura_ancestral, ramo, trabalho_ramo)) = melhor else {
+            return Ok(false);
+        };
+
+        // A minha cauda desde o ancestral: o que eu perderia na troca.
+        let Some(trabalho_ate_ancestral) = self.chain.trabalho_ate(altura_ancestral) else {
+            return Ok(false);
+        };
+        let minha_cauda = self.chain.total_work();
+        // trabalho da cauda = total - até o ancestral. Comparo sem subtrair:
+        // ramo vence se (até o ancestral + ramo) > meu total.
+        let Some(novo_total) = trabalho_ate_ancestral.checked_add(&trabalho_ramo) else {
+            return Ok(false);
+        };
+        if novo_total <= minha_cauda {
+            return Ok(false); // não vale trocar
+        }
+
+        // Desfaz até o ancestral, guardando o que sai para poder voltar.
+        let quantos = self.chain.height().saturating_sub(altura_ancestral);
+        let removidos = self
+            .chain
+            .rollback(usize::try_from(quantos).unwrap_or(0))
+            .map_err(|e| Malicia(e.to_string()))?;
+
+        // Aplica o ramo novo. Se falhar no meio, volta tudo.
+        let mut aplicados = 0usize;
+        for bloco in &ramo {
+            if self.chain.accept_block(bloco.clone(), None).is_err() {
+                let _ = self.chain.rollback(aplicados);
+                for antigo in removidos.iter().rev() {
+                    if self.chain.accept_block(antigo.clone(), None).is_err() {
+                        // Não deveria acontecer: eram blocos já validados.
+                        return Err(Malicia("falha ao restaurar a cadeia antiga".into()));
+                    }
+                }
+                return Ok(false);
+            }
+            aplicados = aplicados.saturating_add(1);
+        }
+
+        // Deu certo: os blocos aplicados saem dos órfãos, e o que foi desfeito
+        // vira órfão (pode voltar a valer se aquele ramo crescer de novo).
+        for bloco in &ramo {
+            self.orfaos.remove(&bloco.block_hash());
+        }
+        for antigo in removidos {
+            self.guardar_orfao(antigo);
+        }
+        self.limpar_mempool();
+        Ok(true)
+    }
+
     /// Decide o que fazer com uma mensagem recebida de um par.
     pub fn tratar(&mut self, msg: Message) -> Result<Reacao, Malicia> {
         let mut r = Reacao::default();
@@ -131,9 +281,9 @@ impl No {
             // é repetição — ignora sem punir.
             Message::Hello(_) | Message::HelloAck { .. } => {}
 
-            Message::GetHeaders { inicio, quantidade } => {
+            Message::GetHeaders { locator, quantidade } => {
                 let max = (quantidade as usize).min(MAX_HEADERS as usize);
-                r.respostas.push(Message::Headers(self.chain.headers_a_partir_de(&inicio, max)));
+                r.respostas.push(Message::Headers(self.chain.headers_do_locator(&locator, max)));
             }
 
             Message::Headers(cabecalhos) => {
@@ -164,15 +314,26 @@ impl No {
                     // repetição de algo que já validei; sem novidade
                 } else if estende {
                     if self.aceitar_bloco(*bloco.clone())? {
+                        // Blocos podem chegar fora de ordem: o que estava
+                        // guardado e agora encaixa entra na sequência.
+                        self.encaixar_orfaos();
                         r.difundir.push(Message::Block(bloco));
                     }
                 } else {
-                    // Não encadeia na minha ponta: estou atrás ou é bifurcação.
-                    // Não é malícia; peço a sequência a partir do que tenho.
-                    r.respostas.push(Message::GetHeaders {
-                        inicio: self.chain.tip_hash(),
-                        quantidade: MAX_HEADERS,
-                    });
+                    // Não encadeia na minha ponta: estou atrás, ou é um ramo
+                    // concorrente chegando. Guardo e tento trocar de cadeia se
+                    // o ramo já tiver mais trabalho que o meu.
+                    self.guardar_orfao(*bloco);
+                    if self.tentar_reorganizar()? {
+                        // Trocou de cadeia: anuncia a ponta nova aos outros.
+                        if let Some(ponta) = self.chain.tip().cloned() {
+                            r.difundir.push(Message::Block(Box::new(ponta)));
+                        }
+                    } else {
+                        // Ainda falta blocos no meio: peço a sequência com o
+                        // locator, que acha o ancestral comum.
+                        r.respostas.push(self.pedir_sincronizacao());
+                    }
                 }
             }
 
@@ -196,11 +357,10 @@ impl No {
         Ok(r)
     }
 
-    /// A mensagem `GetHeaders` para começar a sincronizar a partir da própria
-    /// ponta. Se a ponta for a gênese, pede tudo do começo.
+    /// A mensagem `GetHeaders` para sincronizar: manda o locator da própria
+    /// cadeia, para o par achar o ancestral comum mesmo se houve bifurcação.
     pub fn pedir_sincronizacao(&self) -> Message {
-        let inicio = if self.chain.height() == 0 { GENESIS_PREV_HASH } else { self.chain.tip_hash() };
-        Message::GetHeaders { inicio, quantidade: MAX_HEADERS }
+        Message::GetHeaders { locator: self.chain.locator(), quantidade: MAX_HEADERS }
     }
 }
 

@@ -69,8 +69,8 @@
       "sha512_16": "da235d1e160b82dd351d9042db678d8b"
     },
     "wire.json": {
-      "bytes": 9365,
-      "sha512_16": "2605e66b9d487c4d5fd32958d7224360"
+      "bytes": 9893,
+      "sha512_16": "89cf6a0cfa2da89ea39867db00aec777"
     }
   },
   "spec": "AURON-SPEC-01"

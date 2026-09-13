@@ -800,7 +800,7 @@ conexão, não o nó.
 A **porta de escuta** no `HELLO` diz onde este nó aceita conexões (`0` = só
 disca). É o que a descoberta usa para anunciar um par: a porta da conexão de
 saída é efêmera e não serve para reconectar.
-| 3 | `GET_HEADERS` | hash inicial conhecido, quantidade pedida | sincronizar por cabeçalhos primeiro |
+| 3 | `GET_HEADERS` | locator (lista de hashes) e quantidade pedida | sincronizar por cabeçalhos primeiro |
 | 4 | `HEADERS` | lista de cabeçalhos (até 2000) | resposta |
 | 5 | `GET_BLOCKS` | lista de hashes de bloco | pedir os blocos inteiros |
 | 6 | `BLOCK` | um bloco codificado (seção 7) | resposta, ou anúncio |
@@ -830,7 +830,12 @@ pública e transações assinadas, que já são públicas por natureza.
 
 Primeiro cabeçalhos, depois blocos:
 
-1. `GET_HEADERS` a partir do último hash em comum.
+1. `GET_HEADERS` com o **locator**: os hashes da própria cadeia, da ponta para
+   trás em passos que dobram, terminando na gênese. Quem responde procura o
+   primeiro hash que conhece e manda o que veio depois dele. É assim que dois
+   nós acham o ancestral comum **mesmo depois de uma bifurcação** — mandar só a
+   própria ponta não resolve, porque num ramo divergente o outro lado não a
+   conhece. Nenhum hash conhecido: responde desde a gênese.
 2. Recebe `HEADERS`, valida cada cabeçalho barato (encadeamento, dificuldade
    esperada, Argon2id) **sem** baixar o corpo. Cabeçalho que não encadeia, ou
    com trabalho de menos, derruba a conexão.
@@ -848,6 +853,21 @@ altura. Ao receber uma cadeia concorrente com mais trabalho, o nó desfaz seus
 blocos até o ancestral comum (o `Undo` da seção 13) e aplica a nova. Se a nova
 falhar na validação no meio, o nó **volta para a cadeia que tinha**: uma
 reorganização que não completa não pode deixar o nó pior do que antes.
+
+Como isso acontece na prática: um bloco que não encadeia na ponta atual é
+**guardado** (órfão), não recusado — pode ser um ramo concorrente ainda
+chegando. Quando os blocos guardados formam uma sequência contígua a partir de
+um ancestral da cadeia ativa, o nó compara:
+
+```
+vence o ramo se   trabalho(até o ancestral) + trabalho(ramo)  >  trabalho(minha ponta)
+```
+
+Só então desfaz e troca. Os blocos desfeitos viram órfãos, porque aquele ramo
+pode voltar a vencer se crescer. O número de órfãos tem **teto**: ao estourar, o
+nó descarta todos e recomeça a sincronizar — perder um ramo em construção é
+barato, ficar sem memória não é. É defesa contra um par que mande órfãos sem
+parar.
 
 ### 21.6 Defesas de rede (as regras, não o transporte)
 

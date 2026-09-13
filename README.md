@@ -13,7 +13,7 @@ Qualquer pessoa que disser o contrário está mentindo.
 | Implementação de referência (Python) | completa, 122 testes |
 | Vetores de validação cruzada | 18 arquivos |
 | Nó de produção (Rust) | núcleo migrado e igual ao gabarito: `auron-types`, `auron-crypto`, `auron-codec`, `auron-pow`, `auron-usefulpow`, `auron-tx`, `auron-block`, `auron-consensus`, `auron-state`, `auron-chain`, `auron-store`, `auron-wire`, `auron-net` (80 testes) |
-| Rede entre nós | conexão TCP, aperto de mão, sincronização, propagação de blocos e transações, mempool, descoberta de pares (um nó novo acha a rede a partir de uma semente) e retomada automática — tudo em `auron-net`. Falta reorg profundo entre pares e a cifra da conexão (Noise) |
+| Rede entre nós | conexão TCP, aperto de mão, sincronização, propagação de blocos e transações, mempool, descoberta de pares (um nó novo acha a rede a partir de uma semente) e retomada automática — tudo em `auron-net`. reorganização profunda entre pares (a cadeia com mais trabalho vence, mesmo bifurcando fundo). Falta a cifra da conexão (Noise) |
 | Nó local e minerador no celular | `auron-no` (carteira de teste, mineração de blocos inteiros numa cadeia gravada no disco, saldo) e `auron-minerar` (medição); rodam no Termux. Ver [`docs/MINERAR-NO-CELULAR.md`](docs/MINERAR-NO-CELULAR.md) |
 | Testnet pública | não começada |
 | Mainnet | não existe |

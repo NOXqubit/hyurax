@@ -564,7 +564,10 @@ def vec_wire() -> dict:
              + codec.enc_u64(chain.height) + codec.enc_fixed(trabalho, 32)
              + codec.enc_u64(0x0102030405060708) + codec.enc_u16(8333))
     hello_ack = hello + codec.enc_u64(0x1122334455667788)
-    get_headers = codec.enc_fixed(chain.entries[0].block.block_hash(), 64) + codec.enc_u32(500)
+    # locator: hashes da ponta para trás, mais a gênese
+    locator = [e.block.block_hash() for e in reversed(chain.entries)]
+    get_headers = (codec.enc_list(locator, lambda x: codec.enc_fixed(x, 64))
+                   + codec.enc_u32(500))
     headers = codec.enc_list(cabecalhos, lambda c: c)
     get_blocks = codec.enc_list([ponta.block_hash()], lambda x: codec.enc_fixed(x, 64))
     bloco = ponta.encode()
