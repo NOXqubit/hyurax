@@ -824,7 +824,22 @@ diferente no `HELLO` encerra a conexão com educação.
 O aperto de mão **não** cifra ainda. A cifra da conexão (Noise sobre TCP, sem
 QUIC porque QUIC puxa C) entra numa versão seguinte do protocolo, e o número de
 versão sobe quando entrar. Enquanto não cifra, nada de segredo viaja: só cadeia
-pública e transações assinadas, que já são públicas por natureza.
+pública e transações assinadas, que já são públicas por natureza. Ainda assim,
+sem cifra um intermediário vê o tráfego e pode censurar seletivamente, então o
+uso hoje é **rede local ou de confiança**, não a internet aberta.
+
+O que falta decidir antes de a cifra entrar, medido em 13/09/2026:
+
+- **Qual padrão Noise.** `XX` autentica os dois lados sem conhecimento prévio;
+  `IK` exige saber a chave do par antes de falar. `XX` casa melhor com
+  descoberta aberta de pares.
+- **Identidade de nó.** A cifra traz uma chave estática por nó, que é uma
+  identidade persistente. Isso é bom (autentica o par) e tem custo de
+  privacidade (o nó passa a ser reconhecível entre conexões). Precisa de decisão
+  explícita, e é separada da chave da carteira (seção 2, hierarquia de chaves).
+- **Gerador aleatório.** Nesta máquina o `getrandom` não compila no alvo
+  Windows GNU, então o nó fornece o próprio gerador, semeado pela entropia do
+  sistema operacional. A biblioteca Noise em Rust puro compila sem `getrandom`.
 
 ### 21.4 Sincronização, do jeito seguro
 
