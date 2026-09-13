@@ -21,6 +21,8 @@ use crate::conexao::{Conexao, NetError};
 use crate::no::No;
 
 const TIMEOUT: Duration = Duration::from_millis(400);
+/// Tempo máximo para o par completar o aperto de mão.
+const PRAZO_APERTO: Duration = Duration::from_secs(10);
 const INTERVALO_MANUTENCAO: Duration = Duration::from_secs(2);
 /// Quantos pares o nó tenta manter conectados.
 const ALVO_PARES: usize = 8;
@@ -240,7 +242,7 @@ impl Rede {
                     Ok(stream) => {
                         let r = Arc::clone(&rede);
                         std::thread::spawn(move || {
-                            let _ = r.servir(stream);
+                            let _ = r.servir(stream, Papel::Recebeu);
                         });
                     }
                     Err(ref e) if e.kind() == std::io::ErrorKind::WouldBlock => {
@@ -259,7 +261,7 @@ impl Rede {
         self.garantir_manutencao();
         let rede = Arc::clone(self);
         std::thread::spawn(move || {
-            let _ = rede.servir(stream);
+            let _ = rede.servir(stream, Papel::Discou);
         });
         Ok(())
     }
@@ -309,13 +311,14 @@ impl Rede {
     }
 
     /// O aperto de mão e depois o laço de mensagens.
-    fn servir(self: &Arc<Self>, stream: TcpStream) -> Result<(), NetError> {
+    fn servir(self: &Arc<Self>, stream: TcpStream, papel: Papel) -> Result<(), NetError> {
+        // No Windows o socket aceito herda o modo não bloqueante do listener; no
+        // Linux, não. Fixar o modo aqui faz os dois sistemas se comportarem igual.
+        stream.set_nonblocking(false)?;
         stream.set_read_timeout(Some(TIMEOUT))?;
-        // Os dois lados rodam o mesmo laço; o aperto de mão resolve quem fala
-        // primeiro (quem discou manda HELLO após um timeout curto de escuta).
         let ip_par = stream.peer_addr().ok().map(|s| s.ip());
         let mut conexao = Conexao::nova(stream, self.magic);
-        let par_ponta = self.aperto_de_mao(&mut conexao)?;
+        let par_ponta = self.aperto_de_mao(&mut conexao, papel)?;
 
         // Aprende onde o par escuta, e marca como conectado para não rediscar.
         let addr_escuta = match (ip_par, par_ponta.porta_escuta) {
@@ -361,7 +364,7 @@ impl Rede {
         resultado
     }
 
-    fn aperto_de_mao(&self, conexao: &mut Conexao) -> Result<Ponta, NetError> {
+    fn aperto_de_mao(&self, conexao: &mut Conexao, papel: Papel) -> Result<Ponta, NetError> {
         let confere = |p: &Ponta| -> Result<(), NetError> {
             if p.protocolo != auron_wire::PROTOCOL_VERSION {
                 return Err(NetError::Handshake(format!("protocolo {}", p.protocolo)));
@@ -372,23 +375,14 @@ impl Rede {
             Ok(())
         };
 
-        // O primeiro a falar manda HELLO. Como os dois lados podem discar, cada
-        // lado tenta ler primeiro; num timeout curto, assume que é ele quem abre.
-        // Para simplificar e casar com os testes, quem recebe a conexão espera o
-        // HELLO, e quem disca manda. Aqui detectamos por quem chega primeiro:
-        // tentamos receber; se vier HELLO, respondemos ACK (lado servidor); se
-        // der timeout, mandamos HELLO (lado cliente) e esperamos o ACK.
-        match conexao.receber() {
-            Ok(Message::Hello(ponta)) => {
-                confere(&ponta)?;
-                conexao.enviar(&Message::HelloAck { ponta: self.ponta_local(), eco: ponta.nonce })?;
-                Ok(ponta)
-            }
-            Ok(_) => Err(NetError::Handshake("esperava HELLO".into())),
-            Err(NetError::Io(e)) if matches!(e.kind(), std::io::ErrorKind::WouldBlock | std::io::ErrorKind::TimedOut) => {
+        // Papéis fixos: quem discou manda HELLO na hora; quem recebeu espera o
+        // HELLO. Adivinhar o papel por tempo de espera fazia os dois lados, às
+        // vezes, mandarem HELLO juntos (visto no Linux do GitHub Actions).
+        match papel {
+            Papel::Discou => {
                 let meu = self.ponta_local();
                 conexao.enviar(&Message::Hello(meu))?;
-                match conexao.receber()? {
+                match receber_com_prazo(conexao, PRAZO_APERTO)? {
                     Message::HelloAck { ponta, eco } => {
                         confere(&ponta)?;
                         if eco != meu.nonce {
@@ -399,7 +393,14 @@ impl Rede {
                     _ => Err(NetError::Handshake("esperava HELLO_ACK".into())),
                 }
             }
-            Err(e) => Err(e),
+            Papel::Recebeu => match receber_com_prazo(conexao, PRAZO_APERTO)? {
+                Message::Hello(ponta) => {
+                    confere(&ponta)?;
+                    conexao.enviar(&Message::HelloAck { ponta: self.ponta_local(), eco: ponta.nonce })?;
+                    Ok(ponta)
+                }
+                _ => Err(NetError::Handshake("esperava HELLO".into())),
+            },
         }
     }
 
@@ -453,6 +454,27 @@ impl Rede {
                 }
                 Err(malicia) => return Err(NetError::Handshake(format!("par malicioso: {malicia}"))),
             }
+        }
+    }
+}
+
+/// Quem abriu a conexão. Decide quem fala primeiro no aperto de mão.
+#[derive(Clone, Copy)]
+enum Papel {
+    Discou,
+    Recebeu,
+}
+
+/// Espera uma mensagem inteira por até `prazo`, tolerando os timeouts curtos
+/// de leitura do socket. Um par que fica mudo além do prazo é derrubado.
+fn receber_com_prazo(conexao: &mut Conexao, prazo: Duration) -> Result<Message, NetError> {
+    let inicio = std::time::Instant::now();
+    loop {
+        match conexao.receber() {
+            Err(NetError::Io(e))
+                if matches!(e.kind(), std::io::ErrorKind::WouldBlock | std::io::ErrorKind::TimedOut)
+                    && inicio.elapsed() < prazo => {}
+            outro => return outro,
         }
     }
 }
