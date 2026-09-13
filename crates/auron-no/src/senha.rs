@@ -33,10 +33,8 @@ fn ler_escondido(pergunta: &str) -> Result<String, String> {
     let escondeu = tty().ok().and_then(|t| Command::new("stty").arg("-echo").stdin(t).status().ok()).is_some_and(|s| s.success());
     let mut linha = String::new();
     let lido = std::io::stdin().lock().read_line(&mut linha);
-    if escondeu {
-        if let Ok(t) = tty() {
-            let _ = Command::new("stty").arg("echo").stdin(t).status();
-        }
+    if escondeu && let Ok(t) = tty() {
+        let _ = Command::new("stty").arg("echo").stdin(t).status();
     }
     eprintln!();
     lido.map_err(|e| format!("não consegui ler a senha: {e}"))?;
