@@ -736,8 +736,9 @@ saldos livres mais retido é sempre igual ao total.
 
 Não está nesta especificação, e não é esquecimento:
 
-- **P2P.** Fica na Fase 2, no Rust. A referência é de nó único.
-- **Mempool e política de taxa.** Fase 2.
+- **P2P.** Começou: a rede entre nós está na seção 21, e a auto-reanimação na
+  seção 22. A referência em Python continua de nó único; a rede é só no Rust.
+- **Mempool e política de taxa.** Junto com a rede (seção 21).
 - **Mineração mobile como mecanismo separado.** Removida. O protótipo tinha
   registro de dispositivo e reivindicação de recompensa por época, e o desenho
   era inviável: a prova era amarrada ao hash exato da ponta, então cada bloco
@@ -762,3 +763,128 @@ Referência Python -> vetor de teste -> implementação Rust -> comparação byt
 
 Um módulo só é considerado migrado quando os resultados forem comprovadamente
 iguais onde a especificação exigir igualdade.
+
+## 21. Rede entre nós — `AURON-WIRE-v1`
+
+A referência em Python é de nó único. A rede é código só de Rust, começando em
+12/09/2026. Só o **formato das mensagens** e as **regras de decisão** são
+consenso de rede — dois nós precisam concordar bit a bit sobre o que é uma
+mensagem válida. O transporte (sockets, threads, tempo real) fica fora do
+consenso e pode mudar sem quebrar a rede.
+
+### 21.1 Enquadramento
+
+Toda mensagem na rede é um quadro:
+
+```
+[4] magic da rede            recusa cru quem fala com a rede errada
+u16 versão do protocolo = 1
+u16 tipo
+u32 tamanho do corpo         <= MAX_FRAME_BODY (2 MiB)
+[N] corpo                    codificação canônica da seção 3
+```
+
+O `tamanho` vem antes do corpo e é conferido **antes** de alocar qualquer
+coisa: um quadro que anuncia 4 GiB é recusado sem reservar 4 GiB. `MAX_FRAME_BODY`
+é 2 MiB, o suficiente para o maior bloco (1 MiB) com folga, e um teto que fecha
+a exaustão de memória por quadro gigante. Corpo maior que o teto derruba a
+conexão, não o nó.
+
+### 21.2 Tipos de mensagem
+
+| Tipo | Nome | Corpo | Para quê |
+|---|---|---|---|
+| 1 | `HELLO` | versão, magic, altura da ponta, trabalho acumulado, nonce aleatório | abre a conversa |
+| 2 | `HELLO_ACK` | o mesmo, mais o eco do nonce recebido | fecha o aperto de mão |
+| 3 | `GET_HEADERS` | hash inicial conhecido, quantidade pedida | sincronizar por cabeçalhos primeiro |
+| 4 | `HEADERS` | lista de cabeçalhos (até 2000) | resposta |
+| 5 | `GET_BLOCKS` | lista de hashes de bloco | pedir os blocos inteiros |
+| 6 | `BLOCK` | um bloco codificado (seção 7) | resposta, ou anúncio |
+| 7 | `GET_ADDRS` | vazio | pedir endereços de outros nós |
+| 8 | `ADDRS` | lista de endereços de rede (até 1000) | descoberta de pares |
+| 9 | `TX` | uma transação (seção 5) | espalhar transação para o mempool |
+| 10 | `PING` / 11 `PONG` | nonce | vivo? |
+
+Tipo desconhecido é ignorado (não derruba a conexão): é o que deixa versões
+futuras acrescentarem mensagens sem quebrar as antigas. Versão de protocolo
+diferente no `HELLO` encerra a conexão com educação.
+
+### 21.3 Aperto de mão
+
+1. Quem conecta manda `HELLO` com magic, versão, sua ponta e um nonce aleatório.
+2. Quem recebe confere magic e versão. Erra qualquer um dos dois, fecha.
+3. Responde `HELLO_ACK` ecoando o nonce, com a própria ponta.
+4. O nonce ecoado prova que o outro lado respondeu a esta conexão, não a um
+   um quadro gravado e repetido.
+
+O aperto de mão **não** cifra ainda. A cifra da conexão (Noise sobre TCP, sem
+QUIC porque QUIC puxa C) entra numa versão seguinte do protocolo, e o número de
+versão sobe quando entrar. Enquanto não cifra, nada de segredo viaja: só cadeia
+pública e transações assinadas, que já são públicas por natureza.
+
+### 21.4 Sincronização, do jeito seguro
+
+Primeiro cabeçalhos, depois blocos:
+
+1. `GET_HEADERS` a partir do último hash em comum.
+2. Recebe `HEADERS`, valida cada cabeçalho barato (encadeamento, dificuldade
+   esperada, Argon2id) **sem** baixar o corpo. Cabeçalho que não encadeia, ou
+   com trabalho de menos, derruba a conexão.
+3. Só então `GET_BLOCKS` para os corpos que faltam, e cada bloco entra pelo
+   caminho único `accept_block` da seção 14.
+
+Baixar cabeçalho antes de corpo é o que impede um nó mentiroso de fazer o outro
+gastar banda e memória com uma cadeia longa e falsa: o cabeçalho já revela que
+não tem trabalho, e custa 222 bytes descobrir.
+
+### 21.5 Escolha de cadeia e reorg
+
+A regra é a da seção 15: vence o **maior trabalho acumulado**, não a maior
+altura. Ao receber uma cadeia concorrente com mais trabalho, o nó desfaz seus
+blocos até o ancestral comum (o `Undo` da seção 13) e aplica a nova. Se a nova
+falhar na validação no meio, o nó **volta para a cadeia que tinha**: uma
+reorganização que não completa não pode deixar o nó pior do que antes.
+
+### 21.6 Defesas de rede (as regras, não o transporte)
+
+- **Teto por quadro** (`MAX_FRAME_BODY`) e por lista (2000 cabeçalhos, 1000
+  endereços, hashes pedidos): nenhuma mensagem faz o nó alocar sem limite.
+- **Cabeçalho antes de corpo**: sincronização mentirosa custa barato de recusar.
+- **Trabalho, não altura**: cadeia longa e fácil não engana.
+- **Sem confiar em endereço anunciado**: `ADDRS` é dica, testada antes de virar
+  par; endereço não vira conexão automática.
+- **Ban por comportamento, não por identidade**: um par que manda quadro
+  inválido, cabeçalho que não encadeia ou bloco que não valida perde pontos e é
+  desconectado. É a defesa contra eclipse e envenenamento — descrita como regra
+  aqui, medida nos ataques da seção 23.
+
+## 22. Auto-reanimação
+
+**Propriedade central, pedida pelo autor:** enquanto **um único nó** guardar a
+cadeia inteira, ele ressemeia a rede toda a partir do zero. A cadeia é o próprio
+backup. Não é escudo mágico contra derrubada; é resiliência por redundância, e
+quanto mais nós guardam a cadeia, mais impossível apagá-la.
+
+O que torna isso verdade, e não promessa:
+
+1. **A gênese é derivada dos parâmetros, nunca lida de arquivo** (seção 16).
+   Um nó zerado recria a gênese idêntica sozinho.
+2. **A cadeia se auto-verifica** (seção 21.4 mais o `accept_block` da seção 14).
+   Um nó recebe blocos de qualquer par, valida cada um do zero, e chega ao mesmo
+   estado. Não precisa confiar em quem mandou.
+3. **A gênese carrega uma semente de descoberta.** `extra_nonce` da coinbase da
+   gênese pode listar endereços de arranque (ou um nome estável), para um nó
+   recém-nascido achar o primeiro par sem coordenador central.
+4. **Retomada automática.** Um nó que perdeu todos os pares tenta de novo, em
+   intervalos crescentes, os endereços que já conheceu e os da semente. Rede que
+   volta é rede que se reconecta sozinha.
+
+O que a auto-reanimação **não** faz, dito com todas as letras: não recupera o
+que ninguém guardou. Se, ao mesmo tempo, todo nó do planeta perder a cadeia, ela
+acaba — como qualquer dado sem cópia. A defesa é ter muitas cópias, e o desenho
+empurra para isso: cada nó completo é uma cópia viva que pode reanimar as
+outras.
+
+**Dado pessoal em claro nunca circula.** O que os nós carregam e ressemeiam é a
+cadeia pública e compromissos cifrados (seção 2, Data Chain). A reanimação
+reconstrói o livro-razão, não expõe dado de ninguém.

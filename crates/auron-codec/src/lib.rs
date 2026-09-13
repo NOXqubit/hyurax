@@ -150,6 +150,14 @@ impl Writer {
         self.saida.extend_from_slice(dados);
     }
 
+    /// Bytes crus, sem prefixo nenhum: concatena um valor já codificado (um
+    /// cabeçalho, um bloco, uma transação) ou um pedaço de tamanho conhecido
+    /// por contexto. Quem chama é responsável por o consumidor saber onde esse
+    /// pedaço termina — normalmente porque tem tamanho fixo ou vai por último.
+    pub fn raw(&mut self, dados: &[u8]) {
+        self.saida.extend_from_slice(dados);
+    }
+
     /// Bytes de tamanho variável: prefixo `u32` de tamanho e o conteúdo.
     pub fn var_bytes(&mut self, dados: &[u8]) -> Result<(), CodecError> {
         let tamanho = prefixo(dados.len(), CodecError::BytesLongosDemais)?;

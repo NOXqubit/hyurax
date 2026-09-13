@@ -534,6 +534,95 @@ def vec_state() -> dict:
     return {"network": p.name, "steps": passos}
 
 
+def vec_wire() -> dict:
+    """Formato das mensagens da rede (AURON-WIRE-v1, seção 21).
+
+    Quadros válidos, para o Rust decodificar e recodificar byte a byte, e
+    quadros inválidos com o motivo da recusa. O corpo de cada mensagem usa a
+    codificação canônica da seção 3.
+    """
+    p = REGTEST
+    minerador = crypto.address_from_pubkey(crypto.public_key(SEED_A))
+
+    # Uma cadeia curta de verdade, para HEADERS e BLOCK levarem dados reais.
+    chain = Chain(params=p)
+    for _ in range(2):
+        ts = chain.tip.header.timestamp + p.target_spacing
+        chain.accept_block(chain.mine(minerador, timestamp=ts), now=ts + 10)
+    ponta = chain.tip
+    trabalho = chain.total_work.to_bytes(32, "big")
+    cabecalhos = [e.block.header.encode() for e in chain.entries]
+
+    PROTO = 1
+    MAGIC = p.magic
+
+    def quadro(tipo: int, corpo: bytes) -> bytes:
+        return (codec.enc_fixed(MAGIC, 4) + codec.enc_u16(PROTO)
+                + codec.enc_u16(tipo) + codec.enc_u32(len(corpo)) + corpo)
+
+    hello = (codec.enc_u16(PROTO) + codec.enc_fixed(MAGIC, 4)
+             + codec.enc_u64(chain.height) + codec.enc_fixed(trabalho, 32)
+             + codec.enc_u64(0x0102030405060708))
+    hello_ack = hello + codec.enc_u64(0x1122334455667788)
+    get_headers = codec.enc_fixed(chain.entries[0].block.block_hash(), 64) + codec.enc_u32(500)
+    headers = codec.enc_list(cabecalhos, lambda c: c)
+    get_blocks = codec.enc_list([ponta.block_hash()], lambda x: codec.enc_fixed(x, 64))
+    bloco = ponta.encode()
+    addrs = codec.enc_list(
+        [(4, bytes([203, 0, 113, 7]), 8790, 1_788_912_500),
+         (6, bytes(range(16)), 40001, 1_788_912_600)],
+        lambda a: codec.enc_u8(a[0]) + codec.enc_bytes(a[1]) + codec.enc_u16(a[2]) + codec.enc_u64(a[3]),
+    )
+    tx = sign_transfer(SEED_A, p.magic, sender=minerador,
+                       recipient=crypto.address_from_pubkey(crypto.public_key(SEED_B)),
+                       amount=to_units("1"), fee=0, nonce=0).encode()
+    ping = codec.enc_u64(0xDEADBEEF)
+
+    validos = [
+        {"name": "hello", "type": 1, "body": h(hello)},
+        {"name": "hello_ack", "type": 2, "body": h(hello_ack)},
+        {"name": "get_headers", "type": 3, "body": h(get_headers)},
+        {"name": "headers", "type": 4, "body": h(headers)},
+        {"name": "get_blocks", "type": 5, "body": h(get_blocks)},
+        {"name": "block", "type": 6, "body": h(bloco)},
+        {"name": "get_addrs", "type": 7, "body": h(b"")},
+        {"name": "addrs", "type": 8, "body": h(addrs)},
+        {"name": "tx", "type": 9, "body": h(tx)},
+        {"name": "ping", "type": 10, "body": h(ping)},
+        {"name": "pong", "type": 11, "body": h(ping)},
+        # tipo desconhecido: quadro bem formado, decodifica, e a rede IGNORA
+        {"name": "desconhecido", "type": 999, "body": h(b"qualquer coisa")},
+    ]
+    for caso in validos:
+        caso["frame"] = h(quadro(caso["type"], bytes.fromhex(caso["body"])))
+
+    MAX_FRAME_BODY = 2 * 1024 * 1024
+    q_ok = quadro(1, hello)
+    invalidos = [
+        {"name": "magic_errado", "frame": h(b"XXXX" + q_ok[4:]),
+         "error": "magic da rede não confere"},
+        {"name": "versao_errada",
+         "frame": h(q_ok[:4] + codec.enc_u16(2) + q_ok[6:]),
+         "error": "versão de protocolo desconhecida: 2"},
+        {"name": "corpo_grande_demais",
+         "frame": h(codec.enc_fixed(MAGIC, 4) + codec.enc_u16(PROTO) + codec.enc_u16(1)
+                    + codec.enc_u32(MAX_FRAME_BODY + 1)),
+         "error": "corpo do quadro maior que o máximo"},
+        {"name": "corpo_truncado",
+         "frame": h(codec.enc_fixed(MAGIC, 4) + codec.enc_u16(PROTO) + codec.enc_u16(1)
+                    + codec.enc_u32(100) + b"\x00" * 40),
+         "error": "quadro incompleto"},
+        {"name": "cabecalho_truncado", "frame": h(q_ok[:6]),
+         "error": "quadro incompleto"},
+    ]
+
+    return {
+        "network": p.name, "magic": h(MAGIC), "protocol": PROTO,
+        "max_frame_body": MAX_FRAME_BODY,
+        "valid": validos, "invalid": invalidos,
+    }
+
+
 def vec_chain_edge() -> dict:
     """A cadeia recebendo blocos: aceitos, recusados por cada regra, e rollback.
 
@@ -1056,6 +1145,7 @@ FILES = {
     "transactions_edge.json": vec_transactions_edge,
     "state.json": vec_state,
     "chain_edge.json": vec_chain_edge,
+    "wire.json": vec_wire,
     "chain.json": vec_chain,
     "utrax.json": vec_utrax,
     "usefulpow.json": vec_usefulpow,

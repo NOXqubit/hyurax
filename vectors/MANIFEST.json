@@ -67,6 +67,10 @@
     "utrax.json": {
       "bytes": 14643,
       "sha512_16": "da235d1e160b82dd351d9042db678d8b"
+    },
+    "wire.json": {
+      "bytes": 9341,
+      "sha512_16": "d893b3f33d7969f3da4124602cfd38d6"
     }
   },
   "spec": "AURON-SPEC-01"

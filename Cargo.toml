@@ -12,6 +12,7 @@ members = [
     "crates/auron-state",
     "crates/auron-chain",
     "crates/auron-store",
+    "crates/auron-wire",
     "crates/auron-no",
 ]
 
@@ -56,6 +57,7 @@ auron-consensus = { path = "crates/auron-consensus" }
 auron-state = { path = "crates/auron-state" }
 auron-chain = { path = "crates/auron-chain" }
 auron-store = { path = "crates/auron-store" }
+auron-wire = { path = "crates/auron-wire" }
 
 # Vetores de teste. Rust puro.
 serde = { version = "1", features = ["derive"] }
