@@ -129,8 +129,9 @@ combinado. Dois defeitos ficaram anotados para quando ele for retomado:
 
 ## Próximo passo
 
-Fase 1: workspace Rust, e o harness que compara cada vetor de `vectors/` entre
-Python e Rust. Gere os vetores com:
+O núcleo inteiro já foi migrado para Rust e bate com cada vetor (ver o README
+da raiz). Próxima fase: rede entre nós. Sempre que uma regra mudar aqui, gere
+os vetores de novo:
 
 ```bash
 python tools/gen_vectors.py
