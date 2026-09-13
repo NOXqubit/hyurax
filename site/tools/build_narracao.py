@@ -69,8 +69,25 @@ def falas_do_locale() -> list[str]:
     return re.findall(r'fala: "((?:[^"\\]|\\.)*)"', bloco.group(0))
 
 
+PRONUNCIA = RAIZ / "site" / "locales" / "pronuncia.js"
+
+
+def pronuncia(lingua: str = "pt-BR") -> list[tuple[str, str]]:
+    """O mesmo dicionário que o site usa na voz do navegador (locales/pronuncia.js)."""
+    texto = PRONUNCIA.read_text(encoding="utf-8")
+    dados = json.loads(texto.split("export default", 1)[1].strip().rstrip(";"))
+    return [(padrao, troca) for padrao, troca in dados.get(lingua, [])]
+
+
+def para_voz(fala: str) -> str:
+    """A legenda mostra a palavra escrita; a voz lê a pronúncia (Rust vira "Râst")."""
+    for padrao, troca in pronuncia():
+        fala = re.sub(padrao, troca, fala)
+    return fala
+
+
 def main() -> None:
-    falas = [f.replace('\\"', '"') for f in falas_do_locale()]
+    falas = [para_voz(f.replace('\\"', '"')) for f in falas_do_locale()]
     if not falas:
         sys.exit("nenhuma fala encontrada")
     SAIDA.mkdir(parents=True, exist_ok=True)

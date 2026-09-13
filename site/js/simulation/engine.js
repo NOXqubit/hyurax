@@ -107,8 +107,11 @@ export class SimulationEngine {
     const horario = Math.floor(Date.now() / 1000);
     const bits = 0x1f00ffff;
     const nonce = this.int(2 ** 31);
-    // Cabeçalho de 158 bytes, como no §7 da AURON-SPEC-01.
-    const cab = new Escritor().u16(1).u64(altura).fixo(prev).fixo(raiz).u64(horario).u32(bits).u64(nonce).bytes();
+    // Cabeçalho versão 2, de 222 bytes, como no §7 da AURON-SPEC-01. A prova de
+    // trabalho útil é simulada; o compromisso dela (useful_root) é SHA-512 real.
+    const prova = new TextEncoder().encode(`AURON-UPOW-PROOF-v1 simulada ${altura} ${nonce}`);
+    const utilRaiz = await sha512(prova);
+    const cab = new Escritor().u16(2).u64(altura).fixo(prev).fixo(raiz).fixo(utilRaiz).u64(horario).u32(bits).u64(nonce).bytes();
     const h = await sha512(cab);
     return {
       simulation: true, altura, hash: hex(h), hashBytes: h, anterior: hex(prev), merkle: hex(raiz),

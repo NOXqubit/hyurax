@@ -1,5 +1,5 @@
 // BLOCKCHAIN: transações entram na fila, viram bloco, passam pela validação e entram na cadeia.
-// Hash do cabeçalho de 158 bytes e raiz de Merkle são SHA-512 reais, sobre dados simulados.
+// Hash do cabeçalho de 222 bytes e raiz de Merkle são SHA-512 reais, sobre dados simulados.
 import { el, etapas, espera, formataAUR } from "../ui.js";
 import { curto } from "../simulation/engine.js";
 

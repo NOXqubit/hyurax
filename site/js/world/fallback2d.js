@@ -50,7 +50,7 @@ export function criarMundo2D(canvas, calmo) {
   // dois está rodando.
   return {
     nivel: "2D", fps: 30,
-    definirModo() {}, definirZoom() {}, objeto() {}, hudEscala() {},
+    definirModo() {}, definirZoom() {}, somenteObjetos() {}, objeto() {}, hudEscala() {},
     introducao: () => Promise.resolve(),
   };
 }

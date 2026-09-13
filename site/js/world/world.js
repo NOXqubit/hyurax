@@ -296,6 +296,9 @@ export function criarMundo(canvas, q) {
   const mouse = { x: 0, y: 0, sx: 0, sy: 0, mexeu: false, px: -1e9, py: -1e9 };
   let destacado = -1, rodando = false, ultimo = performance.now(), tempo = 0;
   let intro = calmo ? 1 : 0, introResolve = null;
+  // Durante o vídeo, só os objetos de explicação: a rede de pontos, as ligações
+  // e os pacotes somem, e as contas por nó (milhares por quadro) param.
+  let soObjetos = false;
   const medidas = [];
 
   function tamanho() {
@@ -351,6 +354,14 @@ export function criarMundo(canvas, q) {
     medir(bruto);
     // suavizações medidas em tempo, não em quadros: iguais em máquina rápida e lenta
     const suave = (taxa) => 1 - Math.exp(-dt * taxa);
+
+    if (soObjetos) {
+      animarHud(dt, tempo);
+      uni.uTempo.value = tempo;
+      renderer.render(cena, camera);
+      requestAnimationFrame(quadro);
+      return;
+    }
 
     // introdução: um ponto, a câmera se afasta, a rede aparece, depois vira o A
     if (intro < 1) {
@@ -448,6 +459,16 @@ export function criarMundo(canvas, q) {
     modo = m; mirar();
     if (calmo) { pos.set(F[modo]); atrPos.needsUpdate = true; cam.pos.copy(camAlvo.pos); cam.alvo.copy(camAlvo.alvo); opLinhas = CAMERAS[modo].linhas; matL.opacity = opLinhas; desenharParado(); }
   }
+  function somenteObjetos(ativo) {
+    soObjetos = !!ativo;
+    grupo.visible = !soObjetos;
+    if (soObjetos) {
+      // câmera parada e centrada: os objetos ficam presos a ela
+      camera.position.set(0, 0, 8);
+      camera.lookAt(0, 0, 0);
+    }
+    if (calmo) desenharParado();
+  }
   function definirZoom(p) { zoom = Math.max(0, Math.min(1, p)); if (modo === "global") mirar(); if (calmo) desenharParado(); }
 
   function desenharParado() {
@@ -490,7 +511,7 @@ export function criarMundo(canvas, q) {
   }
   function palco() {
     const g = new THREE.Group();
-    g.position.set(0, -0.34, -3.6);
+    g.position.set(0, -0.12, -3.6);
     g.scale.setScalar(0.82);
     g.visible = false;
     hud.add(g);
@@ -825,7 +846,7 @@ export function criarMundo(canvas, q) {
 
   return {
     nivel: q.nivel,
-    definirModo, definirZoom,
+    definirModo, definirZoom, somenteObjetos,
     objeto,
     fps: perfil.fps || 60,
     // O video desenha o quadro ampliado a partir do centro. Os objetos precisam

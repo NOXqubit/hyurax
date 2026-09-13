@@ -4,8 +4,8 @@
 export const ESTADOS = ["implementado", "desenvolvimento", "pesquisa", "planejado"];
 
 export const RAMOS = [
-  { id: "blockchain", itens: [["codec", "implementado"], ["cripto", "implementado"], ["dinheiro", "implementado"], ["tx", "desenvolvimento"], ["cadeia", "desenvolvimento"], ["redep2p", "planejado"], ["testnet", "planejado"], ["auditoria", "planejado"], ["mainnet", "planejado"]] },
-  { id: "compute", itens: [["freivalds", "desenvolvimento"], ["mercado", "desenvolvimento"], ["tarefas_ia", "planejado"], ["usefulpow", "pesquisa"]] },
+  { id: "blockchain", itens: [["codec", "implementado"], ["cripto", "implementado"], ["dinheiro", "implementado"], ["tx", "implementado"], ["cadeia", "implementado"], ["redep2p", "desenvolvimento"], ["testnet", "desenvolvimento"], ["auditoria", "planejado"], ["mainnet", "planejado"]] },
+  { id: "compute", itens: [["freivalds", "implementado"], ["mercado", "desenvolvimento"], ["tarefas_ia", "planejado"], ["usefulpow", "implementado"]] },
   { id: "communication", itens: [["packet", "planejado"], ["resonance", "planejado"], ["mesh", "planejado"], ["radio", "pesquisa"]] },
   { id: "storage", itens: [["frag", "pesquisa"], ["arquivos", "planejado"], ["erasure", "pesquisa"]] },
   { id: "ai", itens: [["agentes", "planejado"], ["politica", "planejado"], ["m2m", "planejado"]] },

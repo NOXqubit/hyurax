@@ -390,6 +390,8 @@ export function criarAudio() {
     return new Promise((pronto) => {
       vozFonte = ctx.createBufferSource();
       vozFonte.buffer = buffer;
+      vozInicio = ctx.currentTime;
+      vozDuracao = buffer.duration;
       vozFonte.connect(vozGanho);
       vozFonte.onended = () => {
         if (rodando) {
@@ -404,6 +406,13 @@ export function criarAudio() {
     });
   }
 
+  /** Quanto da fala atual já tocou, de 0 a 1; `null` se nada está tocando. */
+  function progressoVoz() {
+    if (!vozFonte || !(vozDuracao > 0)) return null;
+    return Math.min(1, Math.max(0, (ctx.currentTime - vozInicio) / vozDuracao));
+  }
+
+  let vozInicio = 0, vozDuracao = 0;
   function pararNarracao() {
     if (!vozFonte) return;
     vozFonte.onended = null;
@@ -422,7 +431,7 @@ export function criarAudio() {
 
   return {
     iniciar, tocar, parar, volume, subida, impacto,
-    narrar, pararNarracao, nivelVoz, carregarVoz,
+    narrar, pararNarracao, nivelVoz, carregarVoz, progressoVoz,
     falando: () => !!vozFonte,
     get tocando() { return rodando; },
     get compasso() { return COMPASSO; },

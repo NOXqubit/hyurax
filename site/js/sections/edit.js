@@ -1,8 +1,10 @@
 // A APRESENTAÇÃO da Auron: um vídeo só, educativo, em tela cheia.
 //
-// Uma apresentadora sintética narra, a legenda acompanha, a trilha própria fica
-// baixa ao fundo e os cortes caem no tempo da batida. A troca de cena imita a
-// troca de personagem do GTA V: a câmera sai de dentro de um nó e abre.
+// Uma narração acompanha, a legenda entra em blocos curtos no ritmo da fala, a
+// trilha própria fica baixa ao fundo e os cortes caem no tempo da batida.
+//
+// Na tela, só os objetos 3D de explicação: a rede de pontos do site some durante
+// o vídeo, porque era a parte pesada e competia com o que está sendo explicado.
 //
 // O mundo 3D é desenhado DENTRO desta tela 2D. Isso serve para duas coisas:
 // gravar exatamente o que se vê, e desenhar num tamanho menor que o da janela
@@ -23,14 +25,75 @@ const CENAS = [
   { chave: "ajuda", compassos: 3, mundo: "logo", zoom: [1.25, 1.0], objeto: "gente", marca: true },
 ];
 
-/** Caminho do arquivo de narração de uma cena, no idioma escolhido. */
-const arquivoDeVoz = (lingua, indice) => `assets/voz/${lingua}/${String(indice + 1).padStart(2, "0")}.wav`;
+/**
+ * Caminho do arquivo de narração de uma cena, no idioma escolhido. O `.mp3` vem
+ * primeiro: é o formato de uma voz gravada por gente ou de um serviço de voz.
+ * O `.wav` é o gerado pela voz do Windows (`tools/build_narracao.py`).
+ */
+const arquivoDeVoz = (lingua, indice, formato = "mp3") => `assets/voz/${lingua}/${String(indice + 1).padStart(2, "0")}.${formato}`;
 
 // Nomes de voz feminina por idioma. A lista não é exaustiva: é o que aparece
 // nos aparelhos mais comuns. Sem nenhuma delas, vale a primeira voz do idioma.
 const VOZES_FEMININAS = /maria|francisca|luciana|joana|ines|catarina|helena|zira|hazel|samantha|victoria|susan|karen|moira|tessa|fiona|monica|paulina|marisol|sabina|esperanza|kyoko|haruka|nanami|ayumi|female|mulher|feminin/i;
 
+import PRONUNCIA from "../../locales/pronuncia.js";
+
 const ease = (x) => 1 - Math.pow(1 - x, 3);
+const faixa = (x, a, b) => Math.min(1, Math.max(0, (x - a) / (b - a)));
+
+// Legenda no padrão de TV: no máximo duas linhas e cerca de 42 caracteres por
+// linha, trocando de bloco no ritmo da fala.
+const MAX_BLOCO = 84;
+
+/** Corta a fala em blocos de legenda: frase inteira quando cabe; senão, vírgula; senão, palavras. */
+export function blocosDeLegenda(texto, max = MAX_BLOCO) {
+  const blocos = [];
+  const empurraPalavras = (trecho) => {
+    const palavras = trecho.split(/\s+/).filter(Boolean);
+    const partes = Math.ceil(trecho.length / max);
+    const alvo = Math.ceil(trecho.length / partes);
+    let atual = "";
+    for (const p of palavras) {
+      const tentativa = atual ? `${atual} ${p}` : p;
+      if (tentativa.length > alvo && atual) { blocos.push(atual); atual = p; } else atual = tentativa;
+    }
+    if (atual) blocos.push(atual);
+  };
+  for (const frase of String(texto || "").split(/(?<=[.!?:;])\s+/)) {
+    if (!frase) continue;
+    if (frase.length <= max) { blocos.push(frase); continue; }
+    let atual = "";
+    for (const parte of frase.split(/(?<=,)\s+/)) {
+      const tentativa = atual ? `${atual} ${parte}` : parte;
+      if (tentativa.length <= max) { atual = tentativa; continue; }
+      if (atual) blocos.push(atual);
+      if (parte.length <= max) atual = parte;
+      else { empurraPalavras(parte); atual = ""; }
+    }
+    if (atual) blocos.push(atual);
+  }
+  return blocos;
+}
+
+/** Quebra um bloco em até duas linhas equilibradas, cortando no espaço mais perto do meio. */
+function duasLinhas(ctx, bloco, maxLargura) {
+  if (ctx.measureText(bloco).width <= maxLargura && bloco.length <= 42) return [bloco];
+  const meio = Math.floor(bloco.length / 2);
+  let corte = -1;
+  for (let d = 0; d < meio; d++) {
+    if (bloco[meio + d] === " ") { corte = meio + d; break; }
+    if (bloco[meio - d] === " ") { corte = meio - d; break; }
+  }
+  if (corte < 0) return [bloco];
+  return [bloco.slice(0, corte), bloco.slice(corte + 1)];
+}
+
+/** O texto que a voz lê: igual à legenda, com as palavras estrangeiras escritas como se falam. */
+function textoParaVoz(texto, lingua) {
+  let saida = String(texto || "");
+  for (const [padrao, troca] of PRONUNCIA[lingua] || []) saida = saida.replace(new RegExp(padrao, "g"), troca);
+  return saida;
+}
 
 /** Escreve centralizado, encolhendo e quebrando em duas linhas se não couber. */
 function escreveCabendo(ctx, texto, x, y, tamanho, peso, maxLargura) {
@@ -56,22 +119,6 @@ function escreveCabendo(ctx, texto, x, y, tamanho, peso, maxLargura) {
   ctx.fillText(linhas[1], x, y + tam * 0.52);
 }
 
-/** Quebra um texto em linhas que cabem na largura dada. */
-function quebra(ctx, texto, maxLargura) {
-  const palavras = texto.split(" ");
-  const linhas = [];
-  let atual = "";
-  for (const palavra of palavras) {
-    const tentativa = atual ? `${atual} ${palavra}` : palavra;
-    if (ctx.measureText(tentativa).width > maxLargura && atual) {
-      linhas.push(atual);
-      atual = palavra;
-    } else atual = tentativa;
-  }
-  if (atual) linhas.push(atual);
-  return linhas;
-}
-
 export function iniciar({ t, audio, mundo, idioma, movel, aoMudarIdioma, restaurarMundo }) {
   const abrirBotao = document.getElementById("abre-edit");
   if (!abrirBotao) return;
@@ -88,6 +135,19 @@ export function iniciar({ t, audio, mundo, idioma, movel, aoMudarIdioma, restaur
   let rodando = false, raf = 0, pulso = 0, pulsoFala = 0;
   let cenaAtual = -1, inicioCena = 0, inicioTudo = 0, cortePedido = 0;
   let narrouAcabou = true, falaAtual = null, comVoz = !!voz;
+  // Progresso da fala do navegador (0 a 1), pelo caractere que ela está lendo.
+  let progressoFala = 0;
+  // Legenda: blocos da cena atual, o bloco na tela e quando ele entrou.
+  let blocos = [], blocoAtual = -1, trocaBloco = 0;
+  // Se o primeiro .mp3 não existir, não adianta pedir os outros: vai direto ao .wav.
+  let temMp3 = true;
+  const vozDaCena = (lingua, indice) => {
+    const wav = () => audio.carregarVoz(arquivoDeVoz(lingua, indice, "wav")).then(() => arquivoDeVoz(lingua, indice, "wav"));
+    if (!temMp3) return wav();
+    return audio.carregarVoz(arquivoDeVoz(lingua, indice, "mp3"))
+      .then(() => arquivoDeVoz(lingua, indice, "mp3"))
+      .catch(() => { temMp3 = false; return wav(); });
+  };
   // Cada entrada em cena recebe um número. Uma narração que termina depois de
   // a cena já ter mudado carrega o número antigo e é ignorada — sem isso, uma
   // fala atrasada deixava o vídeo parado na cena para sempre.
@@ -136,7 +196,8 @@ export function iniciar({ t, audio, mundo, idioma, movel, aoMudarIdioma, restaur
     if (audio) {
       let tocou = false;
       try {
-        const fim = audio.narrar(arquivoDeVoz(idioma(), indice));
+        const lingua = idioma();
+        const fim = vozDaCena(lingua, indice).then((url) => audio.narrar(url)).catch(() => false);
         // se em três segundos a voz não estiver tocando, o arquivo não vai vir:
         // segue com a voz do navegador em vez de esperar calado
         const comecou = await Promise.race([
@@ -144,7 +205,7 @@ export function iniciar({ t, audio, mundo, idioma, movel, aoMudarIdioma, restaur
           new Promise((r) => setTimeout(() => r(audio.falando() ? "tocando" : "nada"), 3000)),
         ]);
         if (minha !== geracao) return;            // a cena já mudou: ignora
-        if (comecou === "fim") { narrouAcabou = true; return; }
+        if (comecou === "fim" && (await fim) !== false) { narrouAcabou = true; return; }
         if (comecou === "tocando") {
           fim.then(() => { if (minha === geracao) narrouAcabou = true; }).catch(() => {});
           return;
@@ -160,12 +221,17 @@ export function iniciar({ t, audio, mundo, idioma, movel, aoMudarIdioma, restaur
     if (!comVoz || !voz) { narrouAcabou = true; return; }
     const v = vozEscolhida();
     if (!v) { narrouAcabou = true; return; }      // sem voz: só a legenda
-    const fala = new SpeechSynthesisUtterance(texto);
+    const falado = textoParaVoz(texto, idioma());
+    const fala = new SpeechSynthesisUtterance(falado);
+    progressoFala = 0;
     fala.voice = v;
     fala.lang = v.lang;
     fala.rate = 0.92;    // calma: é explicação, não propaganda
     fala.pitch = 1.05;
-    fala.onboundary = () => { pulsoFala = 1; };
+    fala.onboundary = (e) => {
+      pulsoFala = 1;
+      if (minha === geracao && falado.length) progressoFala = Math.min(1, (e.charIndex || 0) / falado.length);
+    };
     fala.onend = () => { if (minha === geracao) narrouAcabou = true; };
     fala.onerror = () => { if (minha === geracao) narrouAcabou = true; };
     falaAtual = fala;
@@ -191,13 +257,16 @@ export function iniciar({ t, audio, mundo, idioma, movel, aoMudarIdioma, restaur
     inicioCena = performance.now();
     cortePedido = 0;
     const cena = CENAS[i];
-    mundo.definirModo(cena.mundo);
     mundo.objeto(cena.objeto || null);
-    if (cena.global) mundo.definirZoom(cena.global[0]);
+    blocos = blocosDeLegenda(textoDaCena("fala", i));
+    blocoAtual = -1;
+    progressoFala = 0;
     if (audio) audio.impacto();
     narrarCena(i);
     // adianta o carregamento da próxima fala, para não haver silêncio no corte
-    if (audio && i + 1 < CENAS.length) audio.carregarVoz(arquivoDeVoz(idioma(), i + 1)).catch(() => {});
+    if (audio && i + 1 < CENAS.length) {
+      vozDaCena(idioma(), i + 1).catch(() => {});
+    }
   }
 
   function quadro() {
@@ -236,55 +305,32 @@ export function iniciar({ t, audio, mundo, idioma, movel, aoMudarIdioma, restaur
       entrarNaCena(cenaAtual + 1);
       return;
     }
-    if (cena.global) {
-      const [a, b] = cena.global;
-      mundo.definirZoom(a + (b - a) * Math.min(1, naCena / (minimo * 1.4)));
-    }
-
-    const estalo = Math.max(0, 1 - naCena / 0.3);
-    const separa = Math.max(0, 1 - naCena / 0.8) * 10 * escala;
-    const [z0, z1] = cena.zoom;
-    const k = (z0 + (z1 - z0) * ease(Math.min(1, naCena / (minimo * 0.55)))) * (1 + pulso * 0.01);
+    // Entrada e saída em fade do preto: sem tremor, sem flash e sem separação
+    // de cor, que eram as partes mais pesadas de desenhar.
+    const entra = ease(faixa(naCena, 0, 0.45));
+    const sai = cortePedido ? Math.min(1, Math.max(0, (cortePedido - agora) / 350)) : 1;
+    const k = 1 + 0.03 * ease(Math.min(1, naCena / Math.max(1, minimo)));
 
     ctx.fillStyle = "#030303";
     ctx.fillRect(0, 0, larg, alt);
 
-    const tremor = estalo * 8 * escala;
     const lw = larg * k, lh = alt * k;
-    const ox = (larg - lw) / 2 + (Math.random() - 0.5) * tremor;
-    const oy = (alt - lh) / 2 + (Math.random() - 0.5) * tremor;
-    try {
-      if (separa > 0.5) {
-        // separação de cor só logo depois do corte: é o desenho mais caro
-        ctx.globalCompositeOperation = "lighter";
-        ctx.globalAlpha = 0.85;
-        ctx.drawImage(mundoCanvas, ox - separa, oy, lw, lh);
-        ctx.drawImage(mundoCanvas, ox + separa, oy, lw, lh);
-        ctx.globalAlpha = 1;
-        ctx.globalCompositeOperation = "source-over";
-      } else {
-        ctx.drawImage(mundoCanvas, ox, oy, lw, lh);
-      }
-    } catch { /* o mundo ainda não desenhou nada */ }
+    ctx.globalAlpha = entra * sai;
+    try { ctx.drawImage(mundoCanvas, (larg - lw) / 2, (alt - lh) / 2, lw, lh); }
+    catch { /* o mundo ainda não desenhou nada */ }
+    ctx.globalAlpha = 1;
 
     ctx.fillStyle = vinheta;
     ctx.fillRect(0, 0, larg, alt);
 
-    if (mundo.hudEscala) mundo.hudEscala(k);
-
     desenharTitulo(cenaAtual, cena, naCena, agora);
     desenharRotuloDaVoz();
-    desenharLegenda(cenaAtual);
+    desenharLegenda(naCena, paraLer || minimo, agora, sai);
 
-    const tarja = alt * 0.085 + estalo * 5;
+    const tarja = alt * 0.085;
     ctx.fillStyle = "#030303";
     ctx.fillRect(0, 0, larg, tarja);
     ctx.fillRect(0, alt - tarja, larg, tarja);
-
-    if (estalo > 0) {
-      ctx.fillStyle = `rgba(232,236,242,${(estalo * 0.3).toFixed(3)})`;
-      ctx.fillRect(0, 0, larg, alt);
-    }
 
     // marcas de cena no pé, em vez de barra de tempo: a duração varia com a fala
     const passo = larg * 0.012, base = larg / 2 - (CENAS.length * passo) / 2;
@@ -298,7 +344,11 @@ export function iniciar({ t, audio, mundo, idioma, movel, aoMudarIdioma, restaur
   }
 
   function desenharTitulo(i, cena, naCena, agora) {
-    const entrada = Math.min(1, naCena / 0.5);
+    // Um elemento de cada vez: título, depois o subtítulo, depois o selo.
+    const entrada = faixa(naCena, 0.15, 0.75);
+    const entradaSub = ease(faixa(naCena, 0.75, 1.3));
+    const entradaSelo = ease(faixa(naCena, 1.1, 1.6));
+    const sobe = (1 - ease(entrada)) * alt * 0.02;
     // O título fica de pé a cena inteira e só apaga nos últimos instantes,
     // quando o corte já está marcado. Antes ele desbotava no meio da fala.
     const saida = cortePedido ? Math.max(0, Math.min(1, (cortePedido - agora) / 400)) : 1;
@@ -318,21 +368,24 @@ export function iniciar({ t, audio, mundo, idioma, movel, aoMudarIdioma, restaur
       const linhas = textoDaCena("linhas", i) || [];
       const tam = base * 0.046;
       linhas.forEach((linha, quantos) => {
-        const chega = Math.min(1, Math.max(0, (naCena - quantos * 0.7) / 0.4));
+        const chega = faixa(naCena, 0.2 + quantos * 0.8, 0.6 + quantos * 0.8);
         ctx.globalAlpha = alfa * ease(chega);
         ctx.fillStyle = quantos === linhas.length - 1 ? "#f3e2c4" : "#eceae6";
         escreveCabendo(ctx, linha, larg / 2, alt * 0.30 + quantos * tam * 1.6, tam, "700", larg * 0.86);
       });
       ctx.globalAlpha = alfa;
     } else {
-      const tam = base * 0.062;
+      const tam = base * 0.056;
       ctx.fillStyle = "#eceae6";
-      escreveCabendo(ctx, textoDaCena("titulo", i), larg / 2, alt * 0.28, tam, "900", larg * 0.86);
-      ctx.fillStyle = "#95989f";
-      escreveCabendo(ctx, textoDaCena("sub", i), larg / 2, alt * 0.28 + tam * 0.62, tam * 0.26, "400", larg * 0.8);
+      escreveCabendo(ctx, textoDaCena("titulo", i), larg / 2, alt * 0.26 + sobe, tam, "900", larg * 0.86);
+      ctx.globalAlpha = alfa * entradaSub;
+      ctx.fillStyle = "#a4a7ad";
+      escreveCabendo(ctx, textoDaCena("sub", i), larg / 2, alt * 0.26 + tam * 0.66, tam * 0.3, "400", larg * 0.8);
+      ctx.globalAlpha = alfa;
     }
 
     if (cena.tag) {
+      ctx.globalAlpha = alfa * entradaSelo;
       const rotulo = { simulacao: "SIMULATION", pesquisa: "RESEARCH", planejado: t("estado.planejado").toUpperCase() }[cena.tag];
       ctx.font = `500 ${base * 0.015}px "IBM Plex Mono", monospace`;
       ctx.textAlign = "left";
@@ -354,19 +407,54 @@ export function iniciar({ t, audio, mundo, idioma, movel, aoMudarIdioma, restaur
     ctx.textAlign = "center";
   }
 
-  function desenharLegenda(i) {
-    const fala = textoDaCena("fala", i);
-    if (!fala) return;
-    const tam = Math.max(12, Math.min(larg, alt * 1.7) * 0.021);
-    ctx.font = `400 ${tam}px Archivo, Arial`;
+  /**
+   * Quanto da fala já foi dito, de 0 a 1: pelo arquivo de áudio (tempo tocado),
+   * pela voz do navegador (caractere lido) ou, sem voz, pelo tempo de leitura.
+   */
+  function progressoDaNarracao(naCena, duracaoLeitura) {
+    if (comVoz && audio) {
+      const p = audio.progressoVoz();
+      if (p !== null) return p;
+    }
+    if (comVoz && voz && voz.speaking) return progressoFala;
+    if (comVoz && !narrouAcabou) return 0;
+    if (comVoz) return 1;
+    return Math.min(1, Math.max(0, (naCena - 1.2) / Math.max(1, duracaoLeitura - 1.8)));
+  }
+
+  /** Legenda em blocos de no máximo duas linhas, trocando no ritmo da fala. */
+  function desenharLegenda(naCena, duracaoLeitura, agora, sai) {
+    if (!blocos.length || naCena < 1.0) return;
+    const total = blocos.reduce((soma, b) => soma + b.length, 0);
+    // um leve adiantamento: a legenda aparece junto com o começo da frase
+    const p = Math.min(0.999, progressoDaNarracao(naCena, duracaoLeitura) + 0.015);
+    let acumulado = 0, indice = blocos.length - 1;
+    for (let k = 0; k < blocos.length; k++) {
+      acumulado += blocos[k].length;
+      if (acumulado / total > p) { indice = k; break; }
+    }
+    if (indice !== blocoAtual) { blocoAtual = indice; trocaBloco = agora; }
+    const aparece = ease(Math.min(1, (agora - trocaBloco) / 160));
+
+    const base = Math.min(larg, alt * 1.78);
+    const tam = Math.max(13, Math.min(30, base * 0.022));
+    ctx.font = `500 ${tam}px Archivo, Arial`;
     ctx.textAlign = "center";
-    const linhas = quebra(ctx, fala, larg * 0.7);
-    const altura = linhas.length * tam * 1.35;
-    const topo = alt - alt * 0.085 - altura - tam * 1.2;
-    ctx.fillStyle = "rgba(3,3,3,0.55)";
-    ctx.fillRect(larg * 0.12, topo - tam, larg * 0.76, altura + tam * 1.4);
-    ctx.fillStyle = "#eceae6";
-    linhas.forEach((linha, k) => ctx.fillText(linha, larg / 2, topo + k * tam * 1.35 + tam * 0.2));
+    ctx.textBaseline = "middle";
+    const linhas = duasLinhas(ctx, blocos[indice], larg * 0.72);
+    const alturaLinha = tam * 1.42;
+    const fundo = alt - alt * 0.085 - tam * 1.4;
+    ctx.globalAlpha = aparece * sai;
+    linhas.forEach((linha, k) => {
+      const y = fundo - (linhas.length - 1 - k) * alturaLinha;
+      const w = ctx.measureText(linha).width;
+      ctx.fillStyle = "rgba(3,3,3,0.62)";
+      ctx.fillRect(larg / 2 - w / 2 - tam * 0.45, y - alturaLinha / 2, w + tam * 0.9, alturaLinha);
+      ctx.fillStyle = "#f4f2ee";
+      ctx.fillText(linha, larg / 2, y + tam * 0.04);
+    });
+    ctx.globalAlpha = 1;
+    ctx.textBaseline = "alphabetic";
   }
 
   // -------------------------------------------------------------- controle
@@ -384,6 +472,7 @@ export function iniciar({ t, audio, mundo, idioma, movel, aoMudarIdioma, restaur
     // no seu tempo. Esperar por eles aqui era o que deixava a tela preta parada
     // quando o navegador demorava a liberar o áudio.
     rodando = true;
+    if (mundo.somenteObjetos) mundo.somenteObjetos(true);
     inicioTudo = performance.now();
     ultimoQuadro = 0;
     entrarNaCena(0);
@@ -409,6 +498,7 @@ export function iniciar({ t, audio, mundo, idioma, movel, aoMudarIdioma, restaur
     if (audio) audio.pararNarracao();
     geracao++;                     // cancela qualquer narração pendente
     mundo.objeto(null);
+    if (mundo.somenteObjetos) mundo.somenteObjetos(false);
     if (mundo.hudEscala) mundo.hudEscala(1);
     if (gravando) pararGravacao();
     if (audio) audio.parar({ suave: true });

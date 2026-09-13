@@ -17,6 +17,26 @@ com a voz Microsoft Maria do Windows. Só roda no Windows, e os arquivos ficam
 fora do Git por serem gerados. Sem eles, o vídeo cai na voz do navegador e,
 não havendo nenhuma, mostra só a legenda.
 
+### Trocar a voz da narração
+
+O vídeo procura a narração nesta ordem, por cena (`01` a `10`):
+
+1. `assets/voz/pt-BR/01.mp3` … `10.mp3`: voz gravada por uma pessoa, ou gerada
+   por um serviço de voz realista;
+2. `assets/voz/pt-BR/01.wav` … `10.wav`: a voz do Windows, gerada pelo
+   `build_narracao.py`;
+3. a voz do navegador; sem nenhuma, só a legenda.
+
+Para trocar a voz, basta pôr os `.mp3` na pasta, um por cena, com o texto de
+`edit.cenas[n].fala` em `locales/pt-BR.js`. A legenda acompanha qualquer um
+deles pelo tempo do áudio. Se a voz não for de uma pessoa real, o rótulo
+"voz sintética" continua na tela.
+
+As palavras estrangeiras que a voz lê errado ("hash", "Rust", "Argon2id")
+ficam em `locales/pronuncia.js`. O mesmo dicionário vale para a voz do
+navegador e para o `build_narracao.py`; a legenda continua mostrando a
+palavra escrita do jeito certo.
+
 Abra `http://127.0.0.1:8766`. O servidor de desenvolvimento desliga o cache,
 para cada alteração aparecer no próximo recarregamento. Os módulos JavaScript
 não funcionam abrindo o `index.html` direto do disco (`file://`).
