@@ -274,6 +274,26 @@ impl Chain {
         Ok(())
     }
 
+    /// Conferência sem contexto de um cabeçalho que ainda não encaixa na ponta
+    /// (órfão): versão conhecida, alvo não mais fácil que o limite da rede e
+    /// prova de trabalho Argon2id que bate esse alvo.
+    ///
+    /// Não substitui a validação completa, que acontece quando o bloco
+    /// encaixar. Serve para um nó não guardar lixo forjado: produzir um
+    /// cabeçalho que passe aqui custa trabalho de verdade.
+    ///
+    /// # Errors
+    /// Versão desconhecida, alvo fácil demais ou prova que não bate.
+    pub fn check_orphan_header(&self, header: &BlockHeader) -> Result<(), ChainError> {
+        if header.version != BLOCK_VERSION {
+            return Err(erro(format!("versão de bloco desconhecida: {}", header.version)));
+        }
+        if alvo_do(header)? > self.params.max_target {
+            return Err(erro("alvo mais fácil que o limite da rede"));
+        }
+        self.check_header_pow(header)
+    }
+
     fn check_header_pow(&self, header: &BlockHeader) -> Result<(), ChainError> {
         let alvo = alvo_do(header)?;
         let hash = Calculadora::nova(self.params.pow)

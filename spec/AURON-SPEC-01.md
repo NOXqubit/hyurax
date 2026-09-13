@@ -896,7 +896,11 @@ reorganização que não completa não pode deixar o nó pior do que antes.
 
 Como isso acontece na prática: um bloco que não encadeia na ponta atual é
 **guardado** (órfão), não recusado — pode ser um ramo concorrente ainda
-chegando. Quando os blocos guardados formam uma sequência contígua a partir de
+chegando. **Antes de guardar**, o cabeçalho passa por uma conferência sem
+contexto: versão conhecida, alvo não mais fácil que `max_target` da rede e
+prova de trabalho Argon2id batendo esse alvo. Falhou, quem mandou é derrubado.
+Sem isso, lixo forjado de graça enchia a área de órfãos e expulsava os blocos
+legítimos de uma reorganização (achado em 13/09/2026). Quando os blocos guardados formam uma sequência contígua a partir de
 um ancestral da cadeia ativa, o nó compara:
 
 ```

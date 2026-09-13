@@ -331,8 +331,14 @@ impl No {
                     }
                 } else {
                     // Não encadeia na minha ponta: estou atrás, ou é um ramo
-                    // concorrente chegando. Guardo e tento trocar de cadeia se
-                    // o ramo já tiver mais trabalho que o meu.
+                    // concorrente chegando. Antes de guardar, a prova de
+                    // trabalho do cabeçalho: órfão forjado derruba quem mandou,
+                    // em vez de encher a área de órfãos e expulsar os legítimos.
+                    self.chain
+                        .check_orphan_header(&bloco.header)
+                        .map_err(|e| Malicia(format!("órfão recusado: {e}")))?;
+                    // Guardo e tento trocar de cadeia se o ramo já tiver mais
+                    // trabalho que o meu.
                     self.guardar_orfao(*bloco);
                     if self.tentar_reorganizar()? {
                         // Trocou de cadeia: anuncia a ponta nova aos outros.

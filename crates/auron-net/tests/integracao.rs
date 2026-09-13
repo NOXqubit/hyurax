@@ -238,7 +238,11 @@ fn bloco_forjado_sem_prova_e_recusado() {
     let porta = alvo.escutar("127.0.0.1:0").unwrap();
     let magic = ParametrosRede::REGTEST.magic;
 
-    let espelho = regtest_com(3, MINERADOR);
+    // A cópia vem da própria cadeia do alvo. Minerar outra cópia à parte não
+    // serve: com duas linhas e dificuldade de regtest, o nonce achado varia, e
+    // o bloco forjado deixaria de encaixar na ponta do alvo (falhou assim no
+    // GitHub Actions).
+    let espelho = alvo.no.lock().unwrap().chain.clone();
     let forjado = espelho
         .build_candidate(MINERADOR, vec![], Some(espelho.tip().unwrap().header.timestamp + 120), Vec::new())
         .unwrap();
@@ -471,4 +475,29 @@ fn uma_conexao_por_no_mesmo_discando_varias_vezes() {
         "conexões duplicadas: A={} B={}", a.pares_conectados(), b.pares_conectados());
     a.desligar();
     b.desligar();
+}
+
+#[test]
+#[ignore = "sobe sockets — ver cabeçalho do arquivo"]
+fn orfao_forjado_derruba_quem_mandou() {
+    let alvo = rede(No::novo(regtest_com(2, MINERADOR)));
+    let porta = alvo.escutar("127.0.0.1:0").unwrap();
+    let magic = ParametrosRede::REGTEST.magic;
+
+    // Um bloco que não encaixa na ponta (pai inventado) e sem prova de trabalho
+    // de verdade: alvo o mais difícil possível, nonce qualquer.
+    let espelho = alvo.no.lock().unwrap().chain.clone();
+    let mut forjado = espelho
+        .build_candidate(MINERADOR, vec![], Some(espelho.tip().unwrap().header.timestamp + 120), Vec::new())
+        .unwrap();
+    forjado.header.prev_hash = [0x66; 64];
+    forjado.header.bits = 0x0300_0001;
+
+    let mut conexao = conectar_e_apertar_mao(porta, magic);
+    conexao.enviar(&Message::Block(Box::new(forjado))).unwrap();
+
+    assert!(esperar(Duration::from_secs(60), || alvo.pares_conectados() == 0), "quem mandou órfão forjado continua conectado");
+    assert_eq!(altura(&alvo), 2);
+    alvo_continua_vivo(porta, 2);
+    alvo.desligar();
 }
