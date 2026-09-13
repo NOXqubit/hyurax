@@ -23,6 +23,18 @@ forem, o que se entrega em 13/12 é a testnet pública estável, com a data da
 mainnet anunciada depois. Mudar a data é aceitável; lançar com falha conhecida
 não é.
 
+## Andamento
+
+| Data | O que ficou pronto |
+|---|---|
+| 13/09/2026 | Semana 1: repositório público, testes no GitHub, `SECURITY.md` e doação |
+| 13/09/2026 | Semanas 2 e 3: cifra Noise XX, identidade de nó e protocolo versão 2 |
+| 13/09/2026 | Semana 4: carteira com senha e comando `enviar` |
+| 13/09/2026 | Semana 5: guia `docs/RODAR-UM-NO.md` e programas prontos pelo GitHub |
+
+Próximo: **semana 6, testnet pública**, que depende de onde os nós semente vão
+rodar (decisão do autor).
+
 ## Semanas
 
 | Semana | Entrega | Pronto quando |

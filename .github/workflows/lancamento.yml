@@ -1,0 +1,119 @@
+# Programas prontos para baixar, montados pelo próprio GitHub.
+#
+# Roda quando uma etiqueta `v*` é enviada (ou à mão, em Actions). Compila o
+# `auron-no` e o `auron-minerar` para cada sistema, testa antes, e publica os
+# pacotes numa Release com a soma SHA-256 de cada arquivo.
+#
+# O código é Rust puro (sem compilador C), então a compilação cruzada para o
+# ARM de celular não precisa de nada além do linker do alvo.
+
+name: lancamento
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  testes:
+    name: testes antes de empacotar
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: dtolnay/rust-toolchain@stable
+      - run: cargo test --workspace --locked
+      - run: cargo test -p auron-net --locked -- --ignored --test-threads=1
+
+  compilar:
+    name: ${{ matrix.nome }}
+    needs: testes
+    runs-on: ${{ matrix.maquina }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - nome: linux-x86_64
+            maquina: ubuntu-latest
+            alvo: x86_64-unknown-linux-musl
+          - nome: linux-arm64-e-celular
+            maquina: ubuntu-latest
+            alvo: aarch64-unknown-linux-musl
+          - nome: windows-x86_64
+            maquina: windows-latest
+            alvo: x86_64-pc-windows-msvc
+          - nome: macos-arm64
+            maquina: macos-latest
+            alvo: aarch64-apple-darwin
+    steps:
+      - uses: actions/checkout@v5
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.alvo }}
+      - name: linker do alvo (Linux)
+        if: runner.os == 'Linux'
+        uses: taiki-e/setup-cross-toolchain-action@v1
+        with:
+          target: ${{ matrix.alvo }}
+      - name: compilar
+        shell: bash
+        run: cargo build --release --locked --target ${{ matrix.alvo }} -p auron-no -p auron-pow
+      - name: empacotar
+        shell: bash
+        run: |
+          set -euo pipefail
+          versao="${GITHUB_REF_NAME}"
+          pasta="auron-${versao}-${{ matrix.nome }}"
+          mkdir -p "$pasta"
+          ext=""
+          [ "${{ runner.os }}" = "Windows" ] && ext=".exe"
+          cp ".target/${{ matrix.alvo }}/release/auron-no${ext}" "$pasta/"
+          cp ".target/${{ matrix.alvo }}/release/auron-minerar${ext}" "$pasta/"
+          cp LICENSE-MIT LICENSE-APACHE "$pasta/"
+          cp docs/RODAR-UM-NO.md "$pasta/LEIA-ME.md"
+          if [ "${{ runner.os }}" = "Windows" ]; then
+            7z a "${pasta}.zip" "$pasta" > /dev/null
+            arquivo="${pasta}.zip"
+          else
+            tar czf "${pasta}.tar.gz" "$pasta"
+            arquivo="${pasta}.tar.gz"
+          fi
+          if command -v sha256sum > /dev/null; then sha256sum "$arquivo" > "${arquivo}.sha256"; else shasum -a 256 "$arquivo" > "${arquivo}.sha256"; fi
+          echo "ARQUIVO=$arquivo" >> "$GITHUB_ENV"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.nome }}
+          path: |
+            ${{ env.ARQUIVO }}
+            ${{ env.ARQUIVO }}.sha256
+
+  publicar:
+    name: publicar a Release
+    needs: compilar
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: pacotes
+          merge-multiple: true
+      - uses: softprops/action-gh-release@v2
+        with:
+          prerelease: true
+          files: pacotes/*
+          body: |
+            **Rede de TESTE.** A rede pública não existe e o AUR não tem valor.
+            Não há venda, pré-venda nem promessa de lucro.
+
+            Como usar: veja o `LEIA-ME.md` dentro do pacote (é o `docs/RODAR-UM-NO.md`).
+
+            | Pacote | Para |
+            |---|---|
+            | `linux-x86_64` | PC com Linux |
+            | `linux-arm64-e-celular` | Linux em ARM e celular Android pelo Termux |
+            | `windows-x86_64` | Windows 10 ou 11 |
+            | `macos-arm64` | Mac com chip Apple |
+
+            Confira a soma SHA-256 de cada pacote antes de rodar.
