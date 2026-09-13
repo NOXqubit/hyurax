@@ -14,11 +14,16 @@
 
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
-use std::time::Instant;
+use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, AtomicU64};
+use std::time::{Duration, Instant};
 
+use auron_block::Block;
 use auron_chain::Chain;
 use auron_consensus::{ParametrosRede, block_reward};
 use auron_crypto::{ADDRESS_LEN, SECRET_LEN, address_from_ed25519_pubkey, ed25519_public_key};
+use auron_net::{No, Rede};
+use auron_pow::ConfigMineracao;
 use auron_store::{load_chain, save_chain};
 use auron_tx::AUR;
 
@@ -32,10 +37,19 @@ auron-no — nó local do Auron (sem rede entre nós, ainda)
       Mostra o endereço de uma carteira existente.
 
   auron-no minerar --rede testnet --pasta dados --endereco HEX [--blocos N] [--linhas L]
+                   [--porta P] [--semente IP:PORTA,...] [--pausa-ms X]
       Minera N blocos (padrão 1; 0 = sem parar) e grava a cadeia depois de cada um.
+      Com --porta e/ou --semente, entra na rede: sincroniza e propaga o que minerar.
+
+  auron-no no --rede testnet --pasta dados [--porta P] [--semente IP:PORTA,...]
+      Só roda o nó: escuta, sincroniza, serve e propaga. Sem minerar.
 
   auron-no estado --rede testnet --pasta dados [--endereco HEX]
       Mostra a altura da cadeia e, com --endereco, o saldo.
+
+Dois aparelhos na mesma rede local, por exemplo:
+  no PC:      auron-no no --porta 8790 --pasta dados
+  no celular: auron-no minerar --porta 8790 --semente IP_DO_PC:8790 --endereco SEU_ENDERECO --blocos 0
 
 Redes: mainnet (difícil: 16 bits de trabalho por bloco), testnet (8 bits), regtest (quase nada).
 Lembrete: a rede pública não existe e o AUR não tem valor. Isto é teste.
@@ -48,6 +62,9 @@ struct Opcoes {
     endereco: Option<[u8; ADDRESS_LEN]>,
     blocos: u64,
     linhas: u32,
+    porta: u16,
+    sementes: Vec<String>,
+    pausa_ms: u64,
 }
 
 fn hex(bytes: &[u8]) -> String {
@@ -75,6 +92,9 @@ fn ler_opcoes(args: &[String]) -> Result<Opcoes, String> {
         endereco: None,
         blocos: 1,
         linhas: u32::try_from((nucleos / 2).max(1)).unwrap_or(1),
+        porta: 0,
+        sementes: Vec::new(),
+        pausa_ms: 0,
     };
     let mut it = args.iter();
     while let Some(nome) = it.next() {
@@ -89,6 +109,11 @@ fn ler_opcoes(args: &[String]) -> Result<Opcoes, String> {
                 o.endereco = Some(de_hex(valor).ok_or("--endereco precisa de 40 dígitos hexadecimais")?);
             }
             "--blocos" => o.blocos = valor.parse().map_err(|_| "--blocos precisa ser número")?,
+            "--porta" => o.porta = valor.parse().map_err(|_| "--porta precisa ser número")?,
+            "--semente" => {
+                o.sementes.extend(valor.split(',').map(|s| s.trim().to_string()).filter(|s| !s.is_empty()));
+            }
+            "--pausa-ms" => o.pausa_ms = valor.parse().map_err(|_| "--pausa-ms precisa ser número")?,
             "--linhas" => {
                 o.linhas = valor
                     .parse::<u32>()
@@ -203,37 +228,135 @@ fn abrir_cadeia(o: &Opcoes) -> Result<Chain, String> {
     }
 }
 
+/// Sobe a rede: abre a cadeia do disco, escuta (se `--porta`) e conecta às
+/// sementes (`--semente`, separadas por vírgula).
+fn subir_rede(o: &Opcoes) -> Result<Arc<Rede>, String> {
+    std::fs::create_dir_all(&o.pasta).map_err(|e| format!("não consegui criar a pasta: {e}"))?;
+    let cadeia = abrir_cadeia(o)?;
+    let rede = Rede::nova(No::novo(cadeia));
+
+    if o.porta > 0 {
+        let porta = rede
+            .escutar(("0.0.0.0", o.porta))
+            .map_err(|e| format!("não consegui escutar na porta {}: {e}", o.porta))?;
+        println!("Escutando na porta {porta}");
+    }
+    for semente in o.sementes.iter().filter(|s| !s.is_empty()) {
+        rede.semear(semente);
+        match rede.conectar(semente.as_str()) {
+            Ok(()) => println!("Conectando em {semente}"),
+            Err(e) => println!("  aviso: não consegui conectar em {semente}: {e}"),
+        }
+    }
+    Ok(rede)
+}
+
+/// Grava a cadeia no disco.
+fn salvar(rede: &Arc<Rede>, o: &Opcoes) -> Result<(), String> {
+    let no = rede.no.lock().map_err(|_| "nó travado".to_string())?;
+    save_chain(&no.chain, &arquivo_da_cadeia(o)).map_err(|e| e.to_string())?;
+    Ok(())
+}
+
 fn minerar(args: &[String]) -> Result<(), String> {
     let o = ler_opcoes(args)?;
     let endereco = o.endereco.ok_or("falta --endereco (crie com: auron-no carteira nova --arquivo carteira.txt)")?;
-    std::fs::create_dir_all(&o.pasta).map_err(|e| format!("não consegui criar a pasta: {e}"))?;
-    let mut cadeia = abrir_cadeia(&o)?;
-    println!(
-        "Rede {} · altura {} · {} linha(s), {:.0} MiB",
-        o.rede.nome,
-        cadeia.height(),
-        o.linhas,
-        (u64::from(o.rede.pow.memoria_kib) * u64::from(o.linhas)) as f64 / 1024.0
-    );
-    let mut feitos = 0u64;
-    while o.blocos == 0 || feitos < o.blocos {
-        let inicio = Instant::now();
-        let bloco = cadeia.mine(endereco, vec![], None, o.linhas).map_err(|e| e.to_string())?;
-        let altura = bloco.header.height;
-        let recompensa = block_reward(altura, &o.rede);
-        let n = bloco.useful_proof.as_ref().map_or(0, |p| p.n);
-        let bits = bloco.header.bits;
-        cadeia.accept_block(bloco, None).map_err(|e| format!("bloco recusado: {e}"))?;
-        save_chain(&cadeia, &arquivo_da_cadeia(&o)).map_err(|e| e.to_string())?;
-        feitos = feitos.saturating_add(1);
+    let rede = subir_rede(&o)?;
+    {
+        let no = rede.no.lock().map_err(|_| "nó travado".to_string())?;
         println!(
-            "  bloco {altura} em {:.1} s · trabalho útil {n}×{n} · bits {bits:#010x} · recompensa {} AUR (libera em {} blocos)",
-            inicio.elapsed().as_secs_f64(),
-            aur(u128::from(recompensa)),
-            o.rede.coinbase_maturity
+            "Rede {} · altura {} · {} linha(s), {:.0} MiB",
+            o.rede.nome,
+            no.chain.height(),
+            o.linhas,
+            (u64::from(o.rede.pow.memoria_kib) * u64::from(o.linhas)) as f64 / 1024.0
         );
     }
+
+    let mut feitos = 0u64;
+    let mut perdidos = 0u64;
+    while o.blocos == 0 || feitos < o.blocos {
+        let inicio = Instant::now();
+
+        // Monta o candidato com o cadeado, e minera SEM ele: a busca do nonce
+        // demora, e travar o nó nesse tempo pararia a rede.
+        let (candidato, pow) = {
+            let no = rede.no.lock().map_err(|_| "nó travado".to_string())?;
+            let transfers = no.mempool_ordenado();
+            let candidato = no
+                .chain
+                .build_candidate(endereco, transfers, None, Vec::new())
+                .map_err(|e| e.to_string())?;
+            (candidato, o.rede.pow)
+        };
+
+        let config = ConfigMineracao {
+            linhas: o.linhas,
+            nonce_inicial: 0,
+            limite: Some(1u64 << 32),
+            pausa: Duration::from_millis(o.pausa_ms),
+        };
+        let achado = auron_pow::minerar(
+            &candidato.header.encode(),
+            pow,
+            config,
+            &AtomicBool::new(false),
+            &AtomicU64::new(0),
+        )
+        .map_err(|e| e.to_string())?
+        .achado
+        .ok_or("não achei nonce no limite de tentativas")?;
+
+        let altura = candidato.header.height;
+        let n = candidato.useful_proof.as_ref().map_or(0, |p| p.n);
+        let bits = candidato.header.bits;
+        let bloco = Block { header: candidato.header.with_nonce(achado.nonce), ..candidato };
+
+        // Enquanto eu minerava, a rede pode ter achado outro bloco na mesma
+        // altura. Aí este vira órfão e eu recomeço: é a corrida normal.
+        match rede.submeter_bloco(bloco) {
+            Ok(true) => {
+                salvar(&rede, &o)?;
+                feitos = feitos.saturating_add(1);
+                println!(
+                    "  bloco {altura} em {:.1} s · trabalho útil {n}×{n} · bits {bits:#010x} · recompensa {} AUR (libera em {} blocos) · {} par(es)",
+                    inicio.elapsed().as_secs_f64(),
+                    aur(u128::from(block_reward(altura, &o.rede))),
+                    o.rede.coinbase_maturity,
+                    rede.pares_conectados()
+                );
+            }
+            Ok(false) | Err(_) => {
+                perdidos = perdidos.saturating_add(1);
+                println!("  bloco {altura} perdido na corrida (outro nó chegou primeiro); recomeçando");
+            }
+        }
+    }
+    if perdidos > 0 {
+        println!("{feitos} bloco(s) meus, {perdidos} perdido(s) na corrida.");
+    }
+    salvar(&rede, &o)?;
     Ok(())
+}
+
+/// Só roda o nó: escuta, sincroniza, serve e propaga. Sem minerar.
+fn servir_no(args: &[String]) -> Result<(), String> {
+    let o = ler_opcoes(args)?;
+    let rede = subir_rede(&o)?;
+    println!("Nó no ar. Ctrl+C para parar. A cadeia é gravada a cada mudança.");
+    let mut ultima_altura = u64::MAX;
+    loop {
+        std::thread::sleep(Duration::from_secs(2));
+        let (altura, pares, mempool) = {
+            let no = rede.no.lock().map_err(|_| "nó travado".to_string())?;
+            (no.chain.height(), rede.pares_conectados(), no.mempool_len())
+        };
+        if altura != ultima_altura {
+            ultima_altura = altura;
+            salvar(&rede, &o)?;
+            println!("  altura {altura} · {pares} par(es) · {mempool} no mempool");
+        }
+    }
 }
 
 fn estado(args: &[String]) -> Result<(), String> {
@@ -256,6 +379,7 @@ fn principal(args: &[String]) -> Result<(), String> {
     match comando.as_str() {
         "carteira" => carteira(resto),
         "minerar" => minerar(resto),
+        "no" => servir_no(resto),
         "estado" => estado(resto),
         "ajuda" | "--ajuda" | "-h" => {
             print!("{AJUDA}");

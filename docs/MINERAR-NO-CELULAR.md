@@ -15,7 +15,7 @@ nada além do próprio Rust.
 | Prova de trabalho útil (seção 9A) em Rust | pronto (`crates/auron-usefulpow`), igual ao gabarito; o `medir` mostra quanto custa no aparelho |
 | Minerar blocos inteiros numa cadeia local gravada no disco (`auron-no`) | pronto; cada bloco passa pela validação completa |
 | Carteira de teste e saldo | pronto (`auron-no carteira`, `auron-no estado`) |
-| Conversar com outros nós (rede P2P) | **ainda não**; é a próxima fase |
+| Conversar com outros nós (rede) | pronto: `--porta` e `--semente` põem o aparelho na rede; ele sincroniza e propaga o que minera |
 
 Ou seja: o celular já minera blocos de verdade, com as duas provas (trabalho
 útil e Argon2id), numa cadeia que fica salva no aparelho. O que ainda falta é
@@ -102,6 +102,36 @@ cargo build --release -p auron-no
 
 A recompensa de cada bloco fica "esperando liberar" por 20 blocos na testnet
 (100 na mainnet), igual à regra do consenso.
+
+## Dois aparelhos na mesma rede (PC e celular)
+
+O celular pode minerar **em rede** com o computador: eles trocam blocos, e cada
+um valida tudo por conta própria.
+
+No computador, deixe um nó no ar (descubra o IP dele na rede local):
+
+```bash
+./target/release/auron-no no --rede testnet --pasta dados --porta 8790
+```
+
+No celular, minere apontando para ele (troque `IP_DO_PC` e `SEU_ENDERECO`):
+
+```bash
+./target/release/auron-no minerar --rede testnet --pasta dados --porta 8790 --semente IP_DO_PC:8790 --endereco SEU_ENDERECO --blocos 0
+```
+
+O que acontece: o celular sincroniza a cadeia do PC, minera em cima dela e
+anuncia cada bloco; o PC valida e adota. Se os dois minerarem, quem achar o
+bloco primeiro ganha a altura, e o outro vê "perdido na corrida" — é a disputa
+normal de mineração. Cada nó grava a cadeia no próprio disco.
+
+Testado aqui, com dois nós nesta máquina: o minerador fez 2 blocos e o outro nó
+chegou à mesma ponta, só recebendo pela rede.
+
+**Ainda não há cifra na conexão.** O que viaja é cadeia pública e transações
+assinadas (que já são públicas), mas quem estiver no meio da rede vê o tráfego.
+Por isso: use em rede local ou de confiança, não pela internet aberta. A cifra
+(Noise sobre TCP) está prevista na especificação, seção 21.3.
 
 | Rede | Trabalho por bloco | Para quê |
 |---|---|---|
