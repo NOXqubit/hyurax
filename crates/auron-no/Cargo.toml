@@ -5,7 +5,7 @@ edition.workspace = true
 rust-version.workspace = true
 authors.workspace = true
 license.workspace = true
-description = "Auron — nó local: carteira, mineração numa cadeia gravada no disco e consulta de saldo"
+description = "Auron — nó: carteira com senha, mineração, envio de AUR de teste, saldo e rede cifrada"
 
 [[bin]]
 name = "auron-no"
@@ -20,6 +20,8 @@ auron-store.workspace = true
 auron-net.workspace = true
 auron-pow.workspace = true
 auron-block.workspace = true
+argon2.workspace = true
+chacha20poly1305.workspace = true
 
 [lints.rust]
 unsafe_code = "forbid"

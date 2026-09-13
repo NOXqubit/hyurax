@@ -72,6 +72,16 @@ impl No {
         self.mempool.values().cloned().collect()
     }
 
+    /// O próximo nonce livre de uma conta: o da cadeia, ou depois do último que
+    /// já espera no mempool.
+    pub fn proximo_nonce(&self, endereco: &auron_tx::Endereco) -> u64 {
+        let da_cadeia = self.chain.state.next_nonce(endereco);
+        self.mempool
+            .range((*endereco, 0)..=(*endereco, u64::MAX))
+            .next_back()
+            .map_or(da_cadeia, |((_, n), _)| da_cadeia.max(n.saturating_add(1)))
+    }
+
     /// Quantas transações há no mempool.
     pub fn mempool_len(&self) -> usize {
         self.mempool.len()

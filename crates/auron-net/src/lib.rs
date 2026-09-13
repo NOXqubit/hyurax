@@ -9,14 +9,18 @@
 //! Aqui é só transporte: conexões, threads, difusão. Trocar este crate por
 //! outro (async, outra topologia) não muda o que a rede considera válido.
 //!
-//! Sem async e sem dependência de rede: `std::net` e threads.
+//! Sem async: `std::net` e threads. A conexão é cifrada com Noise XX (`snow`,
+//! Rust puro, sem o `getrandom`: a entropia vem do sistema, ver `entropia`).
 
 #![forbid(unsafe_code)]
 
+mod cifra;
 mod conexao;
+pub mod entropia;
 mod no;
 mod servidor;
 
-pub use conexao::{Conexao, NetError};
+pub use cifra::{Identidade, PADRAO_NOISE, Papel};
+pub use conexao::{Conexao, Escritor, NetError};
 pub use no::{Malicia, No, Reacao};
 pub use servidor::Rede;

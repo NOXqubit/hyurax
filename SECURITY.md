@@ -31,9 +31,11 @@ Inclua o passo a passo para reproduzir e, se der, um teste que falha.
 
 Está escrito para ninguém confiar no que não existe:
 
-- **cifra da conexão:** em implementação; hoje o tráfego entre nós é legível
-  por quem estiver no meio;
-- **carteira com senha:** o arquivo de carteira guarda a chave em texto;
+- **cifra da conexão:** existe (Noise XX), mas ainda não passou por revisão
+  de fora;
+- **carteira com senha:** existe (Argon2id + ChaCha20-Poly1305); carteiras
+  criadas antes de 13/09/2026 guardam a chave em texto e precisam de
+  `auron-no carteira cifrar`;
 - **auditoria externa:** nenhuma foi feita.
 
 Não há recompensa em dinheiro por falha encontrada. Quem relatar recebe crédito

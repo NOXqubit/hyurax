@@ -5,7 +5,7 @@ edition.workspace = true
 rust-version.workspace = true
 authors.workspace = true
 license.workspace = true
-description = "Auron — transporte da rede entre nós: conexões TCP, aperto de mão, sincronização e mempool"
+description = "Auron — transporte da rede entre nós: conexões TCP cifradas (Noise XX), aperto de mão, sincronização e mempool"
 
 [dependencies]
 auron-wire.workspace = true
@@ -14,6 +14,7 @@ auron-tx.workspace = true
 auron-chain.workspace = true
 auron-consensus.workspace = true
 auron-crypto.workspace = true
+snow.workspace = true
 
 [lints.rust]
 unsafe_code = "forbid"

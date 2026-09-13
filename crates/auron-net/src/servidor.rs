@@ -8,16 +8,16 @@
 //! nisso, e o código fica simples de auditar.
 
 use std::collections::{BTreeMap, HashMap};
-use std::io::Write;
 use std::net::{SocketAddr, TcpListener, TcpStream, ToSocketAddrs};
 use std::sync::atomic::{AtomicBool, AtomicU16, AtomicU64, Ordering};
 use std::sync::mpsc::{Receiver, Sender, channel};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
-use auron_wire::{EnderecoDeRede, MAX_ADDRS, Message, Ponta, encode_frame};
+use auron_wire::{EnderecoDeRede, MAX_ADDRS, Message, Ponta};
 
-use crate::conexao::{Conexao, NetError};
+use crate::cifra::{Identidade, Papel};
+use crate::conexao::{Conexao, Escritor, NetError};
 use crate::no::No;
 
 const TIMEOUT: Duration = Duration::from_millis(400);
@@ -26,6 +26,8 @@ const PRAZO_APERTO: Duration = Duration::from_secs(10);
 const INTERVALO_MANUTENCAO: Duration = Duration::from_secs(2);
 /// Quantos pares o nó tenta manter conectados.
 const ALVO_PARES: usize = 8;
+/// Quantas transações do mempool entregar a um par que acabou de conectar.
+const MAX_MEMPOOL_NA_ENTRADA: usize = 1000;
 /// Quantos endereços anunciar num `ADDRS`.
 const MAX_ANUNCIO: usize = 64;
 
@@ -81,11 +83,26 @@ pub struct Rede {
     /// Endereços de escuta dos pares conectados agora — para não reconectar.
     conectados: Mutex<BTreeMap<String, ()>>,
     manutencao_ligada: AtomicBool,
+    /// Chave estática da cifra: como os outros nós reconhecem este.
+    identidade: Identidade,
+    /// Identidades com conexão aberta agora: uma conexão por nó, no máximo.
+    identidades_conectadas: Mutex<BTreeMap<[u8; 32], ()>>,
+    /// Maior trabalho acumulado que algum par anunciou no aperto de mão.
+    maior_trabalho_visto: Mutex<[u8; 32]>,
 }
 
 impl Rede {
-    /// Cria a rede em torno de um nó.
-    pub fn nova(no: No) -> Arc<Self> {
+    /// Cria a rede em torno de um nó, com uma identidade nova (que muda a
+    /// cada execução). Para identidade persistente, ver [`Rede::com_identidade`].
+    ///
+    /// # Errors
+    /// Quando o sistema não entrega entropia para a chave.
+    pub fn nova(no: No) -> Result<Arc<Self>, NetError> {
+        Ok(Self::com_identidade(no, Identidade::nova()?))
+    }
+
+    /// Cria a rede em torno de um nó, com a identidade dada.
+    pub fn com_identidade(no: No, identidade: Identidade) -> Arc<Self> {
         let magic = no.chain.params.magic;
         Arc::new(Self {
             no: Arc::new(Mutex::new(no)),
@@ -97,7 +114,26 @@ impl Rede {
             livro: Mutex::new(BTreeMap::new()),
             conectados: Mutex::new(BTreeMap::new()),
             manutencao_ligada: AtomicBool::new(false),
+            identidade,
+            identidades_conectadas: Mutex::new(BTreeMap::new()),
+            maior_trabalho_visto: Mutex::new([0u8; 32]),
         })
+    }
+
+    /// Se a cadeia deste nó já tem pelo menos o trabalho que os pares
+    /// anunciaram. Sem nenhum par visto, é `false`.
+    pub fn alcancou_os_pares(&self) -> bool {
+        let visto = self.maior_trabalho_visto.lock().map_or([0u8; 32], |v| *v);
+        if visto == [0u8; 32] {
+            return false;
+        }
+        let meu = self.no.lock().map_or([0u8; 32], |n| n.chain.total_work().to_be32().unwrap_or([0xff; 32]));
+        meu >= visto
+    }
+
+    /// Chave pública da identidade deste nó.
+    pub fn identidade_publica(&self) -> [u8; 32] {
+        self.identidade.publica()
     }
 
     /// Quantos pares estão conectados agora.
@@ -317,8 +353,45 @@ impl Rede {
         stream.set_nonblocking(false)?;
         stream.set_read_timeout(Some(TIMEOUT))?;
         let ip_par = stream.peer_addr().ok().map(|s| s.ip());
-        let mut conexao = Conexao::nova(stream, self.magic);
-        let par_ponta = self.aperto_de_mao(&mut conexao, papel)?;
+        // Primeiro a cifra (Noise XX); o HELLO já viaja cifrado.
+        let (mut conexao, chave_do_par) =
+            Conexao::com_cifra(stream, self.magic, &self.identidade, papel, PRAZO_APERTO)?;
+        // A identidade provada na cifra evita conexão duplicada com o mesmo nó
+        // (os dois discando ao mesmo tempo, ou o mesmo nó por dois endereços) e
+        // conexão consigo mesmo.
+        if chave_do_par == self.identidade.publica() {
+            conexao.fechar();
+            return Err(NetError::Handshake("conexão comigo mesmo".into()));
+        }
+        {
+            let mut ids = self.identidades_conectadas.lock().map_err(|_| NetError::Handshake("cadeado envenenado".into()))?;
+            if ids.insert(chave_do_par, ()).is_some() {
+                drop(ids);
+                conexao.fechar();
+                return Err(NetError::Handshake("já existe conexão com este nó".into()));
+            }
+        }
+        let resultado = self.servir_cifrado(&mut conexao, papel, ip_par);
+        if let Ok(mut ids) = self.identidades_conectadas.lock() {
+            ids.remove(&chave_do_par);
+        }
+        conexao.fechar();
+        resultado
+    }
+
+    /// O resto da conexão, já cifrada e com identidade única.
+    fn servir_cifrado(
+        self: &Arc<Self>,
+        conexao: &mut Conexao,
+        papel: Papel,
+        ip_par: Option<std::net::IpAddr>,
+    ) -> Result<(), NetError> {
+        let par_ponta = self.aperto_de_mao(conexao, papel)?;
+        if let Ok(mut visto) = self.maior_trabalho_visto.lock()
+            && par_ponta.trabalho > *visto
+        {
+            *visto = par_ponta.trabalho;
+        }
 
         // Aprende onde o par escuta, e marca como conectado para não rediscar.
         let addr_escuta = match (ip_par, par_ponta.porta_escuta) {
@@ -333,7 +406,7 @@ impl Rede {
             }
         }
 
-        let stream_escrita = conexao.clonar_stream()?;
+        let escritor = conexao.escritor()?;
         let (saida, entrada) = channel::<Message>();
         let id = self.registrar(saida.clone());
 
@@ -345,14 +418,21 @@ impl Rede {
         }
         // Já pede endereços de cara, para a descoberta andar rápido.
         let _ = saida.send(Message::GetAddrs);
+        // E entrega o que espera no mempool: um minerador que acabou de entrar
+        // precisa das transações que chegaram antes dele. Com teto, para uma
+        // conexão nova não virar enxurrada.
+        if let Ok(no) = self.no.lock() {
+            for tx in no.mempool_ordenado().into_iter().take(MAX_MEMPOOL_NA_ENTRADA) {
+                let _ = saida.send(Message::Tx(Box::new(tx)));
+            }
+        }
 
-        let magic = self.magic;
         let rede_escrita = Arc::clone(self);
         let escritora = std::thread::spawn(move || {
-            escrever_laco(stream_escrita, magic, &entrada, &rede_escrita);
+            escrever_laco(escritor, &entrada, &rede_escrita);
         });
 
-        let resultado = self.ler_laco(&mut conexao, id, &saida);
+        let resultado = self.ler_laco(conexao, id, &saida);
 
         self.remover(id);
         if let (Some(a), Ok(mut c)) = (&addr_str, self.conectados.lock()) {
@@ -458,13 +538,6 @@ impl Rede {
     }
 }
 
-/// Quem abriu a conexão. Decide quem fala primeiro no aperto de mão.
-#[derive(Clone, Copy)]
-enum Papel {
-    Discou,
-    Recebeu,
-}
-
 /// Espera uma mensagem inteira por até `prazo`, tolerando os timeouts curtos
 /// de leitura do socket. Um par que fica mudo além do prazo é derrubado.
 fn receber_com_prazo(conexao: &mut Conexao, prazo: Duration) -> Result<Message, NetError> {
@@ -479,17 +552,14 @@ fn receber_com_prazo(conexao: &mut Conexao, prazo: Duration) -> Result<Message, 
     }
 }
 
-fn escrever_laco(mut stream: TcpStream, magic: [u8; 4], entrada: &Receiver<Message>, rede: &Arc<Rede>) {
+fn escrever_laco(mut escritor: Escritor, entrada: &Receiver<Message>, rede: &Arc<Rede>) {
     loop {
         match entrada.recv_timeout(TIMEOUT) {
-            Ok(msg) => match encode_frame(&magic, &msg) {
-                Ok(quadro) => {
-                    if stream.write_all(&quadro).is_err() || stream.flush().is_err() {
-                        return;
-                    }
+            Ok(msg) => {
+                if escritor.enviar(&msg).is_err() {
+                    return;
                 }
-                Err(_) => return,
-            },
+            }
             Err(std::sync::mpsc::RecvTimeoutError::Timeout) => {
                 if rede.parando() {
                     return;

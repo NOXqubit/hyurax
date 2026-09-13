@@ -553,7 +553,7 @@ def vec_wire() -> dict:
     trabalho = chain.total_work.to_bytes(32, "big")
     cabecalhos = [e.block.header.encode() for e in chain.entries]
 
-    PROTO = 1
+    PROTO = 2
     MAGIC = p.magic
 
     def quadro(tipo: int, corpo: bytes) -> bytes:
@@ -604,9 +604,13 @@ def vec_wire() -> dict:
     invalidos = [
         {"name": "magic_errado", "frame": h(b"XXXX" + q_ok[4:]),
          "error": "magic da rede não confere"},
-        {"name": "versao_errada",
-         "frame": h(q_ok[:4] + codec.enc_u16(2) + q_ok[6:]),
-         "error": "versão de protocolo desconhecida: 2"},
+        # A versão 1 era a do protocolo sem cifra: um nó atual não fala com ela.
+        {"name": "versao_1_sem_cifra",
+         "frame": h(q_ok[:4] + codec.enc_u16(1) + q_ok[6:]),
+         "error": "versão de protocolo desconhecida: 1"},
+        {"name": "versao_futura",
+         "frame": h(q_ok[:4] + codec.enc_u16(PROTO + 1) + q_ok[6:]),
+         "error": f"versão de protocolo desconhecida: {PROTO + 1}"},
         {"name": "corpo_grande_demais",
          "frame": h(codec.enc_fixed(MAGIC, 4) + codec.enc_u16(PROTO) + codec.enc_u16(1)
                     + codec.enc_u32(MAX_FRAME_BODY + 1)),

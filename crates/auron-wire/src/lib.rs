@@ -23,8 +23,8 @@ use auron_block::{Block, BlockError, BlockHeader, HEADER_LEN};
 use auron_codec::{CodecError, Reader, Writer};
 use auron_tx::{Transfer, Tx, TxError};
 
-/// Versão do protocolo de rede.
-pub const PROTOCOL_VERSION: u16 = 1;
+/// Versão do protocolo de rede. A 2 é a primeira com cifra (Noise XX, seção 21.3).
+pub const PROTOCOL_VERSION: u16 = 2;
 /// Maior corpo de quadro aceito: 2 MiB.
 pub const MAX_FRAME_BODY: u32 = 2 * 1024 * 1024;
 /// Teto de cabeçalhos numa mensagem `HEADERS`.

@@ -1,16 +1,23 @@
 // ✝ Provérbios 13:11 — “A riqueza de procedência vã diminuirá, mas quem a ajunta com o próprio trabalho a aumentará.”
-//! Nó local do Auron: carteira, mineração e saldo, numa cadeia gravada no disco.
+//! Nó do Auron: carteira com senha, mineração, envio de AUR de teste e saldo,
+//! numa cadeia gravada no disco e sincronizada com a rede.
 //!
 //! ```text
 //! auron-no carteira nova    --arquivo carteira.txt
 //! auron-no carteira ver     --arquivo carteira.txt
+//! auron-no carteira cifrar  --arquivo carteira.txt
 //! auron-no minerar          --rede testnet --pasta dados --endereco HEX [--blocos N] [--linhas L]
+//! auron-no enviar           --rede testnet --pasta dados --arquivo carteira.txt --para HEX --valor AUR
+//! auron-no no               --rede testnet --pasta dados --porta P
 //! auron-no estado           --rede testnet --pasta dados [--endereco HEX]
 //! ```
 //!
-//! Ainda não conversa com outros nós: a rede entre nós é a próxima fase. Cada
-//! bloco minerado passa pela mesma validação completa de um bloco vindo de
-//! fora, e a cadeia é gravada no disco depois de cada bloco.
+//! Cada bloco minerado ou recebido passa pela validação completa, e a cadeia é
+//! gravada no disco a cada mudança. A conexão entre nós é cifrada (Noise XX), e
+//! o nó guarda a própria identidade em `PASTA/no.chave`.
+
+mod carteira;
+mod senha;
 
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
@@ -21,20 +28,29 @@ use std::time::{Duration, Instant};
 use auron_block::Block;
 use auron_chain::Chain;
 use auron_consensus::{ParametrosRede, block_reward};
-use auron_crypto::{ADDRESS_LEN, SECRET_LEN, address_from_ed25519_pubkey, ed25519_public_key};
-use auron_net::{No, Rede};
+use auron_crypto::{ADDRESS_LEN, SECRET_LEN};
+use auron_net::entropia::{entropia_do_sistema, preencher};
+use auron_net::{Identidade, No, Rede};
 use auron_pow::ConfigMineracao;
 use auron_store::{load_chain, save_chain};
-use auron_tx::AUR;
+use auron_tx::{AUR, Output, sign_transfer_outputs};
 
 const AJUDA: &str = "\
-auron-no — nó local do Auron (sem rede entre nós, ainda)
+auron-no — nó do Auron (rede de TESTE)
 
   auron-no carteira nova --arquivo carteira.txt
-      Cria uma chave nova e mostra o endereço. Recusa sobrescrever arquivo.
+      Cria uma chave nova, cifrada com senha, e mostra o endereço.
+      Recusa sobrescrever arquivo.
 
   auron-no carteira ver --arquivo carteira.txt
-      Mostra o endereço de uma carteira existente.
+      Mostra o endereço de uma carteira existente (não pede senha).
+
+  auron-no carteira cifrar --arquivo carteira.txt
+      Converte uma carteira antiga, com o segredo em texto, para o formato com senha.
+
+  auron-no enviar --rede testnet --pasta dados --arquivo carteira.txt --para HEX --valor AUR
+                  [--taxa AUR] [--semente IP:PORTA,...] [--porta P]
+      Assina uma transferência com a carteira (pede a senha) e manda para a rede.
 
   auron-no minerar --rede testnet --pasta dados --endereco HEX [--blocos N] [--linhas L]
                    [--porta P] [--semente IP:PORTA,...] [--pausa-ms X]
@@ -52,6 +68,7 @@ Dois aparelhos na mesma rede local, por exemplo:
   no celular: auron-no minerar --porta 8790 --semente IP_DO_PC:8790 --endereco SEU_ENDERECO --blocos 0
 
 Redes: mainnet (difícil: 16 bits de trabalho por bloco), testnet (8 bits), regtest (quase nada).
+Senha em script: variável AURON_SENHA (conveniente, e menos segura que digitar).
 Lembrete: a rede pública não existe e o AUR não tem valor. Isto é teste.
 ";
 
@@ -65,6 +82,9 @@ struct Opcoes {
     porta: u16,
     sementes: Vec<String>,
     pausa_ms: u64,
+    para: Option<[u8; ADDRESS_LEN]>,
+    valor: Option<u64>,
+    taxa: u64,
 }
 
 fn hex(bytes: &[u8]) -> String {
@@ -95,6 +115,9 @@ fn ler_opcoes(args: &[String]) -> Result<Opcoes, String> {
         porta: 0,
         sementes: Vec::new(),
         pausa_ms: 0,
+        para: None,
+        valor: None,
+        taxa: 0,
     };
     let mut it = args.iter();
     while let Some(nome) = it.next() {
@@ -114,6 +137,9 @@ fn ler_opcoes(args: &[String]) -> Result<Opcoes, String> {
                 o.sementes.extend(valor.split(',').map(|s| s.trim().to_string()).filter(|s| !s.is_empty()));
             }
             "--pausa-ms" => o.pausa_ms = valor.parse().map_err(|_| "--pausa-ms precisa ser número")?,
+            "--para" => o.para = Some(de_hex(valor).ok_or("--para precisa de 40 dígitos hexadecimais")?),
+            "--valor" => o.valor = Some(unidades_de_aur(valor)?),
+            "--taxa" => o.taxa = unidades_de_aur(valor)?,
             "--linhas" => {
                 o.linhas = valor
                     .parse::<u32>()
@@ -134,54 +160,48 @@ fn aur(unidades: u128) -> String {
     format!("{}.{:08}", unidades / AUR_UNIDADE, unidades % AUR_UNIDADE)
 }
 
+/// "1.5" vira 150 000 000 unidades. No máximo 8 casas; nunca ponto flutuante.
+fn unidades_de_aur(texto: &str) -> Result<u64, String> {
+    let erro = || format!("valor inválido: {texto} (use ponto, até 8 casas, por exemplo 1.5)");
+    let (inteiro, fracao) = texto.trim().split_once('.').unwrap_or((texto.trim(), ""));
+    if inteiro.is_empty() || fracao.len() > 8 || !inteiro.chars().chain(fracao.chars()).all(|c| c.is_ascii_digit()) {
+        return Err(erro());
+    }
+    let inteiro: u64 = inteiro.parse().map_err(|_| erro())?;
+    let fracao: u64 = format!("{fracao:0<8}").parse().map_err(|_| erro())?;
+    inteiro.checked_mul(100_000_000).and_then(|v| v.checked_add(fracao)).ok_or_else(erro)
+}
+
 // -- carteira --
 
-/// 32 bytes do gerador criptográfico do sistema operacional.
-///
-/// Linux e Android (Termux): `/dev/urandom`, lido direto, sem biblioteca.
-#[cfg(unix)]
-fn entropia_do_sistema() -> Result<[u8; SECRET_LEN], String> {
-    use std::io::Read;
-    let mut segredo = [0u8; SECRET_LEN];
-    std::fs::File::open("/dev/urandom")
-        .and_then(|mut f| f.read_exact(&mut segredo))
-        .map_err(|e| format!("não consegui ler /dev/urandom: {e}"))?;
-    Ok(segredo)
-}
-
-/// Windows: `RandomNumberGenerator` do .NET, que é o gerador criptográfico do
-/// sistema, chamado pelo PowerShell que vem em todo Windows.
-#[cfg(windows)]
-fn entropia_do_sistema() -> Result<[u8; SECRET_LEN], String> {
-    let saida = std::process::Command::new("powershell")
-        .args([
-            "-NoProfile",
-            "-Command",
-            "$b = [byte[]]::new(32); [Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($b); ($b | ForEach-Object { $_.ToString('x2') }) -join ''",
-        ])
-        .output()
-        .map_err(|e| format!("não consegui chamar o PowerShell: {e}"))?;
-    let texto = String::from_utf8_lossy(&saida.stdout);
-    let segredo: [u8; SECRET_LEN] = de_hex(texto.trim()).ok_or("o PowerShell não devolveu 32 bytes")?;
-    if segredo == [0u8; SECRET_LEN] {
-        return Err("entropia zerada; recusando criar carteira".into());
+fn pedir_senha_nova() -> Result<String, String> {
+    let senha = senha::ler("Senha nova da carteira (mínimo 10 caracteres)")?;
+    carteira::senha_aceitavel(&senha)?;
+    if std::env::var(senha::VARIAVEL).is_err() && senha::ler("Repita a senha")? != senha {
+        return Err("as duas senhas não são iguais".into());
     }
-    Ok(segredo)
+    Ok(senha)
 }
 
-fn endereco_da_carteira(arquivo: &Path) -> Result<[u8; ADDRESS_LEN], String> {
-    let texto = std::fs::read_to_string(arquivo)
-        .map_err(|e| format!("não consegui ler {}: {e}", arquivo.display()))?;
-    let linha = texto
-        .lines()
-        .find_map(|l| l.strip_prefix("segredo="))
-        .ok_or("arquivo de carteira sem a linha segredo=")?;
-    let segredo: [u8; SECRET_LEN] = de_hex(linha).ok_or("segredo inválido no arquivo")?;
-    Ok(address_from_ed25519_pubkey(&ed25519_public_key(&segredo)))
+/// Grava num arquivo temporário e troca de nome: nunca deixa carteira pela metade.
+fn gravar_carteira(arquivo: &Path, conteudo: &str) -> Result<(), String> {
+    let temporario = arquivo.with_extension("tmp");
+    std::fs::write(&temporario, conteudo).map_err(|e| format!("não consegui gravar: {e}"))?;
+    std::fs::rename(&temporario, arquivo).map_err(|e| format!("não consegui gravar: {e}"))
 }
 
-fn carteira(args: &[String]) -> Result<(), String> {
-    let (acao, resto) = args.split_first().ok_or("use: carteira nova|ver --arquivo ARQUIVO")?;
+fn cifrar_segredo(segredo: &[u8; SECRET_LEN], senha: &str) -> Result<String, String> {
+    let mut aleatorio = [0u8; 28];
+    preencher(&mut aleatorio)?;
+    carteira::cifrar(segredo, senha, &aleatorio)
+}
+
+fn ler_arquivo(arquivo: &Path) -> Result<String, String> {
+    std::fs::read_to_string(arquivo).map_err(|e| format!("não consegui ler {}: {e}", arquivo.display()))
+}
+
+fn comando_carteira(args: &[String]) -> Result<(), String> {
+    let (acao, resto) = args.split_first().ok_or("use: carteira nova|ver|cifrar --arquivo ARQUIVO")?;
     let o = ler_opcoes(resto)?;
     let arquivo = o.arquivo.ok_or("falta --arquivo")?;
     match acao.as_str() {
@@ -189,23 +209,35 @@ fn carteira(args: &[String]) -> Result<(), String> {
             if arquivo.exists() {
                 return Err(format!("{} já existe; não sobrescrevo carteira", arquivo.display()));
             }
+            let senha = pedir_senha_nova()?;
+            // A chave vem direto do sistema operacional, não do gerador derivado.
             let segredo = entropia_do_sistema()?;
-            let endereco = address_from_ed25519_pubkey(&ed25519_public_key(&segredo));
-            let conteudo = format!(
-                "# Carteira Auron de TESTE. Quem tiver este arquivo gasta o saldo.\n\
-                 # A rede pública não existe e o AUR não tem valor.\n\
-                 segredo={}\nendereco={}\n",
-                hex(&segredo),
-                hex(&endereco)
-            );
-            std::fs::write(&arquivo, conteudo).map_err(|e| format!("não consegui gravar: {e}"))?;
+            let conteudo = cifrar_segredo(&segredo, &senha)?;
+            gravar_carteira(&arquivo, &conteudo)?;
             println!("Carteira criada em {}", arquivo.display());
-            println!("Endereço: {}", hex(&endereco));
-            println!("Guarde o arquivo: sem ele, o saldo não pode ser gasto.");
+            println!("Endereço: {}", hex(&carteira::endereco(&conteudo)?));
+            println!("Guarde uma cópia do arquivo e NÃO esqueça a senha: sem os dois, o saldo fica perdido.");
             Ok(())
         }
         "ver" => {
-            println!("Endereço: {}", hex(&endereco_da_carteira(&arquivo)?));
+            let texto = ler_arquivo(&arquivo)?;
+            println!("Endereço: {}", hex(&carteira::endereco(&texto)?));
+            if carteira::e_formato_antigo(&texto) {
+                println!("Aviso: esta carteira guarda o segredo em texto. Proteja com: auron-no carteira cifrar --arquivo {}", arquivo.display());
+            }
+            Ok(())
+        }
+        "cifrar" => {
+            let texto = ler_arquivo(&arquivo)?;
+            if !carteira::e_formato_antigo(&texto) {
+                return Err("esta carteira já está cifrada".into());
+            }
+            let segredo = carteira::abrir(&texto, "")?;
+            let senha = pedir_senha_nova()?;
+            let conteudo = cifrar_segredo(&segredo, &senha)?;
+            gravar_carteira(&arquivo, &conteudo)?;
+            println!("Carteira {} agora está cifrada com senha.", arquivo.display());
+            println!("Se existir cópia antiga do arquivo em outro lugar, apague: ela continua sem senha.");
             Ok(())
         }
         outro => Err(format!("ação desconhecida: {outro}")),
@@ -228,12 +260,44 @@ fn abrir_cadeia(o: &Opcoes) -> Result<Chain, String> {
     }
 }
 
+/// A identidade do nó na cifra da rede: `PASTA/no.chave`. Criada na primeira
+/// vez; depois, a mesma a cada execução. Apagar o arquivo dá identidade nova.
+fn identidade_do_no(o: &Opcoes) -> Result<Identidade, String> {
+    let arquivo = o.pasta.join("no.chave");
+    if arquivo.exists() {
+        let texto = ler_arquivo(&arquivo)?;
+        let segredo: [u8; 32] = texto
+            .lines()
+            .find_map(|l| l.trim().strip_prefix("segredo="))
+            .and_then(de_hex)
+            .ok_or_else(|| format!("{} inválido; apague para gerar outro", arquivo.display()))?;
+        return Identidade::de_segredo(segredo).map_err(|e| e.to_string());
+    }
+    let identidade = Identidade::de_segredo(entropia_do_sistema()?).map_err(|e| e.to_string())?;
+    let conteudo = format!(
+        "# Identidade deste nó na rede Auron (chave da cifra entre nós).\n\
+         # Não é carteira e não guarda saldo. Apagar gera uma identidade nova.\n\
+         segredo={}\npublica={}\n",
+        hex(identidade.segredo()),
+        hex(&identidade.publica())
+    );
+    gravar_carteira(&arquivo, &conteudo)?;
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        let _ = std::fs::set_permissions(&arquivo, std::fs::Permissions::from_mode(0o600));
+    }
+    Ok(identidade)
+}
+
 /// Sobe a rede: abre a cadeia do disco, escuta (se `--porta`) e conecta às
 /// sementes (`--semente`, separadas por vírgula).
 fn subir_rede(o: &Opcoes) -> Result<Arc<Rede>, String> {
     std::fs::create_dir_all(&o.pasta).map_err(|e| format!("não consegui criar a pasta: {e}"))?;
     let cadeia = abrir_cadeia(o)?;
-    let rede = Rede::nova(No::novo(cadeia));
+    let identidade = identidade_do_no(o)?;
+    println!("Identidade do nó: {}", hex(&identidade.publica()));
+    let rede = Rede::com_identidade(No::novo(cadeia), identidade);
 
     if o.porta > 0 {
         let porta = rede
@@ -262,6 +326,11 @@ fn minerar(args: &[String]) -> Result<(), String> {
     let o = ler_opcoes(args)?;
     let endereco = o.endereco.ok_or("falta --endereco (crie com: auron-no carteira nova --arquivo carteira.txt)")?;
     let rede = subir_rede(&o)?;
+    // Minerar antes de alcançar a rede é minerar num ramo que vai ser jogado fora.
+    if !o.sementes.is_empty() {
+        println!("Sincronizando com a rede antes de minerar…");
+        esperar_sincronizar(&rede, &o);
+    }
     {
         let no = rede.no.lock().map_err(|_| "nó travado".to_string())?;
         println!(
@@ -339,6 +408,75 @@ fn minerar(args: &[String]) -> Result<(), String> {
     Ok(())
 }
 
+/// Espera alcançar o trabalho que os pares anunciaram (no máximo 90 s).
+fn esperar_sincronizar(rede: &Arc<Rede>, o: &Opcoes) {
+    if o.sementes.is_empty() {
+        return;
+    }
+    let inicio = Instant::now();
+    while inicio.elapsed() < Duration::from_secs(90) {
+        if rede.alcancou_os_pares() {
+            return;
+        }
+        std::thread::sleep(Duration::from_millis(300));
+    }
+    println!("  aviso: não alcancei a rede em 90 s; seguindo com a cadeia que tenho");
+}
+
+fn enviar(args: &[String]) -> Result<(), String> {
+    let o = ler_opcoes(args)?;
+    let arquivo = o.arquivo.clone().ok_or("falta --arquivo (a carteira que paga)")?;
+    let para = o.para.ok_or("falta --para (endereço de destino, 40 dígitos hexadecimais)")?;
+    let valor = o.valor.filter(|&v| v > 0).ok_or("falta --valor maior que zero (em AUR, por exemplo 1.5)")?;
+    let texto = ler_arquivo(&arquivo)?;
+    let origem = carteira::endereco(&texto)?;
+    if origem == para {
+        return Err("origem e destino são o mesmo endereço".into());
+    }
+
+    let rede = subir_rede(&o)?;
+    println!("Sincronizando com a rede…");
+    esperar_sincronizar(&rede, &o);
+    salvar(&rede, &o)?;
+    // Os pares mandam o mempool logo depois do aperto de mão. Esperar um pouco
+    // evita escolher um nonce que já está numa transação pendente minha.
+    if rede.pares_conectados() > 0 {
+        std::thread::sleep(Duration::from_millis(1500));
+    }
+    let (nonce, saldo, altura) = {
+        let no = rede.no.lock().map_err(|_| "nó travado".to_string())?;
+        (no.proximo_nonce(&origem), no.chain.state.balance(&origem, &AUR), no.chain.height())
+    };
+    let total = valor.checked_add(o.taxa).ok_or("valor mais taxa estoura")?;
+    if u128::from(total) > u128::from(saldo) {
+        return Err(format!(
+            "saldo gastável insuficiente na altura {altura}: {} AUR, precisa de {} AUR (a recompensa de mineração só libera depois de {} blocos)",
+            aur(u128::from(saldo)),
+            aur(u128::from(total)),
+            o.rede.coinbase_maturity
+        ));
+    }
+
+    let senha = if carteira::e_formato_antigo(&texto) { String::new() } else { senha::ler("Senha da carteira")? };
+    let segredo = carteira::abrir(&texto, &senha)?;
+    let saida = Output { recipient: para, asset_id: AUR, amount: valor };
+    let tx = sign_transfer_outputs(&segredo, &o.rede.magic, origem, vec![saida], o.taxa, nonce).map_err(|e| e.to_string())?;
+    let id = tx.txid().map_err(|e| e.to_string())?;
+    match rede.submeter_tx(tx) {
+        Ok(true) => {}
+        Ok(false) => return Err("já existe uma transação com esse nonce esperando no mempool".into()),
+        Err(e) => return Err(format!("a própria validação recusou: {}", e.0)),
+    }
+    println!("Transação {} assinada: {} AUR para {} (taxa {} AUR, nonce {nonce}).", hex(&id), aur(u128::from(valor)), hex(&para), aur(u128::from(o.taxa)));
+    if rede.pares_conectados() == 0 {
+        println!("Aviso: nenhum par conectado. A transação só existe neste nó; use --semente para mandar à rede.");
+        return Ok(());
+    }
+    std::thread::sleep(Duration::from_secs(3));
+    println!("Enviada para {} par(es). Ela entra num bloco quando algum minerador a incluir.", rede.pares_conectados());
+    Ok(())
+}
+
 /// Só roda o nó: escuta, sincroniza, serve e propaga. Sem minerar.
 fn servir_no(args: &[String]) -> Result<(), String> {
     let o = ler_opcoes(args)?;
@@ -377,7 +515,8 @@ fn estado(args: &[String]) -> Result<(), String> {
 fn principal(args: &[String]) -> Result<(), String> {
     let (comando, resto) = args.split_first().ok_or(AJUDA)?;
     match comando.as_str() {
-        "carteira" => carteira(resto),
+        "carteira" => comando_carteira(resto),
+        "enviar" => enviar(resto),
         "minerar" => minerar(resto),
         "no" => servir_no(resto),
         "estado" => estado(resto),

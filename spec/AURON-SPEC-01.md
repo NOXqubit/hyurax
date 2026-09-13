@@ -813,34 +813,58 @@ Tipo desconhecido é ignorado (não derruba a conexão): é o que deixa versões
 futuras acrescentarem mensagens sem quebrar as antigas. Versão de protocolo
 diferente no `HELLO` encerra a conexão com educação.
 
-### 21.3 Aperto de mão
+### 21.3 Cifra e aperto de mão (protocolo versão 2)
 
-1. Quem conecta manda `HELLO` com magic, versão, sua ponta e um nonce aleatório.
-2. Quem recebe confere magic e versão. Erra qualquer um dos dois, fecha.
-3. Responde `HELLO_ACK` ecoando o nonce, com a própria ponta.
-4. O nonce ecoado prova que o outro lado respondeu a esta conexão, não a um
-   um quadro gravado e repetido.
+Toda conexão começa pela cifra, e só depois o `HELLO`:
 
-O aperto de mão **não** cifra ainda. A cifra da conexão (Noise sobre TCP, sem
-QUIC porque QUIC puxa C) entra numa versão seguinte do protocolo, e o número de
-versão sobe quando entrar. Enquanto não cifra, nada de segredo viaja: só cadeia
-pública e transações assinadas, que já são públicas por natureza. Ainda assim,
-sem cifra um intermediário vê o tráfego e pode censurar seletivamente, então o
-uso hoje é **rede local ou de confiança**, não a internet aberta.
+1. **Noise `Noise_XX_25519_ChaChaPoly_BLAKE2s`.** Quem discou inicia. As três
+   mensagens do XX viajam como `[u16 tamanho][mensagem]`, cada uma com no
+   máximo 1024 bytes (lixo maior derruba na hora), com prazo de 10 s.
+2. **Prólogo** = `"AURON-WIRE-v2" || magic`. Os dois lados precisam concordar
+   com ele: um nó de outra rede falha já aqui.
+3. **Identidade de nó** = a chave estática X25519 que o par prova ter no XX.
+   Uma conexão por identidade; conexão consigo mesmo é recusada.
+4. **Transporte.** Cada quadro do `auron-wire` é cortado em pedaços de até
+   65 519 bytes. Cada pedaço vai cifrado e autenticado (ChaCha20-Poly1305) com
+   um nonce por direção que só cresce, como `[u16 tamanho][texto cifrado]`.
+   Pedaço que não autentica, fora de ordem ou menor que a etiqueta de 16 bytes
+   derruba a conexão.
+5. **`HELLO`**, já cifrado: magic, versão, ponta e um nonce aleatório. Quem
+   recebe confere magic e versão; erra, fecha. Responde `HELLO_ACK` ecoando o
+   nonce. A versão 1 (sem cifra) é recusada.
+6. Logo depois, cada lado pede endereços e **entrega o próprio mempool** (até
+   1000 transações), para quem acabou de entrar não perder pendências.
 
-Decidido em 13/09/2026 (ver `docs/ROTEIRO-LANCAMENTO.md`):
+O que a cifra garante: um intermediário não lê o conteúdo e não altera um byte
+sem derrubar a conexão (testado com um intermediário de verdade no meio de dois
+nós). O que ela NÃO garante: esconder que existe uma conexão, nem o tamanho
+aproximado do que passa. E ela não impede um nó honesto de mentir: quem valida
+blocos e transações continua sendo o consenso.
 
-- **Padrão Noise: `XX`.** Autentica os dois lados sem conhecimento prévio, o
-  que casa com descoberta aberta de pares. `IK` foi descartado porque exige
-  saber a chave do par antes de falar.
-- **Identidade de nó: persistente**, num arquivo próprio e separado da chave da
-  carteira (seção 2, hierarquia de chaves). Benefício: autentica o par e permite
-  banir um nó malicioso entre conexões. Custo declarado: o nó passa a ser
-  reconhecível entre conexões. Quem quiser evitar isso apaga o arquivo e ganha
-  identidade nova.
-- **Gerador aleatório.** Nesta máquina o `getrandom` não compila no alvo
-  Windows GNU, então o nó fornece o próprio gerador, semeado pela entropia do
-  sistema operacional. A biblioteca Noise em Rust puro compila sem `getrandom`.
+Decisões de 13/09/2026 (ver `docs/ROTEIRO-LANCAMENTO.md`):
+
+- **XX, não IK.** XX autentica os dois lados sem conhecimento prévio, o que
+  casa com descoberta aberta de pares. IK exige saber a chave do par antes.
+- **Identidade persistente**, em `PASTA/no.chave`, separada da carteira (seção
+  2, hierarquia de chaves). Benefício: autentica o par e permite, no futuro,
+  banir um nó malicioso entre conexões. Custo declarado: o nó fica
+  reconhecível entre conexões. Apagar o arquivo gera identidade nova.
+- **Gerador aleatório próprio.** O `getrandom` não compila no alvo Windows GNU
+  desta máquina. A semente vem do sistema operacional (`/dev/urandom`, ou o
+  gerador criptográfico do Windows), uma vez por processo; cada pedido sai de
+  SHA-512 sobre a semente, um contador único e o relógio.
+
+### 21.3.1 Arquivo de carteira (`AURON-CARTEIRA-v2`)
+
+Não é consenso, mas é o que protege o saldo de quem testa:
+
+- chave = Argon2id(senha, sal de 16 bytes, 64 MiB, 3 passadas, 1 faixa),
+  32 bytes; parâmetros gravados no arquivo; ao abrir, mais de 1 GiB é recusado;
+- segredo Ed25519 cifrado com ChaCha20-Poly1305, nonce de 12 bytes;
+- dado associado = `"AURON-CARTEIRA-v2" || endereço`: trocar o endereço do
+  arquivo faz a abertura falhar;
+- senha mínima de 10 caracteres; senha errada e arquivo alterado dão a mesma
+  mensagem.
 
 ### 21.4 Sincronização, do jeito seguro
 

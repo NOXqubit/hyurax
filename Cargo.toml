@@ -91,6 +91,19 @@ ed25519-dalek = { version = "=3.0.0", default-features = false, features = ["zer
 # minerador não usa, e a memória de 32 MiB é alocada por nós, uma vez só.
 argon2 = { version = "=0.6.0", default-features = false }
 
+# Cifra da conexão entre nós (seção 21.3): Noise XX. Rust puro, conferido com
+# `cargo tree -i cc`. Versão exata: mudar a cifra muda o protocolo de rede.
+#
+# Sem `default-features` e SEM a feature `std`: no snow 0.10 ela liga o
+# `getrandom`, que não compila aqui. As três features abaixo são o mínimo do
+# padrão Noise_XX_25519_ChaChaPoly_BLAKE2s; o gerador aleatório é nosso
+# (crates/auron-net/src/entropia.rs).
+snow = { version = "=0.10.0", default-features = false, features = ["use-curve25519", "use-chacha20poly1305", "use-blake2"] }
+
+# Carteira com senha (crates/auron-no/src/carteira.rs). Rust puro, a mesma
+# que o snow já traz; sem `default-features` para não puxar o `getrandom`.
+chacha20poly1305 = { version = "0.10", default-features = false }
+
 # Sem crate de aleatoriedade: o `getrandom` 0.4 no Windows (alvo GNU) exige a
 # ferramenta `dlltool`, que não existe nesta máquina. O auron-no lê a entropia
 # do próprio sistema (ver `entropia_do_sistema` em crates/auron-no).

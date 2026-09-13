@@ -128,10 +128,10 @@ normal de mineração. Cada nó grava a cadeia no próprio disco.
 Testado aqui, com dois nós nesta máquina: o minerador fez 2 blocos e o outro nó
 chegou à mesma ponta, só recebendo pela rede.
 
-**Ainda não há cifra na conexão.** O que viaja é cadeia pública e transações
-assinadas (que já são públicas), mas quem estiver no meio da rede vê o tráfego.
-Por isso: use em rede local ou de confiança, não pela internet aberta. A cifra
-(Noise sobre TCP) está prevista na especificação, seção 21.3.
+**A conexão entre os nós é cifrada** (Noise XX, seção 21.3 da
+especificação): quem estiver no meio não lê nem altera o que passa. Cada nó
+guarda a própria identidade em `dados/no.chave`; ela não é carteira e não
+guarda saldo.
 
 | Rede | Trabalho por bloco | Para quê |
 |---|---|---|
@@ -139,10 +139,11 @@ Por isso: use em rede local ou de confiança, não pela internet aberta. A cifra
 | `testnet` | cerca de 256 tentativas | minerar de verdade no celular |
 | `mainnet` | cerca de 65 mil tentativas | parâmetros reais; horas por bloco num aparelho |
 
-**Sobre o arquivo da carteira:** ele guarda a chave secreta em texto. Quem
-copiar o arquivo gasta o saldo. Como o AUR de teste não vale nada, isso é
-aceitável agora; antes de qualquer rede com valor, a carteira precisa de senha
-e cifragem.
+**Sobre o arquivo da carteira:** a chave secreta fica cifrada com a sua
+senha (mínimo de 10 caracteres). Quem copiar o arquivo sem saber a senha não
+gasta nada. Sem o arquivo **e** a senha, o saldo fica perdido: guarde uma cópia
+e não esqueça a senha. Carteira criada antes de 13/09/2026 guarda a chave em
+texto; proteja com `./target/release/auron-no carteira cifrar --arquivo carteira.txt`.
 
 ## Opções
 
