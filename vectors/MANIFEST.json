@@ -44,6 +44,10 @@
       "bytes": 7865,
       "sha512_16": "4c183f7cc73b233a5a1f40a12b8b8c29"
     },
+    "transactions_edge.json": {
+      "bytes": 17426,
+      "sha512_16": "8a97fb8f58800470111112392cdddcb7"
+    },
     "units.json": {
       "bytes": 5226,
       "sha512_16": "8e9e3e0175555f9d77ba0057773a6971"

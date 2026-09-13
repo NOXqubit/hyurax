@@ -346,6 +346,108 @@ def vec_transactions() -> dict:
     return {"transfers": transfers, "coinbases": coinbases}
 
 
+def vec_transactions_edge() -> list[dict]:
+    """Transações nas bordas: o que decodifica, o que não, e por quê.
+
+    Cada caso grava os bytes e o veredito do próprio gabarito, em duas etapas:
+    `decode_error` (a leitura recusou, com a mensagem) e, se a leitura aceitou
+    uma transferência, `check` (a conferência de assinatura e estrutura). O
+    Rust precisa chegar ao mesmo veredito, pelo mesmo motivo.
+    """
+    from auron.tx import MAX_EXTRA_NONCE, Transfer, TxError, decode_tx
+    from auron.codec import CodecError
+
+    p = REGTEST
+    addr_a = crypto.address_from_pubkey(crypto.public_key(SEED_A))
+    addr_b = crypto.address_from_pubkey(crypto.public_key(SEED_B))
+    addr_c = crypto.address_from_pubkey(crypto.public_key(bytes.fromhex("33" * 32)))
+    outro_ativo = b"\x01" * 32
+
+    def assinada(outputs, fee=0, nonce=0, magic=p.magic):
+        return sign_transfer_outputs(SEED_A, magic, sender=addr_a, outputs=outputs,
+                                     fee=fee, nonce=nonce)
+
+    def saida(dest, valor, ativo=AUR):
+        return Output(recipient=dest, asset_id=ativo, amount=valor)
+
+    valida = assinada([saida(addr_b, to_units("1"))], fee=to_units("0.001"))
+    corpo_valido = valida.encode()
+
+    # posições dentro da transferência: kind(1) version(2) sig_code(1) sender(20)
+    # fee(8) nonce(8) contagem(4)
+    POS_VERSAO, POS_SIG, POS_CONTAGEM = 1, 3, 1 + 2 + 1 + 20 + 8 + 8
+
+    def troca(dados: bytes, pos: int, novo: bytes) -> bytes:
+        return dados[:pos] + novo + dados[pos + len(novo):]
+
+    b_ordem = sorted([addr_b, addr_c])
+    casos: list[tuple[str, bytes]] = [
+        ("transferencia_valida", corpo_valido),
+        ("tipo_desconhecido", b"\x02" + corpo_valido[1:]),
+        ("versao_transferencia_1", troca(corpo_valido, POS_VERSAO, (1).to_bytes(2, "big"))),
+        ("algoritmo_desconhecido", troca(corpo_valido, POS_SIG, b"\x02")),
+        ("zero_saidas", corpo_valido[:POS_CONTAGEM] + (0).to_bytes(4, "big")
+         + corpo_valido[POS_CONTAGEM + 4 + 60:]),
+        ("dezessete_saidas", troca(corpo_valido, POS_CONTAGEM, (17).to_bytes(4, "big"))),
+        ("contagem_gigante_sem_itens", corpo_valido[:POS_CONTAGEM] + b"\xff\xff\xff\xff"),
+        ("truncada", corpo_valido[:-1]),
+        ("byte_sobrando", corpo_valido + b"\x00"),
+        ("vazia", b""),
+        ("valor_zero", assinada([saida(addr_b, 0)]).encode()),
+        ("taxa_maxima_mais_valor_estoura",
+         assinada([saida(addr_b, 1)], fee=MAX_AMOUNT_U64).encode()),
+        ("soma_das_saidas_estoura",
+         assinada([saida(b_ordem[0], MAX_AMOUNT_U64), saida(b_ordem[1], 1)]).encode()),
+        ("ativo_desconhecido", assinada([saida(addr_b, 5, outro_ativo)]).encode()),
+        ("origem_igual_destino", assinada([saida(addr_a, 5)]).encode()),
+        ("saidas_fora_de_ordem",
+         assinada([saida(b_ordem[1], 5), saida(b_ordem[0], 5)]).encode()),
+        ("saidas_repetidas", assinada([saida(addr_b, 5), saida(addr_b, 5)]).encode()),
+        ("chave_publica_curta",
+         Transfer(sender=addr_a, outputs=(saida(addr_b, 5),), fee=0, nonce=0,
+                  public_key=valida.public_key[:31], signature=valida.signature).encode()),
+        ("assinatura_curta",
+         Transfer(sender=addr_a, outputs=(saida(addr_b, 5),), fee=0, nonce=0,
+                  public_key=valida.public_key, signature=valida.signature[:63]).encode()),
+        ("chave_de_outra_conta",
+         Transfer(sender=addr_a, outputs=(saida(addr_b, 5),), fee=0, nonce=0,
+                  public_key=crypto.public_key(SEED_B), signature=valida.signature).encode()),
+        ("assinada_em_outra_rede",
+         assinada([saida(addr_b, to_units("1"))], fee=to_units("0.001"),
+                  magic=MAINNET.magic).encode()),
+        ("assinatura_com_bit_trocado", corpo_valido[:-1] + bytes([corpo_valido[-1] ^ 1])),
+        ("duas_saidas_validas",
+         assinada([saida(b_ordem[0], 5), saida(b_ordem[1], 7)], fee=3, nonce=9).encode()),
+        ("coinbase_valida", Coinbase(height=3, recipient=addr_a, amount=5,
+                                     extra_nonce=b"x" * MAX_EXTRA_NONCE).encode()),
+        ("coinbase_versao_2", troca(Coinbase(height=3, recipient=addr_a, amount=5).encode(),
+                                    POS_VERSAO, (2).to_bytes(2, "big"))),
+        ("coinbase_extra_nonce_65",
+         b"\x00" + (1).to_bytes(2, "big") + (3).to_bytes(8, "big") + addr_a
+         + (5).to_bytes(8, "big") + (65).to_bytes(4, "big") + b"x" * 65),
+    ]
+
+    out = []
+    for label, dados in casos:
+        caso = {"label": label, "encoded": h(dados), "magic": h(p.magic),
+                "decode_error": None, "kind": None, "check": None, "txid": None}
+        try:
+            tx = decode_tx(dados)
+        except (TxError, CodecError) as exc:
+            caso["decode_error"] = str(exc)
+        else:
+            caso["kind"] = "transfer" if isinstance(tx, Transfer) else "coinbase"
+            caso["txid"] = h(tx.txid())
+            if isinstance(tx, Transfer):
+                ok, motivo = tx.check_signature(p.magic)
+                caso["check"] = "ok" if ok else motivo
+        out.append(caso)
+    return out
+
+
+MAX_AMOUNT_U64 = 2**64 - 1
+
+
 def vec_chain() -> dict:
     """Minera uma cadeia curta e congela cada bloco. Se o Rust divergir, aparece aqui."""
     p = REGTEST
@@ -720,6 +822,7 @@ FILES = {
     "emission.json": vec_emission,
     "genesis.json": vec_genesis,
     "transactions.json": vec_transactions,
+    "transactions_edge.json": vec_transactions_edge,
     "chain.json": vec_chain,
     "utrax.json": vec_utrax,
     "usefulpow.json": vec_usefulpow,

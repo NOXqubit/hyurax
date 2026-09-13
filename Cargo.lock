@@ -43,6 +43,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "auron-tx"
+version = "0.1.0"
+dependencies = [
+ "auron-codec",
+ "auron-crypto",
+ "auron-types",
+ "hex",
+ "serde_json",
+]
+
+[[package]]
 name = "auron-types"
 version = "0.1.0"
 dependencies = [

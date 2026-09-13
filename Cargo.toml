@@ -6,6 +6,7 @@ members = [
     "crates/auron-codec",
     "crates/auron-pow",
     "crates/auron-usefulpow",
+    "crates/auron-tx",
 ]
 
 [workspace.package]
@@ -42,6 +43,7 @@ auron-types = { path = "crates/auron-types" }
 auron-crypto = { path = "crates/auron-crypto" }
 auron-codec = { path = "crates/auron-codec" }
 auron-usefulpow = { path = "crates/auron-usefulpow" }
+auron-tx = { path = "crates/auron-tx" }
 
 # Vetores de teste. Rust puro.
 serde = { version = "1", features = ["derive"] }
