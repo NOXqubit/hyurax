@@ -36,6 +36,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "auron-consensus"
+version = "0.1.0"
+dependencies = [
+ "auron-pow",
+ "auron-types",
+ "auron-usefulpow",
+ "serde_json",
+]
+
+[[package]]
 name = "auron-crypto"
 version = "0.1.0"
 dependencies = [

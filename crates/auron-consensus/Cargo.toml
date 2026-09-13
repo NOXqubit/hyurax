@@ -1,0 +1,27 @@
+[package]
+name = "auron-consensus"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+description = "Auron — parâmetros de rede, ajuste de dificuldade LWMA, trabalho acumulado e emissão"
+
+[dependencies]
+auron-types.workspace = true
+auron-pow.workspace = true
+auron-usefulpow.workspace = true
+
+[dev-dependencies]
+serde_json.workspace = true
+
+[lints.rust]
+unsafe_code = "forbid"
+missing_docs = "warn"
+
+[lints.clippy]
+unwrap_used = "deny"
+expect_used = "deny"
+panic = "deny"
+indexing_slicing = "deny"
+arithmetic_side_effects = "warn"

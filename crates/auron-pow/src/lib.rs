@@ -207,8 +207,17 @@ pub fn alvo_de_bits(bits: u32) -> Result<[u8; POW_HASH_LEN], ErroPow> {
     Ok(alvo)
 }
 
+/// Reduz um alvo ao valor canônico que cabe em 4 bytes, arredondando para
+/// baixo (`consensus.normalize_target`). Alvo zero é recusado.
+pub fn normalizar_alvo(alvo: &[u8; POW_HASH_LEN]) -> Result<[u8; POW_HASH_LEN], ErroPow> {
+    if alvo == &[0u8; POW_HASH_LEN] {
+        return Err(ErroPow::AlvoCompacto("alvo deve ser positivo"));
+    }
+    alvo_de_bits(bits_de_alvo(alvo))
+}
+
 /// Empacota um alvo não nulo em `bits` (`consensus.target_to_compact`).
-fn bits_de_alvo(alvo: &[u8; POW_HASH_LEN]) -> u32 {
+pub fn bits_de_alvo(alvo: &[u8; POW_HASH_LEN]) -> u32 {
     let inicio = alvo.iter().position(|&b| b != 0).unwrap_or(POW_HASH_LEN);
     let significativos = alvo.get(inicio..).unwrap_or(&[]);
     let mut tamanho = significativos.len();
