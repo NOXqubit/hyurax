@@ -214,6 +214,10 @@ export function criarMundo(canvas, q) {
   });
   const intervaloQuadro = 1000 / (perfil.fps || 60);
   renderer.setClearColor(0x030303, 1);
+  // Tom de cinema para os objetos do vídeo (metal e luz). Os pontos e as linhas
+  // do mundo ficam fora disso, para o site continuar com a mesma cara.
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.05;
   let dpr = Math.min(window.devicePixelRatio || 1, perfil.dpr);
   renderer.setPixelRatio(dpr);
 
@@ -258,7 +262,7 @@ export function criarMundo(canvas, q) {
   geoL.setAttribute("position", atrPos);
   geoL.setIndex(indices);
   geoL.boundingSphere = geo.boundingSphere;
-  const matL = new THREE.LineBasicMaterial({ color: 0x8f959e, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending });
+  const matL = new THREE.LineBasicMaterial({ color: 0x8f959e, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false });
   grupo.add(new THREE.LineSegments(geoL, matL));
 
   // destaque: ligações do nó sob o cursor
@@ -268,7 +272,7 @@ export function criarMundo(canvas, q) {
   geoD.setAttribute("position", new THREE.BufferAttribute(posD, 3).setUsage(THREE.DynamicDrawUsage));
   geoD.setDrawRange(0, 0);
   geoD.boundingSphere = geo.boundingSphere;
-  const matD = new THREE.LineBasicMaterial({ color: 0xf3e2c4, transparent: true, opacity: 0.55, depthWrite: false, blending: THREE.AdditiveBlending });
+  const matD = new THREE.LineBasicMaterial({ color: 0xf3e2c4, transparent: true, opacity: 0.55, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false });
   grupo.add(new THREE.LineSegments(geoD, matD));
 
   // pacotes: pontos quentes andando pelas ligações
@@ -489,355 +493,651 @@ export function criarMundo(canvas, q) {
 
   // ------------------------------------------------------------------------
   // Objetos de explicação: uma peça 3D por assunto, grande, no centro da tela.
-  // Cada uma mostra a lógica do que está sendo narrado — não é enfeite.
+  // Cada uma mostra a lógica do que está sendo narrado, não é enfeite.
+  //
+  // Visual de vitrine: luz de estúdio (principal quente, contraluz fria e
+  // reflexos de ambiente gerados uma vez), metal cromado, grafite, ouro e peças
+  // que emitem luz com halo. Tudo sobre um pedestal com aro de luz e sombra
+  // suave. Sem pós-processamento: o brilho vem de sprites aditivos, que custam
+  // quase nada numa máquina fraca.
+  //
   // Ficam presas à câmera, então não dependem do modo do mundo.
   // ------------------------------------------------------------------------
-  const PRATA = 0xc9ccd1, QUENTE = 0xfff3df, ACEITO = 0x9fd6b4, RECUSADO = 0xe0806b;
+  const PRATA = 0xd3d7de, QUENTE = 0xffbf73, OURO = 0xf2b865, FRIO = 0x9cc4ff;
+  const ACEITO = 0x6fe3a5, RECUSADO = 0xff5e4d, APAGADO = 0x3a3d44;
   const OBJETOS = {};
-  let objetoAtual = null;
+  let objetoAtual = null, estudioPronto = false, tempoHud = 0;
+  const leve = q.nivel === "LOW";
+  // Tamanho da vitrine: cabe entre o título (em cima) e a legenda (embaixo).
+  const ESCALA_PALCO = 0.68;
 
-  const basico = (cor, opacidade = 1) =>
-    new THREE.MeshBasicMaterial({ color: cor, transparent: opacidade < 1, opacity: opacidade });
+  const suave = (x) => x * x * (3 - 2 * x);
+  const saltito = (x) => { const c1 = 1.4, c3 = c1 + 1; return 1 + c3 * Math.pow(x - 1, 3) + c1 * Math.pow(x - 1, 2); };
 
-  function arames(geometria, cor, opacidade = 0.85) {
-    return new THREE.LineSegments(
-      new THREE.EdgesGeometry(geometria),
-      new THREE.LineBasicMaterial({ color: cor, transparent: true, opacity: opacidade }),
-    );
+  // ---------- estúdio: ambiente para reflexos e luzes presas à câmera ----------
+  function prepararEstudio() {
+    if (estudioPronto) return;
+    estudioPronto = true;
+    const sala = new THREE.Scene();
+    const cubo = new THREE.BoxGeometry(1, 1, 1);
+    const painel = (cor, forca, p, s) => {
+      const m = new THREE.Mesh(cubo, new THREE.MeshBasicMaterial({ color: new THREE.Color(cor).multiplyScalar(forca) }));
+      m.position.set(...p); m.scale.set(...s); sala.add(m);
+    };
+    painel(0xfff0dc, 5, [0, 7, 1], [9, 0.2, 7]);      // caixa de luz do teto, quente
+    painel(0xd8e6ff, 2.4, [-8, 1.5, 3], [0.2, 6, 7]); // rebatedor frio à esquerda
+    painel(0xffd29a, 3.2, [8, 0, -3], [0.2, 5, 5]);   // recorte quente à direita
+    painel(0x1a1b1f, 1, [0, -6, 0], [30, 0.2, 30]);   // chão escuro
+    const gerador = new THREE.PMREMGenerator(renderer);
+    cena.environment = gerador.fromScene(sala, 0.04).texture;
+    gerador.dispose();
+
+    hud.add(new THREE.HemisphereLight(0xfff4e6, 0x0a0a0c, 0.55));
+    const principal = new THREE.DirectionalLight(0xffe7c7, 2.4);
+    principal.position.set(2.5, 4, 2);
+    const contraluz = new THREE.DirectionalLight(0xa9c8ff, 1.6);
+    contraluz.position.set(-3, 1.5, -4);
+    hud.add(principal, contraluz);
   }
-  function fio(a, b, cor, opacidade = 0.5) {
-    const g = new THREE.BufferGeometry().setFromPoints([a, b]);
-    return new THREE.Line(g, new THREE.LineBasicMaterial({ color: cor, transparent: true, opacity: opacidade }));
+
+  // ---------- materiais ----------
+  const cromo = (cor = PRATA, aspereza = 0.2) => new THREE.MeshStandardMaterial({ color: cor, metalness: 1, roughness: aspereza });
+  const ouro = () => new THREE.MeshStandardMaterial({ color: OURO, metalness: 1, roughness: 0.18, emissive: 0x3a1f00, emissiveIntensity: 0.6 });
+  const grafite = (cor = 0x2b2d33) => new THREE.MeshStandardMaterial({ color: cor, metalness: 0.55, roughness: 0.38 });
+  const luz = (cor, forca = 2.2) => new THREE.MeshStandardMaterial({ color: 0x050505, emissive: cor, emissiveIntensity: forca, roughness: 0.35 });
+
+  // ---------- geometrias ----------
+  const cacheGeo = new Map();
+  /** Caixa com cantos arredondados (a mesma medida final de uma BoxGeometry). */
+  function caixa(w, h, d, raio = 0.03) {
+    const chave = `${w}|${h}|${d}|${raio}`;
+    if (cacheGeo.has(chave)) return cacheGeo.get(chave);
+    const chanfro = Math.min(raio, d / 3, w / 4, h / 4);
+    const iw = w - chanfro * 2, ih = h - chanfro * 2, r = Math.max(0.002, Math.min(raio - chanfro, iw / 2, ih / 2));
+    const x = -iw / 2, y = -ih / 2, s = new THREE.Shape();
+    s.moveTo(x + r, y); s.lineTo(x + iw - r, y); s.quadraticCurveTo(x + iw, y, x + iw, y + r);
+    s.lineTo(x + iw, y + ih - r); s.quadraticCurveTo(x + iw, y + ih, x + iw - r, y + ih);
+    s.lineTo(x + r, y + ih); s.quadraticCurveTo(x, y + ih, x, y + ih - r);
+    s.lineTo(x, y + r); s.quadraticCurveTo(x, y, x + r, y);
+    const geo = new THREE.ExtrudeGeometry(s, {
+      depth: Math.max(0.001, d - chanfro * 2), bevelEnabled: true, bevelThickness: chanfro,
+      bevelSize: chanfro, bevelSegments: leve ? 1 : 3, curveSegments: leve ? 2 : 5,
+    });
+    geo.center();
+    cacheGeo.set(chave, geo);
+    return geo;
   }
+  const esfera = (raio, detalhe = leve ? 12 : 24) => new THREE.SphereGeometry(raio, detalhe, Math.round(detalhe * 0.75));
+
+  /** Tubo reto entre dois pontos: substitui a linha de 1 pixel. */
+  function tubo(a, b, raio, material) {
+    const dir = new THREE.Vector3().subVectors(b, a);
+    const m = new THREE.Mesh(new THREE.CylinderGeometry(raio, raio, dir.length(), 12, 1, true), material);
+    m.position.copy(a).addScaledVector(dir, 0.5);
+    m.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.normalize());
+    return m;
+  }
+
+  // ---------- brilho, sombra e partículas ----------
+  const texturas = {};
+  function textura(tipo) {
+    if (texturas[tipo]) return texturas[tipo];
+    const c = document.createElement("canvas");
+    c.width = c.height = 128;
+    const x = c.getContext("2d");
+    const gr = x.createRadialGradient(64, 64, 0, 64, 64, 64);
+    if (tipo === "halo") {
+      gr.addColorStop(0, "rgba(255,255,255,1)");
+      gr.addColorStop(0.18, "rgba(255,255,255,0.55)");
+      gr.addColorStop(0.5, "rgba(255,255,255,0.12)");
+      gr.addColorStop(1, "rgba(255,255,255,0)");
+    } else {
+      gr.addColorStop(0, "rgba(0,0,0,0.85)");
+      gr.addColorStop(0.6, "rgba(0,0,0,0.35)");
+      gr.addColorStop(1, "rgba(0,0,0,0)");
+    }
+    x.fillStyle = gr;
+    x.fillRect(0, 0, 128, 128);
+    texturas[tipo] = new THREE.CanvasTexture(c);
+    texturas[tipo].colorSpace = THREE.SRGBColorSpace;
+    return texturas[tipo];
+  }
+  function halo(cor, tamanho = 0.4, opacidade = 0.85) {
+    const s = new THREE.Sprite(new THREE.SpriteMaterial({
+      map: textura("halo"), color: cor, transparent: true, opacity: opacidade,
+      blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false,
+    }));
+    s.scale.setScalar(tamanho);
+    return s;
+  }
+  /** Uma esfera que emite luz, com o halo em volta. */
+  function orbe(cor, raio = 0.05, forca = 3, tamanhoHalo = 0.45) {
+    const grupo = new THREE.Group();
+    const corpo = new THREE.Mesh(esfera(raio), luz(cor, forca));
+    const aura = halo(cor, tamanhoHalo);
+    grupo.add(corpo, aura);
+    grupo.userData = { corpo, aura };
+    return grupo;
+  }
+
   function palco() {
+    prepararEstudio();
     const g = new THREE.Group();
-    g.position.set(0, -0.12, -3.6);
-    g.scale.setScalar(0.82);
+    g.position.set(0, -0.13, -3.6);
+    g.rotation.x = 0.2;             // câmera um pouco de cima: dá volume
     g.visible = false;
     hud.add(g);
-    return g;
+
+    // pedestal escuro e acetinado, com aro de luz quente
+    const base = new THREE.Mesh(new THREE.CylinderGeometry(1.28, 1.34, 0.05, leve ? 40 : 80), grafite(0x121316));
+    base.scale.z = 0.5;
+    base.position.y = -0.8;
+    const aro = new THREE.Mesh(new THREE.TorusGeometry(1.31, 0.007, 8, leve ? 60 : 120), luz(QUENTE, 1.8));
+    aro.scale.set(1, 0.5, 1);
+    aro.rotation.x = Math.PI / 2;
+    aro.position.y = -0.774;
+    const sombra = new THREE.Mesh(new THREE.PlaneGeometry(2.4, 1.1), new THREE.MeshBasicMaterial({
+      map: textura("sombra"), transparent: true, depthWrite: false, toneMapped: false,
+    }));
+    sombra.rotation.x = -Math.PI / 2;
+    sombra.position.y = -0.772;
+    // recorte de luz quente atrás, como um spot no fundo do estúdio
+    const fundo = halo(QUENTE, 4.2, 0.1);
+    fundo.position.set(0, 0.25, -1.6);
+    g.add(fundo, base, aro, sombra);
+
+    // partículas discretas no ar
+    let poeira = null;
+    if (!leve && !calmo) {
+      const n = 70, p = new Float32Array(n * 3);
+      for (let i = 0; i < n; i++) p.set([(Math.random() - 0.5) * 2.8, Math.random() * 1.8 - 0.8, (Math.random() - 0.5) * 1.4], i * 3);
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute("position", new THREE.BufferAttribute(p, 3));
+      poeira = new THREE.Points(geo, new THREE.PointsMaterial({
+        map: textura("halo"), color: 0xffe2b8, size: 0.035, transparent: true, opacity: 0.55,
+        blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false,
+      }));
+      g.add(poeira);
+    }
+
+    const peca = new THREE.Group();
+    g.add(peca);
+    return { g, peca, poeira, aro };
   }
 
   function criarObjeto(nome) {
     if (OBJETOS[nome]) return OBJETOS[nome];
-    const g = palco();
+    const { g, peca, poeira, aro } = palco();
     let atualizar = () => {};
 
     // --- três computadores iguais, conversando entre si -------------------
     if (nome === "nos") {
-      const pontos = [new THREE.Vector3(-0.62, -0.3, 0), new THREE.Vector3(0.62, -0.3, 0), new THREE.Vector3(0, 0.5, 0)];
-      pontos.forEach((v) => {
-        const maquina = arames(new THREE.BoxGeometry(0.3, 0.3, 0.3), PRATA, 0.85);
-        maquina.position.copy(v);
-        g.add(maquina);
+      const pontos = [new THREE.Vector3(-0.72, -0.3, 0), new THREE.Vector3(0.72, -0.3, 0), new THREE.Vector3(0, 0.48, 0)];
+      const maquinas = pontos.map((v) => {
+        const m = new THREE.Group();
+        m.add(new THREE.Mesh(caixa(0.36, 0.42, 0.32, 0.06), cromo(0xc8ccd3, 0.24)));
+        const faixas = [];
+        for (let k = 0; k < 3; k++) {
+          const f = new THREE.Mesh(caixa(0.24, 0.028, 0.02, 0.012), luz(QUENTE, 0.9));
+          f.position.set(0, 0.11 - k * 0.075, 0.165);
+          m.add(f);
+          faixas.push(f);
+        }
+        const led = new THREE.Mesh(esfera(0.016), luz(ACEITO, 3));
+        led.position.set(0.12, -0.15, 0.17);
+        m.add(led);
+        m.position.copy(v);
+        peca.add(m);
+        return { m, faixas, acende: 0 };
       });
-      for (let i = 0; i < 3; i++) g.add(fio(pontos[i], pontos[(i + 1) % 3], PRATA, 0.35));
-      const pulso = new THREE.Mesh(new THREE.SphereGeometry(0.055, 10, 10), basico(QUENTE));
-      g.add(pulso);
-      let t = 0;
-      atualizar = (dt) => {
-        t = (t + dt * 0.25) % 3;
-        const i = Math.floor(t), f = t - i;
+      for (let i = 0; i < 3; i++) peca.add(tubo(pontos[i], pontos[(i + 1) % 3], 0.009, luz(QUENTE, 0.55)));
+      const pulso = orbe(QUENTE, 0.045, 4, 0.5);
+      peca.add(pulso);
+      let t = 0, ultimo = 0;
+      atualizar = (dt, tt) => {
+        t = (t + dt * 0.3) % 3;
+        const i = Math.floor(t), f = suave(t - i);
         pulso.position.lerpVectors(pontos[i], pontos[(i + 1) % 3], f);
-        g.rotation.y = Math.sin(t * 0.7) * 0.25;
+        if (i !== ultimo) { maquinas[i].acende = 1; ultimo = i; }
+        maquinas.forEach((mq, k) => {
+          mq.acende = Math.max(0, mq.acende - dt * 1.4);
+          mq.faixas.forEach((fx) => { fx.material.emissiveIntensity = 0.9 + mq.acende * 3; });
+          mq.m.position.y = pontos[k].y + Math.sin(tt * 1.3 + k * 2) * 0.02;
+          mq.m.rotation.y = Math.sin(tt * 0.6 + k) * 0.25;
+        });
+        pulso.userData.aura.scale.setScalar(0.45 + Math.sin(tt * 8) * 0.05);
+        peca.rotation.y = Math.sin(tt * 0.35) * 0.3;
       };
 
     // --- cálculo jogado fora × cálculo aproveitado ------------------------
     } else if (nome === "calculo") {
       const perdidos = [], uteis = [];
       for (let i = 0; i < 7; i++) {
-        const a = arames(new THREE.BoxGeometry(0.14, 0.14, 0.14), PRATA, 0.5);
-        a.position.set(-0.55, 0.7 - i * 0.2, 0);
-        g.add(a); perdidos.push(a);
-        const b = arames(new THREE.BoxGeometry(0.14, 0.14, 0.14), QUENTE, 0.9);
-        b.position.set(0.55, 0.7 - i * 0.2, 0);
-        g.add(b); uteis.push(b);
+        const a = new THREE.Mesh(caixa(0.14, 0.14, 0.14, 0.03), grafite(0x3b3e45));
+        a.material.transparent = true;
+        a.position.set(-0.6, 0, 0);
+        peca.add(a); perdidos.push(a);
+        const b = new THREE.Mesh(caixa(0.14, 0.14, 0.14, 0.03), ouro());
+        b.position.set(0.6, 0, 0);
+        peca.add(b); uteis.push(b);
       }
-      const sumidouro = new THREE.Mesh(new THREE.TorusGeometry(0.28, 0.012, 6, 40), basico(0x4a4d55));
-      sumidouro.position.set(-0.55, -0.72, 0);
-      sumidouro.rotation.x = Math.PI / 2;
-      const colheita = new THREE.Mesh(new THREE.TorusGeometry(0.28, 0.014, 6, 40), basico(ACEITO));
-      colheita.position.set(0.55, -0.72, 0);
+      // à esquerda, um buraco escuro que engole o trabalho
+      const buraco = new THREE.Mesh(new THREE.CircleGeometry(0.3, 48), new THREE.MeshBasicMaterial({ color: 0x000000 }));
+      buraco.rotation.x = -Math.PI / 2;
+      buraco.position.set(-0.6, -0.76, 0);
+      const bordaBuraco = new THREE.Mesh(new THREE.TorusGeometry(0.3, 0.01, 8, 64), grafite(0x55585f));
+      bordaBuraco.rotation.x = Math.PI / 2;
+      bordaBuraco.position.copy(buraco.position);
+      // à direita, um anel verde que colhe o resultado
+      const colheita = new THREE.Mesh(new THREE.TorusGeometry(0.3, 0.018, 12, 64), luz(ACEITO, 2.2));
       colheita.rotation.x = Math.PI / 2;
-      g.add(sumidouro, colheita);
+      colheita.position.set(0.6, -0.74, 0);
+      const auraColheita = halo(ACEITO, 1.0, 0.35);
+      auraColheita.position.set(0.6, -0.68, 0);
+      peca.add(buraco, bordaBuraco, colheita, auraColheita);
       let t = 0;
-      atualizar = (dt) => {
+      atualizar = (dt, tt) => {
         t += dt * 0.5;
         perdidos.forEach((c, i) => {
-          const y = 0.7 - ((t * 0.5 + i * 0.2) % 1.5);
-          c.position.y = y;
-          c.material.opacity = Math.max(0, Math.min(0.5, (y + 0.75) * 1.2));
+          const f = ((t * 0.5 + i * 0.2) % 1.4) / 1.4;
+          c.position.y = 0.72 - f * 1.45;
+          c.material.opacity = Math.max(0, 1 - Math.pow(f, 3));
+          c.scale.setScalar(1 - Math.pow(f, 4) * 0.8);
+          c.rotation.z = f * 0.6;
         });
+        let colheu = 0;
         uteis.forEach((c, i) => {
-          const y = 0.7 - ((t * 0.5 + i * 0.2) % 1.5);
-          c.position.y = y;
-          c.rotation.x += dt; c.rotation.y += dt * 0.8;
+          const f = ((t * 0.5 + i * 0.2) % 1.4) / 1.4;
+          c.position.y = 0.72 - f * 1.45;
+          c.rotation.x += dt * 1.2; c.rotation.y += dt * 0.9;
+          if (f > 0.92) colheu = Math.max(colheu, (f - 0.92) / 0.08);
         });
-        colheita.scale.setScalar(1 + Math.sin(t * 2) * 0.05);
+        colheita.material.emissiveIntensity = 2.2 + colheu * 3;
+        auraColheita.material.opacity = 0.3 + colheu * 0.5;
+        colheita.scale.setScalar(1 + Math.sin(tt * 2) * 0.03 + colheu * 0.06);
+        peca.rotation.y = Math.sin(tt * 0.3) * 0.2;
       };
 
     // --- onde queremos chegar: genética, remédio e IA ----------------------
     } else if (nome === "ciencia") {
-      // hélice
+      // hélice de DNA: dois fios cromados e degraus que brilham
       const helice = new THREE.Group();
-      helice.position.set(-0.75, 0, 0);
-      for (let i = 0; i < 22; i++) {
-        const a = i * 0.55, y = -0.5 + i * 0.05;
-        for (const lado of [1, -1]) {
-          const bola = new THREE.Mesh(new THREE.SphereGeometry(0.028, 8, 8), basico(lado > 0 ? PRATA : QUENTE));
-          bola.position.set(Math.cos(a) * 0.16 * lado, y, Math.sin(a) * 0.16 * lado);
-          helice.add(bola);
-        }
+      helice.position.set(-0.82, 0.02, 0);
+      const bolaPrata = cromo(PRATA, 0.18), bolaOuro = ouro();
+      for (let i = 0; i < 18; i++) {
+        const a = i * 0.6, y = -0.55 + i * 0.066;
+        const p1 = new THREE.Vector3(Math.cos(a) * 0.17, y, Math.sin(a) * 0.17);
+        const p2 = p1.clone().multiplyScalar(-1); p2.y = y;
+        const b1 = new THREE.Mesh(esfera(0.03), bolaPrata); b1.position.copy(p1);
+        const b2 = new THREE.Mesh(esfera(0.03), bolaOuro); b2.position.copy(p2);
+        helice.add(b1, b2, tubo(p1, p2, 0.006, luz(i % 2 ? QUENTE : FRIO, 1.2)));
       }
-      // molécula
+      // molécula candidata a remédio
       const molecula = new THREE.Group();
-      const centro = new THREE.Mesh(new THREE.SphereGeometry(0.08, 12, 12), basico(PRATA));
-      molecula.add(centro);
+      molecula.position.set(0, 0.02, 0);
+      molecula.add(new THREE.Mesh(esfera(0.1), cromo(PRATA, 0.12)));
+      const vidroAtomo = new THREE.MeshStandardMaterial({ color: QUENTE, metalness: 0.2, roughness: 0.12, emissive: 0x552a00, emissiveIntensity: 0.8 });
       for (let i = 0; i < 5; i++) {
         const a = (i / 5) * Math.PI * 2;
-        const v = new THREE.Vector3(Math.cos(a) * 0.3, Math.sin(a) * 0.3, Math.sin(a * 2) * 0.15);
-        const atomo = new THREE.Mesh(new THREE.SphereGeometry(0.045, 10, 10), basico(QUENTE));
+        const v = new THREE.Vector3(Math.cos(a) * 0.32, Math.sin(a) * 0.32, Math.sin(a * 2) * 0.16);
+        const atomo = new THREE.Mesh(esfera(0.055), vidroAtomo);
         atomo.position.copy(v);
-        molecula.add(atomo, fio(new THREE.Vector3(), v, PRATA, 0.5));
+        molecula.add(atomo, tubo(new THREE.Vector3(), v, 0.012, cromo(PRATA, 0.3)));
       }
-      // rede neural
+      // rede neural com sinais correndo entre as camadas
       const rede = new THREE.Group();
-      rede.position.set(0.75, 0, 0);
-      const camadas = [3, 4, 2];
-      const posCamada = [];
+      rede.position.set(0.82, 0.02, 0);
+      const camadas = [3, 4, 2], posCamada = [], sinais = [];
       camadas.forEach((n, c) => {
         const linha = [];
         for (let i = 0; i < n; i++) {
-          const v = new THREE.Vector3(-0.25 + c * 0.25, (i - (n - 1) / 2) * 0.2, 0);
-          const no = new THREE.Mesh(new THREE.SphereGeometry(0.035, 8, 8), basico(PRATA));
+          const v = new THREE.Vector3(-0.26 + c * 0.26, (i - (n - 1) / 2) * 0.21, 0);
+          const no = new THREE.Mesh(esfera(0.04), luz(c === 1 ? QUENTE : FRIO, 1.6));
           no.position.copy(v);
           rede.add(no);
           linha.push(v);
         }
         posCamada.push(linha);
       });
+      const fioRede = luz(PRATA, 0.25);
       for (let c = 0; c < posCamada.length - 1; c++) {
-        posCamada[c].forEach((a) => posCamada[c + 1].forEach((b) => rede.add(fio(a, b, QUENTE, 0.22))));
+        posCamada[c].forEach((a) => posCamada[c + 1].forEach((b) => {
+          rede.add(tubo(a, b, 0.004, fioRede));
+          if (sinais.length < 8 && Math.random() < 0.5) {
+            const s = orbe(QUENTE, 0.016, 4, 0.14);
+            rede.add(s);
+            sinais.push({ s, a, b, f: Math.random() });
+          }
+        }));
       }
-      g.add(helice, molecula, rede);
-      atualizar = (dt) => {
-        helice.rotation.y += dt * 0.8;
+      peca.add(helice, molecula, rede);
+      atualizar = (dt, tt) => {
+        helice.rotation.y += dt * 0.9;
         molecula.rotation.y += dt * 0.5;
-        molecula.rotation.x += dt * 0.25;
-        rede.rotation.y = Math.sin(performance.now() / 2600) * 0.4;
+        molecula.rotation.x = Math.sin(tt * 0.4) * 0.5;
+        rede.rotation.y = Math.sin(tt * 0.45) * 0.45;
+        sinais.forEach((x) => { x.f = (x.f + dt * 0.7) % 1; x.s.position.lerpVectors(x.a, x.b, x.f); });
       };
 
     // --- a cadeia: mexer num bloco quebra todos os seguintes ---------------
     } else if (nome === "cadeia3d") {
-      const blocos = [], hashes = [];
+      const blocos = [];
       for (let i = 0; i < 4; i++) {
-        const b = arames(new THREE.BoxGeometry(0.34, 0.34, 0.34), PRATA, 0.9);
-        b.position.set(-0.72 + i * 0.48, 0, 0);
-        g.add(b); blocos.push(b);
-        // a barrinha do hash, na frente de cada bloco
-        const h = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.035, 0.01), basico(QUENTE, 0.9));
-        h.position.set(-0.72 + i * 0.48, -0.24, 0.18);
-        g.add(h); hashes.push(h);
-        if (i > 0) g.add(fio(new THREE.Vector3(-0.72 + (i - 1) * 0.48 + 0.17, 0, 0),
-                             new THREE.Vector3(-0.72 + i * 0.48 - 0.17, 0, 0), PRATA, 0.55));
+        const x = -0.78 + i * 0.52;
+        const bloco = new THREE.Group();
+        bloco.position.set(x, 0, 0);
+        const corpo = new THREE.Mesh(caixa(0.36, 0.36, 0.36, 0.06), cromo(0xc9cdd4, 0.22));
+        const placa = new THREE.Mesh(caixa(0.24, 0.05, 0.02, 0.02), luz(QUENTE, 2));
+        placa.position.set(0, -0.08, 0.185);
+        const topo = new THREE.Mesh(caixa(0.22, 0.02, 0.02, 0.01), luz(QUENTE, 0.8));
+        topo.position.set(0, 0.07, 0.185);
+        bloco.add(corpo, placa, topo);
+        peca.add(bloco);
+        const elos = [];
+        if (i > 0) {
+          for (let k = 0; k < 2; k++) {
+            const elo = new THREE.Mesh(new THREE.TorusGeometry(0.035, 0.009, 10, 28), cromo(PRATA, 0.15));
+            elo.position.set(x - 0.26 + (k - 0.5) * 0.05, 0, 0);
+            elo.rotation.y = k ? Math.PI / 2 : 0;
+            peca.add(elo);
+            elos.push(elo);
+          }
+        }
+        blocos.push({ bloco, corpo, placa, elos, x });
       }
       let t = 0;
-      atualizar = (dt) => {
-        t = (t + dt * 0.16) % 1;
+      atualizar = (dt, tt) => {
+        t = (t + dt * 0.15) % 1;
         // dois terços do tempo tudo certo; depois o bloco 2 é adulterado e os
         // seguintes ficam vermelhos: é o encadeamento se quebrando.
         const adulterado = t > 0.6;
+        const choque = adulterado ? Math.max(0, 1 - (t - 0.6) / 0.1) : 0;
         blocos.forEach((b, i) => {
           const quebrado = adulterado && i >= 1;
-          b.material.color.setHex(quebrado ? RECUSADO : PRATA);
-          hashes[i].material.color.setHex(quebrado ? RECUSADO : QUENTE);
-          hashes[i].scale.x = quebrado ? 0.6 + Math.random() * 0.4 : 1;
-          b.rotation.y += dt * 0.25;
+          b.placa.material.emissive.setHex(quebrado ? RECUSADO : QUENTE);
+          b.placa.material.emissiveIntensity = quebrado ? 2.6 + Math.sin(tt * 18) * 0.6 : 2;
+          b.corpo.material.color.setHex(quebrado ? 0xd9a29b : 0xc9cdd4);
+          b.bloco.position.x = b.x + (i === 1 ? (Math.random() - 0.5) * 0.03 * choque : 0);
+          b.bloco.position.y = Math.sin(tt * 1.4 + i * 0.8) * 0.025;
+          b.bloco.rotation.y = Math.sin(tt * 0.5 + i) * 0.18;
+          b.elos.forEach((elo, k) => {
+            const abre = quebrado ? Math.min(1, (t - 0.6) / 0.15) : 0;
+            elo.position.y = (k ? 1 : -1) * abre * 0.05;
+            elo.material.color.setHex(quebrado ? RECUSADO : PRATA);
+          });
         });
-        g.rotation.y = Math.sin(t * 6.283) * 0.18;
+        peca.rotation.y = Math.sin(tt * 0.3) * 0.16;
       };
 
     // --- conferência: A × B = C, testada por um vetor ----------------------
     } else if (nome === "freivalds") {
-      const grades = [];
-      const fazerGrade = (x, cor) => {
+      const fazerGrade = (x, material, alturas) => {
         const grade = new THREE.Group();
-        grade.position.set(x, 0, 0);
+        grade.position.set(x, 0.02, 0);
         const celulas = [];
         for (let l = 0; l < 4; l++) {
           for (let c = 0; c < 4; c++) {
-            const cel = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.07, 0.02), basico(cor, 0.85));
-            cel.position.set((c - 1.5) * 0.1, (1.5 - l) * 0.1, 0);
+            const cel = new THREE.Mesh(caixa(0.085, 0.085, 0.05, 0.018), material.clone());
+            const alto = alturas ? 0.6 + ((l * 7 + c * 3) % 5) * 0.25 : 1;
+            cel.scale.z = alto;
+            cel.position.set((c - 1.5) * 0.105, (1.5 - l) * 0.105, 0.025 * alto);
             grade.add(cel);
             celulas.push(cel);
           }
         }
-        g.add(grade);
-        grades.push(celulas);
-        return grade;
+        peca.add(grade);
+        return celulas;
       };
-      fazerGrade(-0.72, PRATA);
-      fazerGrade(-0.12, PRATA);
-      fazerGrade(0.6, QUENTE);
-      // vetor r, a coluna que testa o resultado
+      fazerGrade(-0.8, cromo(PRATA, 0.25), true);
+      fazerGrade(-0.2, cromo(PRATA, 0.25), true);
+      const C = fazerGrade(0.5, ouro(), true);
+      // sinais × e =
+      const barra = (x, y, rot) => {
+        const m = new THREE.Mesh(caixa(0.09, 0.016, 0.016, 0.008), luz(PRATA, 0.9));
+        m.position.set(x, y, 0.02); m.rotation.z = rot; peca.add(m);
+      };
+      barra(-0.5, 0.02, Math.PI / 4); barra(-0.5, 0.02, -Math.PI / 4);
+      barra(0.15, 0.045, 0); barra(0.15, -0.005, 0);
+      // o vetor r, que testa o resultado
       const vetor = [];
       for (let i = 0; i < 4; i++) {
-        const cel = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.07, 0.02), basico(ACEITO, 0.9));
-        cel.position.set(1.02, (1.5 - i) * 0.1, 0);
-        g.add(cel);
+        const cel = new THREE.Mesh(caixa(0.085, 0.085, 0.05, 0.018), luz(ACEITO, 1.2));
+        cel.position.set(0.95, (1.5 - i) * 0.105 + 0.02, 0.03);
+        peca.add(cel);
         vetor.push(cel);
       }
-      const anel = new THREE.Mesh(new THREE.TorusGeometry(0.2, 0.012, 6, 40), basico(ACEITO, 0));
-      anel.position.set(0.6, -0.42, 0);
-      g.add(anel);
+      // um feixe de luz varre o resultado
+      const feixe = new THREE.Mesh(new THREE.PlaneGeometry(0.5, 0.02), new THREE.MeshBasicMaterial({
+        color: ACEITO, transparent: true, opacity: 0.6, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false,
+      }));
+      feixe.position.set(0.5, 0, 0.1);
+      const anel = new THREE.Mesh(new THREE.TorusGeometry(0.2, 0.014, 12, 64), luz(ACEITO, 2.4));
+      anel.rotation.x = Math.PI / 2;
+      anel.position.set(0.5, -0.72, 0);
+      const auraAnel = halo(ACEITO, 0.8, 0);
+      auraAnel.position.set(0.5, -0.66, 0);
+      peca.add(feixe, anel, auraAnel);
       let t = 0;
-      atualizar = (dt) => {
+      atualizar = (dt, tt) => {
         t = (t + dt * 0.14) % 1;
         const errado = t > 0.55;
-        grades[2].forEach((cel, i) => {
+        const cor = errado ? RECUSADO : ACEITO;
+        C.forEach((cel, i) => {
           const ruim = errado && i === 6;
-          cel.material.color.setHex(ruim ? RECUSADO : QUENTE);
-          cel.scale.setScalar(ruim ? 1.25 : 1);
+          cel.material.emissive.setHex(ruim ? RECUSADO : 0x3a1f00);
+          cel.material.emissiveIntensity = ruim ? 2.5 : 0.6;
+          cel.scale.x = cel.scale.y = ruim ? 1.2 + Math.sin(tt * 12) * 0.06 : 1;
         });
-        vetor.forEach((cel, i) => {
-          cel.material.opacity = 0.35 + 0.65 * Math.max(0, Math.sin(t * 12 - i * 0.6));
-        });
-        anel.material.color.setHex(errado ? RECUSADO : ACEITO);
-        anel.material.opacity = t > 0.32 ? 0.9 : 0;
+        vetor.forEach((cel, i) => { cel.material.emissiveIntensity = 0.6 + 2 * Math.max(0, Math.sin(t * 14 - i * 0.7)); });
+        const varre = (t % 0.25) / 0.25;
+        feixe.position.y = 0.2 - varre * 0.36;
+        feixe.material.color.setHex(cor);
+        feixe.material.opacity = t > 0.08 ? 0.55 * Math.sin(varre * Math.PI) : 0;
+        const aparece = Math.min(1, Math.max(0, (t - 0.3) / 0.08));
+        anel.material.emissive.setHex(cor);
+        anel.scale.setScalar(0.6 + 0.4 * saltito(aparece));
+        anel.visible = aparece > 0;
+        auraAnel.material.color.setHex(cor);
+        auraAnel.material.opacity = aparece * 0.45;
         anel.rotation.z += dt * 0.8;
+        peca.rotation.y = Math.sin(tt * 0.3) * 0.2;
       };
 
     // --- o pacote achando caminho, mesmo com um aparelho fora --------------
     } else if (nome === "pacote") {
-      const lugares = [new THREE.Vector3(-0.8, -0.25, 0), new THREE.Vector3(-0.25, 0.35, 0),
-                       new THREE.Vector3(0.3, -0.3, 0), new THREE.Vector3(0.85, 0.25, 0)];
+      const lugares = [new THREE.Vector3(-0.85, -0.28, 0), new THREE.Vector3(-0.28, 0.38, 0),
+                       new THREE.Vector3(0.3, -0.32, 0), new THREE.Vector3(0.88, 0.26, 0)];
       const aparelhos = lugares.map((v) => {
-        const a = arames(new THREE.BoxGeometry(0.2, 0.3, 0.03), PRATA, 0.8);
+        const a = new THREE.Group();
+        a.add(new THREE.Mesh(caixa(0.2, 0.36, 0.03, 0.035), grafite(0x24262b)));
+        const tela = new THREE.Mesh(caixa(0.17, 0.31, 0.006, 0.025), luz(FRIO, 1.1));
+        tela.position.z = 0.017;
+        a.add(tela);
         a.position.copy(v);
-        g.add(a);
-        return a;
+        peca.add(a);
+        return { a, tela };
       });
-      const ligacoes = [fio(lugares[0], lugares[1], PRATA, 0.4), fio(lugares[1], lugares[3], PRATA, 0.4),
-                        fio(lugares[0], lugares[2], PRATA, 0.4), fio(lugares[2], lugares[3], PRATA, 0.4)];
-      ligacoes.forEach((l) => g.add(l));
-      const pacote = new THREE.Mesh(new THREE.SphereGeometry(0.06, 10, 10), basico(QUENTE));
-      g.add(pacote);
+      const fioCima = luz(QUENTE, 1.4), fioBaixo = luz(QUENTE, 0.3);
+      peca.add(tubo(lugares[0], lugares[1], 0.008, fioCima), tubo(lugares[1], lugares[3], 0.008, fioCima),
+               tubo(lugares[0], lugares[2], 0.008, fioBaixo), tubo(lugares[2], lugares[3], 0.008, fioBaixo));
+      const pacote = orbe(QUENTE, 0.045, 4, 0.5);
+      const rastro = [halo(QUENTE, 0.3, 0.45), halo(QUENTE, 0.22, 0.28), halo(QUENTE, 0.15, 0.15)];
+      peca.add(pacote, ...rastro);
+      const antigas = [new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3()];
       let t = 0;
-      atualizar = (dt) => {
+      atualizar = (dt, tt) => {
         t = (t + dt * 0.13) % 2;
-        // na segunda volta, o caminho de cima cai e o pacote desce pelo outro
+        // na segunda volta, o aparelho de cima cai e o pacote desce pelo outro caminho
         const caiu = t > 1;
-        aparelhos[1].material.opacity = caiu ? 0.15 : 0.8;
-        ligacoes[0].material.opacity = caiu ? 0.08 : 0.4;
-        ligacoes[1].material.opacity = caiu ? 0.08 : 0.4;
-        ligacoes[2].material.opacity = caiu ? 0.55 : 0.15;
-        ligacoes[3].material.opacity = caiu ? 0.55 : 0.15;
+        aparelhos[1].tela.material.emissive.setHex(caiu ? RECUSADO : FRIO);
+        aparelhos[1].tela.material.emissiveIntensity = caiu ? 0.25 + (Math.sin(tt * 10) > 0 ? 0.3 : 0) : 1.1;
+        fioCima.emissiveIntensity = caiu ? 0.08 : 1.4;
+        fioBaixo.emissiveIntensity = caiu ? 1.4 : 0.3;
         const meio = caiu ? lugares[2] : lugares[1];
-        const f = (t % 1) * 2;
-        if (f < 1) pacote.position.lerpVectors(lugares[0], meio, f);
-        else pacote.position.lerpVectors(meio, lugares[3], f - 1);
+        const f = suave((t % 1) * 2 > 1 ? (t % 1) * 2 - 1 : (t % 1) * 2);
+        if ((t % 1) * 2 < 1) pacote.position.lerpVectors(lugares[0], meio, f);
+        else pacote.position.lerpVectors(meio, lugares[3], f);
+        antigas[2].lerp(antigas[1], 0.35); antigas[1].lerp(antigas[0], 0.35); antigas[0].lerp(pacote.position, 0.35);
+        rastro.forEach((r, i) => r.position.copy(antigas[i]));
+        aparelhos.forEach((ap, i) => { ap.a.rotation.y = Math.sin(tt * 0.7 + i) * 0.3; ap.a.position.y = lugares[i].y + Math.sin(tt * 1.2 + i) * 0.02; });
+        peca.rotation.y = Math.sin(tt * 0.3) * 0.15;
       };
 
     // --- fragmentação: um arquivo vira 256 pedaços num tabuleiro 16×16 -----
     } else if (nome === "fragmentos") {
       const total = 256;
-      const malha = new THREE.InstancedMesh(new THREE.BoxGeometry(0.05, 0.05, 0.05), basico(QUENTE, 0.95), total);
-      const destino = [], origem = [], m = new THREE.Matrix4();
+      const material = new THREE.MeshStandardMaterial({ metalness: 0.85, roughness: 0.22 });
+      const malha = new THREE.InstancedMesh(caixa(0.058, 0.058, 0.058, 0.012), material, total);
+      const destino = [], origem = [], giro = [], cor = new THREE.Color();
       for (let i = 0; i < total; i++) {
         const c = i % 16, l = Math.floor(i / 16);
-        destino.push(new THREE.Vector3((c - 7.5) * 0.075, (7.5 - l) * 0.075, 0));
-        origem.push(new THREE.Vector3((Math.random() - 0.5) * 0.24, (Math.random() - 0.5) * 0.24, (Math.random() - 0.5) * 0.24));
+        destino.push(new THREE.Vector3((c - 7.5) * 0.078, (7.5 - l) * 0.078 + 0.05, 0));
+        const dir = new THREE.Vector3(Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5).normalize();
+        origem.push(dir.multiplyScalar(0.5 + Math.random() * 0.6).add(new THREE.Vector3(0, 0.05, 0)));
+        giro.push(new THREE.Vector3(Math.random() * 6, Math.random() * 6, Math.random() * 6));
+        cor.setHex(OURO).lerp(new THREE.Color(PRATA), (c + l) / 30);
+        malha.setColorAt(i, cor);
       }
-      g.add(malha);
+      const nucleo = halo(QUENTE, 1.6, 0);
+      nucleo.position.set(0, 0.05, -0.05);
+      peca.add(nucleo, malha);
+      const m = new THREE.Matrix4(), qt = new THREE.Quaternion(), e = new THREE.Euler(), v = new THREE.Vector3(), um = new THREE.Vector3(1, 1, 1);
       let t = 0;
-      atualizar = (dt) => {
-        t = (t + dt * 0.13) % 1;
-        // 0 a 0,45: espalha. 0,55 a 1: junta de volta.
-        const f = t < 0.45 ? t / 0.45 : t > 0.55 ? 1 - (t - 0.55) / 0.45 : 1;
-        const suave = f * f * (3 - 2 * f);
+      atualizar = (dt, tt) => {
+        t = (t + dt * 0.12) % 1;
+        // 0 a 0,45: espalha. 0,55 a 1: junta de volta no tabuleiro.
+        const f = t < 0.45 ? 1 - t / 0.45 : t > 0.55 ? (t - 0.55) / 0.45 : 0;
+        const junta = suave(f);
         for (let i = 0; i < total; i++) {
-          const v = origem[i].clone().lerp(destino[i], suave);
-          m.makeTranslation(v.x, v.y, v.z);
+          v.copy(origem[i]).lerp(destino[i], junta);
+          const solto = 1 - junta;
+          e.set(giro[i].x * solto + tt * solto, giro[i].y * solto, giro[i].z * solto);
+          qt.setFromEuler(e);
+          m.compose(v, qt, um);
           malha.setMatrixAt(i, m);
         }
         malha.instanceMatrix.needsUpdate = true;
-        g.rotation.y = Math.sin(t * 6.283) * 0.3;
+        nucleo.material.opacity = junta * 0.35;
+        peca.rotation.y = Math.sin(tt * 0.35) * 0.35;
       };
 
     // --- duas implementações que precisam concordar, byte a byte -----------
     } else if (nome === "dois") {
-      const torres = [[-0.45, PRATA], [0.45, PRATA]].map(([x, cor]) => {
-        const torre = new THREE.Group();
-        torre.position.set(x, 0, 0);
-        const camadasT = [];
+      const torres = [-0.48, 0.48].map((x) => {
+        const camadas = [];
         for (let i = 0; i < 5; i++) {
-          const c = arames(new THREE.BoxGeometry(0.42, 0.13, 0.24), cor, 0.85);
-          c.position.y = 0.45 - i * 0.2;
-          torre.add(c);
-          camadasT.push(c);
+          const camada = new THREE.Mesh(caixa(0.44, 0.13, 0.26, 0.035), cromo(PRATA, 0.22));
+          camada.position.set(x, 0.46 - i * 0.2, 0);
+          const friso = new THREE.Mesh(caixa(0.3, 0.018, 0.01, 0.008), luz(PRATA, 0.5));
+          friso.position.set(x, 0.46 - i * 0.2, 0.136);
+          peca.add(camada, friso);
+          camadas.push({ camada, friso });
         }
-        g.add(torre);
-        return camadasT;
+        return camadas;
       });
-      const iguais = [];
+      const pontes = [];
       for (let i = 0; i < 5; i++) {
-        const sinal = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.02, 0.02), basico(ACEITO, 0));
-        sinal.position.set(0, 0.45 - i * 0.2, 0);
-        g.add(sinal);
-        iguais.push(sinal);
+        const y = 0.46 - i * 0.2;
+        const ponte = tubo(new THREE.Vector3(-0.26, y, 0), new THREE.Vector3(0.26, y, 0), 0.012, luz(ACEITO, 2.2));
+        const aura = halo(ACEITO, 0.35, 0);
+        aura.position.set(0, y, 0);
+        peca.add(ponte, aura);
+        pontes.push({ ponte, aura });
       }
       let t = 0;
-      atualizar = (dt) => {
+      atualizar = (dt, tt) => {
         t = (t + dt * 0.2) % 1;
-        const ate = Math.floor(t * 6);
+        const ate = t * 6;
         for (let i = 0; i < 5; i++) {
-          const conferido = i < ate;
-          iguais[i].material.opacity = conferido ? 0.95 : 0;
-          torres[0][i].material.color.setHex(conferido ? ACEITO : PRATA);
-          torres[1][i].material.color.setHex(conferido ? ACEITO : PRATA);
+          const f = Math.min(1, Math.max(0, ate - i));
+          const conferido = f > 0;
+          pontes[i].ponte.scale.set(1, suave(f), 1);
+          pontes[i].ponte.visible = conferido;
+          pontes[i].aura.material.opacity = conferido ? 0.4 * (1 - Math.abs(f - 0.5)) + 0.15 : 0;
+          torres.forEach((torre) => {
+            torre[i].friso.material.emissive.setHex(conferido ? ACEITO : PRATA);
+            torre[i].friso.material.emissiveIntensity = conferido ? 2.2 : 0.5;
+          });
         }
+        peca.rotation.y = Math.sin(tt * 0.35) * 0.35;
       };
 
     // --- por que precisamos de gente: cada pessoa que confere acende -------
     } else if (nome === "gente") {
       const quantos = 28, pessoas = [];
+      const geoPessoa = new THREE.CapsuleGeometry(0.028, 0.05, 4, leve ? 8 : 14);
       for (let i = 0; i < quantos; i++) {
         const a = (i / quantos) * Math.PI * 2;
-        const pessoa = new THREE.Mesh(new THREE.SphereGeometry(0.05, 10, 10), basico(0x40434a));
-        pessoa.position.set(Math.cos(a) * 0.85, Math.sin(a) * 0.6, Math.sin(a * 3) * 0.1);
-        g.add(pessoa);
-        pessoas.push(pessoa);
+        const corpo = new THREE.Mesh(geoPessoa, new THREE.MeshStandardMaterial({ color: APAGADO, metalness: 0.3, roughness: 0.5, emissive: QUENTE, emissiveIntensity: 0 }));
+        corpo.position.set(Math.cos(a) * 0.9, Math.sin(a) * 0.55 + 0.02, Math.sin(a * 3) * 0.1);
+        const aura = halo(QUENTE, 0.22, 0);
+        aura.position.copy(corpo.position);
+        peca.add(corpo, aura);
+        pessoas.push({ corpo, aura });
       }
-      const nucleoG = arames(new THREE.IcosahedronGeometry(0.3, 1), PRATA, 0.25);
-      g.add(nucleoG);
+      const nucleo = new THREE.Group();
+      nucleo.position.y = 0.02;
+      const casca = new THREE.Mesh(new THREE.IcosahedronGeometry(0.3, 1), new THREE.MeshStandardMaterial({ color: PRATA, metalness: 1, roughness: 0.25, wireframe: true }));
+      const miolo = new THREE.Mesh(esfera(0.17), luz(QUENTE, 0.4));
+      const auraNucleo = halo(QUENTE, 1.2, 0.1);
+      nucleo.add(miolo, casca, auraNucleo);
+      peca.add(nucleo);
       let t = 0;
-      atualizar = (dt) => {
-        t = (t + dt * 0.12) % 1;
-        const acesos = Math.floor(t * quantos);
-        pessoas.forEach((pessoa, i) => {
-          const aceso = i <= acesos;
-          pessoa.material.color.setHex(aceso ? QUENTE : 0x40434a);
-          pessoa.scale.setScalar(aceso ? 1.15 : 0.9);
+      atualizar = (dt, tt) => {
+        t = (t + dt * 0.11) % 1;
+        const acesos = t * quantos;
+        pessoas.forEach((p, i) => {
+          const f = Math.min(1, Math.max(0, acesos - i));
+          p.corpo.material.emissiveIntensity = f * 2.2;
+          p.corpo.scale.setScalar(0.9 + saltito(f) * 0.25);
+          p.aura.material.opacity = f * 0.6;
         });
-        nucleoG.material.opacity = 0.2 + (acesos / quantos) * 0.7;
-        nucleoG.rotation.y += dt * 0.3;
-        nucleoG.rotation.x += dt * 0.12;
-        g.rotation.y = Math.sin(t * 6.283) * 0.12;
+        const parte = acesos / quantos;
+        miolo.material.emissiveIntensity = 0.4 + parte * 3.2;
+        auraNucleo.material.opacity = 0.1 + parte * 0.5;
+        auraNucleo.scale.setScalar(1.0 + parte * 0.8);
+        casca.rotation.y += dt * 0.35;
+        casca.rotation.x += dt * 0.15;
+        peca.rotation.y = Math.sin(tt * 0.3) * 0.12;
       };
     }
 
-    OBJETOS[nome] = { grupo: g, atualizar };
-    return OBJETOS[nome];
+    // peças que ficam pequenas no pedestal ganham um pouco de tamanho
+    peca.scale.setScalar({ cadeia3d: 1.35, freivalds: 1.3, dois: 1.15 }[nome] || 1);
+
+    const objeto = {
+      grupo: g, entrada: 0,
+      atualizar(dt, tt) {
+        // entrada: um pequeno salto elástico; depois, uma flutuação leve
+        this.entrada = Math.min(1, this.entrada + dt / 0.9);
+        g.scale.setScalar(ESCALA_PALCO * (0.62 + 0.38 * saltito(this.entrada)));
+        peca.position.y = Math.sin(tt * 1.1) * 0.018;
+        aro.material.emissiveIntensity = 1.6 + Math.sin(tt * 1.6) * 0.35;
+        if (poeira) {
+          const p = poeira.geometry.attributes.position;
+          for (let i = 0; i < p.count; i++) {
+            let y = p.getY(i) + dt * 0.04;
+            if (y > 1.0) y = -0.8;
+            p.setY(i, y);
+          }
+          p.needsUpdate = true;
+        }
+        atualizar(dt, tt);
+      },
+    };
+    OBJETOS[nome] = objeto;
+    return objeto;
   }
 
   function objeto(nome) {
     if (objetoAtual) objetoAtual.grupo.visible = false;
     objetoAtual = nome ? criarObjeto(nome) : null;
-    if (objetoAtual) objetoAtual.grupo.visible = true;
+    if (objetoAtual) { objetoAtual.entrada = 0; objetoAtual.grupo.visible = true; }
   }
 
-  function animarHud(dt, t) {
-    if (objetoAtual) objetoAtual.atualizar(dt, t);
+  function animarHud(dt) {
+    tempoHud += dt;
+    if (objetoAtual) objetoAtual.atualizar(dt, tempoHud);
   }
 
   tamanho();

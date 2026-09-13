@@ -599,6 +599,7 @@ export function iniciar({ t, audio, mundo, idioma, movel, aoMudarIdioma, restaur
   // Estado do vídeo para depuração, só com ?debug=1 na URL.
   try {
     if (new URLSearchParams(location.search).get("debug")) {
+      globalThis.__cena = (i) => { if (rodando) entrarNaCena(Math.max(0, Math.min(CENAS.length - 1, i))); };
       globalThis.__video = () => ({ cenaAtual, rodando, narrouAcabou, cortePedido, gravando, comVoz, quadros, naCena: (performance.now() - inicioCena) / 1000, minimo: CENAS[Math.max(0, cenaAtual)].compassos * compasso });
     }
   } catch { /* sem URL utilizável */ }
