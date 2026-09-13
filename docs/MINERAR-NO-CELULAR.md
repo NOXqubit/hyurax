@@ -13,12 +13,13 @@ nada além do próprio Rust.
 | Achar o nonce de um cabeçalho montado pelo nó (`cabecalho`) | pronto; acha o mesmo nonce que o Python |
 | Várias linhas de execução, pausa contra aquecimento | pronto |
 | Prova de trabalho útil (seção 9A) em Rust | pronto (`crates/auron-usefulpow`), igual ao gabarito; o `medir` mostra quanto custa no aparelho |
-| Montar o cabeçalho com a prova útil | **ainda não**; depende do bloco e da cadeia em Rust |
-| Receber blocos da rede e minerar sozinho | **ainda não**; depende do nó e da rede P2P |
+| Minerar blocos inteiros numa cadeia local gravada no disco (`auron-no`) | pronto; cada bloco passa pela validação completa |
+| Carteira de teste e saldo | pronto (`auron-no carteira`, `auron-no estado`) |
+| Conversar com outros nós (rede P2P) | **ainda não**; é a próxima fase |
 
-Ou seja: o celular já faz a parte pesada do Argon2id e já dá para medir quanto
-ele aguenta. Minerar "de verdade", ligado numa rede, vem quando o nó em Rust
-existir.
+Ou seja: o celular já minera blocos de verdade, com as duas provas (trabalho
+útil e Argon2id), numa cadeia que fica salva no aparelho. O que ainda falta é
+essa cadeia conversar com a de outras pessoas.
 
 ## Por que o celular aguenta
 
@@ -37,9 +38,10 @@ Referência medida num PC com Atom (processador fraco, de 2012):
 | Argon2id, mainnet | 5,7 a 6 tentativas por segundo por linha |
 | Trabalho útil 256 × 256, fazer | 0,08 s |
 | Trabalho útil 256 × 256, conferir | 0,04 s |
- Celulares recentes costumam ser mais rápidos
-por núcleo, mas isso é estimativa: o número que vale é o do `medir` no seu
-aparelho.
+| Bloco inteiro na testnet local, 2 linhas | de 8 a 37 s (é sorteio: a média fica perto de 20 s) |
+
+Celulares recentes costumam ser mais rápidos por núcleo, mas isso é
+estimativa: o número que vale é o do `medir` no seu aparelho.
 
 ## Passo a passo no Termux
 
@@ -70,6 +72,47 @@ cargo build --release -p auron-pow
 
 O Rust precisa ser 1.98 ou mais novo (`rustc --version`). Se o Termux tiver um
 mais antigo, rode `pkg upgrade`.
+
+## Minerar blocos de verdade (cadeia local)
+
+1. Compile o nó:
+
+```bash
+cargo build --release -p auron-no
+```
+
+2. Crie uma carteira de teste. Ela mostra o seu endereço:
+
+```bash
+./target/release/auron-no carteira nova --arquivo carteira.txt
+```
+
+3. Minere, trocando `SEU_ENDERECO` pelo endereço do passo anterior. `--blocos 0`
+   minera sem parar; `Ctrl+C` interrompe, e o que já foi minerado fica salvo:
+
+```bash
+./target/release/auron-no minerar --rede testnet --pasta dados --endereco SEU_ENDERECO --blocos 10
+```
+
+4. Veja a cadeia e o saldo:
+
+```bash
+./target/release/auron-no estado --rede testnet --pasta dados --endereco SEU_ENDERECO
+```
+
+A recompensa de cada bloco fica "esperando liberar" por 20 blocos na testnet
+(100 na mainnet), igual à regra do consenso.
+
+| Rede | Trabalho por bloco | Para quê |
+|---|---|---|
+| `regtest` | quase nenhum | testar o programa |
+| `testnet` | cerca de 256 tentativas | minerar de verdade no celular |
+| `mainnet` | cerca de 65 mil tentativas | parâmetros reais; horas por bloco num aparelho |
+
+**Sobre o arquivo da carteira:** ele guarda a chave secreta em texto. Quem
+copiar o arquivo gasta o saldo. Como o AUR de teste não vale nada, isso é
+aceitável agora; antes de qualquer rede com valor, a carteira precisa de senha
+e cifragem.
 
 ## Opções
 

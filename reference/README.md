@@ -13,7 +13,7 @@ o numpy. Desde o consenso híbrido (`usefulpow.py`) ela também roda na
 validação de bloco, mas só como calculadora de multiplicação **inteira** exata
 (`int64`, sem ponto flutuante, com faixa conferida antes para não estourar): a
 geração das matrizes e o desafio são SHA-512, e o resultado é travado por
-`vectors/usefulpow.json`. No Rust (ainda não migrado) a mesma conta será laço simples.
+`vectors/usefulpow.json`. No Rust (`crates/auron-usefulpow`) a mesma conta é laço simples, sem biblioteca.
 
 ## Rodar
 

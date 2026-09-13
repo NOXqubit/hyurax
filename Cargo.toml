@@ -11,6 +11,8 @@ members = [
     "crates/auron-consensus",
     "crates/auron-state",
     "crates/auron-chain",
+    "crates/auron-store",
+    "crates/auron-no",
 ]
 
 [workspace.package]
@@ -53,6 +55,7 @@ auron-pow = { path = "crates/auron-pow" }
 auron-consensus = { path = "crates/auron-consensus" }
 auron-state = { path = "crates/auron-state" }
 auron-chain = { path = "crates/auron-chain" }
+auron-store = { path = "crates/auron-store" }
 
 # Vetores de teste. Rust puro.
 serde = { version = "1", features = ["derive"] }
@@ -83,6 +86,10 @@ ed25519-dalek = { version = "=3.0.0", default-features = false, features = ["zer
 # Sem `default-features`: dispensa `getrandom` e `password-hash`, que um
 # minerador não usa, e a memória de 32 MiB é alocada por nós, uma vez só.
 argon2 = { version = "=0.6.0", default-features = false }
+
+# Sem crate de aleatoriedade: o `getrandom` 0.4 no Windows (alvo GNU) exige a
+# ferramenta `dlltool`, que não existe nesta máquina. O auron-no lê a entropia
+# do próprio sistema (ver `entropia_do_sistema` em crates/auron-no).
 
 [profile.dev]
 debug = 0

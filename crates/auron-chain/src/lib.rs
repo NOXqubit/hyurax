@@ -276,15 +276,36 @@ impl Chain {
 
     /// Valida um bloco inteiro, do mais barato para o mais caro.
     pub fn validate_block(&self, block: &Block, now: Option<u64>) -> Result<(), ChainError> {
+        self.validar(block, now, true)
+    }
+
+    fn validar(&self, block: &Block, now: Option<u64>, com_argon2: bool) -> Result<(), ChainError> {
         self.check_header_cheap(&block.header, now.unwrap_or_else(agora))?;
         self.validate_transactions(block)?;
         self.check_useful_work(block)?;
-        self.check_header_pow(&block.header)
+        if com_argon2 {
+            self.check_header_pow(&block.header)?;
+        }
+        Ok(())
     }
 
     /// Único caminho para um bloco entrar na cadeia.
     pub fn accept_block(&mut self, block: Block, now: Option<u64>) -> Result<(), ChainError> {
-        self.validate_block(&block, now)?;
+        self.aceitar(block, now, true)
+    }
+
+    /// Recarga do próprio disco: pula **só** o Argon2id, que já foi conferido
+    /// quando o bloco entrou pela primeira vez. Cabeçalho, transações,
+    /// assinaturas, trabalho útil e estado continuam sendo conferidos.
+    ///
+    /// Confiar no próprio disco é decisão de quem chama, nunca o padrão: bloco
+    /// vindo da rede passa por [`Chain::accept_block`].
+    pub fn accept_block_do_proprio_disco(&mut self, block: Block, now: Option<u64>) -> Result<(), ChainError> {
+        self.aceitar(block, now, false)
+    }
+
+    fn aceitar(&mut self, block: Block, now: Option<u64>, com_argon2: bool) -> Result<(), ChainError> {
+        self.validar(&block, now, com_argon2)?;
         let undo = self
             .state
             .apply_block(block.header.height, &block.transactions, &self.params.magic)

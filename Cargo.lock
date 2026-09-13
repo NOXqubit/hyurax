@@ -72,6 +72,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "auron-no"
+version = "0.1.0"
+dependencies = [
+ "auron-chain",
+ "auron-consensus",
+ "auron-crypto",
+ "auron-store",
+ "auron-tx",
+]
+
+[[package]]
 name = "auron-pow"
 version = "0.1.0"
 dependencies = [
@@ -89,6 +100,19 @@ dependencies = [
  "auron-crypto",
  "auron-tx",
  "auron-types",
+ "hex",
+ "serde_json",
+]
+
+[[package]]
+name = "auron-store"
+version = "0.1.0"
+dependencies = [
+ "auron-block",
+ "auron-chain",
+ "auron-codec",
+ "auron-consensus",
+ "auron-crypto",
  "hex",
  "serde_json",
 ]

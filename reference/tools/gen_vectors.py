@@ -662,8 +662,48 @@ def vec_chain() -> dict:
             "total_work_after": str(chain.total_work),
         })
 
+    # O arquivo de persistência dessa mesma cadeia, e versões adulteradas com a
+    # mensagem de recusa do gabarito ao recarregar.
+    import tempfile
+    from auron.store import StoreError, load_chain, save_chain
+
+    with tempfile.TemporaryDirectory() as pasta:
+        arquivo = Path(pasta) / "cadeia.bin"
+        save_chain(chain, arquivo)
+        gravado = arquivo.read_bytes()
+
+        def recusa(dados: bytes) -> str:
+            arquivo.write_bytes(dados)
+            try:
+                load_chain(arquivo)
+            except StoreError as exc:
+                return str(exc)
+            return "ok"
+
+        ultimo_bloco = len(gravado) - 1
+        # onde começa o cabeçalho do último bloco no arquivo
+        inicio = len(gravado) - len(chain.entries[-1].block.encode())
+        merkle = inicio + 2 + 8 + 64
+        store_edge = [
+            {"label": label, "file": h(dados), "error": recusa(dados)}
+            for label, dados in (
+                ("magic_errado", b"AURONDB2" + gravado[8:]),
+                ("rede_desconhecida", gravado[:12] + b"auron-xxxxxxx" + gravado[25:]),
+                ("truncado", gravado[:-1]),
+                ("sobra_no_fim", gravado + b"\x00"),
+                ("ultimo_byte_trocado_quebra_a_leitura",
+                 gravado[:ultimo_bloco] + bytes([gravado[ultimo_bloco] ^ 1])),
+                ("prev_hash_trocado", gravado[:inicio + 20]
+                 + bytes([gravado[inicio + 20] ^ 1]) + gravado[inicio + 21:]),
+                ("merkle_trocado", gravado[:merkle]
+                 + bytes([gravado[merkle] ^ 1]) + gravado[merkle + 1:]),
+            )
+        ]
+
     return {
         "network": p.name,
+        "store_file": h(gravado),
+        "store_edge": store_edge,
         "blocks": blocks,
         "final_state": {
             "height": chain.height,

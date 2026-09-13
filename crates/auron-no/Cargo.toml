@@ -1,0 +1,28 @@
+[package]
+name = "auron-no"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+description = "Auron — nó local: carteira, mineração numa cadeia gravada no disco e consulta de saldo"
+
+[[bin]]
+name = "auron-no"
+path = "src/main.rs"
+
+[dependencies]
+auron-crypto.workspace = true
+auron-tx.workspace = true
+auron-consensus.workspace = true
+auron-chain.workspace = true
+auron-store.workspace = true
+
+[lints.rust]
+unsafe_code = "forbid"
+
+[lints.clippy]
+unwrap_used = "deny"
+expect_used = "deny"
+panic = "deny"
+indexing_slicing = "deny"

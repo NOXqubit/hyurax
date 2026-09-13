@@ -12,8 +12,8 @@ Qualquer pessoa que disser o contrário está mentindo.
 | Especificação `AURON-SPEC-01` | escrita, congelável quando a tokenomics fechar |
 | Implementação de referência (Python) | completa, 121 testes |
 | Vetores de validação cruzada | 17 arquivos |
-| Nó de produção (Rust) | núcleo migrado e igual ao gabarito: `auron-types`, `auron-crypto`, `auron-codec`, `auron-pow`, `auron-usefulpow`, `auron-tx`, `auron-block`, `auron-consensus`, `auron-state`, `auron-chain` (70 testes). Falta: persistência, rede P2P, mempool |
-| Minerador Argon2id no celular | `auron-minerar`, roda no Termux; ver [`docs/MINERAR-NO-CELULAR.md`](docs/MINERAR-NO-CELULAR.md) |
+| Nó de produção (Rust) | núcleo migrado e igual ao gabarito: `auron-types`, `auron-crypto`, `auron-codec`, `auron-pow`, `auron-usefulpow`, `auron-tx`, `auron-block`, `auron-consensus`, `auron-state`, `auron-chain`, `auron-store` (73 testes). Falta: rede P2P e mempool |
+| Nó local e minerador no celular | `auron-no` (carteira de teste, mineração de blocos inteiros numa cadeia gravada no disco, saldo) e `auron-minerar` (medição); rodam no Termux. Ver [`docs/MINERAR-NO-CELULAR.md`](docs/MINERAR-NO-CELULAR.md) |
 | Rede P2P | não começada |
 | Testnet pública | não começada |
 | Mainnet | não existe |
