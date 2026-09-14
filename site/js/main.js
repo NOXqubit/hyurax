@@ -138,7 +138,7 @@ async function iniciar() {
   // Atalho de depuração, só com ?debug=1 na URL: permite inspecionar o mundo e
   // o áudio pelo console sem mexer no código.
   try {
-    if (new URLSearchParams(location.search).get("debug")) globalThis.__auron = { mundo, q };
+    if (new URLSearchParams(location.search).get("debug")) { globalThis.__auron = { mundo, q }; document.body.classList.add("depurar"); }
   } catch { /* sem URL utilizável */ }
   menuIdiomas();
   revelar();

@@ -732,3 +732,69 @@ html[lang="ja"] .zoom-contagem { font-variation-settings: "wdth" 100; }
   html { scroll-behavior: auto; }
   *, *::before, *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; }
 }
+
+
+/* =====================================================================
+   Etapa 5 da direção de arte: atos, acabamento global e capítulos novos.
+   ===================================================================== */
+
+/* painéis: ficha técnica sobre o preto, sem vidro e sem cantos de app */
+.painel { background: var(--grafite); border: 1px solid var(--fio); border-radius: 3px; backdrop-filter: none; -webkit-backdrop-filter: none; clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 0 100%); }
+.gaveta { backdrop-filter: none; -webkit-backdrop-filter: none; background: rgba(4, 4, 5, 0.985); }
+
+/* títulos: a ênfase vem do contraste de largura e peso, não de cor */
+.cabeca h2 { font-weight: 260; font-variation-settings: "wdth" 70; color: var(--prata); font-size: clamp(2.2rem, 5.2vw, 5rem); line-height: 0.96; letter-spacing: -0.025em; }
+.cabeca h2 em { color: var(--texto); font-weight: 780; font-variation-settings: "wdth" 125; }
+html[lang="ja"] .cabeca h2 { font-weight: 400; font-size: clamp(1.8rem, 3.8vw, 3.4rem); }
+.olho { font-size: var(--t-rotulo); letter-spacing: 0.3em; }
+.olho::before { background: var(--luz); opacity: 1; width: 2.4rem; }
+
+/* "simulação" sem pulso de ao-vivo: um rótulo fixo de dados de exemplo */
+.selo-sim { color: var(--chumbo); border-color: var(--aco-2); }
+.selo-sim::before { animation: none; background: var(--chumbo); }
+
+/* separador de ato: silêncio, com a claquete no centro */
+.ato { position: relative; min-height: 62svh; display: grid; place-content: center; justify-items: center; gap: 1rem; padding: 4rem var(--lado); text-align: center; }
+.ato-num { font-family: var(--marca); font-size: clamp(0.8rem, 1.2vw, 1rem); letter-spacing: 0.4em; color: var(--luz); margin-right: -0.4em; }
+.ato-nome { margin: 0; font-size: clamp(2.4rem, 7vw, 7.5rem); line-height: 0.92; letter-spacing: -0.03em; font-weight: 780; font-variation-settings: "wdth" 125; text-wrap: balance; }
+html[lang="ja"] .ato-nome { font-size: clamp(1.9rem, 5vw, 4.6rem); letter-spacing: 0; }
+.ato-fio { width: 1px; height: 4.5rem; background: linear-gradient(var(--luz), transparent); }
+.ato-construcao .ato-num { color: var(--prata); }
+.ato-construcao .ato-nome { font-weight: 520; font-variation-settings: "wdth" 100; color: var(--prata); }
+.ato-construcao .ato-fio { background: linear-gradient(var(--prata), transparent); }
+.ato-ideia .ato-num { color: var(--chumbo); }
+.ato-ideia .ato-nome { font-weight: 260; font-variation-settings: "wdth" 62; color: transparent; -webkit-text-stroke: 1px var(--prata); }
+.ato-ideia .ato-fio { background: repeating-linear-gradient(var(--chumbo) 0 6px, transparent 6px 12px); }
+
+/* ato IV: a luz esfria. Tudo que é só ideia perde o dourado e vira prata. */
+.ideia { --luz: #c4c7cc; --luz-forte: #e3e4e7; --brilho: rgba(196, 199, 204, 0.28); --st-desenvolvimento: #9a9da4; }
+.ideia .cabeca h2 em { font-weight: 520; font-variation-settings: "wdth" 100; color: var(--prata); }
+.ideia .painel { background: transparent; border-style: dashed; border-color: var(--aco-2); }
+
+/* 08 · rode um nó */
+.rodar { padding: clamp(5rem, 12vh, 9rem) var(--lado); max-width: 100rem; margin: 0 auto; }
+.rodar-cabeca { max-width: 60rem; margin-bottom: clamp(2.2rem, 5vh, 3.6rem); }
+.rodar-grade { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 0.75fr); gap: clamp(2rem, 5vw, 5rem); align-items: start; border-top: 1px solid var(--fio); padding-top: 2rem; }
+.rodar-passos { list-style: none; margin: 0; padding: 0; display: grid; gap: 1.4rem; }
+.rodar-passos li { display: grid; grid-template-columns: 2.6rem 1fr; gap: 1rem; align-items: start; }
+.rodar-passos .n { font-family: var(--mono); font-size: 0.9rem; color: var(--luz); border: 1px solid rgba(242, 217, 168, 0.4); border-radius: 50%; width: 2.2rem; height: 2.2rem; display: grid; place-items: center; }
+.rodar-passos b { display: block; font-weight: 600; margin-bottom: 0.45rem; }
+.rodar-passos code, .link-mono { display: block; font-family: var(--mono); font-size: var(--t-dado); color: var(--texto); background: var(--grafite); border-left: 2px solid var(--luz); padding: 0.6rem 0.8rem; overflow-x: auto; white-space: nowrap; text-decoration: none; }
+.link-mono { color: var(--luz-forte); }
+.rodar-sistemas { display: grid; gap: 1.1rem; justify-items: start; }
+.rodar-sistemas ul { list-style: none; margin: 0; padding: 0; width: 100%; border-top: 1px solid var(--fio); }
+.rodar-sistemas li { display: flex; justify-content: space-between; gap: 1rem; padding: 0.7rem 0; border-bottom: 1px solid var(--fio); }
+.rodar-sistemas li span { font-family: var(--mono); font-size: var(--t-rotulo); color: var(--chumbo); }
+@media (max-width: 52rem) { .rodar-grade { grid-template-columns: 1fr; } }
+
+/* final */
+.final .a-final { width: clamp(4rem, 9vw, 7rem); height: auto; margin-bottom: 1rem; }
+.fim-frase { text-align: center; }
+.final .sub { max-width: 34rem; text-align: center; color: var(--texto-2); font-size: var(--t-sub); margin: 0; }
+.final .acoes { display: flex; gap: 0.7rem; flex-wrap: wrap; justify-content: center; }
+.final.visto .fim-frase .linha > span, .final .fim-frase .linha > span { display: inline-block; }
+
+/* depuração do 3D só com ?debug=1 */
+.qualidade { display: none; }
+body.depurar .qualidade { display: inline; }
+@media (max-width: 40rem) { .ato { min-height: 48svh; } .ato-ideia .ato-nome { font-size: 3rem; -webkit-text-stroke-width: 1.2px; } }

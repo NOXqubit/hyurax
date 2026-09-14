@@ -72,12 +72,12 @@
       <svg class="palavra" viewBox="0 0 560 100" aria-hidden="true"><use href="#palavra"/></svg>
     </a>
     <nav class="menu" data-i18n-attr="aria-label:nav.rotulo">
-      <a href="#nucleo" data-i18n="nav.tecnologia"></a>
-      <a href="#resonance" data-i18n="nav.rede"></a>
-      <a href="#aur">AUR</a>
-      <a href="#fragmentacao" data-i18n="nav.pesquisa"></a>
-      <a href="#caminho" data-i18n="nav.roadmap"></a>
-      <a href="#aberto" data-i18n="nav.docs"></a>
+      <a href="#visao" data-i18n="nav.problema">O problema</a>
+      <a href="#utrax" data-i18n="nav.funciona">O que funciona</a>
+      <a href="#rodar" data-i18n="nav.rodar">Rodar um nó</a>
+      <a href="#direct" data-i18n="nav.ideias">Ideias</a>
+      <a href="#onde" data-i18n="nav.onde">Onde estamos</a>
+      <a href="#aberto" data-i18n="nav.codigo">Código</a>
     </nav>
     <div class="lado-direito">
       <div class="idiomas" id="idiomas">
@@ -87,7 +87,7 @@
       <button class="som" type="button" id="som" aria-pressed="false" data-i18n-attr="aria-label:ui.musica;title:ui.musica">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9.5h3.5L12 5.5v13L7.5 14.5H4z" fill="currentColor"/><path class="onda" d="M15.5 9.2a4 4 0 0 1 0 5.6M18 6.8a7.5 7.5 0 0 1 0 10.4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path class="corte" d="M15.5 9.5l5 5m0-5l-5 5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
       </button>
-      <a class="botao botao-claro botao-pequeno explorar" href="#visao" data-i18n="nav.explorar"></a>
+      <a class="botao botao-claro botao-pequeno explorar" href="#rodar" data-i18n="nav.rodar">Rodar um nó</a>
       <button class="abre-menu" type="button" id="abre-menu" aria-expanded="false" data-i18n-attr="aria-label:nav.abrir"><i></i><i></i><i></i></button>
     </div>
   </div>
@@ -95,14 +95,13 @@
 
 <nav class="gaveta" id="gaveta" hidden data-i18n-attr="aria-label:nav.rotulo">
   <button class="botao botao-linha botao-pequeno fecha" type="button" id="fecha-menu" data-i18n="nav.fechar"></button>
-  <a href="#visao" data-i18n="nav.explorar"></a>
-  <a href="#nucleo" data-i18n="nav.tecnologia"></a>
-  <a href="#resonance" data-i18n="nav.rede"></a>
-  <a href="#aur">AUR</a>
-  <a href="#fragmentacao" data-i18n="nav.pesquisa"></a>
-  <a href="#caminho" data-i18n="nav.roadmap"></a>
-  <a href="#aberto" data-i18n="nav.docs"></a>
-</nav>
+      <a href="#visao" data-i18n="nav.problema">O problema</a>
+      <a href="#utrax" data-i18n="nav.funciona">O que funciona</a>
+      <a href="#rodar" data-i18n="nav.rodar">Rodar um nó</a>
+      <a href="#direct" data-i18n="nav.ideias">Ideias</a>
+      <a href="#onde" data-i18n="nav.onde">Onde estamos</a>
+      <a href="#aberto" data-i18n="nav.codigo">Código</a>
+    </nav>
 
 <div class="pagina">
 
@@ -201,102 +200,11 @@
   </div>
 </section>
 
-<!-- ================= 04 · MEXA NUM BLOCO ANTIGO =================
-     Cabeçalhos de 222 bytes e SHA-512 de verdade (js/sections/cadeia.js). -->
-<section class="cadeia4" id="cadeia" data-mundo="cadeia" aria-labelledby="t-cadeia">
-  <div class="cabeca4">
-    <p class="claquete"><span>04</span><span data-i18n="cadeia4.claquete">Cadeia</span></p>
-    <h2 class="titulo4" id="t-cadeia"><span data-i18n="cadeia4.t1">Mexa num</span> <b data-i18n="cadeia4.t2">bloco antigo.</b></h2>
-    <p class="lead4" data-i18n="cadeia4.lead">Cada bloco guarda o hash do anterior. Mude um bit de uma transação antiga e o hash dela muda; o bloco seguinte deixa de apontar para ele, e tudo dali para frente perde a validade.</p>
-  </div>
-
-  <div class="trilho4" id="cadeia-trilho" aria-live="polite"></div>
-
-  <div class="painel4">
-    <div class="regua-cab">
-      <p class="rotulo-real"><span class="ponto" aria-hidden="true"></span><span data-i18n="cadeia4.regua">Cabeçalho v2 · 222 bytes · cada faixa no tamanho real</span></p>
-      <p class="status4" id="cadeia-status" role="status"></p>
-    </div>
-    <div class="regua" id="cadeia-regua"></div>
-    <p class="leitura4" id="cadeia-leitura"></p>
-    <div class="acoes4">
-      <button class="botao botao-claro botao-pequeno" type="button" id="cadeia-novo" data-i18n="cadeia4.novo">Minerar bloco novo</button>
-      <button class="botao botao-linha botao-pequeno" type="button" id="cadeia-restaurar" data-i18n="cadeia4.restaurar" hidden>Desfazer a adulteração</button>
-      <span class="nota4" data-i18n="cadeia4.nota">Hashes e raízes de Merkle reais · transações e prova de trabalho de exemplo</span>
-    </div>
-  </div>
-</section>
-
-<!-- ================= NÓS ================= -->
-<section class="capitulo" id="nos" data-mundo="rede" aria-labelledby="t-nos">
-  <div class="cabeca">
-    <p class="olho">NODES</p>
-    <h2 id="t-nos" data-i18n-html="nos.titulo"></h2>
-    <p data-i18n="nos.intro"></p>
-    <div class="selos"><span class="selo-sim">SIMULATION</span><span class="selo" data-estado="planejado"><i></i><span data-i18n="estado.planejado"></span></span></div>
-  </div>
-  <div class="grade-demo">
-    <div class="tela revela" id="nos-tela">
-      <canvas id="nos-canvas" data-i18n-attr="aria-label:nos.canvas" role="img"></canvas>
-      <div class="rodape-tela"><span data-i18n="nos.dica"></span><span id="nos-contagem"></span></div>
-    </div>
-    <div class="painel ficha-no revela" aria-live="polite">
-      <div class="painel-cabeca"><h3>NODE</h3><span class="selo-sim">SIMULATION</span></div>
-      <div class="painel-corpo" id="no-detalhe"></div>
-    </div>
-  </div>
-</section>
-
-<!-- ================= 16×16 ================= -->
-<section class="capitulo" id="fragmentacao" data-mundo="grade" aria-labelledby="t-frag">
-  <div class="cabeca">
-    <p class="olho">AURON DISTRIBUTED FRAGMENTATION MODEL</p>
-    <h2 id="t-frag" data-i18n-html="frag.titulo"></h2>
-    <p data-i18n="frag.intro"></p>
-    <div class="selos"><span class="selo-sim">SIMULATION</span><span class="selo" data-estado="pesquisa"><i></i><span data-i18n="estado.pesquisa"></span></span></div>
-  </div>
-  <div class="painel revela">
-    <div class="painel-cabeca">
-      <ol class="etapas" id="frag-etapas"><li><span>DATA</span></li><li><span>ENCRYPTION</span></li><li><span>FRAGMENTATION</span></li><li><span>16×16</span></li><li><span>DISTRIBUTION</span></li></ol>
-    </div>
-    <div class="painel-corpo frag">
-      <div>
-        <form class="entrada" id="frag-form">
-          <label class="so-leitor" for="frag-texto" data-i18n="frag.rotulo"></label>
-          <input id="frag-texto" maxlength="120" value="DATA" autocomplete="off" spellcheck="false">
-          <button class="botao botao-claro botao-pequeno" type="submit" data-i18n="frag.fragmentar"></button>
-        </form>
-        <div class="tabuleiro-caixa"><div class="tabuleiro" id="tabuleiro" role="grid" aria-label="16×16"></div></div>
-        <div class="controles" style="margin-top:1rem">
-          <button class="botao botao-linha botao-pequeno" type="button" id="frag-reconstruir" disabled data-i18n="frag.reconstruir"></button>
-          <button class="botao botao-linha botao-pequeno" type="button" id="frag-corromper" disabled data-i18n="frag.corromper"></button>
-        </div>
-        <p class="saida" id="frag-saida" role="status"></p>
-      </div>
-      <div>
-        <div class="painel" style="background:rgba(8,8,9,.6)">
-          <div class="painel-cabeca"><h3>FRAGMENT</h3></div>
-          <div class="painel-corpo" id="frag-detalhe" aria-live="polite"><p class="texto-2" data-i18n="frag.escolha"></p></div>
-        </div>
-        <p class="nota" style="margin-top:1rem" data-i18n-html="frag.nota"></p>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- ================= RÁDIO ================= -->
-<section class="capitulo" id="radio" data-mundo="malha" aria-labelledby="t-radio">
-  <div class="grade-2" style="align-items:center">
-    <div class="cabeca" style="margin:0">
-      <p class="olho">RADIO RESEARCH</p>
-      <h2 id="t-radio" data-i18n-html="radio.titulo"></h2>
-      <p data-i18n="radio.intro"></p>
-      <p class="nota" lang="en">Experimental research into distributed data transport and wireless resource utilization.</p>
-      <div class="selos"><span class="selo" data-estado="pesquisa"><i></i><span data-i18n="estado.pesquisa"></span></span><span class="selo-sim conceito" data-i18n="ui.conceitual"></span></div>
-    </div>
-    <div class="tela alta revela"><canvas id="radio-canvas" role="img" data-i18n-attr="aria-label:radio.canvas"></canvas><div class="rodape-tela"><span id="radio-estado"></span><span>RESEARCH</span></div></div>
-  </div>
-</section>
+<div class="ato" role="presentation">
+  <span class="ato-num">II</span>
+  <p class="ato-nome" data-i18n="atos.ii">O que já funciona</p>
+  <span class="ato-fio" aria-hidden="true"></span>
+</div>
 
 <!-- ================= 03 · PEGUE A MENTIRA =================
      Freivalds de verdade no navegador (js/sections/mentira.js). -->
@@ -343,6 +251,73 @@
         <div class="linhas" id="comparacao"></div>
       </div>
       <p class="rotulo-real"><span class="ponto" aria-hidden="true"></span><span data-i18n="mentira.real">Conta real · Freivalds no seu aparelho · matrizes de exemplo</span></p>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 04 · MEXA NUM BLOCO ANTIGO =================
+     Cabeçalhos de 222 bytes e SHA-512 de verdade (js/sections/cadeia.js). -->
+<section class="cadeia4" id="cadeia" data-mundo="cadeia" aria-labelledby="t-cadeia">
+  <div class="cabeca4">
+    <p class="claquete"><span>04</span><span data-i18n="cadeia4.claquete">Cadeia</span></p>
+    <h2 class="titulo4" id="t-cadeia"><span data-i18n="cadeia4.t1">Mexa num</span> <b data-i18n="cadeia4.t2">bloco antigo.</b></h2>
+    <p class="lead4" data-i18n="cadeia4.lead">Cada bloco guarda o hash do anterior. Mude um bit de uma transação antiga e o hash dela muda; o bloco seguinte deixa de apontar para ele, e tudo dali para frente perde a validade.</p>
+  </div>
+
+  <div class="trilho4" id="cadeia-trilho" aria-live="polite"></div>
+
+  <div class="painel4">
+    <div class="regua-cab">
+      <p class="rotulo-real"><span class="ponto" aria-hidden="true"></span><span data-i18n="cadeia4.regua">Cabeçalho v2 · 222 bytes · cada faixa no tamanho real</span></p>
+      <p class="status4" id="cadeia-status" role="status"></p>
+    </div>
+    <div class="regua" id="cadeia-regua"></div>
+    <p class="leitura4" id="cadeia-leitura"></p>
+    <div class="acoes4">
+      <button class="botao botao-claro botao-pequeno" type="button" id="cadeia-novo" data-i18n="cadeia4.novo">Minerar bloco novo</button>
+      <button class="botao botao-linha botao-pequeno" type="button" id="cadeia-restaurar" data-i18n="cadeia4.restaurar" hidden>Desfazer a adulteração</button>
+      <span class="nota4" data-i18n="cadeia4.nota">Hashes e raízes de Merkle reais · transações e prova de trabalho de exemplo</span>
+    </div>
+  </div>
+</section>
+
+<!-- ================= NÓS ================= -->
+<section class="capitulo" id="nos" data-mundo="rede" aria-labelledby="t-nos">
+  <div class="cabeca">
+    <p class="olho">NODES</p>
+    <h2 id="t-nos" data-i18n-html="nos.titulo"></h2>
+    <p data-i18n="nos.intro"></p>
+    <div class="selos"><span class="selo-sim">SIMULATION</span><span class="selo" data-estado="planejado"><i></i><span data-i18n="estado.planejado"></span></span></div>
+  </div>
+  <div class="grade-demo">
+    <div class="tela revela" id="nos-tela">
+      <canvas id="nos-canvas" data-i18n-attr="aria-label:nos.canvas" role="img"></canvas>
+      <div class="rodape-tela"><span data-i18n="nos.dica"></span><span id="nos-contagem"></span></div>
+    </div>
+    <div class="painel ficha-no revela" aria-live="polite">
+      <div class="painel-cabeca"><h3>NODE</h3><span class="selo-sim">SIMULATION</span></div>
+      <div class="painel-corpo" id="no-detalhe"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= SEGURANÇA ================= -->
+<section class="capitulo largo" id="seguranca" data-mundo="rede" aria-labelledby="t-seg">
+  <div class="cabeca">
+    <p class="olho">SECURITY</p>
+    <h2 id="t-seg" data-i18n-html="seg.titulo"></h2>
+    <p data-i18n="seg.intro"></p>
+  </div>
+  <div class="mecanismos revela" id="mecanismos"></div>
+  <div class="grade-demo" style="margin-top:2.4rem">
+    <div class="tela revela">
+      <canvas id="sybil-canvas" role="img" data-i18n-attr="aria-label:seg.canvas"></canvas>
+      <div class="canto"><button class="botao botao-linha botao-pequeno" type="button" id="sybil-atacar" data-i18n="seg.atacar"></button></div>
+      <div class="rodape-tela"><div class="estados-sybil" id="sybil-estados"><span data-e="normal">NORMAL</span><span data-e="suspeito">SUSPICIOUS</span><span data-e="quarentena">QUARANTINE</span><span data-e="revalidacao">REVALIDATION</span></div></div>
+    </div>
+    <div class="painel revela">
+      <div class="painel-cabeca"><h3>ANTI-SYBIL</h3><span class="selo-sim">SIMULATION</span></div>
+      <div class="painel-corpo"><p class="texto-2" id="sybil-explica" aria-live="polite"></p><p class="nota" data-i18n="seg.sybil-nota"></p><span class="selo" data-estado="planejado"><i></i><span data-i18n="estado.planejado"></span></span></div>
     </div>
   </div>
 </section>
@@ -405,6 +380,49 @@
   </div>
   <p class="nota" data-i18n="aur.nota-grafico"></p>
 </section>
+
+<div class="ato ato-construcao" role="presentation">
+  <span class="ato-num">III</span>
+  <p class="ato-nome" data-i18n="atos.iii">Em construção</p>
+  <span class="ato-fio" aria-hidden="true"></span>
+</div>
+
+<!-- ================= 08 · RODE UM NÓ HOJE =================
+     Programas reais, publicados no GitHub para 4 sistemas. -->
+<section class="rodar" id="rodar" data-mundo="rede" aria-labelledby="t-rodar">
+  <div class="rodar-cabeca">
+    <p class="claquete"><span>08</span><span data-i18n="rodar.claquete">Rode um nó</span></p>
+    <h2 class="titulo4" id="t-rodar"><span data-i18n="rodar.t1">Não confie em nós.</span> <b data-i18n="rodar.t2">Rode um nó.</b></h2>
+    <p class="lead4" data-i18n="rodar.lead">O programa é código aberto e já existe para quatro sistemas. Ele guarda a cadeia, confere cada bloco sozinho, conversa com outros nós por conexão cifrada e guarda a carteira cifrada com a sua senha.</p>
+  </div>
+  <div class="rodar-grade">
+    <ol class="rodar-passos">
+      <li><span class="n">1</span><div><b data-i18n="rodar.p1">Baixe e confira a soma SHA-256</b><a class="link-mono" href="https://github.com/NOXqubit/auron/releases" target="_blank" rel="noopener">github.com/NOXqubit/auron/releases</a></div></li>
+      <li><span class="n">2</span><div><b data-i18n="rodar.p2">Crie a carteira com senha</b><code>auron-no carteira nova --arquivo carteira.txt</code></div></li>
+      <li><span class="n">3</span><div><b data-i18n="rodar.p3">Coloque o nó no ar</b><code>auron-no no --rede testnet --pasta dados --porta 8790</code></div></li>
+      <li><span class="n">4</span><div><b data-i18n="rodar.p4">Minere na rede de teste</b><code>auron-no minerar --rede testnet --endereco SEU_ENDERECO --blocos 0</code></div></li>
+    </ol>
+    <div class="rodar-sistemas">
+      <p class="rotulo-real"><span class="ponto" aria-hidden="true"></span><span data-i18n="rodar.release">Versão de teste publicada · v0.1.0-teste.2</span></p>
+      <ul>
+        <li><b>Windows</b><span>x86_64 · .zip</span></li>
+        <li><b>Linux</b><span>x86_64 · .tar.gz</span></li>
+        <li><b data-i18n="rodar.celular">Celular (Termux)</b><span>ARM64 · .tar.gz</span></li>
+        <li><b>macOS</b><span>Apple Silicon · .tar.gz</span></li>
+      </ul>
+      <p class="nota4" data-i18n="rodar.nota">Rede de teste: o AUR não tem valor. Nós semente públicos ainda não estão no ar; teste entre dois aparelhos seus.</p>
+      <a class="botao botao-claro" href="https://github.com/NOXqubit/auron/blob/main/docs/RODAR-UM-NO.md" target="_blank" rel="noopener" data-i18n="rodar.guia">Guia de 5 minutos</a>
+    </div>
+  </div>
+</section>
+
+<div class="ato ato-ideia" role="presentation">
+  <span class="ato-num">IV</span>
+  <p class="ato-nome" data-i18n="atos.iv">Ainda é ideia</p>
+  <span class="ato-fio" aria-hidden="true"></span>
+</div>
+
+<div class="ideia">
 
 <!-- ================= DIRECT ================= -->
 <section class="capitulo" id="direct" data-mundo="malha" aria-labelledby="t-direct">
@@ -485,23 +503,53 @@
   </div>
 </section>
 
-<!-- ================= SEGURANÇA ================= -->
-<section class="capitulo largo" id="seguranca" data-mundo="rede" aria-labelledby="t-seg">
-  <div class="cabeca">
-    <p class="olho">SECURITY</p>
-    <h2 id="t-seg" data-i18n-html="seg.titulo"></h2>
-    <p data-i18n="seg.intro"></p>
-  </div>
-  <div class="mecanismos revela" id="mecanismos"></div>
-  <div class="grade-demo" style="margin-top:2.4rem">
-    <div class="tela revela">
-      <canvas id="sybil-canvas" role="img" data-i18n-attr="aria-label:seg.canvas"></canvas>
-      <div class="canto"><button class="botao botao-linha botao-pequeno" type="button" id="sybil-atacar" data-i18n="seg.atacar"></button></div>
-      <div class="rodape-tela"><div class="estados-sybil" id="sybil-estados"><span data-e="normal">NORMAL</span><span data-e="suspeito">SUSPICIOUS</span><span data-e="quarentena">QUARANTINE</span><span data-e="revalidacao">REVALIDATION</span></div></div>
+<!-- ================= RÁDIO ================= -->
+<section class="capitulo" id="radio" data-mundo="malha" aria-labelledby="t-radio">
+  <div class="grade-2" style="align-items:center">
+    <div class="cabeca" style="margin:0">
+      <p class="olho">RADIO RESEARCH</p>
+      <h2 id="t-radio" data-i18n-html="radio.titulo"></h2>
+      <p data-i18n="radio.intro"></p>
+      <p class="nota" lang="en">Experimental research into distributed data transport and wireless resource utilization.</p>
+      <div class="selos"><span class="selo" data-estado="pesquisa"><i></i><span data-i18n="estado.pesquisa"></span></span><span class="selo-sim conceito" data-i18n="ui.conceitual"></span></div>
     </div>
-    <div class="painel revela">
-      <div class="painel-cabeca"><h3>ANTI-SYBIL</h3><span class="selo-sim">SIMULATION</span></div>
-      <div class="painel-corpo"><p class="texto-2" id="sybil-explica" aria-live="polite"></p><p class="nota" data-i18n="seg.sybil-nota"></p><span class="selo" data-estado="planejado"><i></i><span data-i18n="estado.planejado"></span></span></div>
+    <div class="tela alta revela"><canvas id="radio-canvas" role="img" data-i18n-attr="aria-label:radio.canvas"></canvas><div class="rodape-tela"><span id="radio-estado"></span><span>RESEARCH</span></div></div>
+  </div>
+</section>
+
+<!-- ================= 16×16 ================= -->
+<section class="capitulo" id="fragmentacao" data-mundo="grade" aria-labelledby="t-frag">
+  <div class="cabeca">
+    <p class="olho">AURON DISTRIBUTED FRAGMENTATION MODEL</p>
+    <h2 id="t-frag" data-i18n-html="frag.titulo"></h2>
+    <p data-i18n="frag.intro"></p>
+    <div class="selos"><span class="selo-sim">SIMULATION</span><span class="selo" data-estado="pesquisa"><i></i><span data-i18n="estado.pesquisa"></span></span></div>
+  </div>
+  <div class="painel revela">
+    <div class="painel-cabeca">
+      <ol class="etapas" id="frag-etapas"><li><span>DATA</span></li><li><span>ENCRYPTION</span></li><li><span>FRAGMENTATION</span></li><li><span>16×16</span></li><li><span>DISTRIBUTION</span></li></ol>
+    </div>
+    <div class="painel-corpo frag">
+      <div>
+        <form class="entrada" id="frag-form">
+          <label class="so-leitor" for="frag-texto" data-i18n="frag.rotulo"></label>
+          <input id="frag-texto" maxlength="120" value="DATA" autocomplete="off" spellcheck="false">
+          <button class="botao botao-claro botao-pequeno" type="submit" data-i18n="frag.fragmentar"></button>
+        </form>
+        <div class="tabuleiro-caixa"><div class="tabuleiro" id="tabuleiro" role="grid" aria-label="16×16"></div></div>
+        <div class="controles" style="margin-top:1rem">
+          <button class="botao botao-linha botao-pequeno" type="button" id="frag-reconstruir" disabled data-i18n="frag.reconstruir"></button>
+          <button class="botao botao-linha botao-pequeno" type="button" id="frag-corromper" disabled data-i18n="frag.corromper"></button>
+        </div>
+        <p class="saida" id="frag-saida" role="status"></p>
+      </div>
+      <div>
+        <div class="painel" style="background:rgba(8,8,9,.6)">
+          <div class="painel-cabeca"><h3>FRAGMENT</h3></div>
+          <div class="painel-corpo" id="frag-detalhe" aria-live="polite"><p class="texto-2" data-i18n="frag.escolha"></p></div>
+        </div>
+        <p class="nota" style="margin-top:1rem" data-i18n-html="frag.nota"></p>
+      </div>
     </div>
   </div>
 </section>
@@ -542,6 +590,14 @@
     </div>
   </div>
 </section>
+
+</div>
+
+<div class="ato" role="presentation">
+  <span class="ato-num">·</span>
+  <p class="ato-nome" data-i18n="atos.epilogo">Epílogo</p>
+  <span class="ato-fio" aria-hidden="true"></span>
+</div>
 
 <!-- ================= ESCALA ================= -->
 <section class="zoom" id="escala" data-mundo="global" aria-labelledby="t-escala">
@@ -626,10 +682,10 @@
 <!-- ================= FINAL ================= -->
 <section class="final" id="fim" data-mundo="logo" aria-labelledby="t-fim">
   <div class="miolo">
-    <h2 id="t-fim" class="so-leitor">Auron</h2>
-    <svg class="palavra" viewBox="0 0 560 100" aria-hidden="true"><use href="#palavra"/></svg>
-    <p class="lema">BUILD THE INFRASTRUCTURE.</p>
-    <p class="quatro">Value. Compute. Communication. Intelligence.</p>
+    <svg class="a-final" viewBox="0 0 100 100" aria-hidden="true"><use href="#simbolo-a"/></svg>
+    <h2 id="t-fim" class="monumento fim-frase"><span class="linha"><span data-i18n="fim.l1">Não confie.</span></span><span class="linha forte"><span data-i18n="fim.l2">Confira.</span></span></h2>
+    <p class="sub" data-i18n="fim.sub">Todo número desta página que diz “conta real” foi calculado no seu aparelho. O resto está marcado como exemplo.</p>
+    <div class="acoes"><a class="botao botao-claro" href="#rodar" data-i18n="fim.rodar">Rodar um nó</a><a class="botao botao-linha" href="https://github.com/NOXqubit/auron" target="_blank" rel="noopener" data-i18n="fim.codigo">Ler o código</a></div>
   </div>
 </section>
 

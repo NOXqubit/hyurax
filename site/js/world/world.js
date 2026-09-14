@@ -505,8 +505,10 @@ export function criarMundo(canvas, q) {
   //
   // Ficam presas à câmera, então não dependem do modo do mundo.
   // ------------------------------------------------------------------------
-  const PRATA = 0xd3d7de, QUENTE = 0xffbf73, OURO = 0xf2b865, FRIO = 0x9cc4ff;
-  const ACEITO = 0x6fe3a5, RECUSADO = 0xff5e4d, APAGADO = 0x3a3d44;
+  // Paleta da direção de arte: sem vermelho, sem verde, sem azul. Luz = conferido.
+  const PRATA = 0xd3d7de, QUENTE = 0xffcf8f, OURO = 0xf2d9a8, FRIO = 0xc4c7cc;
+  // aceito acende em luz; recusado apaga (grafite) em vez de ficar vermelho
+  const ACEITO = 0xf2d9a8, RECUSADO = 0x4a4d54, APAGADO = 0x3a3d44;
   const OBJETOS = {};
   let objetoAtual = null, estudioPronto = false, tempoHud = 0;
   const leve = q.nivel === "LOW";
