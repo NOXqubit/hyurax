@@ -147,7 +147,7 @@ async function iniciar() {
   const audio = criarAudio();
   musica(audio);
   const ctx = { t, html, engine, mundo, audio, calmo: q.calmo, movel: q.movel, aoMudarIdioma, idioma: idiomaAtual, restaurarMundo };
-  const capitulos = ["visao", "nucleo", "cadeia", "nos", "fragmentacao", "radio", "utrax", "direct", "malha", "seguranca", "economia", "escala", "caminho", "aberto", "edit"];
+  const capitulos = ["visao", "nucleo", "cadeia", "nos", "fragmentacao", "radio", "mentira", "direct", "malha", "seguranca", "economia", "escala", "caminho", "aberto", "edit"];
   for (const nome of capitulos) {
     try { (await import(`./sections/${nome}.js`)).iniciar(ctx); }
     catch (e) { console.error(`capítulo ${nome}`, e); }

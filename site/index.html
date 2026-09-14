@@ -312,38 +312,51 @@
   </div>
 </section>
 
-<!-- ================= UTRAX ================= -->
-<section class="capitulo largo" id="utrax" data-mundo="rede" aria-labelledby="t-utrax">
-  <div class="cabeca">
-    <p class="olho">USEFULPOW · UTRAX</p>
-    <h2 id="t-utrax" data-i18n-html="utrax.titulo"></h2>
-    <p data-i18n="utrax.intro"></p>
-    <div class="selos"><span class="selo-sim">SIMULATION</span><span class="selo" data-estado="desenvolvimento"><i></i><span data-i18n="estado.desenvolvimento"></span></span></div>
-  </div>
-  <div class="utrax">
-    <div class="painel revela">
-      <div class="painel-cabeca">
-        <ol class="etapas" id="utrax-etapas"><li><span>TASK</span></li><li><span>TASK MARKET</span></li><li><span>NODE SELECTION</span></li><li><span>COMPUTATION</span></li><li><span>VERIFICATION</span></li><li><span>PROOF</span></li><li><span>REWARD</span></li></ol>
+<!-- ================= 03 · PEGUE A MENTIRA =================
+     Freivalds de verdade no navegador (js/sections/mentira.js). -->
+<section class="mentira" id="utrax" data-mundo="nucleo" data-fase="1" aria-labelledby="t-utrax">
+  <div class="palco">
+    <div class="texto">
+      <p class="claquete"><span>03</span><span data-i18n="mentira.claquete">Trabalho útil</span></p>
+      <h2 class="monumento-2" id="t-utrax">
+        <span class="fase f1" data-i18n="mentira.m1">A · B = C.</span>
+        <span class="fase f2" data-i18n="mentira.m2">Sorteie r.</span>
+        <span class="fase f3" data-i18n="mentira.m3">Confira os dois lados.</span>
+        <span class="fase f4" data-i18n="mentira.m4">Barato. Muito barato.</span>
+        <span class="fase f5" data-i18n="mentira.m5">Agora, minta.</span>
+      </h2>
+      <div class="leads">
+        <p class="fase f1" data-i18n="mentira.l1">Alguém entrega C e diz que multiplicou A por B. Refazer a conta inteira custa caro. Como saber se é verdade?</p>
+        <p class="fase f2" data-i18n="mentira.l2">O verificador tira um vetor r do SHA-512 do próprio resultado. Quem fez a conta não sabe r antes de entregar C.</p>
+        <p class="fase f3" data-i18n="mentira.l3">Ele calcula A · (B · r) e C · r. São só multiplicações de matriz por vetor. Se C estiver certo, as oito linhas batem.</p>
+        <p class="fase f4" data-i18n-html="mentira.l4">Numa matriz 8×8, conferir em 3 rodadas custa <b>576</b> multiplicações e refazer custa <b>512</b>: aqui sai mais caro. Em 1000×1000, são <b>9 milhões</b> contra <b>1 bilhão</b>.</p>
+        <p class="fase f5" data-i18n="mentira.l5">Toque em qualquer número de C para mudar o resultado. A conferência roda de novo, com um r novo, e aponta a linha errada.</p>
       </div>
-      <div class="painel-corpo">
-        <div class="controles" style="justify-content:space-between">
-          <button class="botao botao-claro botao-pequeno" type="button" id="utrax-rodar" data-i18n="utrax.rodar"></button>
-          <label class="chave"><input type="checkbox" id="utrax-trapaca"><span data-i18n="utrax.trapaca"></span></label>
-        </div>
-        <div class="candidatos" id="utrax-candidatos"></div>
-        <div class="grade-3" style="gap:.8rem">
-          <div><p class="mono texto-2" style="font-size:.66rem;margin:0 0 .3rem">A (8×8)</p><div class="matriz-mini" id="utrax-a"></div></div>
-          <div><p class="mono texto-2" style="font-size:.66rem;margin:0 0 .3rem">B (8×8)</p><div class="matriz-mini" id="utrax-b"></div></div>
-          <div><p class="mono texto-2" style="font-size:.66rem;margin:0 0 .3rem" data-i18n="utrax.c"></p><div class="matriz-mini" id="utrax-c"></div></div>
-        </div>
-        <div class="veredito" id="utrax-veredito" role="status"></div>
-        <dl class="campos" id="utrax-prova" style="margin-top:1rem"></dl>
+      <div class="fase f5 acoes-mentira">
+        <p class="veredito-mentira" id="mentira-veredito" role="status" aria-live="polite"></p>
+        <button class="botao botao-linha botao-pequeno" type="button" id="mentira-refazer" data-i18n="mentira.refazer">Nova tarefa honesta</button>
+        <p class="nota-mentira" data-i18n="mentira.nota">Numa rodada, uma mentira passa com chance de no máximo 1 em 97 nesta demonstração. O consenso do Auron usa 4 rodadas de 20 bits: no máximo 1 em 2⁸⁰.</p>
       </div>
     </div>
-    <div class="revela">
-      <h3 class="olho" style="margin:0 0 1rem" data-i18n="utrax.tarefas"></h3>
-      <ul class="lista-estado" id="utrax-tarefas"></ul>
-      <p class="nota" style="margin-top:1rem" data-i18n-html="utrax.nota"></p>
+
+    <div class="bancada">
+      <div class="placas">
+        <figure class="placa"><div class="grade" id="placa-a"></div><figcaption>A</figcaption></figure>
+        <span class="op" aria-hidden="true">·</span>
+        <figure class="placa"><div class="grade" id="placa-b"></div><figcaption>B</figcaption></figure>
+        <span class="op" aria-hidden="true">=</span>
+        <figure class="placa placa-c"><div class="grade" id="placa-c"></div><figcaption>C</figcaption></figure>
+      </div>
+      <div class="vetor">
+        <span class="rotulo">r</span>
+        <div class="valores" id="vetor-r"></div>
+        <span class="semente" id="semente-c"></span>
+      </div>
+      <div class="conferencia">
+        <div class="cabecalho"><span>A · (B · r)</span><span></span><span>C · r</span></div>
+        <div class="linhas" id="comparacao"></div>
+      </div>
+      <p class="rotulo-real"><span class="ponto" aria-hidden="true"></span><span data-i18n="mentira.real">Conta real · Freivalds no seu aparelho · matrizes de exemplo</span></p>
     </div>
   </div>
 </section>
