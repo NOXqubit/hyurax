@@ -113,9 +113,12 @@ export function criarHeroi(renderer, q) {
   let alvo = null, aoTrocar = null, estado = "espera", inicioGolpe = 0, visivel = false;
   const suave = (x) => 1 - Math.pow(1 - Math.min(1, Math.max(0, x)), 3);
 
+  let recorte = null;
   function alinhar() {
     const r = alvo.getBoundingClientRect();
-    visivel = r.bottom > 0 && r.top < innerHeight && r.height > 0;
+    // a peça é recortada pela seção dela, como o SVG (overflow: clip)
+    recorte = (alvo.closest("section") || alvo).getBoundingClientRect();
+    visivel = r.height > 0 && recorte.bottom > 0 && recorte.top < innerHeight;
     if (!visivel) return;
     camera.aspect = innerWidth / innerHeight;
     camera.updateProjectionMatrix();
@@ -147,7 +150,11 @@ export function criarHeroi(renderer, q) {
       const antes = renderer.autoClear;
       renderer.autoClear = false;
       renderer.clearDepth();
+      const topo = Math.max(0, recorte.top), base = Math.min(innerHeight, recorte.bottom);
+      renderer.setScissor(0, innerHeight - base, innerWidth, Math.max(0, base - topo));
+      renderer.setScissorTest(true);
       renderer.render(cena, camera);
+      renderer.setScissorTest(false);
       renderer.autoClear = antes;
     },
   };

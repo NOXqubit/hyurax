@@ -33,6 +33,13 @@ export default {
     verdade: "<span><b>Public network:</b> not live yet</span><span><b>Coin sale:</b> none</span><span><b>Profit promise:</b> none</span>",
   },
   visao: {
+    claquete: "The problem",
+    m1: "Trillions of computations.", m2: "Thrown away.", m3: "The work must be useful.",
+    l1: "Ordinary mining makes trillions of attempts per second just to draw who writes the next block. Every line on the side is a SHA-512 computed right now, on your device.",
+    l2: "After the draw, none of these numbers is good for anything. The energy turns into heat and the result goes in the trash.",
+    l3: "In Auron, every block also carries a matrix product derived from the previous block: useful work that any computer can check without redoing it.",
+    calculados: "hashes computed on this page", uteis: "useful",
+    legenda1: "Real computation · 1 line = 1 SHA-512 · 64 bytes", legenda2: "8×8 matrix from the last hash · the matrix A in A · B = C",
     olho: "The Vision",
     frase: "Build infrastructure for a world where <em>value, computation, communication and resources</em> can move without depending on a single centralized system.",
     protocolo: "Written rules anyone can verify.",

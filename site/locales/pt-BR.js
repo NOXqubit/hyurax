@@ -34,6 +34,13 @@ export default {
     verdade: "<span><b>Rede pública:</b> ainda não existe</span><span><b>Venda de moeda:</b> nenhuma</span><span><b>Promessa de lucro:</b> nenhuma</span>",
   },
   visao: {
+    claquete: "O problema",
+    m1: "Trilhões de cálculos.", m2: "Jogados fora.", m3: "A conta tem que servir.",
+    l1: "A mineração comum faz trilhões de tentativas por segundo só para sortear quem escreve o próximo bloco. Cada linha ao lado é um SHA-512 calculado agora, no seu aparelho.",
+    l2: "Depois do sorteio, nenhum desses números serve para nada. A energia vira calor e o resultado vai para o lixo.",
+    l3: "No Auron, todo bloco também carrega um produto de matrizes tirado do bloco anterior: uma conta útil, que qualquer computador confere sem refazer.",
+    calculados: "hashes calculados nesta página", uteis: "úteis",
+    legenda1: "Conta real · 1 linha = 1 SHA-512 · 64 bytes", legenda2: "Matriz 8×8 a partir do último hash · a matriz A de A · B = C",
     olho: "The Vision",
     frase: "Construir infraestrutura para um mundo em que <em>valor, computação, comunicação e recursos</em> circulem sem depender de um único sistema centralizado.",
     protocolo: "Regras escritas e verificáveis por qualquer pessoa.",
