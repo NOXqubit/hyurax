@@ -23,9 +23,13 @@ export default {
     musica: "Music: the project's own track",
   },
   hero: {
-    sub: "A new infrastructure for a distributed world.",
-    explorar: "Explore the architecture",
-    assistir: "Watch the presentation",
+    sub: "A blockchain where proof of work is a computation that matters, checked by any computer.",
+    explorar: "See how it works",
+    assistir: "Watch the film · synthetic voice",
+    status: "Test network · no sale · no price",
+    l1: "Every block", l2: "proves a", l3: "useful computation.",
+    prova: "Real computation, on this device", role: "scroll",
+    prova_valor: "sha512(v2 header · {b} bytes) = {h} · {ms} ms",
     verdade: "<span><b>Public network:</b> not live yet</span><span><b>Coin sale:</b> none</span><span><b>Profit promise:</b> none</span>",
   },
   visao: {

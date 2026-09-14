@@ -4,43 +4,49 @@
 
 :root {
   color-scheme: dark;
-  --vazio: #030303;
-  --breu: #070708;
-  --grafite: #0e0f11;
-  --aco: #16171a;
-  --aco-2: #1d1f23;
-  --fio: rgba(236, 234, 230, 0.075);
-  --fio-forte: rgba(236, 234, 230, 0.16);
-  --prata: #c9ccd1;
-  --texto: #eceae6;
-  --texto-2: #8e9199;
-  --texto-3: #5f626a;
-  --luz: #f3e2c4;
-  --luz-forte: #fff3df;
-  --brilho: rgba(243, 226, 196, 0.55);
+  /* Paleta de filme: um preto, metais e UMA luz. A luz quente quer dizer
+     "existe e foi conferido"; não é decoração. */
+  --vazio: #040405;
+  --breu: #08080a;
+  --grafite: #111214;
+  --aco: #1b1d21;
+  --aco-2: #24262a;
+  --fio: rgba(237, 235, 230, 0.08);
+  --fio-forte: rgba(237, 235, 230, 0.17);
+  --chumbo: #7c8088;
+  --prata: #c4c7cc;
+  --texto: #edebe6;
+  --texto-2: #9a9da4;
+  --texto-3: #7c8088;
+  --luz: #f2d9a8;
+  --luz-forte: #fff4e0;
+  --brilho: rgba(242, 217, 168, 0.55);
 
   /* estados: forma e cor, para ler sem depender só da cor */
-  --st-implementado: #eef0f2;
-  --st-desenvolvimento: #efcb92;
-  --st-pesquisa: #93b6cc;
-  --st-planejado: #6b6e76;
-  --st-recusado: #e0806b;
-  --st-aceito: #9fd6b4;
+  --st-implementado: #f2d9a8;
+  --st-desenvolvimento: #d9c197;
+  --st-pesquisa: #c4c7cc;
+  --st-planejado: #7c8088;
+  --st-recusado: #7c8088;
+  --st-aceito: #f2d9a8;
 
   --display: "Archivo", "Helvetica Neue", Arial, "Hiragino Sans", "Yu Gothic", "Noto Sans JP", sans-serif;
   --marca: "Michroma", "Archivo", Arial, sans-serif;
   --mono: "IBM Plex Mono", ui-monospace, Consolas, "Hiragino Sans", "Yu Gothic", monospace;
 
+  --t-monumento: clamp(3.1rem, 10.2vw, 11.5rem);
   --t-hero: clamp(3.4rem, 11vw, 9.5rem);
   --t-secao: clamp(2rem, 4.6vw, 3.6rem);
-  --t-sub: clamp(1.1rem, 1.7vw, 1.3rem);
-  --t-corpo: 1.02rem;
-  --t-dado: 0.8rem;
-  --t-rotulo: 0.68rem;
+  --t-sub: clamp(1.1rem, 1.5vw, 1.35rem);
+  --t-corpo: 1.0625rem;
+  --t-dado: 0.875rem;
+  --t-rotulo: 0.75rem;
 
-  --largura: 76rem;
-  --lado: clamp(1.1rem, 4vw, 2.5rem);
+  --largura: 80rem;
+  --lado: clamp(1.25rem, 5vw, 5rem);
   --curva: cubic-bezier(0.22, 0.7, 0.18, 1);
+  --curva-filme: cubic-bezier(0.16, 1, 0.3, 1);
+  --curva-maquina: cubic-bezier(0.65, 0, 0.35, 1);
 }
 
 * { box-sizing: border-box; }
@@ -71,7 +77,7 @@ button { font: inherit; color: inherit; }
 
 /* ---------- barra ---------- */
 .barra { position: fixed; top: 0; left: 0; right: 0; z-index: 30; transition: background 400ms, border-color 400ms; border-bottom: 1px solid transparent; }
-.barra.rolou { background: rgba(3, 3, 3, 0.78); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border-bottom-color: var(--fio); }
+.barra.rolou { background: rgba(4, 4, 5, 0.94); border-bottom-color: var(--fio); }
 .barra-dentro { max-width: var(--largura); margin: 0 auto; padding: 0 var(--lado); height: 4rem; display: flex; align-items: center; gap: 2rem; }
 .marca { display: flex; align-items: center; gap: 0.7rem; text-decoration: none; color: var(--texto); }
 .marca svg.a { width: 1.55rem; height: 1.55rem; }
@@ -122,26 +128,68 @@ button { font: inherit; color: inherit; }
 .selo-sim.conceito::before { background: var(--texto-2); }
 @keyframes respira { 50% { opacity: 0.3; } }
 
-/* ---------- abertura ---------- */
-.abertura { min-height: max(40rem, 100svh); display: grid; align-items: end; padding: 7rem var(--lado) 4.5rem; max-width: var(--largura); margin: 0 auto; position: relative; }
-.abertura .miolo { display: grid; justify-items: center; text-align: center; gap: 1.2rem; }
-.abertura h1 { margin: 0; line-height: 1; }
-.abertura h1 svg { width: min(88vw, 44rem); height: auto; display: block; filter: drop-shadow(0 0 40px rgba(243, 226, 196, 0.18)); }
-.abertura .tecnologia { font-family: var(--marca); font-size: clamp(0.72rem, 1.4vw, 0.95rem); letter-spacing: 0.62em; margin-right: -0.62em; color: var(--prata); }
-.abertura .sub { font-size: var(--t-sub); color: var(--texto-2); max-width: 36rem; margin: 0.4rem 0 0; text-wrap: balance; }
-.abertura .acoes { display: flex; flex-wrap: wrap; gap: 0.7rem; justify-content: center; margin-top: 0.6rem; }
-.abertura .verdade { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.4rem 1.4rem; margin-top: 1.4rem; font-family: var(--mono); font-size: 0.7rem; color: var(--texto-3); letter-spacing: 0.06em; }
-.abertura .verdade b { color: var(--texto-2); font-weight: 500; }
-.rolar-dica { position: absolute; left: 50%; bottom: 1.2rem; transform: translateX(-50%); width: 1px; height: 2.6rem; background: linear-gradient(var(--texto-3), transparent); overflow: hidden; }
-.rolar-dica::after { content: ""; position: absolute; left: 0; top: -40%; width: 1px; height: 40%; background: var(--luz); animation: desce 2.4s var(--curva) infinite; }
+/* ---------- abertura ----------
+   Tudo com transform e opacity: a primeira tela desenha sem esperar o 3D. */
+.abertura { position: relative; min-height: max(42rem, 100svh); padding: 0 var(--lado); overflow: clip; isolation: isolate; }
+.abertura .status { position: absolute; top: 5.4rem; left: var(--lado); margin: 0; font-family: var(--mono); font-size: var(--t-rotulo); letter-spacing: 0.14em; text-transform: uppercase; color: var(--prata); display: flex; align-items: center; gap: 0.7rem; z-index: 3; }
+.abertura .status::before { content: ""; width: 1.6rem; height: 1px; background: var(--chumbo); }
+
+/* a lâmina do logo, ampliada: um fio de luz que atravessa a tela */
+.abertura .lamina { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none; overflow: visible; }
+.abertura .lamina path { fill: none; vector-effect: non-scaling-stroke; }
+.abertura .lamina .fio { stroke: var(--luz-forte); stroke-width: 1.5; stroke-dasharray: 1600; stroke-dashoffset: 0; }
+.abertura .lamina .rastro { stroke: var(--luz); stroke-width: 9; opacity: 0.1; stroke-dasharray: 1600; stroke-dashoffset: 0; }
+
+/* o A gigante: metade direita, cortado pela borda */
+.a-gigante { position: absolute; right: -7vw; top: 50%; width: min(78svh, 64vw); aspect-ratio: 1; transform: translateY(-46%); z-index: 1; transition: opacity 180ms linear; }
+.a-gigante svg { width: 100%; height: 100%; display: block; }
+.a-gigante.no-3d { opacity: 0; }
+
+.abertura .miolo { position: relative; z-index: 2; min-height: max(42rem, 100svh); display: grid; align-content: center; gap: clamp(1.2rem, 2.4vh, 2rem); max-width: 58rem; padding: 8rem 0 7rem; }
+.monumento { margin: 0; font-size: var(--t-monumento); line-height: 0.88; letter-spacing: -0.035em; font-weight: 780; font-variation-settings: "wdth" 125; text-wrap: balance; }
+.monumento .linha { display: block; overflow: hidden; padding-bottom: 0.06em; margin-bottom: -0.06em; }
+.monumento .linha > span { display: inline-block; }
+.monumento .linha:not(.forte) > span { font-weight: 260; font-variation-settings: "wdth" 62; color: var(--prata); }
+html[lang="ja"] .monumento { font-size: calc(var(--t-monumento) * 0.62); line-height: 1.08; letter-spacing: 0; }
+html[lang="ja"] .monumento .linha:not(.forte) > span { font-weight: 400; }
+.abertura .sub { margin: 0; max-width: 34rem; font-size: var(--t-sub); line-height: 1.45; color: var(--texto-2); text-wrap: pretty; }
+.abertura .acoes { display: flex; flex-wrap: wrap; gap: 0.7rem; margin-top: 0.4rem; }
+
+.abertura .prova { position: absolute; right: var(--lado); bottom: 2.2rem; margin: 0; z-index: 3; display: grid; grid-template-columns: auto 1fr; column-gap: 0.6rem; row-gap: 0.25rem; align-items: center; max-width: min(34rem, 60vw); font-family: var(--mono); font-size: var(--t-rotulo); color: var(--chumbo); text-align: left; }
+.abertura .prova .ponto { width: 6px; height: 6px; border-radius: 50%; background: var(--luz); box-shadow: 0 0 10px var(--brilho); }
+.abertura .prova .rotulo { letter-spacing: 0.14em; text-transform: uppercase; color: var(--prata); }
+.abertura .prova .valor { grid-column: 2; font-size: var(--t-dado); color: var(--texto); overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
+.abertura .prova .valor b { color: var(--luz); font-weight: 500; }
+
+.rolar-dica { position: absolute; left: var(--lado); bottom: 2.2rem; z-index: 3; display: flex; align-items: center; gap: 0.8rem; font-family: var(--mono); font-size: var(--t-rotulo); letter-spacing: 0.14em; text-transform: uppercase; color: var(--chumbo); }
+.rolar-dica i { position: relative; width: 1px; height: 2.6rem; background: var(--aco-2); overflow: hidden; }
+.rolar-dica i::after { content: ""; position: absolute; left: 0; top: -40%; width: 1px; height: 40%; background: var(--luz); animation: desce 2.4s var(--curva) infinite; }
+.rolar-dica b { font-weight: 400; }
 @keyframes desce { to { top: 110%; } }
-/* entra enquanto a rede se forma atrás: a câmera sai de um ponto só e a rede vira o "A" */
-.abertura.entrando .miolo > * { animation: surge 1.4s var(--curva) 1.5s both; }
-.abertura.entrando .miolo > *:nth-child(2) { animation-delay: 1.75s; }
-.abertura.entrando .miolo > *:nth-child(3) { animation-delay: 1.95s; }
-.abertura.entrando .miolo > *:nth-child(4) { animation-delay: 2.1s; }
-.abertura.entrando .miolo > *:nth-child(5) { animation-delay: 2.25s; }
-@keyframes surge { from { opacity: 0.001; transform: translateY(14px); filter: blur(6px); } to { opacity: 1; transform: none; filter: none; } }
+
+/* coreografia de entrada (só com movimento permitido) */
+.abertura.entrando .lamina .fio, .abertura.entrando .lamina .rastro { animation: corta 900ms var(--curva-maquina) 80ms both; }
+.abertura.entrando .a-gigante svg { animation: acende 900ms var(--curva-filme) 420ms both; }
+.abertura.entrando .monumento .linha > span { animation: sobe 720ms var(--curva-filme) both; }
+.abertura.entrando .monumento .linha:nth-child(1) > span { animation-delay: 600ms; }
+.abertura.entrando .monumento .linha:nth-child(2) > span { animation-delay: 720ms; }
+.abertura.entrando .monumento .linha:nth-child(3) > span { animation-delay: 840ms; }
+.abertura.entrando .sub, .abertura.entrando .acoes { animation: aparece 700ms var(--curva-filme) 1150ms both; }
+.abertura.entrando .status, .abertura.entrando .rolar-dica { animation: aparece 600ms linear 1500ms both; }
+.abertura.entrando .prova { animation: aparece 400ms linear 2000ms both; }
+@keyframes corta { from { stroke-dashoffset: 1600; } to { stroke-dashoffset: 0; } }
+@keyframes acende { from { opacity: 0; transform: translateX(-3%) scale(0.985); } to { opacity: 1; transform: none; } }
+@keyframes sobe { from { transform: translateY(108%); } to { transform: none; } }
+@keyframes aparece { from { opacity: 0; } to { opacity: 1; } }
+
+@media (max-width: 40rem) {
+  .a-gigante { width: 92vw; right: -22vw; top: 6.5rem; transform: none; opacity: 0.9; }
+  .abertura .miolo { align-content: end; padding: 16rem 0 9rem; }
+  .abertura .prova { left: var(--lado); right: var(--lado); bottom: 1.2rem; max-width: none; }
+  .rolar-dica { display: none; }
+  .abertura .status { top: 4.8rem; }
+  .abertura .lamina { display: none; }
+}
 
 /* ---------- capítulos ---------- */
 .capitulo { position: relative; padding: clamp(5rem, 12vh, 9rem) var(--lado); max-width: var(--largura); margin: 0 auto; }
@@ -503,6 +551,7 @@ html[lang="ja"] .zoom-contagem { font-variation-settings: "wdth" 100; }
 .leve .tela { background: #08090b; }
 
 @media (prefers-reduced-motion: reduce) {
+  .abertura.entrando * { animation: none !important; }
   html { scroll-behavior: auto; }
   *, *::before, *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; }
 }

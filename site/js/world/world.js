@@ -2,6 +2,7 @@
 // Um só objeto de pontos (sem um componente por nó), posições interpoladas na CPU,
 // brilho e tamanho calculados no shader. Linhas compartilham o buffer de posições.
 import * as THREE from "../../vendor/three.module.min.js";
+import { criarHeroi } from "./heroi.js";
 
 const MODOS = ["rede", "logo", "cadeia", "grade", "malha", "global", "nucleo"];
 
@@ -435,6 +436,7 @@ export function criarMundo(canvas, q) {
       uni.uQualOrdem.value += ((modo === "global" ? 1 : 0) - uni.uQualOrdem.value) * suave(6);
     }
     renderer.render(cena, camera);
+    if (!calmo) heroi.desenhar(agora);
     requestAnimationFrame(quadro);
   }
 
@@ -1143,10 +1145,14 @@ export function criarMundo(canvas, q) {
   tamanho();
   if (calmo) { intro = 1; modo = "logo"; mirar(); pos.set(F.logo); atrPos.needsUpdate = true; desenharParado(); }
   else { cam.pos.set(0, 0, 7); ligar(); }
+  // o A de metal da abertura; em modo calmo fica o SVG
+  const heroi = criarHeroi(renderer, q);
 
   return {
     nivel: q.nivel,
     definirModo, definirZoom, somenteObjetos,
+    /** Liga o A de metal sobre o SVG da abertura. Devolve falso quando fica o SVG. */
+    heroi: (elemento, aoTrocar) => { if (calmo) return false; heroi.armar(elemento, aoTrocar); return true; },
     objeto,
     fps: perfil.fps || 60,
     // O video desenha o quadro ampliado a partir do centro. Os objetos precisam

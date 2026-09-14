@@ -23,9 +23,13 @@ export default {
     musica: "Música: pista original del proyecto",
   },
   hero: {
-    sub: "Una nueva infraestructura para un mundo distribuido.",
-    explorar: "Explorar la arquitectura",
-    assistir: "Ver la presentación",
+    sub: "Una blockchain en la que la prueba de trabajo es un cálculo que sirve, verificado por cualquier computadora.",
+    explorar: "Ver cómo funciona",
+    assistir: "Ver el filme · voz sintética",
+    status: "Red de pruebas · sin venta · sin precio",
+    l1: "Cada bloque", l2: "prueba un", l3: "cálculo útil.",
+    prova: "Cálculo real, en este dispositivo", role: "desliza",
+    prova_valor: "sha512(cabecera v2 · {b} bytes) = {h} · {ms} ms",
     verdade: "<span><b>Red pública:</b> todavía no existe</span><span><b>Venta de monedas:</b> ninguna</span><span><b>Promesa de ganancias:</b> ninguna</span>",
   },
   visao: {

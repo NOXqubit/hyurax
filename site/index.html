@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Auron Technology</title>
 <meta name="description" content="A Auron está construindo uma infraestrutura em evolução para valor, computação, comunicação e recursos distribuídos.">
-<meta name="theme-color" content="#030303">
+<meta name="theme-color" content="#040405">
 <meta name="color-scheme" content="dark">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Auron Technology">
@@ -22,7 +22,7 @@
 <link rel="manifest" href="site.webmanifest">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100..125,300..800&family=IBM+Plex+Mono:wght@400;500&family=Michroma&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,250..800&family=IBM+Plex+Mono:wght@400;500&family=Michroma&display=swap">
 <link rel="stylesheet" href="styles/main.css">
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"Organization","name":"Auron Technology","description":"Auron is building an evolving infrastructure for value, computation, communication and distributed resources.","logo":"assets/logo.svg"}
@@ -106,19 +106,41 @@
 
 <div class="pagina">
 
-<!-- ================= ABERTURA ================= -->
-<section class="abertura" id="topo" data-mundo="logo" aria-labelledby="t-topo">
-  <div class="miolo">
-    <h1 id="t-topo"><span class="so-leitor">Auron</span><svg viewBox="0 0 560 100" aria-hidden="true"><use href="#palavra"/></svg></h1>
-    <div class="tecnologia">TECHNOLOGY</div>
-    <p class="sub" data-i18n="hero.sub"></p>
-    <div class="acoes">
-      <a class="botao botao-linha" href="#visao" data-i18n="hero.explorar"></a>
-      <button class="botao botao-claro" type="button" id="abre-edit" data-i18n="hero.assistir"></button>
-    </div>
-    <div class="verdade" data-i18n-html="hero.verdade"></div>
+<!-- ================= ABERTURA =================
+     Os primeiros segundos não dependem do Three.js: HTML, CSS e SVG, com o
+     texto em português já no documento. O A de metal 3D assume depois, na
+     mesma pose do SVG, sem emenda visível. -->
+<section class="abertura" id="topo" data-mundo="rede" aria-labelledby="t-topo">
+  <p class="status" data-i18n="hero.status">Rede de teste · sem venda · sem preço</p>
+
+  <svg class="lamina" viewBox="0 0 1000 600" preserveAspectRatio="none" aria-hidden="true">
+    <path class="rastro" d="M-40 398 C400 392 700 380 1040 318"/>
+    <path class="fio" d="M-40 398 C400 392 700 380 1040 318"/>
+  </svg>
+
+  <div class="a-gigante" id="a-gigante" aria-hidden="true">
+    <svg viewBox="0 0 100 100"><use href="#simbolo-a"/></svg>
   </div>
-  <span class="rolar-dica" aria-hidden="true"></span>
+
+  <div class="miolo">
+    <h1 id="t-topo" class="monumento">
+      <span class="linha"><span data-i18n="hero.l1">Todo bloco</span></span>
+      <span class="linha"><span data-i18n="hero.l2">prova um</span></span>
+      <span class="linha forte"><span data-i18n="hero.l3">cálculo útil.</span></span>
+    </h1>
+    <p class="sub" data-i18n="hero.sub">Uma blockchain em que a prova de trabalho é uma conta que serve, conferida por qualquer computador.</p>
+    <div class="acoes">
+      <a class="botao botao-claro" href="#visao" data-i18n="hero.explorar">Ver como funciona</a>
+      <button class="botao botao-linha" type="button" id="abre-edit" data-i18n="hero.assistir">Assistir ao filme · voz sintética</button>
+    </div>
+  </div>
+
+  <p class="prova" id="prova" aria-live="polite">
+    <span class="ponto" aria-hidden="true"></span>
+    <span class="rotulo" data-i18n="hero.prova">Conta real, neste aparelho</span>
+    <span class="valor" id="prova-valor">sha512( cabeçalho v2 · 222 bytes )</span>
+  </p>
+  <span class="rolar-dica" aria-hidden="true"><i></i><b data-i18n="hero.role">role</b></span>
 </section>
 
 <!-- ================= VISÃO ================= -->

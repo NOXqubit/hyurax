@@ -1,7 +1,7 @@
 // Ponto de entrada: idioma, mundo 3D (ou 2D), navegação e capítulos.
 import { carregar, aplicar, t, html, idiomaInicial, idiomaAtual, IDIOMAS } from "./i18n.js";
 import { detectarQualidade } from "./quality.js";
-import { SimulationEngine } from "./simulation/engine.js";
+import { SimulationEngine, Escritor, merkle, sha512, hex } from "./simulation/engine.js";
 import { criarAudio } from "./audio.js";
 import { el } from "./ui.js";
 
@@ -70,6 +70,27 @@ function navegacao(mundo) {
   return () => { modoAtual = ""; avaliar(); };
 }
 
+// A prova da abertura: um cabeçalho de bloco v2 (222 bytes) montado aqui e o
+// SHA-512 dele calculado agora, neste aparelho, com o tempo medido. É conta de
+// verdade sobre um cabeçalho de exemplo; o rótulo diz isso.
+async function provaAoVivo() {
+  const alvo = document.getElementById("prova-valor");
+  if (!alvo || !globalThis.crypto?.subtle) return () => {};
+  const zeros = new Uint8Array(64);
+  const cab = new Escritor().u16(2).u64(0).fixo(zeros).fixo(await merkle([])).fixo(zeros)
+    .u64(Math.floor(Date.now() / 1000)).u32(0x1f00ffff).u64(2026).bytes();
+  await sha512(cab); // aquece o motor de cripto antes de medir
+  const t0 = performance.now();
+  const h = hex(await sha512(cab));
+  const ms = performance.now() - t0;
+  const desenhar = () => {
+    const txt = t("hero.prova_valor", { b: cab.length, h: `${h.slice(0, 8)}…${h.slice(-8)}`, ms: ms.toLocaleString(idiomaAtual(), { maximumFractionDigits: 2, minimumFractionDigits: 2 }) });
+    alvo.textContent = txt;
+  };
+  desenhar();
+  return desenhar;
+}
+
 function revelar() {
   if (q.calmo || !("IntersectionObserver" in window)) return;
   const obs = new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting) { e.target.classList.add("visto"); obs.unobserve(e.target); } }), { rootMargin: "0px 0px -6% 0px" });
@@ -108,6 +129,10 @@ async function iniciar() {
   const mundo = await criarMundo();
   document.getElementById("qualidade").textContent = mundo.nivel === "2D" ? t("ui.sem_webgl") : `${t("ui.qualidade")}: ${mundo.nivel}`;
   aoMudarIdioma(() => { document.getElementById("qualidade").textContent = mundo.nivel === "2D" ? t("ui.sem_webgl") : `${t("ui.qualidade")}: ${mundo.nivel}`; });
+
+  const aGigante = document.getElementById("a-gigante");
+  if (aGigante && mundo.heroi) mundo.heroi(aGigante, () => aGigante.classList.add("no-3d"));
+  provaAoVivo().then((redesenhar) => aoMudarIdioma(redesenhar)).catch(() => {});
 
   const restaurarMundo = navegacao(mundo);
   // Atalho de depuração, só com ?debug=1 na URL: permite inspecionar o mundo e
