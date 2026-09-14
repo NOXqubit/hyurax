@@ -1,130 +1,159 @@
-// BLOCKCHAIN: transações entram na fila, viram bloco, passam pela validação e entram na cadeia.
-// Hash do cabeçalho de 222 bytes e raiz de Merkle são SHA-512 reais, sobre dados simulados.
-import { el, etapas, espera, formataAUR } from "../ui.js";
-import { curto } from "../simulation/engine.js";
+// Capítulo 04 — Mexa num bloco antigo.
+//
+// Uma cadeia de blocos de verdade no navegador: cada cabeçalho tem os 222 bytes
+// da AURON-SPEC-01 (§7) e o hash é SHA-512 calculado aqui. A régua mostra os
+// campos no tamanho real. Mexer numa transação de um bloco antigo recalcula a
+// raiz de Merkle e o hash dele: o bloco seguinte guardava o hash antigo, então o
+// elo se solta e a cadeia apaga em cascata dali para frente.
+
+import { el } from "../ui.js";
+import { merkle, sha512, hex, curto } from "../simulation/engine.js";
+
+// Campos do cabeçalho v2, na ordem da especificação (tamanho em bytes).
+export const CAMPOS = [
+  ["versao", 2], ["altura", 8], ["anterior", 64], ["merkle", 64], ["util", 64], ["horario", 8], ["bits", 4], ["nonce", 8],
+];
+const MAX_BLOCOS = 6;
+const OFFSET_MERKLE = 2 + 8 + 64;
 
 export function iniciar({ t, engine, calmo, aoMudarIdioma }) {
+  const trilho = document.getElementById("cadeia-trilho");
+  const regua = document.getElementById("cadeia-regua");
+  const leitura = document.getElementById("cadeia-leitura");
+  const status = document.getElementById("cadeia-status");
+  const botaoNovo = document.getElementById("cadeia-novo");
+  const botaoRestaurar = document.getElementById("cadeia-restaurar");
   const secao = document.getElementById("cadeia");
-  const mempoolEl = document.getElementById("mempool");
-  const trilho = document.getElementById("trilho");
-  const candidato = document.getElementById("candidato");
-  const candCorpo = document.getElementById("candidato-corpo");
-  const checagens = document.getElementById("checagens");
-  const detalhe = document.getElementById("tx-detalhe");
-  const botaoPausa = document.getElementById("cadeia-pausa");
-  const marca = etapas(document.getElementById("cadeia-etapas"), ["TRANSACTION", "MEMPOOL", "BLOCK", "VALIDATION", "CHAIN"]);
+  if (!trilho) return;
 
-  const fila = [], cadeia = [];
-  let pausado = false, visivel = false, ocupado = false, escolhida = null;
-  const data = (s) => new Date(s * 1000).toISOString().replace("T", " ").slice(0, 19) + " UTC";
+  const blocos = [];
+  let selecionado = 0, ocupado = false;
 
-  function chipTx(tx, nova) {
-    return el("button", { type: "button", class: "tx-chip" + (nova ? " nova" : ""), onclick: () => mostrarTx(tx), "aria-label": `TX ${tx.id ? tx.id.slice(0, 8) : ""}` },
-      el("span", {}, "TX ", el("b", { text: tx.id ? tx.id.slice(0, 8) : "…" })), el("span", { text: `${formataAUR(tx.valor)} AUR` }));
+  async function minerar() {
+    const anterior = blocos[blocos.length - 1] || null;
+    const txs = [];
+    for (let i = 0; i < 2 + engine.int(3); i++) { const tx = engine.createTransaction(); await engine.idDaTransacao(tx); txs.push(tx); }
+    const b = await engine.mineBlock(anterior, txs);
+    b.hashOriginal = b.hash;
+    b.adulterado = false;
+    blocos.push(b);
+    if (blocos.length > MAX_BLOCOS) blocos.shift();
+    return b;
   }
-  function desenharFila() {
-    mempoolEl.replaceChildren(el("h4", { text: "MEMPOOL" }), ...fila.map((tx) => { const c = chipTx(tx, tx._nova); tx._nova = false; return c; }));
-    if (!fila.length) mempoolEl.append(el("p", { class: "texto-2 mono", style: "font-size:.7rem;margin:0", text: t("cadeia.aguardando") }));
+
+  /** Um elo vale se o bloco guarda exatamente o hash atual do anterior. */
+  function quebradoDesde() {
+    for (let i = 1; i < blocos.length; i++) if (blocos[i].anterior !== blocos[i - 1].hash) return i;
+    return -1;
   }
-  function mostrarTx(tx) {
-    escolhida = tx;
-    const c = (k) => t(`cadeia.campos.${k}`);
-    const dl = el("dl", { class: "campos" },
-      el("dt", { text: c("ativo") }), el("dd", { text: "AUR · 0x00…00 (32 bytes)" }),
-      el("dt", { text: c("valor") }), el("dd", { text: `${formataAUR(tx.valor)} AUR` }),
-      el("dt", { text: c("remetente") }), el("dd", { text: curto(tx.remetente, 6) }),
-      el("dt", { text: c("destinatario") }), el("dd", { text: curto(tx.destinatario, 6) }),
-      el("dt", { text: c("nonce") }), el("dd", { text: String(tx.nonce) }),
-      el("dt", { text: c("taxa") }), el("dd", { text: `${formataAUR(tx.taxa)} AUR` }),
-      el("dt", { text: c("assinatura") }), el("dd", {}, curto(tx.assinatura, 10), el("small", { text: `Ed25519 · ${t("cadeia.sim_assinatura")}` })),
-      el("dt", { text: c("estado") }), el("dd", { class: tx.bloco !== null ? "ok" : "", text: tx.bloco !== null ? t("cadeia.confirmada", { h: tx.bloco }) : t("cadeia.na_fila") }),
-      el("dt", { text: "ID" }), el("dd", { text: tx.id ? curto(tx.id, 10) : "…" }),
+
+  function valorDoCampo(b, campo) {
+    const off = CAMPOS.slice(0, CAMPOS.findIndex(([c]) => c === campo)).reduce((s, [, n]) => s + n, 0);
+    const n = CAMPOS.find(([c]) => c === campo)[1];
+    return hex(b.cabecalho.slice(off, off + n));
+  }
+
+  function desenharRegua() {
+    const b = blocos[selecionado];
+    if (!b) return;
+    regua.replaceChildren(...CAMPOS.map(([campo, n]) => el("button", {
+      type: "button", class: `campo campo-${campo}`, style: `--n:${n}`,
+      "aria-label": `${t(`cadeia4.campos.${campo}`)}: ${n} bytes`,
+      onmouseenter: () => ler(campo), onfocus: () => ler(campo), onclick: () => ler(campo),
+    }, el("span", { class: "nome", text: t(`cadeia4.campos.${campo}`) }), el("span", { class: "bytes", text: String(n) }))));
+    ler("anterior");
+  }
+
+  function ler(campo) {
+    const b = blocos[selecionado];
+    if (!b) return;
+    regua.querySelectorAll(".campo").forEach((x) => x.classList.toggle("ativo", x.classList.contains(`campo-${campo}`)));
+    const v = valorDoCampo(b, campo);
+    leitura.replaceChildren(
+      el("span", { class: "rotulo", text: `${t(`cadeia4.campos.${campo}`)} · ${CAMPOS.find(([c]) => c === campo)[1]} bytes` }),
+      el("span", { class: "valor", text: v.length > 40 ? curto(v, 16) : v }),
     );
-    detalhe.replaceChildren(dl);
-  }
-  function cartaoBloco(b, novo) {
-    const c = (k) => t(`cadeia.bloco.${k}`);
-    return el("article", { class: "bloco" + (novo ? " novo" : "") },
-      el("header", {}, el("b", { text: "BLOCK" }), el("span", { text: `#${b.altura}` })),
-      el("dl", { class: "campos" },
-        el("dt", { text: c("hash") }), el("dd", { text: curto(b.hash, 7) }),
-        el("dt", { text: c("anterior") }), el("dd", { text: curto(b.anterior, 7) }),
-        el("dt", { text: c("horario") }), el("dd", { text: data(b.horario) }),
-        el("dt", { text: c("merkle") }), el("dd", { text: curto(b.merkle, 7) }),
-        el("dt", { text: c("transacoes") }), el("dd", { text: String(b.txs.length) }),
-      ),
-      el("div", { class: "txs" }, b.txs.map((tx) => el("button", { type: "button", onclick: () => mostrarTx(tx), text: tx.id.slice(0, 6) }))),
-    );
-  }
-  function desenharCadeia(novo) {
-    trilho.replaceChildren(...cadeia.slice(-10).map((b, i, arr) => cartaoBloco(b, novo && i === arr.length - 1)));
-    trilho.scrollLeft = trilho.scrollWidth;
   }
 
-  async function novaTx() {
-    const tx = engine.createTransaction();
-    await engine.idDaTransacao(tx);
-    tx._nova = true;
-    fila.push(tx);
-    if (fila.length > 9) fila.shift();
-    marca(0); await espera(calmo ? 0 : 350); marca(1);
-    desenharFila();
+  function desenhar() {
+    const quebra = quebradoDesde();
+    secao.classList.toggle("quebrada", quebra >= 0);
+    trilho.replaceChildren(...blocos.flatMap((b, i) => {
+      const apagado = quebra >= 0 && i >= quebra;
+      const partes = [];
+      if (i > 0) partes.push(el("span", { class: `elo${apagado && i === quebra ? " solto" : apagado ? " apagado" : ""}`, "aria-hidden": "true" }));
+      partes.push(el("article", {
+        class: `bloco${apagado ? " apagado" : ""}${b.adulterado ? " adulterado" : ""}${i === selecionado ? " selecionado" : ""}`,
+        style: `--atraso:${apagado ? (i - quebra) * 120 : 0}ms`,
+      },
+      el("button", { type: "button", class: "abre", onclick: () => { selecionado = i; desenhar(); desenharRegua(); }, "aria-label": t("cadeia4.ver", { h: b.altura }) },
+        el("span", { class: "altura", text: `#${b.altura}` }),
+        el("span", { class: "linha" }, el("small", { text: t("cadeia4.campos.anterior") }), el("b", { text: curto(b.anterior, 5) })),
+        el("span", { class: "linha" }, el("small", { text: "hash" }), el("b", { text: curto(b.hash, 5) })),
+        el("span", { class: "linha" }, el("small", { text: "tx" }), el("b", { text: String(b.txs.length) }))),
+      i < blocos.length - 1 && !b.adulterado
+        ? el("button", { type: "button", class: "mexer", onclick: () => adulterar(i), text: t("cadeia4.mexer") })
+        : null,
+      ));
+      return partes;
+    }));
+    status.textContent = quebra >= 0
+      ? t("cadeia4.quebrada", { h: blocos[quebra].altura, n: blocos.length - quebra })
+      : t("cadeia4.inteira", { n: blocos.length });
+    botaoRestaurar.hidden = quebra < 0;
+    botaoNovo.disabled = quebra >= 0 || ocupado;
   }
 
-  async function fecharBloco() {
-    if (ocupado || !fila.length) return;
-    ocupado = true;
-    const txs = fila.splice(0, Math.min(5, fila.length));
-    desenharFila();
-    const altura = cadeia.length ? cadeia[cadeia.length - 1].altura + 1 : 0;
-    marca(2);
-    candCorpo.textContent = t("cadeia.montando", { h: altura, n: txs.length });
-    checagens.replaceChildren(...t("cadeia.checagens").map((c) => el("li", { text: c })));
-    await espera(calmo ? 0 : 700);
-    marca(3); candidato.classList.add("validando");
-    for (const li of checagens.children) { await espera(calmo ? 0 : 320); li.classList.add("ok"); }
-    const bloco = await engine.mineBlock(cadeia[cadeia.length - 1], txs);
-    txs.forEach((tx) => { tx.bloco = bloco.altura; });
-    cadeia.push(bloco);
-    marca(4); candidato.classList.remove("validando");
-    candCorpo.textContent = `#${bloco.altura} · ${curto(bloco.hash, 8)} · ${bloco.tamanhoCabecalho} bytes`;
-    desenharCadeia(true);
-    if (escolhida) mostrarTx(escolhida);
-    ocupado = false;
+  /** Muda o valor de uma transação e recalcula Merkle e hash, de verdade. */
+  async function adulterar(i) {
+    const b = blocos[i];
+    const tx = b.txs[0];
+    const bytes = tx.bytes.slice();
+    bytes[bytes.length - 70] ^= 0x01;           // um bit do valor (u64 antes da assinatura)
+    const raiz = await merkle([bytes, ...b.txs.slice(1).map((x) => x.bytes)]);
+    const cab = b.cabecalho.slice();
+    cab.set(raiz, OFFSET_MERKLE);
+    b.cabecalho = cab;
+    b.hash = hex(await sha512(cab));
+    b.adulterado = true;
+    selecionado = i;
+    desenhar();
+    desenharRegua();
+    ler("merkle");
   }
 
-  // ritmo acelerado da demonstração
-  let ultimoTx = 0, ultimoBloco = 0;
-  async function batida() {
-    if (pausado || !visivel || document.hidden) return;
-    const agora = performance.now();
-    if (agora - ultimoTx > 1500 && fila.length < 8) { ultimoTx = agora; await novaTx(); }
-    if (agora - ultimoBloco > 9000 && fila.length >= 2) { ultimoBloco = agora; await fecharBloco(); }
-  }
-  if (!calmo) setInterval(batida, 500);
-  new IntersectionObserver((es) => { visivel = es[0].isIntersecting; }).observe(secao);
-
-  document.getElementById("cadeia-tx").addEventListener("click", async () => { await novaTx(); if (fila.length >= 3 && calmo) await fecharBloco(); });
-  botaoPausa.addEventListener("click", () => { pausado = !pausado; botaoPausa.textContent = t(pausado ? "ui.continuar" : "ui.pausar"); });
-
-  // estado inicial visível: três blocos e algumas transações na fila
-  (async () => {
-    for (let b = 0; b < 3; b++) {
-      const txs = []; for (let i = 0; i < 2 + b; i++) { const tx = engine.createTransaction(); await engine.idDaTransacao(tx); txs.push(tx); }
-      const bloco = await engine.mineBlock(cadeia[cadeia.length - 1], txs);
-      txs.forEach((tx) => { tx.bloco = bloco.altura; });
-      cadeia.push(bloco);
+  async function restaurar() {
+    for (const b of blocos) {
+      if (!b.adulterado) continue;
+      b.cabecalho = b.cabecalhoOriginal.slice();
+      b.hash = b.hashOriginal;
+      b.adulterado = false;
     }
-    for (let i = 0; i < 3; i++) { const tx = engine.createTransaction(); await engine.idDaTransacao(tx); fila.push(tx); }
-    desenharCadeia(false); desenharFila(); marca(1);
-    candCorpo.textContent = t("cadeia.aguardando");
-    ultimoBloco = performance.now();
-  })();
+    desenhar();
+    desenharRegua();
+  }
 
-  aoMudarIdioma(() => {
-    desenharFila(); desenharCadeia(false);
-    botaoPausa.textContent = t(pausado ? "ui.continuar" : "ui.pausar");
-    if (!ocupado) candCorpo.textContent = t("cadeia.aguardando");
-    if (escolhida) mostrarTx(escolhida);
-  });
+  async function novo() {
+    if (ocupado || quebradoDesde() >= 0) return;
+    ocupado = true; desenhar();
+    await minerar();
+    selecionado = blocos.length - 1;
+    ocupado = false;
+    desenhar(); desenharRegua();
+  }
+
+  botaoNovo.addEventListener("click", novo);
+  botaoRestaurar.addEventListener("click", restaurar);
+  aoMudarIdioma(() => { desenhar(); desenharRegua(); });
+
+  (async () => {
+    for (let i = 0; i < 5; i++) await minerar();
+    selecionado = 1;
+    desenhar(); desenharRegua();
+    if (calmo) return;
+    // um bloco novo a cada 10 segundos, só com o capítulo na tela e a cadeia inteira
+    let visivel = false;
+    new IntersectionObserver((es) => { visivel = es[0].isIntersecting; }, { threshold: 0.2 }).observe(secao);
+    setInterval(() => { if (visivel && !document.hidden) novo(); }, 10000);
+  })();
 }

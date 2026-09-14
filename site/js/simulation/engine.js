@@ -115,7 +115,7 @@ export class SimulationEngine {
     const h = await sha512(cab);
     return {
       simulation: true, altura, hash: hex(h), hashBytes: h, anterior: hex(prev), merkle: hex(raiz),
-      horario, bits, nonce, tamanhoCabecalho: cab.length, txs,
+      horario, bits, nonce, tamanhoCabecalho: cab.length, txs, cabecalho: cab, cabecalhoOriginal: cab.slice(),
     };
   }
 

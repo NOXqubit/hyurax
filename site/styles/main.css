@@ -323,6 +323,51 @@ html[lang="ja"] .monumento-2 { font-size: clamp(2rem, 4.4vw, 4.6rem); line-heigh
   .mentira .palco { position: static; min-height: 100svh; }
 }
 
+/* ---------- 04 · mexa num bloco antigo ---------- */
+.cadeia4 { position: relative; padding: clamp(6rem, 14vh, 10rem) var(--lado); max-width: 100rem; margin: 0 auto; }
+.cabeca4 { max-width: 60rem; margin-bottom: clamp(2.5rem, 6vh, 4rem); }
+.titulo4 { margin: 0; font-size: clamp(2.6rem, 6.4vw, 7rem); line-height: 0.92; letter-spacing: -0.03em; font-weight: 260; font-variation-settings: "wdth" 62; color: var(--prata); text-wrap: balance; }
+.titulo4 b { font-weight: 780; font-variation-settings: "wdth" 125; color: var(--texto); }
+html[lang="ja"] .titulo4 { font-size: clamp(2rem, 4.4vw, 4.4rem); line-height: 1.15; letter-spacing: 0; }
+.lead4 { margin: 1.6rem 0 0; max-width: 38rem; font-size: var(--t-sub); line-height: 1.5; color: var(--texto-2); }
+
+.trilho4 { display: flex; align-items: center; gap: 0; overflow-x: auto; padding: 1rem 0 1.4rem; scrollbar-width: thin; }
+.trilho4 .bloco { flex: 0 0 auto; width: clamp(9.5rem, 14vw, 12.5rem); display: grid; gap: 0.5rem; transition: opacity 360ms var(--curva-maquina) var(--atraso), filter 360ms var(--curva-maquina) var(--atraso); }
+.trilho4 .bloco .abre { display: grid; gap: 0.35rem; text-align: left; cursor: pointer; padding: 0.9rem 0.9rem 0.8rem; background: var(--grafite); border: 1px solid var(--fio); border-radius: 3px; clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 0 100%); transition: border-color 200ms, background 200ms; }
+.trilho4 .bloco .abre:hover { border-color: var(--fio-forte); }
+.trilho4 .bloco.selecionado .abre { border-color: rgba(242, 217, 168, 0.55); background: color-mix(in srgb, var(--luz) 6%, var(--grafite)); }
+.trilho4 .bloco .altura { font-family: var(--mono); font-size: 1.05rem; color: var(--luz); }
+.trilho4 .bloco .linha { display: grid; grid-template-columns: 4.2rem 1fr; gap: 0.4rem; font-family: var(--mono); font-size: 0.72rem; }
+.trilho4 .bloco .linha small { color: var(--chumbo); font-size: inherit; }
+.trilho4 .bloco .linha b { color: var(--texto-2); font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.trilho4 .bloco .mexer { justify-self: start; background: none; border: 0; padding: 0.2rem 0; font-family: var(--mono); font-size: 0.72rem; color: var(--chumbo); cursor: pointer; text-decoration: underline; text-underline-offset: 3px; text-decoration-color: var(--aco-2); }
+.trilho4 .bloco .mexer:hover { color: var(--luz); }
+.trilho4 .bloco.adulterado .abre { border-color: var(--prata); }
+.trilho4 .bloco.adulterado .altura { color: var(--prata); }
+.trilho4 .bloco.apagado { opacity: 0.32; filter: grayscale(1); }
+.trilho4 .bloco.apagado .altura { color: var(--chumbo); }
+.trilho4 .elo { flex: 0 0 auto; width: clamp(1.6rem, 3vw, 3rem); height: 1.5px; background: var(--luz); box-shadow: 0 0 10px var(--brilho); align-self: center; margin-top: -2rem; transition: transform 300ms var(--curva-maquina), background 300ms; }
+.trilho4 .elo.apagado { background: var(--aco-2); box-shadow: none; }
+/* o elo solto: corta a −26,2°, o ângulo da lâmina */
+.trilho4 .elo.solto { background: var(--prata); box-shadow: none; transform: rotate(-26.2deg) scaleX(0.7); }
+
+.painel4 { border-top: 1px solid var(--fio); padding-top: 1.4rem; display: grid; gap: 1rem; }
+.regua-cab { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.6rem 2rem; align-items: baseline; }
+.status4 { margin: 0; font-family: var(--mono); font-size: var(--t-dado); color: var(--luz); }
+.cadeia4.quebrada .status4 { color: var(--prata); }
+.regua { display: flex; gap: 2px; height: 3.4rem; }
+.regua .campo { flex: var(--n) 1 0; min-width: 0; position: relative; display: grid; align-content: space-between; padding: 0.35rem 0.4rem; background: var(--grafite); border: 0; border-top: 2px solid var(--aco-2); color: var(--chumbo); font-family: var(--mono); font-size: 0.66rem; text-align: left; cursor: pointer; overflow: hidden; transition: border-color 160ms, color 160ms, background 160ms; }
+.regua .campo .nome { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.regua .campo .bytes { color: var(--texto-3); }
+.regua .campo.ativo, .regua .campo:hover { border-top-color: var(--luz); color: var(--texto); background: color-mix(in srgb, var(--luz) 7%, var(--grafite)); }
+.regua .campo:not(.campo-anterior):not(.campo-merkle):not(.campo-util) .nome { font-size: 0; }
+.regua .campo:not(.campo-anterior):not(.campo-merkle):not(.campo-util) .bytes { font-size: 0.6rem; }
+.leitura4 { margin: 0; display: grid; gap: 0.3rem; font-family: var(--mono); min-height: 2.8rem; }
+.leitura4 .rotulo { font-size: var(--t-rotulo); color: var(--chumbo); text-transform: uppercase; letter-spacing: 0.1em; }
+.leitura4 .valor { font-size: var(--t-dado); color: var(--texto); overflow-wrap: anywhere; }
+.acoes4 { display: flex; flex-wrap: wrap; gap: 0.7rem 1.2rem; align-items: center; }
+.nota4 { font-family: var(--mono); font-size: var(--t-rotulo); color: var(--chumbo); }
+
 /* ---------- capítulos ---------- */
 .capitulo { position: relative; padding: clamp(5rem, 12vh, 9rem) var(--lado); max-width: var(--largura); margin: 0 auto; }
 .capitulo.largo { max-width: 90rem; }

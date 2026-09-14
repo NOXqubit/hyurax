@@ -201,42 +201,28 @@
   </div>
 </section>
 
-<!-- ================= BLOCKCHAIN ================= -->
-<section class="capitulo largo" id="cadeia" data-mundo="cadeia" aria-labelledby="t-cadeia">
-  <div class="cabeca">
-    <p class="olho">BLOCKCHAIN</p>
-    <h2 id="t-cadeia" data-i18n-html="cadeia.titulo"></h2>
-    <p data-i18n="cadeia.intro"></p>
-    <div class="selos"><span class="selo-sim">SIMULATION</span><span class="selo" data-estado="desenvolvimento"><i></i><span data-i18n="estado.desenvolvimento"></span></span></div>
+<!-- ================= 04 · MEXA NUM BLOCO ANTIGO =================
+     Cabeçalhos de 222 bytes e SHA-512 de verdade (js/sections/cadeia.js). -->
+<section class="cadeia4" id="cadeia" data-mundo="cadeia" aria-labelledby="t-cadeia">
+  <div class="cabeca4">
+    <p class="claquete"><span>04</span><span data-i18n="cadeia4.claquete">Cadeia</span></p>
+    <h2 class="titulo4" id="t-cadeia"><span data-i18n="cadeia4.t1">Mexa num</span> <b data-i18n="cadeia4.t2">bloco antigo.</b></h2>
+    <p class="lead4" data-i18n="cadeia4.lead">Cada bloco guarda o hash do anterior. Mude um bit de uma transação antiga e o hash dela muda; o bloco seguinte deixa de apontar para ele, e tudo dali para frente perde a validade.</p>
   </div>
-  <div class="painel revela">
-    <div class="painel-cabeca">
-      <ol class="etapas" id="cadeia-etapas" aria-label="pipeline">
-        <li><span>TRANSACTION</span></li><li><span>MEMPOOL</span></li><li><span>BLOCK</span></li><li><span>VALIDATION</span></li><li><span>CHAIN</span></li>
-      </ol>
-      <div class="controles">
-        <button class="botao botao-linha botao-pequeno" type="button" id="cadeia-tx" data-i18n="cadeia.nova-tx"></button>
-        <button class="botao botao-linha botao-pequeno" type="button" id="cadeia-pausa" data-i18n="ui.pausar"></button>
-      </div>
+
+  <div class="trilho4" id="cadeia-trilho" aria-live="polite"></div>
+
+  <div class="painel4">
+    <div class="regua-cab">
+      <p class="rotulo-real"><span class="ponto" aria-hidden="true"></span><span data-i18n="cadeia4.regua">Cabeçalho v2 · 222 bytes · cada faixa no tamanho real</span></p>
+      <p class="status4" id="cadeia-status" role="status"></p>
     </div>
-    <div class="painel-corpo cadeia-palco">
-      <div>
-        <div class="mempool" id="mempool"><h4>MEMPOOL</h4></div>
-      </div>
-      <div>
-        <div class="candidato" id="candidato"><h4 data-i18n="cadeia.candidato"></h4><div id="candidato-corpo" class="texto-2"></div><ul class="checagens" id="checagens"></ul></div>
-        <div class="trilho" id="trilho" aria-live="polite"></div>
-      </div>
-    </div>
-  </div>
-  <div class="grade-2" style="margin-top:1.2rem">
-    <div class="painel revela">
-      <div class="painel-cabeca"><h3>TRANSACTION</h3><span class="selo-sim">SIMULATION</span></div>
-      <div class="painel-corpo" id="tx-detalhe" aria-live="polite"><p class="texto-2" data-i18n="cadeia.escolha-tx"></p></div>
-    </div>
-    <div class="painel revela">
-      <div class="painel-cabeca"><h3 data-i18n="cadeia.regras-titulo"></h3></div>
-      <div class="painel-corpo"><p class="nota" data-i18n-html="cadeia.regras"></p></div>
+    <div class="regua" id="cadeia-regua"></div>
+    <p class="leitura4" id="cadeia-leitura"></p>
+    <div class="acoes4">
+      <button class="botao botao-claro botao-pequeno" type="button" id="cadeia-novo" data-i18n="cadeia4.novo">Minerar bloco novo</button>
+      <button class="botao botao-linha botao-pequeno" type="button" id="cadeia-restaurar" data-i18n="cadeia4.restaurar" hidden>Desfazer a adulteração</button>
+      <span class="nota4" data-i18n="cadeia4.nota">Hashes e raízes de Merkle reais · transações e prova de trabalho de exemplo</span>
     </div>
   </div>
 </section>

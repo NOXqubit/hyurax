@@ -78,6 +78,13 @@ export default {
       },
     },
   },
+  cadeia4: {
+    claquete: "Cadeia", t1: "Mexa num", t2: "bloco antigo.",
+    lead: "Cada bloco guarda o hash do anterior. Mude um bit de uma transação antiga e o hash dela muda; o bloco seguinte deixa de apontar para ele, e tudo dali para frente perde a validade.",
+    regua: "Cabeçalho v2 · 222 bytes · cada faixa no tamanho real", novo: "Minerar bloco novo", restaurar: "Desfazer a adulteração", nota: "Hashes e raízes de Merkle reais · transações e prova de trabalho de exemplo",
+    mexer: "mexer um bit", ver: "Ver o bloco {h}", inteira: "Cadeia inteira · {n} blocos · cada um aponta para o hash do anterior", quebrada: "Elo quebrado no bloco {h} · {n} blocos perderam a validade",
+    campos: { versao: "versão", altura: "altura", anterior: "anterior", merkle: "merkle", util: "trabalho útil", horario: "horário", bits: "bits", nonce: "nonce" },
+  },
   cadeia: {
     titulo: "Veja um bloco <em>nascer</em>",
     intro: "As transações chegam, esperam na fila (mempool), vão para um bloco candidato, passam pela validação e só então entram na cadeia. Os hashes são SHA-512 reais, calculados agora no seu navegador sobre o cabeçalho de 222 bytes da especificação.",

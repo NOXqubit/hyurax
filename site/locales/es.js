@@ -77,6 +77,13 @@ export default {
       },
     },
   },
+  cadeia4: {
+    claquete: "Cadena", t1: "Toca un", t2: "bloque antiguo.",
+    lead: "Cada bloque guarda el hash del anterior. Cambia un bit de una transacción antigua y su hash cambia; el bloque siguiente deja de apuntar a él, y todo lo que viene después pierde validez.",
+    regua: "Cabecera v2 · 222 bytes · cada franja en tamaño real", novo: "Minar un bloque nuevo", restaurar: "Deshacer la alteración", nota: "Hashes y raíces de Merkle reales · transacciones y prueba de trabajo de ejemplo",
+    mexer: "cambiar un bit", ver: "Ver el bloque {h}", inteira: "Cadena entera · {n} bloques · cada uno apunta al hash anterior", quebrada: "Enlace roto en el bloque {h} · {n} bloques perdieron validez",
+    campos: { versao: "versión", altura: "altura", anterior: "anterior", merkle: "merkle", util: "trabajo útil", horario: "hora", bits: "bits", nonce: "nonce" },
+  },
   cadeia: {
     titulo: "Mira cómo <em>nace</em> un bloque",
     intro: "Las transacciones llegan, esperan en la cola (mempool), entran en un bloque candidato, pasan la validación y solo entonces se suman a la cadena. Los hashes son SHA-512 reales, calculados ahora mismo en tu navegador sobre la cabecera de 222 bytes de la especificación.",

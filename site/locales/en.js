@@ -77,6 +77,13 @@ export default {
       },
     },
   },
+  cadeia4: {
+    claquete: "Chain", t1: "Touch an", t2: "old block.",
+    lead: "Every block stores the hash of the previous one. Flip one bit of an old transaction and its hash changes; the next block no longer points to it, and everything after that stops being valid.",
+    regua: "v2 header · 222 bytes · each band at real size", novo: "Mine a new block", restaurar: "Undo the tampering", nota: "Real hashes and Merkle roots · example transactions and proof of work",
+    mexer: "flip a bit", ver: "View block {h}", inteira: "Whole chain · {n} blocks · each points to the previous hash", quebrada: "Link broken at block {h} · {n} blocks are no longer valid",
+    campos: { versao: "version", altura: "height", anterior: "previous", merkle: "merkle", util: "useful work", horario: "time", bits: "bits", nonce: "nonce" },
+  },
   cadeia: {
     titulo: "Watch a block <em>being born</em>",
     intro: "Transactions arrive, wait in the mempool, join a candidate block, pass validation and only then enter the chain. The hashes are real SHA-512, computed right now in your browser over the specification's 222-byte header.",
