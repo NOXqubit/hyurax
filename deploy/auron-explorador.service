@@ -1,0 +1,22 @@
+# Explorador de blocos da testnet: arquivos estáticos, só leitura.
+# Serve /var/lib/auron/publico (index.html e o estado.json que o nó exporta).
+[Unit]
+Description=Auron - explorador de blocos da testnet (estatico)
+After=auron-semente.service
+
+[Service]
+User=auron
+Group=auron
+ExecStart=/usr/bin/python3 -m http.server 8080 --bind 0.0.0.0 --directory /var/lib/auron/publico
+Restart=always
+RestartSec=5
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+PrivateDevices=true
+ReadOnlyPaths=/var/lib/auron/publico
+MemoryMax=128M
+
+[Install]
+WantedBy=multi-user.target

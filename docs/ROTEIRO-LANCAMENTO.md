@@ -32,8 +32,10 @@ não é.
 | 13/09/2026 | Semana 4: carteira com senha e comando `enviar` |
 | 13/09/2026 | Semana 5: guia `docs/RODAR-UM-NO.md` e programas prontos pelo GitHub |
 
-Próximo: **semana 6, testnet pública**, que depende de onde os nós semente vão
-rodar (decisão do autor).
+| 14/09/2026 | Redesign do site (abertura com o A de metal, capítulos 01, 03, 04 e 08, atos) |
+| 14/09/2026 | Semana 6, parte que não depende de servidor: sementes embutidas, `--exportar`, kit `deploy/` e guia `docs/NO-SEMENTE.md` |
+
+Próximo: **subir o primeiro nó semente**. Precisa de uma máquina ligada 24 h, e a conta no provedor é do autor (guia em `docs/NO-SEMENTE.md`).
 
 ## Semanas
 

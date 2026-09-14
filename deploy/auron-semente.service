@@ -1,0 +1,23 @@
+# Nó semente da rede de TESTE do Auron. Instalado por deploy/instalar-semente.sh.
+[Unit]
+Description=Auron - no semente da testnet
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=auron
+Group=auron
+ExecStart=/usr/local/bin/auron-no no --rede testnet --pasta /var/lib/auron/testnet --porta 8790 --exportar /var/lib/auron/publico/estado.json
+Restart=always
+RestartSec=5
+# Endurecimento: o nó só precisa da própria pasta e da rede.
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+PrivateDevices=true
+ReadWritePaths=/var/lib/auron
+MemoryMax=512M
+
+[Install]
+WantedBy=multi-user.target

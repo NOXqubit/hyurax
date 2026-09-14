@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Auron · Explorador da testnet</title>
+<meta name="color-scheme" content="dark">
+<style>
+  :root { --vazio:#040405; --grafite:#111214; --aco:#24262a; --chumbo:#7c8088; --prata:#c4c7cc; --texto:#edebe6; --luz:#f2d9a8;
+          --mono: ui-monospace, "IBM Plex Mono", Consolas, monospace; --sans: system-ui, "Segoe UI", Arial, sans-serif; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--vazio); color: var(--texto); font: 15px/1.5 var(--sans); }
+  main { max-width: 72rem; margin: 0 auto; padding: 2.5rem clamp(1rem, 4vw, 3rem) 4rem; }
+  .status { font: 12px var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--prata); display: flex; gap: .7rem; align-items: center; }
+  .status i { width: 7px; height: 7px; border-radius: 50%; background: var(--luz); box-shadow: 0 0 10px rgba(242,217,168,.6); }
+  .status.parado i { background: var(--aco); box-shadow: none; }
+  h1 { margin: 1rem 0 .4rem; font-size: clamp(2.2rem, 6vw, 4.6rem); line-height: .95; letter-spacing: -.03em; font-weight: 800; }
+  h1 span { font-weight: 250; color: var(--prata); }
+  .aviso { color: var(--chumbo); margin: 0 0 2rem; max-width: 40rem; }
+  .numeros { display: grid; grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr)); border-top: 1px solid var(--aco); border-bottom: 1px solid var(--aco); margin-bottom: 2rem; }
+  .numeros div { padding: 1rem 1rem 1rem 0; }
+  .numeros b { display: block; font: 500 clamp(1.4rem, 3vw, 2.2rem) var(--mono); color: var(--luz); font-variant-numeric: tabular-nums; }
+  .numeros span { font: 12px var(--mono); color: var(--chumbo); text-transform: uppercase; letter-spacing: .1em; }
+  .ponta { font: 13px var(--mono); color: var(--prata); overflow-wrap: anywhere; margin: -1rem 0 2rem; }
+  table { width: 100%; border-collapse: collapse; font: 13px var(--mono); }
+  th { text-align: left; color: var(--chumbo); font-weight: 400; text-transform: uppercase; letter-spacing: .1em; font-size: 11px; padding: .5rem .6rem .5rem 0; border-bottom: 1px solid var(--aco); }
+  td { padding: .6rem .6rem .6rem 0; border-bottom: 1px solid #16171a; color: var(--prata); white-space: nowrap; }
+  td.h { color: var(--texto); }
+  td.alt { color: var(--luz); }
+  .rolagem { overflow-x: auto; }
+  footer { margin-top: 2.5rem; font: 12px var(--mono); color: var(--chumbo); }
+  a { color: var(--luz); }
+</style>
+</head>
+<body>
+<main>
+  <p class="status" id="status"><i></i><span>Carregando…</span></p>
+  <h1><span>Explorador</span><br>da testnet</h1>
+  <p class="aviso">Rede de teste do Auron. O AUR não tem valor, não há venda nem promessa de lucro. Estes dados vêm deste nó semente, que confere cada bloco sozinho.</p>
+  <div class="numeros">
+    <div><b id="altura">—</b><span>altura</span></div>
+    <div><b id="pares">—</b><span>pares conectados</span></div>
+    <div><b id="mempool">—</b><span>no mempool</span></div>
+    <div><b id="emitido">—</b><span>AUR de teste emitidos</span></div>
+  </div>
+  <p class="ponta" id="ponta"></p>
+  <div class="rolagem">
+    <table>
+      <thead><tr><th>Altura</th><th>Hash</th><th>Anterior</th><th>Horário</th><th>Tx</th><th>Trabalho útil</th></tr></thead>
+      <tbody id="blocos"></tbody>
+    </table>
+  </div>
+  <footer>Formato auron-explorador-v1 · atualiza a cada 10 s · <a href="https://github.com/NOXqubit/auron">código aberto</a> · <a href="estado.json">estado.json</a></footer>
+</main>
+<script>
+  const $ = (id) => document.getElementById(id);
+  const curto = (h) => h.slice(0, 10) + "…" + h.slice(-6);
+  const celula = (texto, classe) => { const td = document.createElement("td"); td.textContent = texto; if (classe) td.className = classe; return td; };
+  async function atualizar() {
+    try {
+      const r = await fetch("estado.json", { cache: "no-store" });
+      const d = await r.json();
+      const idade = Math.max(0, Math.round(Date.now() / 1000 - d.atualizado));
+      const vivo = idade < 180;
+      $("status").className = "status" + (vivo ? "" : " parado");
+      $("status").lastElementChild.textContent = `${d.rede} · ${vivo ? "no ar" : "sem notícia"} · atualizado há ${idade} s`;
+      $("altura").textContent = d.altura.toLocaleString("pt-BR");
+      $("pares").textContent = d.pares;
+      $("mempool").textContent = d.mempool;
+      $("emitido").textContent = d.emitido;
+      $("ponta").textContent = "ponta: " + d.ponta + " · trabalho acumulado: " + d.trabalho;
+      $("blocos").replaceChildren(...d.blocos.map((b) => {
+        const tr = document.createElement("tr");
+        tr.append(celula("#" + b.altura, "alt"), celula(curto(b.hash), "h"), celula(curto(b.anterior)),
+          celula(new Date(b.horario * 1000).toLocaleString("pt-BR")), celula(String(b.transacoes)),
+          celula(b.trabalho_util_n ? `${b.trabalho_util_n}×${b.trabalho_util_n}` : "—"));
+        return tr;
+      }));
+    } catch {
+      $("status").className = "status parado";
+      $("status").lastElementChild.textContent = "Sem resposta do nó";
+    }
+  }
+  atualizar();
+  setInterval(atualizar, 10000);
+</script>
+</body>
+</html>

@@ -57,8 +57,10 @@ auron-no — nó do Auron (rede de TESTE)
       Minera N blocos (padrão 1; 0 = sem parar) e grava a cadeia depois de cada um.
       Com --porta e/ou --semente, entra na rede: sincroniza e propaga o que minerar.
 
-  auron-no no --rede testnet --pasta dados [--porta P] [--semente IP:PORTA,...]
+  auron-no no --rede testnet --pasta dados [--porta P] [--semente IP:PORTA,...] [--exportar estado.json]
       Só roda o nó: escuta, sincroniza, serve e propaga. Sem minerar.
+      --exportar grava um resumo público da cadeia em JSON (explorador de blocos).
+      Sem --semente, a testnet usa as sementes embutidas; --sem-sementes-padrao desliga.
 
   auron-no estado --rede testnet --pasta dados [--endereco HEX]
       Mostra a altura da cadeia e, com --endereco, o saldo.
@@ -85,7 +87,15 @@ struct Opcoes {
     para: Option<[u8; ADDRESS_LEN]>,
     valor: Option<u64>,
     taxa: u64,
+    exportar: Option<PathBuf>,
+    sem_sementes_padrao: bool,
 }
+
+/// Nós semente da rede de teste pública, embutidos no programa. Quem não passa
+/// `--semente` conecta neles. Vazio enquanto nenhum semente estiver no ar: a
+/// lista só ganha um endereço depois de ele responder de verdade (ver
+/// docs/NO-SEMENTE.md).
+const SEMENTES_TESTNET: &[&str] = &[];
 
 fn hex(bytes: &[u8]) -> String {
     bytes.iter().map(|b| format!("{b:02x}")).collect()
@@ -118,9 +128,15 @@ fn ler_opcoes(args: &[String]) -> Result<Opcoes, String> {
         para: None,
         valor: None,
         taxa: 0,
+        exportar: None,
+        sem_sementes_padrao: false,
     };
     let mut it = args.iter();
     while let Some(nome) = it.next() {
+        if nome == "--sem-sementes-padrao" {
+            o.sem_sementes_padrao = true;
+            continue;
+        }
         let valor = it.next().ok_or_else(|| format!("{nome} precisa de um valor"))?;
         match nome.as_str() {
             "--rede" => {
@@ -140,6 +156,7 @@ fn ler_opcoes(args: &[String]) -> Result<Opcoes, String> {
             "--para" => o.para = Some(de_hex(valor).ok_or("--para precisa de 40 dígitos hexadecimais")?),
             "--valor" => o.valor = Some(unidades_de_aur(valor)?),
             "--taxa" => o.taxa = unidades_de_aur(valor)?,
+            "--exportar" => o.exportar = Some(PathBuf::from(valor)),
             "--linhas" => {
                 o.linhas = valor
                     .parse::<u32>()
@@ -149,6 +166,9 @@ fn ler_opcoes(args: &[String]) -> Result<Opcoes, String> {
             }
             _ => return Err(format!("opção desconhecida: {nome}")),
         }
+    }
+    if o.sementes.is_empty() && !o.sem_sementes_padrao && o.rede.nome == ParametrosRede::TESTNET.nome {
+        o.sementes = SEMENTES_TESTNET.iter().map(|s| (*s).to_string()).collect();
     }
     Ok(o)
 }
@@ -482,19 +502,74 @@ fn servir_no(args: &[String]) -> Result<(), String> {
     let o = ler_opcoes(args)?;
     let rede = subir_rede(&o)?;
     println!("Nó no ar. Ctrl+C para parar. A cadeia é gravada a cada mudança.");
-    let mut ultima_altura = u64::MAX;
+    let mut ultima = (u64::MAX, usize::MAX);
+    let mut ultimo_export = Instant::now();
     loop {
         std::thread::sleep(Duration::from_secs(2));
         let (altura, pares, mempool) = {
             let no = rede.no.lock().map_err(|_| "nó travado".to_string())?;
             (no.chain.height(), rede.pares_conectados(), no.mempool_len())
         };
-        if altura != ultima_altura {
-            ultima_altura = altura;
+        let mudou = (altura, pares) != ultima;
+        if altura != ultima.0 {
             salvar(&rede, &o)?;
             println!("  altura {altura} · {pares} par(es) · {mempool} no mempool");
         }
+        if let Some(arquivo) = &o.exportar
+            && (mudou || ultimo_export.elapsed() > Duration::from_secs(60))
+        {
+            if let Err(e) = exportar_estado(&rede, &o, arquivo) {
+                println!("  aviso: não consegui exportar {}: {e}", arquivo.display());
+            }
+            ultimo_export = Instant::now();
+        }
+        ultima = (altura, pares);
     }
+}
+
+/// Resumo público da cadeia em JSON, para um explorador de blocos estático.
+/// Só dados que já são públicos: altura, hashes e contagens. Gravado num
+/// arquivo temporário e renomeado, para quem lê nunca pegar pela metade.
+fn exportar_estado(rede: &Arc<Rede>, o: &Opcoes, arquivo: &Path) -> Result<(), String> {
+    use std::fmt::Write as _;
+    let no = rede.no.lock().map_err(|_| "nó travado".to_string())?;
+    let c = &no.chain;
+    let agora = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map_or(0, |d| d.as_secs());
+    let mut j = String::new();
+    let _ = write!(
+        j,
+        "{{\"formato\":\"auron-explorador-v1\",\"rede\":\"{}\",\"altura\":{},\"ponta\":\"{}\",\"trabalho\":\"{}\",\"emitido\":\"{}\",\"pares\":{},\"mempool\":{},\"atualizado\":{},\"blocos\":[",
+        o.rede.nome,
+        c.height(),
+        hex(&c.tip_hash()),
+        c.total_work().to_decimal(),
+        aur(u128::from(c.state.total_emitted)),
+        rede.pares_conectados(),
+        no.mempool_len(),
+        agora
+    );
+    for (i, e) in c.entries.iter().rev().take(20).enumerate() {
+        let h = &e.block.header;
+        let n = e.block.useful_proof.as_ref().map_or(0, |p| p.n);
+        let _ = write!(
+            j,
+            "{}{{\"altura\":{},\"hash\":\"{}\",\"anterior\":\"{}\",\"horario\":{},\"bits\":\"{:#010x}\",\"transacoes\":{},\"trabalho_util_n\":{}}}",
+            if i > 0 { "," } else { "" },
+            h.height,
+            hex(&e.block.block_hash()),
+            hex(&h.prev_hash),
+            h.timestamp,
+            h.bits,
+            e.block.transactions.len(),
+            n
+        );
+    }
+    j.push_str("]}
+");
+    drop(no);
+    let temporario = arquivo.with_extension("tmp");
+    std::fs::write(&temporario, j).map_err(|e| e.to_string())?;
+    std::fs::rename(&temporario, arquivo).map_err(|e| e.to_string())
 }
 
 fn estado(args: &[String]) -> Result<(), String> {
