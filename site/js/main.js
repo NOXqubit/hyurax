@@ -1,157 +1,200 @@
-// Ponto de entrada: idioma, mundo 3D (ou 2D), navegação e capítulos.
-import { carregar, aplicar, t, html, idiomaInicial, idiomaAtual, IDIOMAS } from "./i18n.js";
+// Hyurax — a rede viva. Liga idiomas, abertura 3D, experimentos e o resto.
+
+import { IDIOMAS, carregar, aplicar, t, idiomaAtual, idiomaInicial } from "./i18n.js";
 import { detectarQualidade } from "./quality.js";
-import { SimulationEngine, Escritor, merkle, sha512, hex } from "./simulation/engine.js";
-import { criarAudio } from "./audio.js";
-import { el } from "./ui.js";
+import { Escritor, sha512, hex } from "./simulation/engine.js";
+import { iniciarTrabalho } from "./secoes/trabalho.js";
+import { iniciarConfira } from "./secoes/confira.js";
+import { iniciarEter } from "./secoes/eter.js";
 
-const q = detectarQualidade();
-const ouvintes = [];
-const aoMudarIdioma = (fn) => ouvintes.push(fn);
+const BITCOIN = "bc1qkp7d90t9tnmuv2rwq742pwc8pnet28a59zdzt7";
+document.documentElement.classList.add("js");
+const qualidade = detectarQualidade();
+const calmo = qualidade.calmo;
+const secoes = [];
 
-async function criarMundo() {
-  const canvas = document.getElementById("mundo");
-  if (q.perfil) {
-    try { return (await import("./world/world.js")).criarMundo(canvas, q); }
-    catch (e) { console.error("3D indisponível", e); }
-  }
-  const c2 = document.createElement("canvas");
-  c2.id = "mundo-2d"; c2.setAttribute("aria-hidden", "true");
-  canvas.replaceWith(c2);
-  return (await import("./world/fallback2d.js")).criarMundo2D(c2, q.calmo);
+// ---------- idiomas ----------
+const botaoIdioma = document.getElementById("idioma-atual");
+const listaIdioma = document.getElementById("idioma-lista");
+function montarIdiomas() {
+  const atual = IDIOMAS.find((i) => i.codigo === idiomaAtual());
+  botaoIdioma.textContent = atual ? atual.curto : "PT";
+  botaoIdioma.setAttribute("aria-label", t("ui.idioma"));
+  listaIdioma.replaceChildren(...IDIOMAS.map((i) => {
+    const li = document.createElement("li");
+    const b = document.createElement("button");
+    b.type = "button";
+    b.setAttribute("aria-current", String(i.codigo === idiomaAtual()));
+    b.append(i.nome, Object.assign(document.createElement("span"), { textContent: i.curto }));
+    b.addEventListener("click", async () => { fecharIdiomas(); await trocarIdioma(i.codigo); });
+    li.append(b);
+    return li;
+  }));
 }
+function fecharIdiomas() { listaIdioma.hidden = true; botaoIdioma.setAttribute("aria-expanded", "false"); }
+botaoIdioma.addEventListener("click", () => {
+  const abrir = listaIdioma.hidden;
+  listaIdioma.hidden = !abrir;
+  botaoIdioma.setAttribute("aria-expanded", String(abrir));
+});
+document.addEventListener("click", (e) => { if (!e.target.closest("#idiomas")) fecharIdiomas(); });
+document.addEventListener("keydown", (e) => { if (e.key === "Escape") { fecharIdiomas(); fecharMenu(); } });
 
-function menuIdiomas() {
-  const botao = document.getElementById("idioma-atual"), lista = document.getElementById("idioma-lista");
-  const fechar = () => { lista.hidden = true; botao.setAttribute("aria-expanded", "false"); };
-  function desenhar() {
-    botao.textContent = IDIOMAS.find((i) => i.codigo === idiomaAtual()).curto;
-    botao.setAttribute("aria-label", `Idioma / Language: ${IDIOMAS.find((i) => i.codigo === idiomaAtual()).nome}`);
-    lista.replaceChildren(...IDIOMAS.map((i) => el("li", {}, el("button", { type: "button", lang: i.codigo, "aria-current": String(i.codigo === idiomaAtual()), onclick: () => { fechar(); trocar(i.codigo); } }, i.nome, el("span", { text: i.curto })))));
-  }
-  botao.addEventListener("click", () => { const abrir = lista.hidden; lista.hidden = !abrir; botao.setAttribute("aria-expanded", String(abrir)); if (abrir) lista.querySelector("button").focus(); });
-  document.addEventListener("click", (e) => { if (!e.target.closest("#idiomas")) fechar(); });
-  document.addEventListener("keydown", (e) => { if (e.key === "Escape") fechar(); });
-  desenhar();
-  aoMudarIdioma(desenhar);
-}
-
-async function trocar(codigo) {
+async function trocarIdioma(codigo) {
   await carregar(codigo);
   aplicar();
-  ouvintes.forEach((fn) => { try { fn(); } catch (e) { console.error(e); } });
-  try { const u = new URL(location.href); u.searchParams.set("lang", codigo); history.replaceState(null, "", u); } catch { /* sem history em alguns visualizadores */ }
-}
-
-function navegacao(mundo) {
-  const barra = document.getElementById("barra");
-  const gaveta = document.getElementById("gaveta"), abre = document.getElementById("abre-menu"), fecha = document.getElementById("fecha-menu");
-  const abrirGaveta = (sim) => { gaveta.hidden = !sim; abre.setAttribute("aria-expanded", String(sim)); document.body.style.overflow = sim ? "hidden" : ""; if (sim) fecha.focus(); else abre.focus(); };
-  abre.addEventListener("click", () => abrirGaveta(true));
-  fecha.addEventListener("click", () => abrirGaveta(false));
-  gaveta.querySelectorAll("a").forEach((a) => a.addEventListener("click", () => { gaveta.hidden = true; document.body.style.overflow = ""; abre.setAttribute("aria-expanded", "false"); }));
-  gaveta.addEventListener("keydown", (e) => { if (e.key === "Escape") abrirGaveta(false); });
-
-  const secoes = [...document.querySelectorAll("[data-mundo]")];
-  const links = [...document.querySelectorAll(".menu a")];
-  let modoAtual = "", pedido = false;
-  function avaliar() {
-    pedido = false;
-    barra.classList.toggle("rolou", window.scrollY > 40);
-    const meio = window.innerHeight * 0.5;
-    const s = secoes.find((x) => { const r = x.getBoundingClientRect(); return r.top <= meio && r.bottom >= meio; }) || secoes[0];
-    const modo = s.dataset.mundo;
-    document.body.classList.toggle("mundo-ao-fundo", !["topo", "escala", "fim"].includes(s.id));
-    if (modo !== modoAtual && document.getElementById("palco-edit").hidden) { modoAtual = modo; mundo.definirModo(modo); }
-    links.forEach((a) => a.setAttribute("aria-current", String(a.getAttribute("href") === `#${s.id}`)));
-  }
-  window.addEventListener("scroll", () => { if (!pedido) { pedido = true; requestAnimationFrame(avaliar); } }, { passive: true });
-  avaliar();
-  return () => { modoAtual = ""; avaliar(); };
-}
-
-// A prova da abertura: um cabeçalho de bloco v2 (222 bytes) montado aqui e o
-// SHA-512 dele calculado agora, neste aparelho, com o tempo medido. É conta de
-// verdade sobre um cabeçalho de exemplo; o rótulo diz isso.
-async function provaAoVivo() {
-  const alvo = document.getElementById("prova-valor");
-  if (!alvo || !globalThis.crypto?.subtle) return () => {};
-  const zeros = new Uint8Array(64);
-  const cab = new Escritor().u16(2).u64(0).fixo(zeros).fixo(await merkle([])).fixo(zeros)
-    .u64(Math.floor(Date.now() / 1000)).u32(0x1f00ffff).u64(2026).bytes();
-  await sha512(cab); // aquece o motor de cripto antes de medir
-  const t0 = performance.now();
-  const h = hex(await sha512(cab));
-  const ms = performance.now() - t0;
-  const desenhar = () => {
-    const txt = t("hero.prova_valor", { b: cab.length, h: `${h.slice(0, 8)}…${h.slice(-8)}`, ms: ms.toLocaleString(idiomaAtual(), { maximumFractionDigits: 2, minimumFractionDigits: 2 }) });
-    alvo.textContent = txt;
-  };
-  desenhar();
-  return desenhar;
-}
-
-function revelar() {
-  if (q.calmo || !("IntersectionObserver" in window)) return;
-  const obs = new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting) { e.target.classList.add("visto"); obs.unobserve(e.target); } }), { rootMargin: "0px 0px -6% 0px" });
-  document.querySelectorAll(".revela").forEach((x) => { if (x.getBoundingClientRect().top > window.innerHeight) obs.observe(x); });
-}
-
-// Musica de fundo: trilha propria, desligada por padrao. Som so comeca com um
-// toque da pessoa, que e o que o navegador exige e o que a boa educacao pede.
-function musica(audio) {
-  const botao = document.getElementById("som");
-  if (!botao) return;
-  if (!audio) { botao.hidden = true; return; }
-  let ligada = false;
-  botao.addEventListener("click", async () => {
-    ligada = !ligada;
-    botao.setAttribute("aria-pressed", String(ligada));
-    if (ligada) {
-      const pronto = await audio.iniciar();
-      if (pronto) audio.tocar({ volume: 0.32 });
-      else { ligada = false; botao.setAttribute("aria-pressed", "false"); }
-    } else {
-      audio.parar({ suave: true });
-    }
-    try { localStorage.setItem("auron-musica", ligada ? "1" : "0"); } catch { /* sem armazenamento */ }
+  montarIdiomas();
+  montarEstado();
+  secoes.forEach((s) => s.redesenhar());
+  // Os blocos que já estavam no painel também mudam de língua.
+  listaVivos.querySelectorAll("span[data-tipo]").forEach((s) => {
+    s.textContent = `#${s.dataset.altura} · ${t(`topo.tipo.${s.dataset.tipo}`)}`;
   });
 }
 
-async function iniciar() {
-  await carregar(idiomaInicial());
-  aplicar();
-  // maquina fraca ou celular: sem desfoque de vidro e sem sombras caras
-  document.body.classList.toggle("leve", q.nivel === "LOW" || q.movel);
-  if (!q.calmo) document.getElementById("topo").classList.add("entrando");
-  if (q.calmo) document.querySelectorAll(".anima").forEach((x) => x.remove());
+// ---------- menu no celular ----------
+const menu = document.getElementById("menu");
+const abrirMenu = document.getElementById("abrir-menu");
+function fecharMenu() { menu.classList.remove("aberto"); abrirMenu.setAttribute("aria-expanded", "false"); }
+abrirMenu.addEventListener("click", () => {
+  const abrir = !menu.classList.contains("aberto");
+  menu.classList.toggle("aberto", abrir);
+  abrirMenu.setAttribute("aria-expanded", String(abrir));
+});
+menu.addEventListener("click", (e) => { if (e.target.closest("a")) fecharMenu(); });
 
-  const mundo = await criarMundo();
-  document.getElementById("qualidade").textContent = mundo.nivel === "2D" ? t("ui.sem_webgl") : `${t("ui.qualidade")}: ${mundo.nivel}`;
-  aoMudarIdioma(() => { document.getElementById("qualidade").textContent = mundo.nivel === "2D" ? t("ui.sem_webgl") : `${t("ui.qualidade")}: ${mundo.nivel}`; });
+// ---------- barra e navegação ----------
+const barra = document.getElementById("barra");
+const aoRolar = () => barra.classList.toggle("solida", scrollY > 40);
+addEventListener("scroll", aoRolar, { passive: true });
+aoRolar();
+const links = [...menu.querySelectorAll("a")];
+const observarSecao = new IntersectionObserver((es) => {
+  es.forEach((e) => {
+    if (e.isIntersecting) {
+      e.target.classList.add("visto");
+      links.forEach((a) => a.setAttribute("aria-current", String(a.getAttribute("href") === `#${e.target.id}`)));
+    }
+  });
+}, { rootMargin: "-35% 0px -55% 0px" });
+document.querySelectorAll(".capitulo").forEach((s) => observarSecao.observe(s));
+// Quem abre a página já no meio (link com #) vê tudo sem esperar.
+if (location.hash) document.querySelectorAll(".capitulo").forEach((s) => s.classList.add("visto"));
 
-  const aGigante = document.getElementById("a-gigante");
-  if (aGigante && mundo.heroi) mundo.heroi(aGigante, () => aGigante.classList.add("no-3d"));
-  provaAoVivo().then((redesenhar) => aoMudarIdioma(redesenhar)).catch(() => {});
+// ---------- a rede viva ----------
+const listaVivos = document.getElementById("blocos-vivos");
+let anteriorVivo = new Uint8Array(64);
+async function blocoVivo({ altura, tipo }) {
+  // Cabeçalho mínimo com o hash do anterior: o SHA-512 é de verdade.
+  const cab = new Escritor().u64(altura).fixo(anteriorVivo).u64(Math.floor(Date.now() / 1000)).bytes();
+  const h = await sha512(cab);
+  anteriorVivo = h;
+  const li = document.createElement("li");
+  const esq = document.createElement("span");
+  esq.dataset.altura = String(altura);
+  esq.dataset.tipo = tipo;
+  esq.textContent = `#${altura} · ${t(`topo.tipo.${tipo}`)}`;
+  const dir = document.createElement("b");
+  dir.textContent = hex(h).slice(0, 10) + "…";
+  li.append(esq, dir);
+  listaVivos.prepend(li);
+  while (listaVivos.children.length > 5) listaVivos.lastElementChild.remove();
+}
 
-  const restaurarMundo = navegacao(mundo);
-  // Atalho de depuração, só com ?debug=1 na URL: permite inspecionar o mundo e
-  // o áudio pelo console sem mexer no código.
+async function iniciarRede() {
+  const canvas = document.getElementById("rede");
+  if (qualidade.nivel === "NONE") {
+    // Sem WebGL: a página segue inteira; só o painel ao vivo anda.
+    let a = 0;
+    blocoVivo({ altura: ++a, tipo: "celular" });
+    if (!calmo) setInterval(() => blocoVivo({ altura: ++a, tipo: ["celular", "computador", "servidor"][a % 3] }), 3200);
+    return;
+  }
   try {
-    if (new URLSearchParams(location.search).get("debug")) { globalThis.__auron = { mundo, q }; document.body.classList.add("depurar"); }
-  } catch { /* sem URL utilizável */ }
-  menuIdiomas();
-  revelar();
-
-  const engine = new SimulationEngine(2026);
-  const audio = criarAudio();
-  musica(audio);
-  const ctx = { t, html, engine, mundo, audio, calmo: q.calmo, movel: q.movel, aoMudarIdioma, idioma: idiomaAtual, restaurarMundo };
-  const capitulos = ["visao", "nucleo", "cadeia", "nos", "fragmentacao", "radio", "mentira", "direct", "malha", "seguranca", "economia", "escala", "caminho", "aberto", "edit"];
-  for (const nome of capitulos) {
-    try { (await import(`./sections/${nome}.js`)).iniciar(ctx); }
-    catch (e) { console.error(`capítulo ${nome}`, e); }
+    const { criarRedeViva } = await import("./rede/viva.js");
+    criarRedeViva(canvas, { nivel: qualidade.nivel, calmo, aoBloco: blocoVivo });
+  } catch (erro) {
+    console.warn("rede 3D indisponível:", erro);
   }
 }
 
-iniciar();
+// ---------- onde estamos ----------
+function montarEstado() {
+  const quadro = document.getElementById("quadro-estado");
+  const colunas = [["pronto", "estado.pronto"], ["andamento", "estado.andamento"], ["planejado", "estado.planejado"]];
+  quadro.replaceChildren(...colunas.map(([classe, chave]) => {
+    const col = document.createElement("div");
+    col.className = `coluna-estado ${classe}`;
+    const h3 = document.createElement("h3");
+    h3.append(document.createElement("i"), t(`${chave}.titulo`));
+    col.append(h3);
+    const itens = t(`${chave}.itens`);
+    (Array.isArray(itens) ? itens : []).forEach(([titulo, texto]) => {
+      const item = document.createElement("div");
+      item.className = "item-estado";
+      item.append(Object.assign(document.createElement("b"), { textContent: titulo }),
+        Object.assign(document.createElement("span"), { textContent: texto }));
+      col.append(item);
+    });
+    return col;
+  }));
+}
+
+// ---------- doação ----------
+function montarDoacao() {
+  const qr = document.getElementById("qr");
+  const desenharQr = () => {
+    if (typeof globalThis.qrcode !== "function" || qr.childElementCount) return;
+    const q = globalThis.qrcode(0, "M");
+    q.addData(`bitcoin:${BITCOIN}`);
+    q.make();
+    qr.innerHTML = q.createSvgTag({ cellSize: 4, margin: 0, scalable: true });
+  };
+  if (document.readyState === "complete") desenharQr(); else addEventListener("load", desenharQr);
+  const copiar = document.getElementById("copiar");
+  copiar.addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(BITCOIN);
+      copiar.textContent = t("apoie.copiado");
+    } catch {
+      copiar.textContent = t("apoie.selecione");
+      getSelection().selectAllChildren(document.getElementById("endereco"));
+    }
+    setTimeout(() => { copiar.textContent = t("apoie.copiar"); }, 2400);
+  });
+}
+
+// ---------- o laço: as bolinhas andam pelos trilhos ----------
+function animarLaco() {
+  const svg = document.querySelector(".fluxo svg");
+  if (!svg || calmo) return;
+  const [ida, volta] = svg.querySelectorAll(".trilho");
+  const [bIda, bVolta] = svg.querySelectorAll(".bola");
+  let inicio = null;
+  const passo = (agora) => {
+    requestAnimationFrame(passo);
+    if (inicio === null) inicio = agora;
+    const f = ((agora - inicio) / 2600) % 1;
+    const g = ((agora - inicio + 1300) / 2600) % 1;
+    const p = ida.getPointAtLength(ida.getTotalLength() * f);
+    const q = volta.getPointAtLength(volta.getTotalLength() * g);
+    bIda.setAttribute("cx", p.x); bIda.setAttribute("cy", p.y);
+    bVolta.setAttribute("cx", q.x); bVolta.setAttribute("cy", q.y);
+  };
+  requestAnimationFrame(passo);
+}
+
+// ---------- início ----------
+(async () => {
+  await carregar(idiomaInicial());
+  aplicar();
+  montarIdiomas();
+  montarEstado();
+  montarDoacao();
+  animarLaco();
+  const ctx = { t, idioma: idiomaAtual, calmo };
+  secoes.push(iniciarTrabalho(ctx), iniciarConfira(ctx), iniciarEter(ctx));
+  // A gênese aparece na hora: o painel não fica vazio enquanto o 3D carrega.
+  await blocoVivo({ altura: 0, tipo: "genese" });
+  iniciarRede();
+})();

@@ -22,7 +22,7 @@ export async function sha512(bytes) {
 }
 
 // Escrita canônica: inteiros big-endian e bytes variáveis com prefixo de tamanho u32,
-// como no auron-codec.
+// como no hyurax-codec.
 export class Escritor {
   constructor() { this.partes = []; this.total = 0; }
   u8(v) { return this.#pedaco(Uint8Array.of(v & 0xff)); }
@@ -87,13 +87,13 @@ export class SimulationEngine {
     const de = this.int(this.contasSim.length);
     let para = this.int(this.contasSim.length - 1); if (para >= de) para++;
     const nonce = (this.nonces.get(de) || 0) + 1; this.nonces.set(de, nonce);
-    const valor = (1 + this.int(4000)) * 250000;          // unidades de 10^-8 AUR
+    const valor = (1 + this.int(4000)) * 250000;          // unidades de 10^-8 HYUR
     const taxa = (1 + this.int(20)) * 1000;
     const assinatura = this.bytes(64);
     const corpo = new Escritor().u16(2).u8(1).fixo(this.contasSim[de]).u64(nonce).u64(taxa)
       .u32(1).fixo(this.contasSim[para]).fixo(new Uint8Array(32)).u64(valor).variavel(assinatura).bytes();
     return {
-      simulation: true, ativo: "AUR", valor, taxa, nonce,
+      simulation: true, ativo: "HYUR", valor, taxa, nonce,
       remetente: hex(this.contasSim[de]), destinatario: hex(this.contasSim[para]),
       assinatura: hex(assinatura), bytes: corpo, id: null, bloco: null,
     };
@@ -107,9 +107,9 @@ export class SimulationEngine {
     const horario = Math.floor(Date.now() / 1000);
     const bits = 0x1f00ffff;
     const nonce = this.int(2 ** 31);
-    // Cabeçalho versão 2, de 222 bytes, como no §7 da AURON-SPEC-01. A prova de
+    // Cabeçalho versão 2, de 222 bytes, como no §7 da HYURAX-SPEC-01. A prova de
     // trabalho útil é simulada; o compromisso dela (useful_root) é SHA-512 real.
-    const prova = new TextEncoder().encode(`AURON-UPOW-PROOF-v1 simulada ${altura} ${nonce}`);
+    const prova = new TextEncoder().encode(`HYURAX-UPOW-PROOF-v1 simulada ${altura} ${nonce}`);
     const utilRaiz = await sha512(prova);
     const cab = new Escritor().u16(2).u64(altura).fixo(prev).fixo(raiz).fixo(utilRaiz).u64(horario).u32(bits).u64(nonce).bytes();
     const h = await sha512(cab);

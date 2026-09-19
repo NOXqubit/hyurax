@@ -3,723 +3,266 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Auron Technology</title>
-<meta name="description" content="A Auron está construindo uma infraestrutura em evolução para valor, computação, comunicação e recursos distribuídos.">
-<meta name="theme-color" content="#040405">
+<title>Hyurax — a rede somos nós</title>
+<meta name="description" content="Hyurax é uma blockchain em que celulares e computadores comuns formam a rede e conferem tudo sozinhos. Rede de teste, código aberto, sem valor.">
+<meta name="theme-color" content="#05070a">
 <meta name="color-scheme" content="dark">
 <meta property="og:type" content="website">
-<meta property="og:site_name" content="Auron Technology">
-<meta property="og:title" content="Auron Technology — Distributed Infrastructure">
-<meta property="og:description" content="Auron is building an evolving infrastructure for value, computation, communication and distributed resources.">
-<meta property="og:image" content="assets/brand/og-1200x630.png">
-<meta property="og:image:width" content="1200">
-<meta property="og:image:height" content="630">
-<meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Auron Technology — Distributed Infrastructure">
-<meta name="twitter:description" content="Auron is building an evolving infrastructure for value, computation, communication and distributed resources.">
-<meta name="twitter:image" content="assets/brand/og-1200x630.png">
+<meta property="og:site_name" content="Hyurax">
+<meta property="og:title" content="Hyurax — os nós são a rede">
+<meta property="og:description" content="Celulares e computadores comuns formam a rede e conferem tudo sozinhos. Rede de teste, código aberto.">
+<meta name="twitter:card" content="summary">
 <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
 <link rel="manifest" href="site.webmanifest">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,250..800&family=IBM+Plex+Mono:wght@400;500&family=Michroma&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,250..800&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <link rel="stylesheet" href="styles/main.css">
-<script type="application/ld+json">
-{"@context":"https://schema.org","@type":"Organization","name":"Auron Technology","description":"Auron is building an evolving infrastructure for value, computation, communication and distributed resources.","logo":"assets/logo.svg"}
-</script>
 </head>
 <body>
-
-<svg width="0" height="0" class="so-leitor" aria-hidden="true" focusable="false">
-  <defs>
-    <linearGradient id="metal" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#f7f7f5"/>
-      <stop offset="0.34" stop-color="#b4b8be"/>
-      <stop offset="0.52" stop-color="#fdfdfb"/>
-      <stop offset="0.76" stop-color="#7a7e86"/>
-      <stop offset="1" stop-color="#d6d8dc"/>
-    </linearGradient>
-    <linearGradient id="metal-h" x1="0" y1="0" x2="560" y2="100" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#e9eaec"/>
-      <stop offset="0.3" stop-color="#9ea2a9"/>
-      <stop offset="0.5" stop-color="#fbfbf9"/>
-      <stop offset="0.72" stop-color="#8d9198"/>
-      <stop offset="1" stop-color="#dcdee1"/>
-    </linearGradient>
-    <symbol id="simbolo-a" viewBox="0 0 100 100">
-      <path d="M50 6 L95 92 L76 92 L50 42 L24 92 L5 92 Z" fill="url(#metal)"/>
-      <path d="M8 90 C30 75 51 64 75 57 L78.5 65.5 C56 69.5 33 78 8 90 Z" fill="url(#metal)"/>
-    </symbol>
-    <symbol id="palavra" viewBox="0 0 560 100">
-      <g fill="none" stroke="url(#metal-h)" stroke-width="10">
-        <path d="M8 92 L50 8 L92 92" stroke-linejoin="miter" stroke-miterlimit="10"/>
-        <path d="M122 8 V58 Q122 92 162 92 Q202 92 202 58 V8"/>
-        <path d="M236 92 V8 H286 Q318 8 318 36 Q318 64 286 64 H236 M284 64 L320 92"/>
-        <rect x="352" y="8" width="96" height="84" rx="34"/>
-        <path d="M482 92 V8 L552 92 V8" stroke-linejoin="miter"/>
-      </g>
-    </symbol>
-  </defs>
-</svg>
-
-<canvas id="mundo" aria-hidden="true"></canvas>
-<div class="veu" aria-hidden="true"></div>
+<a class="pular" href="#conteudo" data-i18n="ui.pular">Pular para o conteúdo</a>
 
 <header class="barra" id="barra">
-  <div class="barra-dentro">
-    <a class="marca" href="#topo" aria-label="Auron Technology">
-      <svg class="a" aria-hidden="true"><use href="#simbolo-a"/></svg>
-      <svg class="palavra" viewBox="0 0 560 100" aria-hidden="true"><use href="#palavra"/></svg>
-    </a>
-    <nav class="menu" data-i18n-attr="aria-label:nav.rotulo">
-      <a href="#visao" data-i18n="nav.problema">O problema</a>
-      <a href="#utrax" data-i18n="nav.funciona">O que funciona</a>
-      <a href="#rodar" data-i18n="nav.rodar">Rodar um nó</a>
-      <a href="#direct" data-i18n="nav.ideias">Ideias</a>
-      <a href="#onde" data-i18n="nav.onde">Onde estamos</a>
-      <a href="#aberto" data-i18n="nav.codigo">Código</a>
-    </nav>
-    <div class="lado-direito">
-      <div class="idiomas" id="idiomas">
-        <button class="atual" type="button" aria-haspopup="true" aria-expanded="false" id="idioma-atual">PT</button>
-        <ul id="idioma-lista" hidden></ul>
-      </div>
-      <button class="som" type="button" id="som" aria-pressed="false" data-i18n-attr="aria-label:ui.musica;title:ui.musica">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9.5h3.5L12 5.5v13L7.5 14.5H4z" fill="currentColor"/><path class="onda" d="M15.5 9.2a4 4 0 0 1 0 5.6M18 6.8a7.5 7.5 0 0 1 0 10.4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path class="corte" d="M15.5 9.5l5 5m0-5l-5 5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
-      </button>
-      <a class="botao botao-claro botao-pequeno explorar" href="#rodar" data-i18n="nav.rodar">Rodar um nó</a>
-      <button class="abre-menu" type="button" id="abre-menu" aria-expanded="false" data-i18n-attr="aria-label:nav.abrir"><i></i><i></i><i></i></button>
+  <a class="marca" href="#topo" aria-label="Hyurax">
+    <img src="assets/logo.svg" alt="" width="26" height="26">
+    <span class="marca-nome">HYURAX</span>
+  </a>
+  <nav class="menu" id="menu" aria-label="Seções" data-i18n-attr="aria-label:nav.rotulo">
+    <a href="#laco" data-i18n="nav.laco">Provado</a>
+    <a href="#trabalho" data-i18n="nav.trabalho">Trabalho útil</a>
+    <a href="#confira" data-i18n="nav.confira">Confira</a>
+    <a href="#eter" data-i18n="nav.eter">Éter</a>
+    <a href="#rodar" data-i18n="nav.rodar">Rode um nó</a>
+    <a href="#estado" data-i18n="nav.estado">Onde estamos</a>
+  </nav>
+  <div class="barra-direita">
+    <div class="idiomas" id="idiomas">
+      <button type="button" class="idioma-atual" id="idioma-atual" aria-haspopup="true" aria-expanded="false">PT</button>
+      <ul class="idioma-lista" id="idioma-lista" hidden></ul>
     </div>
+    <a class="github" href="https://github.com/NOXqubit/hyurax" rel="noopener">GitHub</a>
+    <button type="button" class="abrir-menu" id="abrir-menu" aria-controls="menu" aria-expanded="false" data-i18n-attr="aria-label:nav.abrir" aria-label="Abrir menu"><span></span><span></span></button>
   </div>
 </header>
 
-<nav class="gaveta" id="gaveta" hidden data-i18n-attr="aria-label:nav.rotulo">
-  <button class="botao botao-linha botao-pequeno fecha" type="button" id="fecha-menu" data-i18n="nav.fechar"></button>
-      <a href="#visao" data-i18n="nav.problema">O problema</a>
-      <a href="#utrax" data-i18n="nav.funciona">O que funciona</a>
-      <a href="#rodar" data-i18n="nav.rodar">Rodar um nó</a>
-      <a href="#direct" data-i18n="nav.ideias">Ideias</a>
-      <a href="#onde" data-i18n="nav.onde">Onde estamos</a>
-      <a href="#aberto" data-i18n="nav.codigo">Código</a>
-    </nav>
+<main id="conteudo">
 
-<div class="pagina">
-
-<!-- ================= ABERTURA =================
-     Os primeiros segundos não dependem do Three.js: HTML, CSS e SVG, com o
-     texto em português já no documento. O A de metal 3D assume depois, na
-     mesma pose do SVG, sem emenda visível. -->
-<section class="abertura" id="topo" data-mundo="rede" aria-labelledby="t-topo">
-  <p class="status" data-i18n="hero.status">Rede de teste · sem venda · sem preço</p>
-
-  <svg class="lamina" viewBox="0 0 1000 600" preserveAspectRatio="none" aria-hidden="true">
-    <path class="rastro" d="M-40 398 C400 392 700 380 1040 318"/>
-    <path class="fio" d="M-40 398 C400 392 700 380 1040 318"/>
-  </svg>
-
-  <div class="a-gigante" id="a-gigante" aria-hidden="true">
-    <svg viewBox="0 0 100 100"><use href="#simbolo-a"/></svg>
-  </div>
-
-  <div class="miolo">
-    <h1 id="t-topo" class="monumento">
-      <span class="linha"><span data-i18n="hero.l1">Todo bloco</span></span>
-      <span class="linha"><span data-i18n="hero.l2">prova um</span></span>
-      <span class="linha forte"><span data-i18n="hero.l3">cálculo útil.</span></span>
-    </h1>
-    <p class="sub" data-i18n="hero.sub">Uma blockchain em que a prova de trabalho é uma conta que serve, conferida por qualquer computador.</p>
+<!-- ============================ ABERTURA ============================ -->
+<section class="topo" id="topo" aria-labelledby="t-topo">
+  <canvas class="rede" id="rede" aria-hidden="true"></canvas>
+  <div class="topo-conteudo">
+    <p class="selo-rede"><span class="ponto" aria-hidden="true"></span><span data-i18n="topo.selo">Rede de teste · sem valor · código aberto</span></p>
+    <h1 class="palavra" id="t-topo">HYURAX</h1>
+    <p class="lema" data-i18n="topo.lema">Os nós são a rede.</p>
+    <p class="lide" data-i18n="topo.lide">Celulares e computadores comuns formam a rede e conferem tudo sozinhos. Sem data center, sem dono, sem precisar confiar em ninguém.</p>
     <div class="acoes">
-      <a class="botao botao-claro" href="#visao" data-i18n="hero.explorar">Ver como funciona</a>
-      <button class="botao botao-linha" type="button" id="abre-edit" data-i18n="hero.assistir">Assistir ao filme · voz sintética</button>
+      <a class="botao botao-luz" href="#rodar" data-i18n="topo.rodar">Rode um nó</a>
+      <a class="botao botao-linha" href="#laco" data-i18n="topo.ver">Veja funcionando</a>
     </div>
   </div>
-
-  <p class="prova" id="prova" aria-live="polite">
-    <span class="ponto" aria-hidden="true"></span>
-    <span class="rotulo" data-i18n="hero.prova">Conta real, neste aparelho</span>
-    <span class="valor" id="prova-valor">sha512( cabeçalho v2 · 222 bytes )</span>
-  </p>
-  <span class="rolar-dica" aria-hidden="true"><i></i><b data-i18n="hero.role">role</b></span>
+  <aside class="ao-vivo" aria-label="Blocos simulados" data-i18n-attr="aria-label:topo.ao_vivo">
+    <p class="ao-vivo-rotulo"><span class="ponto" aria-hidden="true"></span><span data-i18n="topo.ao_vivo">Simulação no seu navegador</span></p>
+    <ol class="ao-vivo-blocos mono" id="blocos-vivos"></ol>
+  </aside>
+  <p class="legenda-rede" data-i18n="topo.legenda">Cada luz é um aparelho. Cada pulso é um bloco sendo conferido de nó em nó.</p>
 </section>
 
-<!-- ================= 01 · O DESPERDÍCIO =================
-     Palco fixo durante a rolagem. Cada linha do espectrograma é um SHA-512
-     calculado neste aparelho (js/sections/visao.js). -->
-<section class="desperdicio" id="visao" data-mundo="rede" data-fase="1" aria-labelledby="t-visao">
-  <div class="palco">
-    <div class="texto">
-      <p class="claquete"><span>01</span><span data-i18n="visao.claquete">O problema</span></p>
-      <h2 class="monumento-2" id="t-visao">
-        <span class="fase f1" data-i18n="visao.m1">Trilhões de cálculos.</span>
-        <span class="fase f2" data-i18n="visao.m2">Jogados fora.</span>
-        <span class="fase f3" data-i18n="visao.m3">A conta tem que servir.</span>
-      </h2>
-      <div class="leads">
-        <p class="fase f1" data-i18n="visao.l1">A mineração comum faz trilhões de tentativas por segundo só para sortear quem escreve o próximo bloco. Cada linha ao lado é um SHA-512 calculado agora, no seu aparelho.</p>
-        <p class="fase f2" data-i18n="visao.l2">Depois do sorteio, nenhum desses números serve para nada. A energia vira calor e o resultado vai para o lixo.</p>
-        <p class="fase f3" data-i18n="visao.l3">No Auron, todo bloco também carrega um produto de matrizes tirado do bloco anterior: uma conta útil, que qualquer computador confere sem refazer.</p>
+<!-- ============================ O LAÇO ============================ -->
+<section class="capitulo laco" id="laco" aria-labelledby="t-laco">
+  <header class="cabeca">
+    <p class="rotulo"><span data-i18n="laco.rotulo">Provado em 18/09/2026</span></p>
+    <h2 id="t-laco" data-i18n="laco.titulo">Um PC e um celular. Nenhum confia no outro. Os dois chegaram à mesma verdade.</h2>
+    <p class="lide" data-i18n="laco.lide">O computador minerou dois blocos. O celular conferiu cada um sozinho e aceitou. Depois o celular minerou um bloco, e o computador conferiu e aceitou. Dois sistemas, duas arquiteturas, a mesma cadeia.</p>
+  </header>
+
+  <div class="laco-palco">
+    <figure class="aparelho">
+      <div class="aparelho-icone" aria-hidden="true">
+        <svg viewBox="0 0 48 40"><rect x="3" y="3" width="42" height="26" rx="3"/><path d="M16 36h16M24 29v7"/></svg>
       </div>
-      <p class="contador"><span data-i18n="visao.calculados">hashes calculados nesta página</span> <b id="vis-n">0</b><span class="sep">·</span><span data-i18n="visao.uteis">úteis</span> <b class="zero">0</b></p>
-    </div>
-    <figure class="espectro">
-      <canvas id="espectro" aria-hidden="true"></canvas>
-      <span class="corte" aria-hidden="true"></span>
-      <div class="matriz" id="vis-matriz" aria-hidden="true"></div>
       <figcaption>
-        <span class="ponto" aria-hidden="true"></span>
-        <span class="fase f1 f2" data-i18n="visao.legenda1">Conta real · 1 linha = 1 SHA-512 · 64 bytes</span>
-        <span class="fase f3" data-i18n="visao.legenda2">Matriz 8×8 a partir do último hash · a matriz A de A · B = C</span>
+        <b data-i18n="laco.pc">Computador</b>
+        <span class="mono">Windows · x86_64</span>
       </figcaption>
+      <ul class="feitos mono">
+        <li><span data-i18n="laco.bloco">bloco</span> 1 · 26,7 s</li>
+        <li><span data-i18n="laco.bloco">bloco</span> 2 · 30,8 s</li>
+      </ul>
+    </figure>
+
+    <div class="fluxo" aria-hidden="true">
+      <svg viewBox="0 0 200 90">
+        <path class="trilho" d="M4 30 C70 8 130 8 196 30"/>
+        <path class="trilho" d="M196 60 C130 82 70 82 4 60"/>
+        <circle class="bola ida" r="4"/>
+        <circle class="bola volta" r="4"/>
+      </svg>
+      <span class="fluxo-rotulo ida-rotulo" data-i18n="laco.ida">blocos 1 e 2 →</span>
+      <span class="fluxo-rotulo volta-rotulo" data-i18n="laco.volta">← bloco 3</span>
+    </div>
+
+    <figure class="aparelho">
+      <div class="aparelho-icone" aria-hidden="true">
+        <svg viewBox="0 0 48 40"><rect x="15" y="2" width="18" height="36" rx="4"/><path d="M21 33h6"/></svg>
+      </div>
+      <figcaption>
+        <b data-i18n="laco.celular">Celular</b>
+        <span class="mono">Android · arm64</span>
+      </figcaption>
+      <ul class="feitos mono">
+        <li><span data-i18n="laco.bloco">bloco</span> 3 · 39,4 s</li>
+        <li>128 MiB · 4 <span data-i18n="laco.linhas">linhas</span></li>
+      </ul>
     </figure>
   </div>
+
+  <dl class="numeros">
+    <div><dt data-i18n="laco.n_altura">altura final, igual nos dois</dt><dd class="mono">3</dd></div>
+    <div><dt data-i18n="laco.n_aceitos">blocos aceitos pelo outro lado</dt><dd class="mono">3 / 3</dd></div>
+    <div><dt data-i18n="laco.n_falhas">falhas</dt><dd class="mono">0</dd></div>
+    <div><dt data-i18n="laco.n_trabalho">trabalho útil por bloco</dt><dd class="mono">48×48</dd></div>
+  </dl>
+  <p class="nota" data-i18n="laco.nota">Com os programas publicados no GitHub, pela rede local (cabo no computador, Wi-Fi no celular), com conexão cifrada. Três blocos provam que o laço fecha; ainda não são medida de desempenho.</p>
 </section>
 
-<!-- ================= NÚCLEO ================= -->
-<section class="capitulo" id="nucleo" data-mundo="nucleo" aria-labelledby="t-nucleo">
-  <div class="cabeca">
-    <p class="olho">AURON CORE</p>
-    <h2 id="t-nucleo" data-i18n-html="nucleo.titulo"></h2>
-    <p data-i18n="nucleo.intro"></p>
-  </div>
-  <div class="nucleo">
-    <div class="painel nucleo-mapa revela">
-      <svg viewBox="0 0 520 400" id="nucleo-svg" role="group" data-i18n-attr="aria-label:nucleo.mapa">
-        <path class="linha" d="M260 92 V150 M260 150 H110 V190 M260 150 H410 V190 M260 150 V190 M110 250 V290 H410 V250 M260 250 V290 M260 290 V318"/>
-        <path class="linha-viva" d="M260 92 V150 H110 V190 M260 150 H410 V190 M110 250 V290 H260 V318"/>
-        <g class="nucleo-centro"><rect x="170" y="40" width="180" height="52" rx="8"/><text x="260" y="71" text-anchor="middle">AURON CORE</text></g>
-        <g class="no-botao" tabindex="0" role="button" data-parte="blockchain" aria-pressed="true"><rect x="40" y="190" width="140" height="60" rx="8"/><text x="110" y="218" text-anchor="middle">BLOCKCHAIN</text><text class="pequeno" x="110" y="236" text-anchor="middle">SHA-512 · MERKLE</text></g>
-        <g class="no-botao" tabindex="0" role="button" data-parte="nos" aria-pressed="false"><rect x="190" y="190" width="140" height="60" rx="8"/><text x="260" y="218" text-anchor="middle">NODES</text><text class="pequeno" x="260" y="236" text-anchor="middle">P2P · RUST</text></g>
-        <g class="no-botao" tabindex="0" role="button" data-parte="consenso" aria-pressed="false"><rect x="340" y="190" width="140" height="60" rx="8"/><text x="410" y="218" text-anchor="middle">CONSENSUS</text><text class="pequeno" x="410" y="236" text-anchor="middle">USEFULPOW · ARGON2ID</text></g>
-        <g class="no-botao" tabindex="0" role="button" data-parte="protocolo" aria-pressed="false"><rect x="170" y="318" width="180" height="56" rx="8"/><text x="260" y="344" text-anchor="middle">PROTOCOL</text><text class="pequeno" x="260" y="361" text-anchor="middle">AURON-SPEC-01</text></g>
-      </svg>
+<!-- ============================ TRABALHO ÚTIL ============================ -->
+<section class="capitulo trabalho" id="trabalho" aria-labelledby="t-trabalho">
+  <header class="cabeca">
+    <p class="rotulo" data-i18n="trabalho.rotulo">Trabalho útil</p>
+    <h2 id="t-trabalho" data-i18n="trabalho.titulo">Pegue a mentira sem refazer a conta.</h2>
+    <p class="lide" data-i18n="trabalho.lide">Todo bloco traz uma multiplicação de matrizes, a mesma conta que sustenta a inteligência artificial. Conferir não exige refazer: basta sortear um vetor e comparar os dois lados.</p>
+  </header>
+
+  <div class="bancada freivalds">
+    <div class="matrizes">
+      <figure><div class="grade" id="fv-a"></div><figcaption>A</figcaption></figure>
+      <span class="op" aria-hidden="true">×</span>
+      <figure><div class="grade" id="fv-b"></div><figcaption>B</figcaption></figure>
+      <span class="op" aria-hidden="true">=</span>
+      <figure class="figura-c"><div class="grade grade-c" id="fv-c"></div><figcaption data-i18n="trabalho.c">C · toque num número para mentir</figcaption></figure>
     </div>
-    <div class="painel detalhe revela" aria-live="polite">
-      <div class="painel-cabeca"><h3 data-i18n="nucleo.detalhe"></h3><span class="selo" id="nucleo-selo"></span></div>
-      <div class="painel-corpo" id="nucleo-detalhe"></div>
+    <div class="vetor">
+      <span class="rotulo-vetor">r</span>
+      <div class="vetor-valores mono" id="fv-r"></div>
+      <span class="semente mono" id="fv-semente"></span>
     </div>
+    <div class="comparacao" id="fv-linhas" aria-hidden="true"></div>
+    <p class="veredito" id="fv-veredito" role="status" aria-live="polite"></p>
+    <div class="controles">
+      <button class="botao botao-linha botao-pequeno" type="button" id="fv-nova" data-i18n="trabalho.nova">Nova tarefa honesta</button>
+    </div>
+    <p class="rotulo-real"><span class="ponto" aria-hidden="true"></span><span data-i18n="trabalho.real">Conta real · Freivalds no seu aparelho · matrizes de exemplo</span></p>
   </div>
+
+  <ol class="explica">
+    <li><b data-i18n="trabalho.p1t">Alguém entrega C.</b> <span data-i18n="trabalho.p1">E diz que multiplicou A por B. Refazer tudo custaria caro.</span></li>
+    <li><b data-i18n="trabalho.p2t">O vetor r sai do próprio C.</b> <span data-i18n="trabalho.p2">É o SHA-512 do resultado. Quem fez a conta não sabe r antes de entregar.</span></li>
+    <li><b data-i18n="trabalho.p3t">Os dois lados têm de bater.</b> <span data-i18n="trabalho.p3">A·(B·r) contra C·r: só multiplicações de matriz por vetor. Uma mentira aparece na linha exata.</span></li>
+  </ol>
+  <p class="nota" data-i18n="trabalho.nota">Numa rodada desta demonstração, uma mentira escapa com chance de no máximo 1 em 97. O consenso do Hyurax usa 4 rodadas de 20 bits: no máximo 1 em 2⁸⁰.</p>
 </section>
 
-<div class="ato" role="presentation">
-  <span class="ato-num">II</span>
-  <p class="ato-nome" data-i18n="atos.ii">O que já funciona</p>
-  <span class="ato-fio" aria-hidden="true"></span>
-</div>
-
-<!-- ================= 03 · PEGUE A MENTIRA =================
-     Freivalds de verdade no navegador (js/sections/mentira.js). -->
-<section class="mentira" id="utrax" data-mundo="nucleo" data-fase="1" aria-labelledby="t-utrax">
-  <div class="palco">
-    <div class="texto">
-      <p class="claquete"><span>03</span><span data-i18n="mentira.claquete">Trabalho útil</span></p>
-      <h2 class="monumento-2" id="t-utrax">
-        <span class="fase f1" data-i18n="mentira.m1">A · B = C.</span>
-        <span class="fase f2" data-i18n="mentira.m2">Sorteie r.</span>
-        <span class="fase f3" data-i18n="mentira.m3">Confira os dois lados.</span>
-        <span class="fase f4" data-i18n="mentira.m4">Barato. Muito barato.</span>
-        <span class="fase f5" data-i18n="mentira.m5">Agora, minta.</span>
-      </h2>
-      <div class="leads">
-        <p class="fase f1" data-i18n="mentira.l1">Alguém entrega C e diz que multiplicou A por B. Refazer a conta inteira custa caro. Como saber se é verdade?</p>
-        <p class="fase f2" data-i18n="mentira.l2">O verificador tira um vetor r do SHA-512 do próprio resultado. Quem fez a conta não sabe r antes de entregar C.</p>
-        <p class="fase f3" data-i18n="mentira.l3">Ele calcula A · (B · r) e C · r. São só multiplicações de matriz por vetor. Se C estiver certo, as oito linhas batem.</p>
-        <p class="fase f4" data-i18n-html="mentira.l4">Numa matriz 8×8, conferir em 3 rodadas custa <b>576</b> multiplicações e refazer custa <b>512</b>: aqui sai mais caro. Em 1000×1000, são <b>9 milhões</b> contra <b>1 bilhão</b>.</p>
-        <p class="fase f5" data-i18n="mentira.l5">Toque em qualquer número de C para mudar o resultado. A conferência roda de novo, com um r novo, e aponta a linha errada.</p>
-      </div>
-      <div class="fase f5 acoes-mentira">
-        <p class="veredito-mentira" id="mentira-veredito" role="status" aria-live="polite"></p>
-        <button class="botao botao-linha botao-pequeno" type="button" id="mentira-refazer" data-i18n="mentira.refazer">Nova tarefa honesta</button>
-        <p class="nota-mentira" data-i18n="mentira.nota">Numa rodada, uma mentira passa com chance de no máximo 1 em 97 nesta demonstração. O consenso do Auron usa 4 rodadas de 20 bits: no máximo 1 em 2⁸⁰.</p>
-      </div>
+<!-- ============================ CONFIRA ============================ -->
+<section class="capitulo confira" id="confira" aria-labelledby="t-confira">
+  <header class="cabeca">
+    <p class="rotulo" data-i18n="confira.rotulo">Cadeia</p>
+    <h2 id="t-confira" data-i18n="confira.titulo">Não confie. Confira.</h2>
+    <p class="lide" data-i18n="confira.lide">Cada bloco carrega o resumo do anterior. Mexa em qualquer bloco antigo: o resumo dele muda, e todos os que vêm depois denunciam na hora.</p>
+  </header>
+  <div class="bancada cadeia">
+    <ol class="blocos" id="cd-blocos"></ol>
+    <p class="veredito" id="cd-status" role="status" aria-live="polite"></p>
+    <div class="controles">
+      <button class="botao botao-linha botao-pequeno" type="button" id="cd-restaurar" data-i18n="confira.restaurar" hidden>Desfazer a mexida</button>
     </div>
-
-    <div class="bancada">
-      <div class="placas">
-        <figure class="placa"><div class="grade" id="placa-a"></div><figcaption>A</figcaption></figure>
-        <span class="op" aria-hidden="true">·</span>
-        <figure class="placa"><div class="grade" id="placa-b"></div><figcaption>B</figcaption></figure>
-        <span class="op" aria-hidden="true">=</span>
-        <figure class="placa placa-c"><div class="grade" id="placa-c"></div><figcaption>C</figcaption></figure>
-      </div>
-      <div class="vetor">
-        <span class="rotulo">r</span>
-        <div class="valores" id="vetor-r"></div>
-        <span class="semente" id="semente-c"></span>
-      </div>
-      <div class="conferencia">
-        <div class="cabecalho"><span>A · (B · r)</span><span></span><span>C · r</span></div>
-        <div class="linhas" id="comparacao"></div>
-      </div>
-      <p class="rotulo-real"><span class="ponto" aria-hidden="true"></span><span data-i18n="mentira.real">Conta real · Freivalds no seu aparelho · matrizes de exemplo</span></p>
-    </div>
+    <p class="rotulo-real"><span class="ponto" aria-hidden="true"></span><span data-i18n="confira.real">SHA-512 real no seu navegador · blocos de exemplo</span></p>
   </div>
 </section>
 
-<!-- ================= 04 · MEXA NUM BLOCO ANTIGO =================
-     Cabeçalhos de 222 bytes e SHA-512 de verdade (js/sections/cadeia.js). -->
-<section class="cadeia4" id="cadeia" data-mundo="cadeia" aria-labelledby="t-cadeia">
-  <div class="cabeca4">
-    <p class="claquete"><span>04</span><span data-i18n="cadeia4.claquete">Cadeia</span></p>
-    <h2 class="titulo4" id="t-cadeia"><span data-i18n="cadeia4.t1">Mexa num</span> <b data-i18n="cadeia4.t2">bloco antigo.</b></h2>
-    <p class="lead4" data-i18n="cadeia4.lead">Cada bloco guarda o hash do anterior. Mude um bit de uma transação antiga e o hash dela muda; o bloco seguinte deixa de apontar para ele, e tudo dali para frente perde a validade.</p>
+<!-- ============================ ÉTER ============================ -->
+<section class="capitulo eter" id="eter" aria-labelledby="t-eter">
+  <header class="cabeca">
+    <p class="rotulo" data-i18n="eter.rotulo">Éter · comunicação entre nós</p>
+    <h2 id="t-eter" data-i18n="eter.titulo">O nó não fala Wi-Fi nem Bluetooth. Fala Hyurax.</h2>
+    <p class="lide" data-i18n="eter.lide">Um arquivo vira pedaços, e cada pedaço carrega a própria prova. Os pedaços saem por caminhos diferentes ao mesmo tempo e se montam do outro lado. Corte um caminho: os outros levam o resto.</p>
+  </header>
+  <div class="bancada eter-bancada">
+    <canvas class="eter-tela" id="eter-tela" aria-hidden="true"></canvas>
+    <div class="meios" id="eter-meios" role="group" aria-label="Caminhos" data-i18n-attr="aria-label:eter.caminhos"></div>
+    <p class="veredito" id="eter-status" role="status" aria-live="polite"></p>
   </div>
-
-  <div class="trilho4" id="cadeia-trilho" aria-live="polite"></div>
-
-  <div class="painel4">
-    <div class="regua-cab">
-      <p class="rotulo-real"><span class="ponto" aria-hidden="true"></span><span data-i18n="cadeia4.regua">Cabeçalho v2 · 222 bytes · cada faixa no tamanho real</span></p>
-      <p class="status4" id="cadeia-status" role="status"></p>
-    </div>
-    <div class="regua" id="cadeia-regua"></div>
-    <p class="leitura4" id="cadeia-leitura"></p>
-    <div class="acoes4">
-      <button class="botao botao-claro botao-pequeno" type="button" id="cadeia-novo" data-i18n="cadeia4.novo">Minerar bloco novo</button>
-      <button class="botao botao-linha botao-pequeno" type="button" id="cadeia-restaurar" data-i18n="cadeia4.restaurar" hidden>Desfazer a adulteração</button>
-      <span class="nota4" data-i18n="cadeia4.nota">Hashes e raízes de Merkle reais · transações e prova de trabalho de exemplo</span>
-    </div>
-  </div>
+  <p class="nota" data-i18n="eter.nota">Pronto e testado: o núcleo do Éter e o caminho por pasta, que funciona até com pendrive. Bluetooth e rádio LoRa estão projetados, ainda sem código. Aqui, os caminhos são desenhados; os pedaços e as provas são de verdade.</p>
 </section>
 
-<!-- ================= NÓS ================= -->
-<section class="capitulo" id="nos" data-mundo="rede" aria-labelledby="t-nos">
-  <div class="cabeca">
-    <p class="olho">NODES</p>
-    <h2 id="t-nos" data-i18n-html="nos.titulo"></h2>
-    <p data-i18n="nos.intro"></p>
-    <div class="selos"><span class="selo-sim">SIMULATION</span><span class="selo" data-estado="planejado"><i></i><span data-i18n="estado.planejado"></span></span></div>
-  </div>
-  <div class="grade-demo">
-    <div class="tela revela" id="nos-tela">
-      <canvas id="nos-canvas" data-i18n-attr="aria-label:nos.canvas" role="img"></canvas>
-      <div class="rodape-tela"><span data-i18n="nos.dica"></span><span id="nos-contagem"></span></div>
-    </div>
-    <div class="painel ficha-no revela" aria-live="polite">
-      <div class="painel-cabeca"><h3>NODE</h3><span class="selo-sim">SIMULATION</span></div>
-      <div class="painel-corpo" id="no-detalhe"></div>
-    </div>
-  </div>
+<!-- ============================ RODAR ============================ -->
+<section class="capitulo rodar" id="rodar" aria-labelledby="t-rodar">
+  <header class="cabeca">
+    <p class="rotulo" data-i18n="rodar.rotulo">Participe</p>
+    <h2 id="t-rodar" data-i18n="rodar.titulo">Rode um nó.</h2>
+    <p class="lide" data-i18n="rodar.lide">Um programa só, sem instalar nada. Roda no Windows, no Linux, no Mac e no celular Android (pelo Termux).</p>
+  </header>
+  <ol class="passos">
+    <li>
+      <h3 data-i18n="rodar.p1t">Baixe</h3>
+      <p data-i18n="rodar.p1">Na página de versões, escolha o pacote do seu sistema e confira a soma SHA-256 que vem junto.</p>
+      <a class="botao botao-linha botao-pequeno" href="https://github.com/NOXqubit/hyurax/releases" rel="noopener" data-i18n="rodar.versoes">Versões no GitHub</a>
+    </li>
+    <li>
+      <h3 data-i18n="rodar.p2t">Crie uma carteira</h3>
+      <p data-i18n="rodar.p2">A carteira fica cifrada com a sua senha. Sem a senha, o arquivo não gasta nada.</p>
+      <pre class="comando"><code>hyurax-no carteira nova --arquivo carteira.txt</code></pre>
+    </li>
+    <li>
+      <h3 data-i18n="rodar.p3t">Entre na rede</h3>
+      <p data-i18n="rodar.p3">O nó confere cada bloco sozinho. Para minerar, troque <code>no</code> por <code>minerar</code> e informe o seu endereço.</p>
+      <pre class="comando"><code>hyurax-no no --rede testnet --pasta dados --porta 8790</code></pre>
+    </li>
+  </ol>
+  <p class="nota" data-i18n="rodar.nota">Rede de teste: o HYUR não tem valor, não há venda nem promessa de lucro. Use as versões a partir de v0.2.0-teste.1; as anteriores saíram com o nome antigo e falam outra rede.</p>
 </section>
 
-<!-- ================= SEGURANÇA ================= -->
-<section class="capitulo largo" id="seguranca" data-mundo="rede" aria-labelledby="t-seg">
-  <div class="cabeca">
-    <p class="olho">SECURITY</p>
-    <h2 id="t-seg" data-i18n-html="seg.titulo"></h2>
-    <p data-i18n="seg.intro"></p>
-  </div>
-  <div class="mecanismos revela" id="mecanismos"></div>
-  <div class="grade-demo" style="margin-top:2.4rem">
-    <div class="tela revela">
-      <canvas id="sybil-canvas" role="img" data-i18n-attr="aria-label:seg.canvas"></canvas>
-      <div class="canto"><button class="botao botao-linha botao-pequeno" type="button" id="sybil-atacar" data-i18n="seg.atacar"></button></div>
-      <div class="rodape-tela"><div class="estados-sybil" id="sybil-estados"><span data-e="normal">NORMAL</span><span data-e="suspeito">SUSPICIOUS</span><span data-e="quarentena">QUARANTINE</span><span data-e="revalidacao">REVALIDATION</span></div></div>
-    </div>
-    <div class="painel revela">
-      <div class="painel-cabeca"><h3>ANTI-SYBIL</h3><span class="selo-sim">SIMULATION</span></div>
-      <div class="painel-corpo"><p class="texto-2" id="sybil-explica" aria-live="polite"></p><p class="nota" data-i18n="seg.sybil-nota"></p><span class="selo" data-estado="planejado"><i></i><span data-i18n="estado.planejado"></span></span></div>
+<!-- ============================ ONDE ESTAMOS ============================ -->
+<section class="capitulo estado" id="estado" aria-labelledby="t-estado">
+  <header class="cabeca">
+    <p class="rotulo" data-i18n="estado.rotulo">Sem exagero</p>
+    <h2 id="t-estado" data-i18n="estado.titulo">Onde estamos, de verdade.</h2>
+    <p class="lide" data-i18n="estado.lide">Não existe mainnet. Não existe token com valor. Qualquer pessoa que disser o contrário está mentindo.</p>
+  </header>
+  <div class="quadro-estado" id="quadro-estado"></div>
+</section>
+
+<!-- ============================ APOIE ============================ -->
+<section class="capitulo apoie" id="apoie" aria-labelledby="t-apoie">
+  <header class="cabeca">
+    <p class="rotulo" data-i18n="apoie.rotulo">Apoie</p>
+    <h2 id="t-apoie" data-i18n="apoie.titulo">Feito por um desenvolvedor independente.</h2>
+    <p class="lide" data-i18n="apoie.lide">Se quiser ajudar a manter o trabalho, o endereço é da rede Bitcoin. Envie só bitcoin.</p>
+  </header>
+  <div class="doacao">
+    <div class="qr" id="qr" aria-hidden="true"></div>
+    <div class="doacao-texto">
+      <code class="endereco mono" id="endereco">bc1qkp7d90t9tnmuv2rwq742pwc8pnet28a59zdzt7</code>
+      <button class="botao botao-linha botao-pequeno" type="button" id="copiar" data-i18n="apoie.copiar">Copiar endereço</button>
+      <p class="nota" data-i18n="apoie.confira">Depois de colar, confira o começo e o fim: bc1qkp7d … zdzt7.</p>
+      <p class="nota" data-i18n="apoie.nada">Doação é voluntária e não dá direito a nada: nem token, nem participação, nem retorno.</p>
     </div>
   </div>
 </section>
 
-<!-- ================= AUR ================= -->
-<section class="capitulo" id="aur" data-mundo="nucleo" aria-labelledby="t-aur">
-  <div class="aur">
-    <div class="moeda revela" aria-hidden="true">
-      <svg viewBox="0 0 400 400">
-        <defs>
-          <radialGradient id="moeda-f" cx="50%" cy="40%" r="60%"><stop offset="0" stop-color="#26282c"/><stop offset="1" stop-color="#0a0a0b"/></radialGradient>
-          <path id="arco" d="M200 200 m-150 0 a150 150 0 1 1 300 0 a150 150 0 1 1 -300 0"/>
-        </defs>
-        <circle cx="200" cy="200" r="188" fill="url(#metal)"/>
-        <circle cx="200" cy="200" r="178" fill="url(#moeda-f)"/>
-        <circle cx="200" cy="200" r="166" fill="none" stroke="#3a3c41" stroke-width="1"/>
-        <g class="gira"><text font-family="Michroma, Archivo, sans-serif" font-size="11.5" letter-spacing="4.2" fill="#9a9ea5"><textPath href="#arco">AURON · DECENTRALIZED COMPUTING NETWORK · SCIENCE · MEDICINE · AGRICULTURE · AI · </textPath></text></g>
-        <circle cx="200" cy="200" r="132" fill="none" stroke="#2c2e33" stroke-width="1"/>
-        <use href="#simbolo-a" x="135" y="96" width="130" height="130"/>
-        <use href="#palavra" x="140" y="244" width="120" height="22"/>
-        <text x="200" y="292" text-anchor="middle" font-family="Michroma, Archivo, sans-serif" font-size="10" letter-spacing="4" fill="#8e9199">AUR</text>
-      </svg>
-    </div>
-    <div>
-      <div class="cabeca" style="margin-bottom:0">
-        <p class="olho">AUR</p>
-        <h2 id="t-aur" data-i18n-html="aur.titulo"></h2>
-        <p data-i18n="aur.intro"></p>
-      </div>
-      <ul class="utilidades revela">
-        <li data-i18n="aur.u1"></li><li data-i18n="aur.u2"></li><li data-i18n="aur.u3"></li><li data-i18n="aur.u4"></li><li data-i18n="aur.u5"></li><li data-i18n="aur.u6"></li>
-      </ul>
-      <dl class="fatos-aur revela">
-        <div><dt data-i18n="aur.f-teto"></dt><dd><span class="num">21 000 000</span><small>AUR</small></dd></div>
-        <div><dt data-i18n="aur.f-casas"></dt><dd><span class="num">8</span><small data-i18n="aur.f-casas-s"></small></dd></div>
-        <div><dt data-i18n="aur.f-bloco"></dt><dd><span class="num">120 s</span><small data-i18n="aur.f-bloco-s"></small></dd></div>
-        <div><dt data-i18n="aur.f-pow"></dt><dd>Argon2id<small>32 MiB</small></dd></div>
-        <div><dt data-i18n="aur.f-recompensa"></dt><dd><span class="num">50</span><small data-i18n="ui.provisorio"></small></dd></div>
-        <div><dt data-i18n="aur.f-halving"></dt><dd><span class="num">210 000</span><small data-i18n="aur.f-halving-s"></small></dd></div>
-      </dl>
-      <div class="nao-e"><span data-i18n="aur.sem-preco"></span><span data-i18n="aur.sem-venda"></span><span data-i18n="aur.sem-promessa"></span></div>
-    </div>
-  </div>
-  <div class="grafico revela" role="img" data-i18n-attr="aria-label:aur.grafico">
-    <svg viewBox="0 0 640 240" xmlns="http://www.w3.org/2000/svg">
-      <defs><linearGradient id="area-g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f3e2c4" stop-opacity="0.22"/><stop offset="1" stop-color="#f3e2c4" stop-opacity="0"/></linearGradient></defs>
-      <text class="t" x="58" y="16" data-i18n="aur.grafico-t"></text>
-      <line x1="58" y1="200" x2="620" y2="200" stroke="#2a2c31"/>
-      <line x1="58" y1="140" x2="620" y2="140" stroke="#1a1b1f" stroke-dasharray="2 5"/>
-      <line x1="58" y1="80" x2="620" y2="80" stroke="#1a1b1f" stroke-dasharray="2 5"/>
-      <line x1="58" y1="20" x2="620" y2="20" stroke="#5f626a" stroke-dasharray="6 5"/>
-      <text x="50" y="204" text-anchor="end">0</text><text x="50" y="144" text-anchor="end">7M</text><text x="50" y="84" text-anchor="end">14M</text><text x="50" y="24" text-anchor="end">21M</text>
-      <path d="M58 200 L128.25 110 L198.5 65 L268.75 42.5 L339 31.25 L409.25 25.63 L479.5 22.81 L549.75 21.41 L620 20.70 L620 200 Z" fill="url(#area-g)"/>
-      <path id="curva-aur" d="M58 200 L128.25 110 L198.5 65 L268.75 42.5 L339 31.25 L409.25 25.63 L479.5 22.81 L549.75 21.41 L620 20.70" fill="none" stroke="#f3e2c4" stroke-width="2"/>
-      <circle cx="128.25" cy="110" r="3" fill="#fff3df"/><circle cx="198.5" cy="65" r="3" fill="#fff3df"/><circle cx="268.75" cy="42.5" r="3" fill="#fff3df"/>
-      <text x="134" y="126">10,5M</text><text x="204" y="81">15,75M</text><text x="274" y="58">18,4M</text>
-      <text x="58" y="218" text-anchor="middle">0</text><text x="198.5" y="218" text-anchor="middle" data-i18n="aur.g16"></text><text x="339" y="218" text-anchor="middle" data-i18n="aur.g32"></text><text x="479.5" y="218" text-anchor="middle" data-i18n="aur.g48"></text><text x="620" y="218" text-anchor="end" data-i18n="aur.g64"></text>
-      <circle r="4" fill="#fff3df" class="anima"><animateMotion dur="7s" repeatCount="indefinite"><mpath href="#curva-aur"/></animateMotion></circle>
-    </svg>
-  </div>
-  <p class="nota" data-i18n="aur.nota-grafico"></p>
-</section>
-
-<div class="ato ato-construcao" role="presentation">
-  <span class="ato-num">III</span>
-  <p class="ato-nome" data-i18n="atos.iii">Em construção</p>
-  <span class="ato-fio" aria-hidden="true"></span>
-</div>
-
-<!-- ================= 08 · RODE UM NÓ HOJE =================
-     Programas reais, publicados no GitHub para 4 sistemas. -->
-<section class="rodar" id="rodar" data-mundo="rede" aria-labelledby="t-rodar">
-  <div class="rodar-cabeca">
-    <p class="claquete"><span>08</span><span data-i18n="rodar.claquete">Rode um nó</span></p>
-    <h2 class="titulo4" id="t-rodar"><span data-i18n="rodar.t1">Não confie em nós.</span> <b data-i18n="rodar.t2">Rode um nó.</b></h2>
-    <p class="lead4" data-i18n="rodar.lead">O programa é código aberto e já existe para quatro sistemas. Ele guarda a cadeia, confere cada bloco sozinho, conversa com outros nós por conexão cifrada e guarda a carteira cifrada com a sua senha.</p>
-  </div>
-  <div class="rodar-grade">
-    <ol class="rodar-passos">
-      <li><span class="n">1</span><div><b data-i18n="rodar.p1">Baixe e confira a soma SHA-256</b><a class="link-mono" href="https://github.com/NOXqubit/auron/releases" target="_blank" rel="noopener">github.com/NOXqubit/auron/releases</a></div></li>
-      <li><span class="n">2</span><div><b data-i18n="rodar.p2">Crie a carteira com senha</b><code>auron-no carteira nova --arquivo carteira.txt</code></div></li>
-      <li><span class="n">3</span><div><b data-i18n="rodar.p3">Coloque o nó no ar</b><code>auron-no no --rede testnet --pasta dados --porta 8790</code></div></li>
-      <li><span class="n">4</span><div><b data-i18n="rodar.p4">Minere na rede de teste</b><code>auron-no minerar --rede testnet --endereco SEU_ENDERECO --blocos 0</code></div></li>
-    </ol>
-    <div class="rodar-sistemas">
-      <p class="rotulo-real"><span class="ponto" aria-hidden="true"></span><span data-i18n="rodar.release">Versão de teste publicada · v0.1.0-teste.2</span></p>
-      <ul>
-        <li><b>Windows</b><span>x86_64 · .zip</span></li>
-        <li><b>Linux</b><span>x86_64 · .tar.gz</span></li>
-        <li><b data-i18n="rodar.celular">Celular (Termux)</b><span>ARM64 · .tar.gz</span></li>
-        <li><b>macOS</b><span>Apple Silicon · .tar.gz</span></li>
-      </ul>
-      <p class="nota4" data-i18n="rodar.nota">Rede de teste: o AUR não tem valor. Nós semente públicos ainda não estão no ar; teste entre dois aparelhos seus.</p>
-      <a class="botao botao-claro" href="https://github.com/NOXqubit/auron/blob/main/docs/RODAR-UM-NO.md" target="_blank" rel="noopener" data-i18n="rodar.guia">Guia de 5 minutos</a>
-    </div>
-  </div>
-</section>
-
-<div class="ato ato-ideia" role="presentation">
-  <span class="ato-num">IV</span>
-  <p class="ato-nome" data-i18n="atos.iv">Ainda é ideia</p>
-  <span class="ato-fio" aria-hidden="true"></span>
-</div>
-
-<div class="ideia">
-
-<!-- ================= DIRECT ================= -->
-<section class="capitulo" id="direct" data-mundo="malha" aria-labelledby="t-direct">
-  <div class="cabeca">
-    <p class="olho">AURON DIRECT</p>
-    <h2 id="t-direct" data-i18n-html="direct.titulo"></h2>
-    <p data-i18n="direct.intro"></p>
-    <div class="selos"><span class="selo-sim">SIMULATION</span><span class="selo" data-estado="planejado"><i></i><span data-i18n="estado.planejado"></span></span></div>
-  </div>
-  <div class="painel direct revela">
-    <div class="painel-cabeca">
-      <div class="pilula" role="group" data-i18n-attr="aria-label:direct.modo">
-        <button type="button" id="direct-online" aria-pressed="true">ONLINE</button>
-        <button type="button" id="direct-offline" aria-pressed="false">OFFLINE</button>
-      </div>
-      <div class="controles">
-        <button class="botao botao-claro botao-pequeno" type="button" id="direct-enviar" data-i18n="direct.enviar"></button>
-        <button class="botao botao-linha botao-pequeno" type="button" id="direct-duplo" hidden data-i18n="direct.duplo"></button>
-      </div>
-    </div>
-    <div class="painel-corpo">
-      <ol class="etapas" id="direct-etapas"></ol>
-      <div class="via"><canvas id="direct-canvas" aria-hidden="true"></canvas></div>
-      <div class="grade-2">
-        <div>
-          <div class="orcamento" id="direct-orcamento" hidden>
-            <div class="legenda-o"><span>OFFLINE BUDGET</span><span id="orcamento-texto"></span></div>
-            <div class="barra-o"><i id="orcamento-barra"></i></div>
-            <div class="legenda-o"><span data-i18n="direct.limite"></span><span>offline_expiration = 24h</span></div>
-          </div>
-          <p class="texto-2" id="direct-explica" aria-live="polite"></p>
-        </div>
-        <dl class="campos" id="direct-campos"></dl>
-      </div>
-      <p class="frase-offline" id="direct-frase" hidden lang="en">Offline authorization is bounded and reconciled when connectivity returns.</p>
-    </div>
-  </div>
-</section>
-
-<!-- ================= RESONANCE / MESH ================= -->
-<section class="capitulo largo" id="resonance" data-mundo="malha" aria-labelledby="t-res">
-  <div class="cabeca">
-    <p class="olho">AURON RESONANCE · MESH</p>
-    <h2 id="t-res" data-i18n-html="res.titulo"></h2>
-    <p data-i18n="res.intro"></p>
-    <div class="selos"><span class="selo-sim">SIMULATION</span><span class="selo" data-estado="planejado"><i></i><span data-i18n="estado.planejado"></span></span></div>
-  </div>
-  <div class="grade-demo">
-    <div class="tela revela">
-      <canvas id="malha-canvas" role="img" data-i18n-attr="aria-label:res.canvas"></canvas>
-      <div class="canto"><button class="botao botao-linha botao-pequeno" type="button" id="malha-derrubar" data-i18n="res.derrubar"></button><button class="botao botao-linha botao-pequeno" type="button" id="malha-restaurar" data-i18n="res.restaurar"></button></div>
-      <div class="rodape-tela"><span id="malha-rota" class="mono"></span></div>
-    </div>
-    <div class="painel revela">
-      <div class="painel-cabeca"><h3>STORE AND FORWARD</h3><span class="selo-sim">SIMULATION</span></div>
-      <div class="painel-corpo"><ol class="passos-sf" id="sf-passos"></ol></div>
-    </div>
-  </div>
-  <div class="transportes" style="margin:1rem 0 2.4rem"><span><i class="bt"></i>Bluetooth</span><span><i class="wd"></i>Wi-Fi Direct</span><span><i></i>Wi-Fi</span><span><i class="net"></i>Internet</span><span data-i18n="res.futuros"></span></div>
-
-  <div class="grade-demo">
-    <div class="revela">
-      <button class="pacote" type="button" id="pacote" aria-expanded="false" aria-controls="pacote-campos">
-        <b>AURON PACKET</b>
-        <span id="pacote-id"></span>
-        <span data-i18n="res.abrir-pacote"></span>
-      </button>
-      <div class="painel pacote-campos" id="pacote-campos" hidden>
-        <div class="painel-cabeca"><h3 data-i18n="res.campos"></h3><div class="pilula" role="group"><button type="button" id="visao-dono" aria-pressed="true" data-i18n="res.visao-dono"></button><button type="button" id="visao-relay" aria-pressed="false" data-i18n="res.visao-relay"></button></div></div>
-        <div class="painel-corpo"><dl class="campos" id="pacote-lista"></dl></div>
-      </div>
-      <p class="nota" style="margin-top:1rem" data-i18n-html="res.nota-pacote"></p>
-    </div>
-    <div class="grade-2 revela" style="gap:1rem;align-content:start">
-      <div class="painel id-cartao"><div class="painel-corpo"><h4>AURON IDENTITY</h4><ul><li>Communication Key</li><li>Device Keys</li><li>Capabilities</li></ul><p class="nota" style="margin:.9rem 0 0" data-i18n="res.identidade"></p></div></div>
-      <div class="painel id-cartao"><div class="painel-corpo"><h4>AURON WALLET</h4><ul><li>Account Keys</li><li>Assets</li><li>Nonce</li><li>Offline Budget</li></ul><p class="nota" style="margin:.9rem 0 0" data-i18n="res.carteira"></p></div></div>
-    </div>
-  </div>
-</section>
-
-<!-- ================= RÁDIO ================= -->
-<section class="capitulo" id="radio" data-mundo="malha" aria-labelledby="t-radio">
-  <div class="grade-2" style="align-items:center">
-    <div class="cabeca" style="margin:0">
-      <p class="olho">RADIO RESEARCH</p>
-      <h2 id="t-radio" data-i18n-html="radio.titulo"></h2>
-      <p data-i18n="radio.intro"></p>
-      <p class="nota" lang="en">Experimental research into distributed data transport and wireless resource utilization.</p>
-      <div class="selos"><span class="selo" data-estado="pesquisa"><i></i><span data-i18n="estado.pesquisa"></span></span><span class="selo-sim conceito" data-i18n="ui.conceitual"></span></div>
-    </div>
-    <div class="tela alta revela"><canvas id="radio-canvas" role="img" data-i18n-attr="aria-label:radio.canvas"></canvas><div class="rodape-tela"><span id="radio-estado"></span><span>RESEARCH</span></div></div>
-  </div>
-</section>
-
-<!-- ================= 16×16 ================= -->
-<section class="capitulo" id="fragmentacao" data-mundo="grade" aria-labelledby="t-frag">
-  <div class="cabeca">
-    <p class="olho">AURON DISTRIBUTED FRAGMENTATION MODEL</p>
-    <h2 id="t-frag" data-i18n-html="frag.titulo"></h2>
-    <p data-i18n="frag.intro"></p>
-    <div class="selos"><span class="selo-sim">SIMULATION</span><span class="selo" data-estado="pesquisa"><i></i><span data-i18n="estado.pesquisa"></span></span></div>
-  </div>
-  <div class="painel revela">
-    <div class="painel-cabeca">
-      <ol class="etapas" id="frag-etapas"><li><span>DATA</span></li><li><span>ENCRYPTION</span></li><li><span>FRAGMENTATION</span></li><li><span>16×16</span></li><li><span>DISTRIBUTION</span></li></ol>
-    </div>
-    <div class="painel-corpo frag">
-      <div>
-        <form class="entrada" id="frag-form">
-          <label class="so-leitor" for="frag-texto" data-i18n="frag.rotulo"></label>
-          <input id="frag-texto" maxlength="120" value="DATA" autocomplete="off" spellcheck="false">
-          <button class="botao botao-claro botao-pequeno" type="submit" data-i18n="frag.fragmentar"></button>
-        </form>
-        <div class="tabuleiro-caixa"><div class="tabuleiro" id="tabuleiro" role="grid" aria-label="16×16"></div></div>
-        <div class="controles" style="margin-top:1rem">
-          <button class="botao botao-linha botao-pequeno" type="button" id="frag-reconstruir" disabled data-i18n="frag.reconstruir"></button>
-          <button class="botao botao-linha botao-pequeno" type="button" id="frag-corromper" disabled data-i18n="frag.corromper"></button>
-        </div>
-        <p class="saida" id="frag-saida" role="status"></p>
-      </div>
-      <div>
-        <div class="painel" style="background:rgba(8,8,9,.6)">
-          <div class="painel-cabeca"><h3>FRAGMENT</h3></div>
-          <div class="painel-corpo" id="frag-detalhe" aria-live="polite"><p class="texto-2" data-i18n="frag.escolha"></p></div>
-        </div>
-        <p class="nota" style="margin-top:1rem" data-i18n-html="frag.nota"></p>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- ================= ARMAZENAMENTO ================= -->
-<section class="capitulo" id="armazenamento" data-mundo="grade" aria-labelledby="t-arm">
-  <div class="grade-2" style="align-items:center">
-    <div class="cabeca" style="margin:0">
-      <p class="olho">STORAGE</p>
-      <h2 id="t-arm" data-i18n-html="arm.titulo"></h2>
-      <p data-i18n="arm.intro"></p>
-      <div class="selos"><span class="selo" data-estado="pesquisa"><i></i><span data-i18n="estado.pesquisa"></span></span><span class="selo-sim conceito">FUTURE</span></div>
-    </div>
-    <div class="painel revela"><div class="painel-corpo"><ol class="etapas vertical" id="arm-etapas"></ol></div></div>
-  </div>
-</section>
-
-<!-- ================= INTELIGÊNCIA E ECONOMIA ================= -->
-<section class="capitulo largo" id="inteligencia" data-mundo="rede" aria-labelledby="t-ia">
-  <div class="cabeca">
-    <p class="olho">AURON INTELLIGENCE · MACHINE ECONOMY</p>
-    <h2 id="t-ia" data-i18n-html="ia.titulo"></h2>
-    <p data-i18n="ia.intro"></p>
-    <div class="selos"><span class="selo-sim">SIMULATION</span><span class="selo" data-estado="planejado"><i></i><span data-i18n="estado.planejado"></span></span></div>
-  </div>
-  <div class="painel revela">
-    <div class="painel-corpo">
-      <div class="abas" role="tablist" id="ia-abas">
-        <button type="button" role="tab" aria-selected="true" data-aba="agente" data-i18n="ia.aba-agente"></button>
-        <button type="button" role="tab" aria-selected="false" data-aba="maquinas" data-i18n="ia.aba-maquinas"></button>
-        <button type="button" role="tab" aria-selected="false" data-aba="logistica" data-i18n="ia.aba-logistica"></button>
-        <button type="button" role="tab" aria-selected="false" data-aba="mercado" data-i18n="ia.aba-mercado"></button>
-      </div>
-      <div class="grade-2" role="tabpanel" id="ia-painel">
-        <div><ol class="etapas vertical" id="ia-etapas"></ol></div>
-        <div><p class="texto-2" id="ia-explica" aria-live="polite"></p><div class="recursos" id="ia-recursos" hidden></div><div id="ia-estado"></div></div>
-      </div>
-    </div>
-  </div>
-</section>
-
-</div>
-
-<div class="ato" role="presentation">
-  <span class="ato-num">·</span>
-  <p class="ato-nome" data-i18n="atos.epilogo">Epílogo</p>
-  <span class="ato-fio" aria-hidden="true"></span>
-</div>
-
-<!-- ================= ESCALA ================= -->
-<section class="zoom" id="escala" data-mundo="global" aria-labelledby="t-escala">
-  <div class="zoom-fixo">
-    <div class="zoom-rotulos">
-      <p class="olho" id="t-escala">ZOOM OUT</p>
-      <p class="zoom-contagem" id="zoom-contagem" aria-live="polite">ONE NODE</p>
-      <div class="zoom-degraus" id="zoom-degraus"><span>ONE NODE</span><span>TEN NODES</span><span>HUNDREDS</span><span>THOUSANDS</span><span>NETWORK</span><span>GLOBAL INFRASTRUCTURE</span></div>
-      <span class="selo-sim conceito" data-i18n="ui.conceitual"></span>
-    </div>
-  </div>
-</section>
-
-<!-- ================= CAMINHO ================= -->
-<section class="capitulo largo" id="caminho" data-mundo="nucleo" aria-labelledby="t-cam">
-  <div class="cabeca centro">
-    <p class="olho">ROADMAP</p>
-    <h2 id="t-cam" data-i18n-html="cam.titulo"></h2>
-    <p data-i18n="cam.intro"></p>
-  </div>
-  <div class="roteiro-3d revela" id="roteiro-3d"><div class="cena-r" id="cena-r"><svg viewBox="-360 -300 720 600" id="roteiro-svg" role="img" data-i18n-attr="aria-label:cam.mapa"></svg></div></div>
-  <div class="legenda-estados" id="legenda-estados"></div>
-  <div class="roteiro-listas" id="roteiro-listas"></div>
-</section>
-
-<!-- ================= ONDE ESTAMOS ================= -->
-<section class="capitulo largo" id="onde" data-mundo="rede" aria-labelledby="t-onde">
-  <div class="cabeca">
-    <p class="olho">WHERE WE ARE</p>
-    <h2 id="t-onde" data-i18n-html="onde.titulo"></h2>
-    <p data-i18n="onde.intro"></p>
-  </div>
-  <div class="onde revela" id="onde-colunas"></div>
-  <p class="aviso-rede" data-i18n-html="onde.aviso"></p>
-</section>
-
-<!-- ================= ENGENHARIA ABERTA ================= -->
-<section class="capitulo" id="aberto" data-mundo="rede" aria-labelledby="t-aberto">
-  <div class="cabeca">
-    <p class="olho">BUILD IN PUBLIC</p>
-    <h2 id="t-aberto" data-i18n-html="aberto.titulo"></h2>
-    <p lang="en" class="texto-2">Auron is built through open engineering, experimentation and continuous validation.</p>
-    <p data-i18n="aberto.intro"></p>
-  </div>
-  <div class="numeros revela">
-    <div><b class="num">122</b><span data-i18n="aberto.n-python"></span></div>
-    <div><b class="num">80</b><span data-i18n="aberto.n-rust"></span></div>
-    <div><b class="num">18</b><span data-i18n="aberto.n-vetores"></span></div>
-    <div><b class="num">6</b><span data-i18n="aberto.n-falhas"></span></div>
-  </div>
-  <div class="arquivos">
-    <div class="painel arquivo revela"><h3 data-i18n="aberto.codigo"></h3><span class="meta" id="meta-zip"></span><p data-i18n="aberto.codigo-d"></p><button class="botao botao-claro botao-pequeno" type="button" data-baixar="codigo" data-i18n="aberto.baixar-codigo"></button></div>
-    <div class="painel arquivo revela"><h3 data-i18n="aberto.doc"></h3><span class="meta">AURON-APRESENTACAO.md</span><p data-i18n="aberto.doc-d"></p><button class="botao botao-linha botao-pequeno" type="button" data-baixar="apresentacao" data-i18n="aberto.baixar-doc"></button></div>
-    <div class="painel arquivo revela"><h3 data-i18n="aberto.roteiro"></h3><span class="meta">ROTEIRO-VIDEO.md</span><p data-i18n="aberto.roteiro-d"></p><button class="botao botao-linha botao-pequeno" type="button" data-baixar="roteiro" data-i18n="aberto.baixar-roteiro"></button></div>
-  </div>
-  <p class="aviso-baixar" id="aviso-baixar" role="status"></p>
-  <p class="nota"><span data-i18n="aberto.github"></span> <a class="botao botao-linha botao-pequeno" href="https://github.com/NOXqubit/auron" target="_blank" rel="noopener" data-i18n="aberto.github-link"></a></p>
-</section>
-
-<!-- ================= APOIO ================= -->
-<section class="capitulo" id="apoio" data-mundo="rede" aria-labelledby="t-apoio">
-  <div class="grade-2" style="align-items:start">
-    <div class="cabeca" style="margin:0">
-      <p class="olho">SUPPORT</p>
-      <h2 id="t-apoio" data-i18n-html="apoio.titulo"></h2>
-      <p data-i18n="apoio.intro"></p>
-    </div>
-    <div class="painel doacao revela">
-      <div class="qr" id="qr" aria-hidden="true"></div>
-      <div>
-        <p class="mono texto-2" style="margin:0;font-size:.72rem;letter-spacing:.1em">BITCOIN · <span data-i18n="apoio.rede"></span></p>
-        <code class="endereco" id="endereco">bc1qkp7d90t9tnmuv2rwq742pwc8pnet28a59zdzt7</code>
-        <button class="botao botao-claro botao-pequeno" type="button" id="copiar" data-i18n="apoio.copiar"></button>
-        <p class="aviso-baixar" id="aviso-copiar" role="status"></p>
-        <p class="nota" data-i18n-html="apoio.cuidado"></p>
-        <p class="nota" data-i18n-html="apoio.sem-contrapartida"></p>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- ================= FINAL ================= -->
-<section class="final" id="fim" data-mundo="logo" aria-labelledby="t-fim">
-  <div class="miolo">
-    <svg class="a-final" viewBox="0 0 100 100" aria-hidden="true"><use href="#simbolo-a"/></svg>
-    <h2 id="t-fim" class="monumento fim-frase"><span class="linha"><span data-i18n="fim.l1">Não confie.</span></span><span class="linha forte"><span data-i18n="fim.l2">Confira.</span></span></h2>
-    <p class="sub" data-i18n="fim.sub">Todo número desta página que diz “conta real” foi calculado no seu aparelho. O resto está marcado como exemplo.</p>
-    <div class="acoes"><a class="botao botao-claro" href="#rodar" data-i18n="fim.rodar">Rodar um nó</a><a class="botao botao-linha" href="https://github.com/NOXqubit/auron" target="_blank" rel="noopener" data-i18n="fim.codigo">Ler o código</a></div>
-  </div>
-</section>
+</main>
 
 <footer class="rodape">
-  <div class="marca-r">
-    <b>AURON TECHNOLOGY</b>
-    <small>© 2026 Auron Technology</small>
-    <small data-i18n="rodape.aviso"></small>
-    <span class="qualidade" id="qualidade"></span>
+  <div class="rodape-marca">
+    <img src="assets/logo.svg" alt="" width="40" height="40">
+    <p class="rodape-lema" data-i18n="rodape.lema">Não confie. Confira.</p>
   </div>
-  <nav data-i18n-attr="aria-label:nav.rotulo">
-    <a href="#nucleo" data-i18n="nav.tecnologia"></a>
-    <a href="#resonance" data-i18n="nav.rede"></a>
-    <a href="#aur">AUR</a>
-    <a href="#fragmentacao" data-i18n="nav.pesquisa"></a>
-    <a href="#aberto" data-i18n="nav.docs"></a>
-    <a href="#caminho" data-i18n="nav.roadmap"></a>
-    <a href="https://github.com/NOXqubit/auron" target="_blank" rel="noopener">GitHub</a>
-  </nav>
+  <ul class="rodape-links">
+    <li><a href="https://github.com/NOXqubit/hyurax" rel="noopener" data-i18n="rodape.codigo">Código aberto no GitHub</a></li>
+    <li><a href="https://github.com/NOXqubit/hyurax/blob/main/spec/HYURAX-SPEC-01.md" rel="noopener" data-i18n="rodape.spec">Especificação</a></li>
+    <li><span data-i18n="rodape.licenca">Licença MIT ou Apache-2.0</span></li>
+  </ul>
+  <p class="rodape-nota" data-i18n="rodape.antes">O Hyurax se chamava Auron até 19/09/2026. A tecnologia é a mesma.</p>
 </footer>
-
-</div>
-
-<div class="palco-edit" id="palco-edit" hidden role="dialog" aria-modal="true" data-i18n-attr="aria-label:edit.titulo">
-  <canvas id="tela-edit"></canvas>
-  <div class="edit-controles">
-    <button class="botao botao-linha botao-pequeno" type="button" id="edit-voz" aria-pressed="true"></button>
-    <button class="botao botao-linha botao-pequeno" type="button" id="edit-gravar"></button>
-    <span class="mono" id="edit-aviso" role="status"></span>
-    <button class="botao botao-claro botao-pequeno" type="button" id="edit-fechar" data-i18n="ui.fechar"></button>
-  </div>
-</div>
-
-<noscript><p style="position:relative;z-index:5;padding:2rem;max-width:40rem;margin:0 auto">Auron Technology — infraestrutura distribuída em construção. Ative o JavaScript para ver o site. / Distributed infrastructure under construction. Enable JavaScript to view the site.</p></noscript>
 
 <script src="vendor/qrcode.min.js" defer></script>
 <script type="module" src="js/main.js"></script>

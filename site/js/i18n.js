@@ -8,7 +8,7 @@ export const IDIOMAS = [
   { codigo: "es", curto: "ES", nome: "Español" },
   { codigo: "ja", curto: "JA", nome: "日本語" },
 ];
-const CHAVE_LOCAL = "auron-idioma";
+const CHAVE_LOCAL = "hyurax-idioma";
 const cache = {};
 let dic = {}, base = {}, atual = "pt-BR";
 
