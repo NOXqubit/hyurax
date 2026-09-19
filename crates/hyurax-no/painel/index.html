@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hyurax · Minerador</title>
+<meta name="color-scheme" content="dark">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14'/%3E%3Cg stroke='%23fff' stroke-width='3.6' stroke-linecap='round' opacity='.6'%3E%3Cline x1='18' y1='14' x2='18' y2='50'/%3E%3Cline x1='46' y1='14' x2='46' y2='50'/%3E%3Cline x1='18' y1='32' x2='46' y2='32'/%3E%3C/g%3E%3Cg fill='%23fff'%3E%3Ccircle cx='18' cy='14' r='5'/%3E%3Ccircle cx='18' cy='50' r='5'/%3E%3Ccircle cx='46' cy='14' r='5'/%3E%3Ccircle cx='46' cy='50' r='5'/%3E%3Ccircle cx='18' cy='32' r='5.6'/%3E%3Ccircle cx='46' cy='32' r='5.6'/%3E%3C/g%3E%3C/svg%3E">
+<link rel="stylesheet" href="/painel.css">
+<script type="module" src="/painel.js"></script>
+</head>
+<body>
+<header class="barra">
+  <div class="marca">
+    <svg viewBox="0 0 64 64" aria-hidden="true"><g stroke="currentColor" stroke-width="3.6" stroke-linecap="round" opacity=".55"><line x1="18" y1="14" x2="18" y2="50"/><line x1="46" y1="14" x2="46" y2="50"/><line x1="18" y1="32" x2="46" y2="32"/></g><g fill="currentColor"><circle cx="18" cy="14" r="5"/><circle cx="18" cy="50" r="5"/><circle cx="46" cy="14" r="5"/><circle cx="46" cy="50" r="5"/><circle cx="18" cy="32" r="5.6"/><circle cx="46" cy="32" r="5.6"/></g></svg>
+    <span class="palavra">HYURAX</span>
+    <span class="sub">MINERADOR</span>
+  </div>
+  <dl class="leituras">
+    <div><dt>Rede</dt><dd id="l-rede">—</dd></div>
+    <div><dt>Altura</dt><dd id="l-altura" class="num">—</dd></div>
+    <div><dt>Ritmo</dt><dd><span id="l-ritmo" class="num">—</span> <small>tent/s</small></dd></div>
+    <div><dt>Pares</dt><dd id="l-pares" class="num">—</dd></div>
+    <div><dt>Ligado há</dt><dd id="l-ligado" class="num">—</dd></div>
+  </dl>
+  <div class="controles" id="controles">
+    <div class="nucleos" role="group" aria-label="Núcleos para minerar">
+      <button type="button" id="menos" aria-label="Menos núcleos">−</button>
+      <span><b id="linhas" class="num">1</b><small>/<span id="nucleos">1</span> núcleos · <span id="memoria">0</span> MiB</small></span>
+      <button type="button" id="mais" aria-label="Mais núcleos">+</button>
+    </div>
+    <button type="button" id="minerar" class="minerar" aria-pressed="false">
+      <i aria-hidden="true"></i><span>MINERAR</span>
+    </button>
+  </div>
+  <p class="so-ver" id="so-ver" hidden>Somente leitura · os comandos ficam no computador que minera</p>
+</header>
+
+<main class="grade">
+  <section class="bloco estacao" aria-label="Estação de mineração">
+    <header class="rotulo"><span>Estação · PC-01</span><span id="estado-rodada">parado</span></header>
+    <canvas id="cena" aria-hidden="true"></canvas>
+    <div class="estacao-pe">
+      <div><small>Tentativas</small><b id="e-tentativas" class="num">0</b></div>
+      <div><small>Rodada atual</small><b id="e-rodada" class="num">—</b></div>
+      <div><small>Meus blocos</small><b id="e-meus" class="num">0</b></div>
+      <div><small>Perdidos na corrida</small><b id="e-perdidos" class="num">0</b></div>
+    </div>
+  </section>
+
+  <aside class="lateral">
+    <section class="bloco carteira" aria-label="Carteira">
+      <header class="rotulo"><span>Carteira</span><button type="button" id="copiar" class="link">copiar endereço</button></header>
+      <p class="endereco" id="endereco">—</p>
+      <p class="saldo"><span id="saldo" class="num">0.00000000</span><small>HYUR</small></p>
+      <p class="legenda">Gastável agora</p>
+      <dl class="pares">
+        <div><dt>Esperando liberar</dt><dd><span id="imaturo" class="num">0</span> HYUR</dd></div>
+        <div><dt>Recompensa do próximo bloco</dt><dd><span id="recompensa" class="num">0</span> HYUR</dd></div>
+        <div><dt>Libera depois de</dt><dd><span id="maturidade" class="num">0</span> blocos</dd></div>
+      </dl>
+    </section>
+    <section class="bloco rede" aria-label="Rede">
+      <header class="rotulo"><span>Rede</span><span id="r-nome">—</span></header>
+      <dl class="pares">
+        <div><dt>Emitido</dt><dd><span id="r-emitido" class="num">0</span> HYUR</dd></div>
+        <div><dt>Transações esperando</dt><dd id="r-mempool" class="num">0</dd></div>
+        <div><dt>Trabalho acumulado</dt><dd id="r-trabalho" class="num curto">0</dd></div>
+        <div><dt>Ponta da cadeia</dt><dd id="r-ponta" class="num curto">—</dd></div>
+      </dl>
+    </section>
+  </aside>
+
+  <section class="bloco livro" aria-label="Livro de blocos">
+    <header class="rotulo"><span>Livro de blocos</span><span class="chave"><i class="q meu"></i>meu <i class="q"></i>outro nó</span></header>
+    <div class="rolar">
+      <table>
+        <thead><tr><th>Altura</th><th>Hash</th><th>Intervalo</th><th>Trabalho útil</th><th>Tx</th></tr></thead>
+        <tbody id="livro"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="bloco ritmo" aria-label="Ritmo da mineração">
+    <header class="rotulo"><span>Ritmo · 2 min</span><span><span id="g-atual" class="num">0</span> tent/s</span></header>
+    <canvas id="grafico" aria-label="Tentativas por segundo nos últimos dois minutos" role="img"></canvas>
+  </section>
+
+  <section class="bloco fluxo" aria-label="Fluxo de eventos">
+    <header class="rotulo"><span>Fluxo</span><span id="relogio" class="num">--:--:--</span></header>
+    <ol id="fluxo" class="rolar"></ol>
+  </section>
+</main>
+
+<footer class="fita" aria-hidden="true"><div id="fita-trilho"></div></footer>
+<p id="desligado" class="desligado" hidden>Sem resposta do nó. O programa hyurax-no painel ainda está aberto?</p>
+</body>
+</html>

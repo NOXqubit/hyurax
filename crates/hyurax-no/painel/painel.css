@@ -1,0 +1,322 @@
+/* Hyurax · Minerador — terminal de operação, preto e branco.
+   Estado se lê pela forma (sólido, vazado, invertido), nunca por cor. */
+
+:root {
+  --fundo: #030303;
+  --painel: #0a0a0a;
+  --painel-2: #111;
+  --tinta: #f3f3f1;
+  --tinta-2: rgba(243, 243, 241, 0.64);
+  --tinta-3: rgba(243, 243, 241, 0.38);
+  --fio: rgba(243, 243, 241, 0.12);
+  --fio-forte: rgba(243, 243, 241, 0.28);
+  --mono: "Cascadia Mono", "IBM Plex Mono", Consolas, "SF Mono", ui-monospace, monospace;
+  --display: "Bahnschrift", "Archivo Narrow", "Arial Narrow", "Roboto Condensed", system-ui, sans-serif;
+  --r: 2px;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--fundo);
+  color: var(--tinta);
+  font: 13px/1.45 var(--mono);
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+/* No monitor, o painel ocupa a tela exata, sem rolar: é um painel de operação. */
+@media (min-width: 1101px) and (min-height: 600px) {
+  body { height: 100vh; }
+}
+[hidden] { display: none !important; }
+button { font: inherit; color: inherit; }
+.num { font-variant-numeric: tabular-nums; }
+small { color: var(--tinta-3); font-size: 11px; }
+:focus-visible { outline: 1px solid var(--tinta); outline-offset: 2px; }
+
+/* ---------- barra ---------- */
+.barra {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--fio);
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  background: rgba(3, 3, 3, 0.92);
+  backdrop-filter: blur(6px);
+  flex-wrap: wrap;
+}
+.marca { display: flex; align-items: center; gap: 10px; }
+.marca svg { width: 26px; height: 26px; }
+.palavra {
+  font: 700 22px/1 var(--display);
+  font-stretch: condensed;
+  letter-spacing: 0.06em;
+}
+.sub {
+  font-size: 10px;
+  letter-spacing: 0.32em;
+  color: var(--tinta-3);
+  border-left: 1px solid var(--fio-forte);
+  padding-left: 10px;
+}
+.leituras { display: flex; gap: 22px; margin: 0; flex-wrap: wrap; }
+.leituras div { display: grid; gap: 1px; }
+.leituras dt { font-size: 9.5px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--tinta-3); }
+.leituras dd { margin: 0; font-size: 15px; }
+.leituras small { font-size: 10px; }
+
+.controles { margin-left: auto; display: flex; gap: 10px; align-items: stretch; }
+.nucleos {
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--fio-forte);
+  border-radius: var(--r);
+}
+.nucleos button {
+  background: none;
+  border: 0;
+  width: 34px;
+  height: 100%;
+  cursor: pointer;
+  font-size: 16px;
+}
+.nucleos button:hover { background: var(--painel-2); }
+.nucleos button:disabled { opacity: 0.3; cursor: default; }
+.nucleos span { padding: 0 10px; border-inline: 1px solid var(--fio); white-space: nowrap; }
+.nucleos b { font-size: 15px; }
+
+.minerar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 18px;
+  border: 1px solid var(--tinta);
+  background: transparent;
+  border-radius: var(--r);
+  cursor: pointer;
+  font: 700 13px/1 var(--mono);
+  letter-spacing: 0.24em;
+  min-width: 150px;
+  justify-content: center;
+}
+.minerar i { width: 9px; height: 9px; border: 1.5px solid currentColor; border-radius: 50%; }
+.minerar:hover { background: var(--painel-2); }
+/* Ligado: botão invertido, e o círculo cheio pulsa. */
+.minerar[aria-pressed="true"] { background: var(--tinta); color: var(--fundo); }
+.minerar[aria-pressed="true"] i { background: currentColor; animation: pulso 1.1s ease-in-out infinite; }
+.so-ver { margin: 0 0 0 auto; color: var(--tinta-3); font-size: 11px; letter-spacing: 0.08em; }
+
+@keyframes pulso { 50% { transform: scale(0.55); opacity: 0.5; } }
+
+/* ---------- grade ---------- */
+.grade {
+  display: grid;
+  gap: 1px;
+  background: var(--fio);
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 0.9fr) minmax(300px, 0.85fr);
+  grid-template-rows: minmax(340px, 1.35fr) minmax(220px, 1fr);
+  grid-template-areas:
+    "estacao estacao lateral"
+    "livro   ritmo   fluxo";
+  min-height: 0;
+}
+.bloco {
+  background: var(--painel);
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  position: relative;
+}
+.rotulo {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--tinta-2);
+  border-bottom: 1px solid var(--fio);
+}
+.rotulo > span:first-child::before { content: "▪ "; color: var(--tinta); }
+.link {
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--tinta-2);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.link:hover { color: var(--tinta); }
+
+/* ---------- estação 3D ---------- */
+.estacao { grid-area: estacao; }
+.estacao canvas { flex: 1; width: 100%; min-height: 0; display: block; cursor: grab; }
+.estacao canvas:active { cursor: grabbing; }
+#estado-rodada { color: var(--tinta); }
+.estacao-pe {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  border-top: 1px solid var(--fio);
+}
+.estacao-pe div { padding: 8px 12px; display: grid; }
+.estacao-pe div + div { border-left: 1px solid var(--fio); }
+.estacao-pe small { font-size: 9.5px; letter-spacing: 0.18em; text-transform: uppercase; }
+.estacao-pe b { font-size: 16px; font-weight: 500; }
+
+/* ---------- lateral ---------- */
+.lateral { grid-area: lateral; display: grid; grid-template-rows: auto 1fr; gap: 1px; background: var(--fio); }
+.carteira { padding-bottom: 12px; }
+.endereco {
+  margin: 12px 12px 0;
+  font-size: 11px;
+  color: var(--tinta-2);
+  word-break: break-all;
+}
+.saldo { margin: 14px 12px 0; display: flex; align-items: baseline; gap: 8px; }
+.saldo span {
+  font: 600 clamp(26px, 3.1vw, 40px)/1 var(--display);
+  letter-spacing: 0.01em;
+}
+.legenda { margin: 4px 12px 0; font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--tinta-3); }
+.pares { margin: 12px 12px 0; display: grid; gap: 0; }
+.pares div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 0;
+  border-top: 1px dashed var(--fio);
+}
+.pares dt { color: var(--tinta-2); }
+.pares dd { margin: 0; text-align: right; }
+.curto { max-width: 17ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ---------- livro ---------- */
+.livro { grid-area: livro; }
+.rolar { overflow: auto; flex: 1; min-height: 0; }
+table { width: 100%; border-collapse: collapse; }
+th {
+  position: sticky;
+  top: 0;
+  background: var(--painel);
+  text-align: left;
+  font-weight: 400;
+  font-size: 9.5px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--tinta-3);
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--fio);
+}
+td { padding: 4px 12px; white-space: nowrap; border-bottom: 1px solid rgba(243, 243, 241, 0.04); }
+td:first-child { display: flex; align-items: center; gap: 8px; }
+tbody tr { transition: background 0.6s; }
+tbody tr.novo { background: rgba(243, 243, 241, 0.12); }
+tbody tr.meu td { color: var(--tinta); }
+tbody tr:not(.meu) td { color: var(--tinta-2); }
+.q { width: 8px; height: 8px; border: 1px solid currentColor; display: inline-block; }
+.q.meu { background: currentColor; }
+.chave { display: flex; gap: 6px; align-items: center; text-transform: none; letter-spacing: 0.04em; }
+.chave .q { margin-left: 6px; }
+
+/* ---------- ritmo ---------- */
+.ritmo { grid-area: ritmo; }
+.ritmo canvas { flex: 1; width: 100%; min-height: 0; display: block; }
+
+/* ---------- fluxo ---------- */
+.fluxo { grid-area: fluxo; }
+#fluxo { list-style: none; margin: 0; padding: 4px 0; }
+#fluxo li {
+  display: grid;
+  grid-template-columns: 62px 78px 1fr;
+  gap: 8px;
+  padding: 4px 12px;
+  align-items: baseline;
+}
+#fluxo time { color: var(--tinta-3); }
+#fluxo .tipo {
+  font-size: 9.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  border: 1px solid var(--fio-forte);
+  padding: 1px 5px;
+  text-align: center;
+  color: var(--tinta-2);
+}
+#fluxo li.meu-bloco .tipo { background: var(--tinta); color: var(--fundo); border-color: var(--tinta); }
+#fluxo li.perdido .tipo { text-decoration: line-through; }
+#fluxo li.erro .tipo { border-style: dashed; color: var(--tinta); }
+#fluxo li.meu-bloco { color: var(--tinta); }
+#fluxo li:not(.meu-bloco) { color: var(--tinta-2); }
+
+/* ---------- fita ---------- */
+.fita {
+  border-top: 1px solid var(--fio);
+  overflow: hidden;
+  white-space: nowrap;
+  font-size: 11px;
+  color: var(--tinta-2);
+  padding: 7px 0;
+  mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent);
+}
+#fita-trilho { display: inline-block; padding-left: 100%; animation: fita 60s linear infinite; }
+#fita-trilho span { margin-right: 36px; }
+#fita-trilho b { color: var(--tinta); font-weight: 500; }
+@keyframes fita { to { transform: translateX(-100%); } }
+
+.desligado {
+  position: fixed;
+  inset: auto 16px 48px auto;
+  margin: 0;
+  background: var(--tinta);
+  color: var(--fundo);
+  padding: 10px 14px;
+  font-weight: 700;
+  border-radius: var(--r);
+  z-index: 10;
+}
+
+/* ---------- telas menores (o celular vendo o PC) ---------- */
+@media (max-width: 1100px) {
+  .grade {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-rows: minmax(320px, 55vh) auto minmax(220px, auto) minmax(220px, auto);
+    grid-template-areas:
+      "estacao estacao"
+      "lateral lateral"
+      "livro   livro"
+      "ritmo   fluxo";
+  }
+  .lateral { grid-template-columns: 1fr 1fr; grid-template-rows: auto; }
+}
+@media (max-width: 680px) {
+  .barra { gap: 14px; }
+  .leituras { gap: 14px; }
+  .controles { width: 100%; margin-left: 0; }
+  .minerar { flex: 1; }
+  .grade {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(280px, 48vh) auto minmax(240px, auto) minmax(200px, auto) minmax(240px, auto);
+    grid-template-areas: "estacao" "lateral" "livro" "ritmo" "fluxo";
+  }
+  .lateral { grid-template-columns: 1fr; }
+  .estacao-pe { grid-template-columns: repeat(2, 1fr); }
+  .estacao-pe div:nth-child(3) { border-left: 0; }
+  .estacao-pe div:nth-child(n + 3) { border-top: 1px solid var(--fio); }
+}
+@media (prefers-reduced-motion: reduce) {
+  #fita-trilho { animation: none; padding-left: 12px; }
+  .minerar[aria-pressed="true"] i { animation: none; }
+}

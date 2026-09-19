@@ -8,6 +8,7 @@
 //! hyurax-no carteira cifrar  --arquivo carteira.txt
 //! hyurax-no minerar          --rede testnet --pasta dados --endereco HEX [--blocos N] [--linhas L]
 //! hyurax-no enviar           --rede testnet --pasta dados --arquivo carteira.txt --para HEX --valor HYUR
+//! hyurax-no painel           --arquivo carteira.txt [--painel-porta 8800]
 //! hyurax-no no               --rede testnet --pasta dados --porta P
 //! hyurax-no estado           --rede testnet --pasta dados [--endereco HEX]
 //! ```
@@ -17,6 +18,7 @@
 //! o nó guarda a própria identidade em `PASTA/no.chave`.
 
 mod carteira;
+mod painel;
 mod senha;
 
 use std::path::{Path, PathBuf};
@@ -56,6 +58,12 @@ hyurax-no — nó do Hyurax (rede de TESTE)
                    [--porta P] [--semente IP:PORTA,...] [--pausa-ms X]
       Minera N blocos (padrão 1; 0 = sem parar) e grava a cadeia depois de cada um.
       Com --porta e/ou --semente, entra na rede: sincroniza e propaga o que minerar.
+
+  hyurax-no painel --arquivo carteira.txt [--rede testnet] [--pasta dados] [--porta P]
+                  [--semente IP:PORTA,...] [--painel-porta 8800] [--painel-rede]
+      O minerador com dashboard: abre http://127.0.0.1:8800 no navegador, com o botão
+      de minerar, os núcleos, a carteira, o livro de blocos e a estação 3D.
+      --painel-rede deixa o celular no mesmo Wi-Fi ver o painel (sem poder mandar).
 
   hyurax-no no --rede testnet --pasta dados [--porta P] [--semente IP:PORTA,...] [--exportar estado.json]
       Só roda o nó: escuta, sincroniza, serve e propaga. Sem minerar.
@@ -593,6 +601,7 @@ fn principal(args: &[String]) -> Result<(), String> {
         "carteira" => comando_carteira(resto),
         "enviar" => enviar(resto),
         "minerar" => minerar(resto),
+        "painel" => painel::painel(resto),
         "no" => servir_no(resto),
         "estado" => estado(resto),
         "ajuda" | "--ajuda" | "-h" => {

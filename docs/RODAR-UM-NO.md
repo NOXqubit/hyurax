@@ -80,6 +80,29 @@ conhecido (várias, separadas por vírgula). O nó descobre os outros sozinho.
 
 ## 4. Minerar
 
+### Com o painel (recomendado no PC)
+
+```bash
+./hyurax-no painel --arquivo carteira.txt --semente IP:PORTA
+```
+
+Abra `http://127.0.0.1:8800` no navegador. O painel mostra tudo ao vivo e
+tem o botão **MINERAR**:
+- os núcleos que minera, e a memória que eles usam;
+- a carteira, com o saldo gastável e o que ainda espera liberar;
+- o livro de blocos, em que ■ é bloco seu e □ é de outro nó;
+- o ritmo de tentativas;
+- o fluxo de eventos;
+- a estação 3D, onde cada bloco minerado entra na corrente.
+
+Nada disso precisa de internet: o painel vem dentro do programa.
+
+- `--painel-porta 9000` muda a porta.
+- `--painel-rede` deixa o celular no mesmo Wi-Fi **ver** o painel, em
+  `http://IP_DO_PC:8800`. Os comandos continuam só no próprio PC.
+
+### Só no terminal
+
 ```bash
 ./hyurax-no minerar --rede testnet --pasta dados --endereco SEU_ENDERECO --blocos 0 --semente IP:PORTA
 ```
