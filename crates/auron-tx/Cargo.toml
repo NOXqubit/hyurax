@@ -8,6 +8,7 @@ license.workspace = true
 description = "Auron — transações: coinbase e transferência multiativo assinada"
 
 [dependencies]
+auron-identidade.workspace = true
 auron-types.workspace = true
 auron-crypto.workspace = true
 auron-codec.workspace = true

@@ -23,7 +23,7 @@ fn carregar(nome: &str) -> Value {
     let bruto = std::fs::read_to_string(&caminho)
         .unwrap_or_else(|e| panic!("não consegui ler {}: {e}", caminho.display()));
     let doc: Value = serde_json::from_str(&bruto).unwrap();
-    assert_eq!(doc["spec"].as_str(), Some("AURON-SPEC-01"));
+    assert_eq!(doc["spec"].as_str(), Some(concat!(auron_identidade::raiz!(), "-SPEC-01")));
     doc["data"].clone()
 }
 
@@ -73,7 +73,10 @@ fn gravar_e_recarregar_do_disco() {
     assert_eq!(relida.state, cadeia.state);
 
     let errada = load_chain(&arquivo, false, Some(ParametrosRede::TESTNET)).unwrap_err();
-    assert_eq!(errada.to_string(), "arquivo é da rede auron-regtest, mas foi pedida auron-testnet");
+    assert_eq!(
+        errada.to_string(),
+        format!("arquivo é da rede {p}-regtest, mas foi pedida {p}-testnet", p = auron_identidade::prefixo_rede!())
+    );
     std::fs::remove_dir_all(&pasta).unwrap();
     assert!(load_chain(&arquivo, false, None).unwrap_err().to_string().starts_with("arquivo não encontrado"));
 }

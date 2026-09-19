@@ -34,7 +34,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from . import argon2
+from . import argon2, identidade
 from .units import AUR_UNIT, MAX_SUPPLY
 
 # ---------------------------------------------------------------------------
@@ -202,15 +202,15 @@ class ChainParams:
         return total
 
 
-POW_SALT = b"AURON-POW-v1\x00\x00\x00\x00"  # 16 bytes, fixo e público
+POW_SALT = identidade.preencher_16(identidade.rotulo("POW-v1"))  # 16 bytes, fixo e público
 
 # Alvo inicial: 2^240. Deixa 16 bits de trabalho, suficiente para arrancar
 # uma rede nova sem que o primeiro minerador espere horas.
 _GENESIS_TARGET = (1 << 240) - 1
 
 MAINNET = ChainParams(
-    name="auron-mainnet",
-    magic=b"AURM",
+    name=identidade.nome_da_rede("mainnet"),
+    magic=identidade.MAGIC_MAINNET,
     pow_memory_kib=32 * 1024,   # 32 MiB: pressiona memória, atrapalha ASIC
     pow_time_cost=1,
     pow_lanes=1,
@@ -226,8 +226,8 @@ MAINNET = ChainParams(
 )
 
 TESTNET = ChainParams(
-    name="auron-testnet",
-    magic=b"AURT",
+    name=identidade.nome_da_rede("testnet"),
+    magic=identidade.MAGIC_TESTNET,
     pow_memory_kib=32 * 1024,
     pow_time_cost=1,
     pow_lanes=1,
@@ -247,8 +247,8 @@ TESTNET = ChainParams(
 # mesmo; só o WORK_SIZE muda. É exatamente por isso que WORK_SIZE precisava
 # estar separado da dificuldade.
 REGTEST = ChainParams(
-    name="auron-regtest",
-    magic=b"AURR",
+    name=identidade.nome_da_rede("regtest"),
+    magic=identidade.MAGIC_REGTEST,
     pow_memory_kib=32,
     pow_time_cost=1,
     pow_lanes=1,

@@ -19,7 +19,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use auron_crypto::sha512;
 
 /// Domínio do gerador: separa estes bytes de qualquer outro uso de SHA-512.
-const DOMINIO: &[u8] = b"AURON-NET-RNG-v1";
+const DOMINIO: &[u8] = concat!(auron_identidade::raiz!(), "-NET-RNG-v1").as_bytes();
 
 /// Lê 32 bytes de entropia do sistema operacional.
 ///

@@ -8,6 +8,7 @@ license.workspace = true
 description = "Auron — prova de trabalho útil do consenso (família MATRIX-FREIVALDS-V1)"
 
 [dependencies]
+auron-identidade.workspace = true
 auron-crypto.workspace = true
 auron-codec.workspace = true
 

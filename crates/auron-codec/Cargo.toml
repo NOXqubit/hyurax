@@ -13,6 +13,7 @@ description = "Auron — codificação canônica binária e árvore de Merkle (R
 auron-crypto.workspace = true
 
 [dev-dependencies]
+auron-identidade.workspace = true
 serde_json.workspace = true
 hex.workspace = true
 

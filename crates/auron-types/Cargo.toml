@@ -11,6 +11,7 @@ description = "Auron — tipos base: dinheiro inteiro sem sinal"
 # Nenhuma. Este crate é o alicerce e não depende de nada.
 
 [dev-dependencies]
+auron-identidade.workspace = true
 serde_json.workspace = true
 
 [lints.rust]

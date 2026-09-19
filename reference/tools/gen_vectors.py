@@ -26,7 +26,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 OUT_DIR = ROOT.parent / "vectors"
 
-from auron import argon2, codec, consensus, crypto, usefulpow, utrax  # noqa: E402
+from auron import argon2, codec, consensus, crypto, identidade, usefulpow, utrax  # noqa: E402
 from auron.block import BlockHeader  # noqa: E402
 from auron.chain import Chain, make_genesis  # noqa: E402
 from auron.consensus import MAINNET, REGTEST, TESTNET  # noqa: E402
@@ -783,7 +783,7 @@ def vec_chain() -> dict:
         store_edge = [
             {"label": label, "file": h(dados), "error": recusa(dados)}
             for label, dados in (
-                ("magic_errado", b"AURONDB2" + gravado[8:]),
+                ("magic_errado", identidade.STORE_MAGIC[:7] + b"2" + gravado[8:]),
                 ("rede_desconhecida", gravado[:12] + b"auron-xxxxxxx" + gravado[25:]),
                 ("truncado", gravado[:-1]),
                 ("sobra_no_fim", gravado + b"\x00"),
@@ -1166,7 +1166,7 @@ def main() -> int:
     for filename, builder in FILES.items():
         print(f"  gerando {filename} ...", end=" ", flush=True)
         payload = {
-            "spec": "AURON-SPEC-01",
+            "spec": identidade.ESPEC,
             "generator": "reference/tools/gen_vectors.py",
             "data": builder(),
         }
@@ -1182,7 +1182,7 @@ def main() -> int:
     # que a mesma execucao produz no Linux. Os vetores ja sao escritos em
     # bytes pelo mesmo motivo; o manifesto tinha ficado de fora.
     (OUT_DIR / "MANIFEST.json").write_bytes(
-        json.dumps({"spec": "AURON-SPEC-01", "files": manifest},
+        json.dumps({"spec": identidade.ESPEC, "files": manifest},
                    indent=2, sort_keys=True).encode("utf-8")
     )
     print(f"\n{len(FILES)} arquivos de vetores em {OUT_DIR}")

@@ -54,7 +54,7 @@ fn texto<E: fmt::Display>(e: E) -> ChainError {
 
 /// Gênese determinística, uma só por rede.
 pub fn make_genesis(p: &ParametrosRede) -> Result<Block, ChainError> {
-    let mut extra = b"AURON GENESIS ".to_vec();
+    let mut extra = concat!(auron_identidade::raiz!(), " GENESIS ").as_bytes().to_vec();
     extra.extend_from_slice(p.nome.as_bytes());
     let coinbase = Coinbase { height: 0, recipient: [0; ADDRESS_LEN], amount: 1, extra_nonce: extra };
     let merkle = merkle_root(&[coinbase.encode().map_err(texto)?]);

@@ -37,7 +37,7 @@ fn carregar(nome: &str) -> Value {
         serde_json::from_str(&bruto).unwrap_or_else(|e| panic!("{nome} não é JSON válido: {e}"));
     assert_eq!(
         doc["spec"].as_str(),
-        Some("AURON-SPEC-01"),
+        Some(concat!(auron_identidade::raiz!(), "-SPEC-01")),
         "{nome}: vetor de outra versão da especificação"
     );
     doc

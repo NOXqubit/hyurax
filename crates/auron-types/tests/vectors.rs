@@ -42,7 +42,7 @@ fn vetores_de_unidades_parse() {
     let doc = carregar("units.json");
     assert_eq!(
         doc["spec"].as_str(),
-        Some("AURON-SPEC-01"),
+        Some(concat!(auron_identidade::raiz!(), "-SPEC-01")),
         "vetor de outra versão da especificação"
     );
 

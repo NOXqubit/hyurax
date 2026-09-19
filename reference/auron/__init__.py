@@ -12,9 +12,11 @@ Por isso ele prioriza clareza e determinismo sobre velocidade, e evita
 dependências externas em tudo que seja consenso.
 """
 
-PROTOCOL_VERSION = "AURON-SPEC-01"
-NETWORK_MAGIC_TESTNET = b"AURT"
-NETWORK_MAGIC_MAINNET = b"AURM"
+from . import identidade as _identidade
+
+PROTOCOL_VERSION = _identidade.ESPEC
+NETWORK_MAGIC_TESTNET = _identidade.MAGIC_TESTNET
+NETWORK_MAGIC_MAINNET = _identidade.MAGIC_MAINNET
 
 __all__ = [
     "PROTOCOL_VERSION",

@@ -29,7 +29,7 @@ use crate::entropia;
 /// O padrão Noise da versão 2 do protocolo.
 pub const PADRAO_NOISE: &str = "Noise_XX_25519_ChaChaPoly_BLAKE2s";
 /// Começo do prólogo; a magic da rede vem logo depois.
-pub const PROLOGO: &[u8] = b"AURON-WIRE-v2";
+pub const PROLOGO: &[u8] = concat!(auron_identidade::raiz!(), "-WIRE-v2").as_bytes();
 /// Maior mensagem Noise.
 pub const MAX_MENSAGEM: usize = 65_535;
 /// Tamanho da etiqueta de autenticação.

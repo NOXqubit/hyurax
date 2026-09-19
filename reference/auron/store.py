@@ -20,13 +20,13 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from . import codec
+from . import codec, identidade
 from .block import Block
 from .chain import Chain, ChainError
 from .tx import TxError
 from .consensus import NETWORKS, ChainParams
 
-STORE_MAGIC = b"AURONDB1"
+STORE_MAGIC = identidade.STORE_MAGIC
 
 
 class StoreError(Exception):

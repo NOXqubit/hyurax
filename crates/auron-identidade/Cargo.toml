@@ -1,20 +1,11 @@
 [package]
-name = "auron-consensus"
+name = "auron-identidade"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 authors.workspace = true
 license.workspace = true
-description = "Auron — parâmetros de rede, ajuste de dificuldade LWMA, trabalho acumulado e emissão"
-
-[dependencies]
-auron-identidade.workspace = true
-auron-types.workspace = true
-auron-pow.workspace = true
-auron-usefulpow.workspace = true
-
-[dev-dependencies]
-serde_json.workspace = true
+description = "Identidade do projeto num lugar só: nomes de exibição e raiz dos rótulos de protocolo"
 
 [lints.rust]
 unsafe_code = "forbid"

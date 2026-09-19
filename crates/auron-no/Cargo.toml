@@ -12,6 +12,7 @@ name = "auron-no"
 path = "src/main.rs"
 
 [dependencies]
+auron-identidade.workspace = true
 auron-crypto.workspace = true
 auron-tx.workspace = true
 auron-consensus.workspace = true

@@ -30,8 +30,9 @@ use std::time::Duration;
 
 use argon2::{Algorithm, Argon2, Block, Params, Version};
 
-/// Sal fixo e público do PoW: `"AURON-POW-v1"` completado com zeros até 16 bytes.
-pub const POW_SALT: [u8; 16] = *b"AURON-POW-v1\0\0\0\0";
+/// Sal fixo e público do PoW: `"<raiz>-POW-v1"` completado com zeros até 16 bytes.
+pub const POW_SALT: [u8; 16] =
+    auron_identidade::protocolo::preencher_16(concat!(auron_identidade::raiz!(), "-POW-v1").as_bytes());
 
 /// Tamanho do `pow_hash`, em bytes.
 pub const POW_HASH_LEN: usize = 32;

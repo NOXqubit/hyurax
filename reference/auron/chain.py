@@ -32,7 +32,7 @@ from __future__ import annotations
 import time
 from dataclasses import dataclass, field
 
-from . import codec, crypto
+from . import codec, crypto, identidade
 from .block import BLOCK_VERSION, Block, BlockHeader
 from .consensus import (
     ChainParams,
@@ -73,7 +73,7 @@ def make_genesis(params: ChainParams) -> Block:
         height=0,
         recipient=b"\x00" * crypto.ADDRESS_LEN,
         amount=1,  # simbólico; ninguém tem a chave do endereço nulo
-        extra_nonce=b"AURON GENESIS " + params.name.encode("ascii"),
+        extra_nonce=identidade.RAIZ.encode("ascii") + b" GENESIS " + params.name.encode("ascii"),
     )
     merkle = codec.merkle_root([coinbase.encode()])
     # A gênese também leva prova de trabalho útil: o formato é um só, sem

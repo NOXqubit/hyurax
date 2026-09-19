@@ -8,6 +8,7 @@ license.workspace = true
 description = "Auron — transporte da rede entre nós: conexões TCP cifradas (Noise XX), aperto de mão, sincronização e mempool"
 
 [dependencies]
+auron-identidade.workspace = true
 auron-wire.workspace = true
 auron-block.workspace = true
 auron-tx.workspace = true

@@ -35,7 +35,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, replace
 
-from . import codec, crypto
+from . import codec, crypto, identidade
 from .units import MAX_AMOUNT
 
 # A coinbase não mudou de formato. A transferência mudou, e por isso tem
@@ -64,7 +64,7 @@ MAX_OUTPUTS = 16
 
 # O domínio muda junto com o formato: uma assinatura feita para a versão 1
 # nunca pode ser lida como assinatura de uma transferência versão 2.
-SIGNING_DOMAIN = b"AURON-TX-v2"
+SIGNING_DOMAIN = identidade.rotulo("TX-v2")
 
 
 class TxError(Exception):

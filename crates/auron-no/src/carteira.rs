@@ -24,7 +24,10 @@ use chacha20poly1305::{ChaCha20Poly1305, Key, Nonce, Tag};
 use auron_crypto::{ADDRESS_LEN, SECRET_LEN, address_from_ed25519_pubkey, ed25519_public_key};
 
 /// Nome do formato, na primeira linha útil do arquivo.
-pub const FORMATO: &str = "AURON-CARTEIRA-v2";
+pub const FORMATO: &str = concat!(auron_identidade::raiz!(), "-CARTEIRA-v2");
+/// Formato de antes da troca de nome do projeto. Continua abrindo, para
+/// ninguém perder uma carteira de teste; carteira nova sai sempre em [`FORMATO`].
+pub const FORMATO_AURON: &str = "AURON-CARTEIRA-v2";
 /// Menor senha aceita.
 pub const SENHA_MINIMA: usize = 10;
 
@@ -70,8 +73,10 @@ fn derivar(senha: &str, sal: &[u8; 16], memoria_kib: u32, passadas: u32, faixas:
     Ok(chave)
 }
 
-fn dado_associado(endereco: &[u8; ADDRESS_LEN]) -> Vec<u8> {
-    let mut aad = FORMATO.as_bytes().to_vec();
+/// `formato || endereço`: o nome do formato vem do próprio arquivo, então uma
+/// carteira do formato antigo confere com o nome antigo.
+fn dado_associado(formato: &str, endereco: &[u8; ADDRESS_LEN]) -> Vec<u8> {
+    let mut aad = formato.as_bytes().to_vec();
     aad.extend_from_slice(endereco);
     aad
 }
@@ -94,6 +99,10 @@ pub fn senha_aceitavel(senha: &str) -> Result<(), String> {
 /// # Errors
 /// Senha fraca ou falha do Argon2id.
 pub fn cifrar(segredo: &[u8; SECRET_LEN], senha: &str, aleatorio: &[u8; 28]) -> Result<String, String> {
+    cifrar_como(FORMATO, segredo, senha, aleatorio)
+}
+
+fn cifrar_como(formato: &str, segredo: &[u8; SECRET_LEN], senha: &str, aleatorio: &[u8; 28]) -> Result<String, String> {
     senha_aceitavel(senha)?;
     let (sal, nonce) = aleatorio.split_at(16);
     let sal: [u8; 16] = sal.try_into().map_err(|_| "sal")?;
@@ -102,14 +111,14 @@ pub fn cifrar(segredo: &[u8; SECRET_LEN], senha: &str, aleatorio: &[u8; 28]) -> 
     let chave = derivar(senha, &sal, MEMORIA_KIB, PASSADAS, FAIXAS)?;
     let mut dados = *segredo;
     let etiqueta = ChaCha20Poly1305::new(&Key::from(chave))
-        .encrypt_in_place_detached(&Nonce::from(nonce), &dado_associado(&endereco), &mut dados)
+        .encrypt_in_place_detached(&Nonce::from(nonce), &dado_associado(formato, &endereco), &mut dados)
         .map_err(|_| "falha ao cifrar".to_string())?;
     Ok(format!(
         "# Carteira Auron de TESTE, cifrada com senha.\n\
          # Sem a senha, este arquivo não gasta nada. Sem este arquivo E a senha,\n\
          # o saldo fica perdido: guarde uma cópia e não esqueça a senha.\n\
          # A rede pública não existe e o AUR não tem valor.\n\
-         formato={FORMATO}\n\
+         formato={formato}\n\
          endereco={}\n\
          kdf=argon2id\n\
          memoria_kib={MEMORIA_KIB}\n\
@@ -153,9 +162,10 @@ pub fn abrir(texto: &str, senha: &str) -> Result<[u8; SECRET_LEN], String> {
     if e_formato_antigo(texto) {
         return campo(texto, "segredo").and_then(de_hex).ok_or_else(|| "segredo inválido no arquivo".to_string());
     }
-    if campo(texto, "formato") != Some(FORMATO) {
-        return Err("formato de carteira desconhecido".into());
-    }
+    let formato = match campo(texto, "formato") {
+        Some(f) if f == FORMATO || f == FORMATO_AURON => f,
+        _ => return Err("formato de carteira desconhecido".into()),
+    };
     if campo(texto, "kdf") != Some("argon2id") {
         return Err("derivação de chave desconhecida".into());
     }
@@ -170,7 +180,7 @@ pub fn abrir(texto: &str, senha: &str) -> Result<[u8; SECRET_LEN], String> {
 
     let chave = derivar(senha, &sal, numero("memoria_kib")?, numero("passadas")?, numero("faixas")?)?;
     ChaCha20Poly1305::new(&Key::from(chave))
-        .decrypt_in_place_detached(&Nonce::from(nonce), &dado_associado(&endereco_declarado), &mut dados, &Tag::from(etiqueta))
+        .decrypt_in_place_detached(&Nonce::from(nonce), &dado_associado(formato, &endereco_declarado), &mut dados, &Tag::from(etiqueta))
         .map_err(|_| "senha errada, ou arquivo de carteira alterado".to_string())?;
     // Conferência final: o segredo aberto precisa gerar o endereço declarado.
     if address_from_ed25519_pubkey(&ed25519_public_key(&dados)) != endereco_declarado {
@@ -239,5 +249,22 @@ mod testes {
         let antigo = format!("segredo={}\nendereco=qualquer\n", hex(&SEGREDO));
         assert!(e_formato_antigo(&antigo));
         assert_eq!(abrir(&antigo, "").unwrap(), SEGREDO);
+    }
+
+    #[test]
+    fn carteira_do_nome_antigo_do_projeto_continua_abrindo() {
+        let antiga = cifrar_como(FORMATO_AURON, &SEGREDO, SENHA, &ALEATORIO).unwrap();
+        assert!(antiga.contains(&format!("formato={FORMATO_AURON}")));
+        assert_eq!(abrir(&antiga, SENHA).unwrap(), SEGREDO);
+    }
+
+    #[test]
+    fn trocar_o_nome_do_formato_no_arquivo_nao_engana_a_cifra() {
+        if FORMATO == FORMATO_AURON {
+            return; // antes da troca de nome os dois são o mesmo texto
+        }
+        let nova = cifrar(&SEGREDO, SENHA, &ALEATORIO).unwrap();
+        let rebatizada = nova.replace(&format!("formato={FORMATO}"), &format!("formato={FORMATO_AURON}"));
+        assert!(abrir(&rebatizada, SENHA).is_err());
     }
 }

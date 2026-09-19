@@ -24,7 +24,7 @@ use auron_codec::{Reader, Writer};
 use auron_consensus::ParametrosRede;
 
 /// Início de todo arquivo de cadeia.
-pub const STORE_MAGIC: &[u8; 8] = b"AURONDB1";
+pub const STORE_MAGIC: &[u8; 8] = &auron_identidade::protocolo::STORE_MAGIC;
 
 /// Folga de horário ao recarregar: a regra de "timestamp no futuro" não faz
 /// sentido para bloco antigo, e todas as outras continuam valendo.

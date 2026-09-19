@@ -8,6 +8,7 @@ license.workspace = true
 description = "Auron — persistência da cadeia, com revalidação completa ao recarregar"
 
 [dependencies]
+auron-identidade.workspace = true
 auron-codec.workspace = true
 auron-block.workspace = true
 auron-consensus.workspace = true

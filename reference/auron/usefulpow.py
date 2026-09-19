@@ -44,15 +44,15 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from . import codec, crypto
+from . import codec, crypto, identidade
 from .utrax import MATRIX_ENTRY_MAX, generate_matrices
 
 FAMILY_MATRIX_FREIVALDS = 1
 PROOF_VERSION = 1
 
-DOMAIN_TASK = b"AURON-UPOW-TASK-v1"
-DOMAIN_COMMIT = b"AURON-UPOW-PROOF-v1"
-DOMAIN_CHALLENGE = b"AURON-UPOW-CHALLENGE-v1"
+DOMAIN_TASK = identidade.rotulo("UPOW-TASK-v1")
+DOMAIN_COMMIT = identidade.rotulo("UPOW-PROOF-v1")
+DOMAIN_CHALLENGE = identidade.rotulo("UPOW-CHALLENGE-v1")
 
 ENTRY_BYTES = 4
 CHALLENGE_BITS = 20

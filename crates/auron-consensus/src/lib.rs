@@ -80,8 +80,8 @@ const AUR_UNIT: u64 = auron_types::AUR_UNIT;
 impl ParametrosRede {
     /// Rede principal.
     pub const MAINNET: Self = Self {
-        nome: "auron-mainnet",
-        magic: *b"AURM",
+        nome: concat!(auron_identidade::prefixo_rede!(), "-mainnet"),
+        magic: auron_identidade::protocolo::MAGIC_MAINNET,
         pow: ParametrosPow::MAINNET,
         max_target: ParametrosUteis::MAINNET.max_target,
         target_spacing: 120,
@@ -96,8 +96,8 @@ impl ParametrosRede {
     };
     /// Rede de teste.
     pub const TESTNET: Self = Self {
-        nome: "auron-testnet",
-        magic: *b"AURT",
+        nome: concat!(auron_identidade::prefixo_rede!(), "-testnet"),
+        magic: auron_identidade::protocolo::MAGIC_TESTNET,
         pow: ParametrosPow::TESTNET,
         max_target: ParametrosUteis::TESTNET.max_target,
         coinbase_maturity: 20,
@@ -106,8 +106,8 @@ impl ParametrosRede {
     };
     /// Rede local de desenvolvimento.
     pub const REGTEST: Self = Self {
-        nome: "auron-regtest",
-        magic: *b"AURR",
+        nome: concat!(auron_identidade::prefixo_rede!(), "-regtest"),
+        magic: auron_identidade::protocolo::MAGIC_REGTEST,
         pow: ParametrosPow::REGTEST,
         max_target: ParametrosUteis::REGTEST.max_target,
         lwma_window: 30,
@@ -118,7 +118,7 @@ impl ParametrosRede {
 
     /// Parâmetros pelo nome (`auron-mainnet` ou `mainnet`).
     pub fn da_rede(nome: &str) -> Option<Self> {
-        match nome.trim_start_matches("auron-") {
+        match nome.trim_start_matches(concat!(auron_identidade::prefixo_rede!(), "-")) {
             "mainnet" => Some(Self::MAINNET),
             "testnet" => Some(Self::TESTNET),
             "regtest" => Some(Self::REGTEST),

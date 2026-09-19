@@ -24,7 +24,7 @@ fn carregar() -> Value {
     let bruto = std::fs::read_to_string(&caminho)
         .unwrap_or_else(|e| panic!("não consegui ler {}: {e}", caminho.display()));
     let doc: Value = serde_json::from_str(&bruto).unwrap();
-    assert_eq!(doc["spec"].as_str(), Some("AURON-SPEC-01"));
+    assert_eq!(doc["spec"].as_str(), Some(concat!(auron_identidade::raiz!(), "-SPEC-01")));
     doc["data"].clone()
 }
 

@@ -8,6 +8,7 @@ license.workspace = true
 description = "Auron — a cadeia: gênese, validação completa, entrada única, rollback e mineração"
 
 [dependencies]
+auron-identidade.workspace = true
 auron-crypto.workspace = true
 auron-codec.workspace = true
 auron-tx.workspace = true

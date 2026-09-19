@@ -1,6 +1,7 @@
 [workspace]
 resolver = "3"
 members = [
+    "crates/auron-identidade",
     "crates/auron-types",
     "crates/auron-crypto",
     "crates/auron-codec",
@@ -48,6 +49,7 @@ description = "Auron — implementação de nó em Rust"
 
 [workspace.dependencies]
 # Crates do proprio workspace. O auron-tx vai usar os tres.
+auron-identidade = { path = "crates/auron-identidade" }
 auron-types = { path = "crates/auron-types" }
 auron-crypto = { path = "crates/auron-crypto" }
 auron-codec = { path = "crates/auron-codec" }

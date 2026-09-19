@@ -15,6 +15,7 @@ auron-usefulpow.workspace = true
 auron-pow.workspace = true
 
 [dev-dependencies]
+auron-identidade.workspace = true
 serde_json.workspace = true
 hex.workspace = true
 

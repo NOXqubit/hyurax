@@ -68,15 +68,15 @@ from enum import Enum
 
 import numpy as np
 
-from . import crypto
+from . import crypto, identidade
 from .units import checked_add, checked_sub
 
 # ---------------------------------------------------------------------------
 # Geração determinística de instâncias — sem o gerador do numpy
 # ---------------------------------------------------------------------------
 
-DOMAIN_INSTANCE = b"AURON-UTRAX-INSTANCE-v1"
-DOMAIN_FREIVALDS = b"AURON-UTRAX-FREIVALDS-v1"
+DOMAIN_INSTANCE = identidade.rotulo("UTRAX-INSTANCE-v1")
+DOMAIN_FREIVALDS = identidade.rotulo("UTRAX-FREIVALDS-v1")
 
 FREIVALDS_ROUNDS = 4
 FREIVALDS_BITS = 20          # vetores em [0, 2^20)
@@ -374,7 +374,7 @@ def verify_work(spec: WorkSpec, seed: bytes, result: bytes) -> bool:
 # Marketplace
 # ---------------------------------------------------------------------------
 
-DOMAIN_TASK_SEED = b"AURON-UTRAX-TASK-v1"
+DOMAIN_TASK_SEED = identidade.rotulo("UTRAX-TASK-v1")
 
 
 class TaskStatus(str, Enum):

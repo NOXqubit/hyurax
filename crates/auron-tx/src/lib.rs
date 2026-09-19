@@ -45,7 +45,7 @@ pub const AUR: [u8; ASSET_ID_LEN] = [0; ASSET_ID_LEN];
 /// Máximo de saídas numa transferência.
 pub const MAX_OUTPUTS: usize = 16;
 /// Domínio da mensagem assinada. Muda junto com o formato.
-pub const SIGNING_DOMAIN: &[u8] = b"AURON-TX-v2";
+pub const SIGNING_DOMAIN: &[u8] = concat!(auron_identidade::raiz!(), "-TX-v2").as_bytes();
 
 /// Endereço de conta.
 pub type Endereco = [u8; ADDRESS_LEN];

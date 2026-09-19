@@ -28,13 +28,13 @@ pub const FAMILY_MATRIX_FREIVALDS: u8 = 1;
 pub const PROOF_VERSION: u16 = 1;
 
 /// Domínio da semente da instância.
-pub const DOMAIN_TASK: &[u8] = b"AURON-UPOW-TASK-v1";
+pub const DOMAIN_TASK: &[u8] = concat!(auron_identidade::raiz!(), "-UPOW-TASK-v1").as_bytes();
 /// Domínio do compromisso que vai no cabeçalho (`useful_root`).
-pub const DOMAIN_COMMIT: &[u8] = b"AURON-UPOW-PROOF-v1";
+pub const DOMAIN_COMMIT: &[u8] = concat!(auron_identidade::raiz!(), "-UPOW-PROOF-v1").as_bytes();
 /// Domínio do desafio de Freivalds.
-pub const DOMAIN_CHALLENGE: &[u8] = b"AURON-UPOW-CHALLENGE-v1";
+pub const DOMAIN_CHALLENGE: &[u8] = concat!(auron_identidade::raiz!(), "-UPOW-CHALLENGE-v1").as_bytes();
 /// Domínio das matrizes (o mesmo gerador do UTRAX, seção 18).
-pub const DOMAIN_INSTANCE: &[u8] = b"AURON-UTRAX-INSTANCE-v1";
+pub const DOMAIN_INSTANCE: &[u8] = concat!(auron_identidade::raiz!(), "-UTRAX-INSTANCE-v1").as_bytes();
 
 /// Bytes por entrada do resultado.
 pub const ENTRY_BYTES: usize = 4;
@@ -82,7 +82,7 @@ const ALVO_REGTEST: [u8; 32] = [
 impl ParametrosUteis {
     /// Rede principal.
     pub const MAINNET: Self = Self {
-        magic: *b"AURM",
+        magic: auron_identidade::protocolo::MAGIC_MAINNET,
         max_target: ALVO_MAINNET,
         useful_size_min: 32,
         useful_size_base: 48,
@@ -91,7 +91,7 @@ impl ParametrosUteis {
     };
     /// Rede de teste.
     pub const TESTNET: Self = Self {
-        magic: *b"AURT",
+        magic: auron_identidade::protocolo::MAGIC_TESTNET,
         max_target: ALVO_TESTNET,
         useful_size_min: 32,
         useful_size_base: 48,
@@ -100,7 +100,7 @@ impl ParametrosUteis {
     };
     /// Rede local de desenvolvimento: matrizes pequenas, mesma regra.
     pub const REGTEST: Self = Self {
-        magic: *b"AURR",
+        magic: auron_identidade::protocolo::MAGIC_REGTEST,
         max_target: ALVO_REGTEST,
         useful_size_min: 4,
         useful_size_base: 6,

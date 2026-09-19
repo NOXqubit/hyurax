@@ -8,6 +8,7 @@ license.workspace = true
 description = "Auron — prova de trabalho Argon2id e minerador que roda no celular"
 
 [dependencies]
+auron-identidade.workspace = true
 argon2.workspace = true
 # só o programa auron-minerar usa, para medir o trabalho útil no aparelho
 auron-usefulpow.workspace = true
