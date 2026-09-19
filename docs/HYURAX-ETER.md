@@ -46,8 +46,11 @@ terço do sinal. Cada byte ressincroniza o relógio (moldura de UART).
 - Wi-Fi de placa para placa sem roteador (Wi-Fi Direct) não é exposto a
   programa comum no Windows nem no Termux. O roteador do celular cumpre o papel.
 - Bluetooth no celular exige um aplicativo Android; o Termux não tem acesso.
-- Transmitir em FM exige um transmissor (os de carro, baratos, servem). Receber
-  exige um rádio FM, que muitos celulares têm. O modem já é o mesmo.
+- Transmitir em FM exige um transmissor. No Brasil, só vale o de baixíssima
+  potência homologado pela Anatel (radiação restrita, como os de carro); fora
+  disso é transmissão sem licença, que é crime. Receber exige um rádio FM, que
+  muitos celulares têm. O modem já é o mesmo. Pelo ar e por cabo não há
+  licença nenhuma envolvida.
 
 Tocar e gravar no Windows, sem instalar nada: `scripts/eter-tocar.ps1` e
 `scripts/eter-gravar.ps1` (este também faz o teste de eco com `-Tocar`).
