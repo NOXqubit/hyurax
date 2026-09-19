@@ -13,7 +13,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from auron import argon2  # noqa: E402
+from hyurax import argon2  # noqa: E402
 
 # RFC 9106, secao 5: mesmos parametros para as tres variantes.
 PASSWORD = b"\x01" * 32

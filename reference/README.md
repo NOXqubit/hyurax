@@ -1,4 +1,4 @@
-# Auron — implementação de referência (Python)
+# Hyurax — implementação de referência (Python)
 
 **Isto não é o nó de produção.** O nó de produção será em Rust. Este pacote
 existe para três coisas:
@@ -13,7 +13,7 @@ o numpy. Desde o consenso híbrido (`usefulpow.py`) ela também roda na
 validação de bloco, mas só como calculadora de multiplicação **inteira** exata
 (`int64`, sem ponto flutuante, com faixa conferida antes para não estourar): a
 geração das matrizes e o desafio são SHA-512, e o resultado é travado por
-`vectors/usefulpow.json`. No Rust (`crates/auron-usefulpow`) a mesma conta é laço simples, sem biblioteca.
+`vectors/usefulpow.json`. No Rust (`crates/hyurax-usefulpow`) a mesma conta é laço simples, sem biblioteca.
 
 ## Rodar
 
@@ -31,7 +31,7 @@ escrevi, e foram pegos ao escrever o teste que faltava para `units.py`.
 
 | Achado | Por que importava | Teste |
 |---|---|---|
-| `to_units("１")` devolvia 1 AUR | `str.isdigit()` do Python aceita dígito Unicode de largura completa e `int()` converte. O Rust recusa. Os dois lados discordariam sobre o que é valor válido, e a mesma string na tela viraria valores diferentes | `test_00::test_entrada_malformada_recusada` |
+| `to_units("１")` devolvia 1 HYUR | `str.isdigit()` do Python aceita dígito Unicode de largura completa e `int()` converte. O Rust recusa. Os dois lados discordariam sobre o que é valor válido, e a mesma string na tela viraria valores diferentes | `test_00::test_entrada_malformada_recusada` |
 | `to_units("-1.5")` era aceito | A especificação diz que dinheiro é `u64`. Um valor negativo não tem como ser serializado, então o vetor de teste continha um caso que o Rust nunca poderia reproduzir | `test_00::test_negativo_recusado_nos_dois_caminhos` |
 
 `units.py` era o único módulo sem arquivo de teste próprio. Foi exatamente
@@ -101,11 +101,11 @@ oficiais publicados:
 O dump original tinha **três cópias divergentes** do mesmo core, que já haviam
 começado a discordar entre si:
 
-- `auron_complete_now/core/auron_core.py`
-- `auron_complete_now/core/auron_reference.py`
-- `auron_complete_now/core/{units,wallet,pow_core,blockchain,...}.py`
+- `hyurax_complete_now/core/hyurax_core.py`
+- `hyurax_complete_now/core/hyurax_reference.py`
+- `hyurax_complete_now/core/{units,wallet,pow_core,blockchain,...}.py`
 
-As três foram descartadas em favor deste pacote. `auron_reference.py` era a mais
+As três foram descartadas em favor deste pacote. `hyurax_reference.py` era a mais
 correta das três e serviu de ponto de partida.
 
 Os arquivos originais **não foram copiados para o disco**: eles chegaram pelo

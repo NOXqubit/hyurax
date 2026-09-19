@@ -1,6 +1,6 @@
 # Minerar Argon2id no celular
 
-O minerador `auron-minerar` (crate `crates/auron-pow`) é Rust puro, sem nenhum
+O minerador `hyurax-minerar` (crate `crates/hyurax-pow`) é Rust puro, sem nenhum
 código em C. Por isso ele compila direto no celular, pelo Termux, sem preparar
 nada além do próprio Rust.
 
@@ -12,9 +12,9 @@ nada além do próprio Rust.
 | Medir a velocidade do aparelho (`medir`) | pronto |
 | Achar o nonce de um cabeçalho montado pelo nó (`cabecalho`) | pronto; acha o mesmo nonce que o Python |
 | Várias linhas de execução, pausa contra aquecimento | pronto |
-| Prova de trabalho útil (seção 9A) em Rust | pronto (`crates/auron-usefulpow`), igual ao gabarito; o `medir` mostra quanto custa no aparelho |
-| Minerar blocos inteiros numa cadeia local gravada no disco (`auron-no`) | pronto; cada bloco passa pela validação completa |
-| Carteira de teste e saldo | pronto (`auron-no carteira`, `auron-no estado`) |
+| Prova de trabalho útil (seção 9A) em Rust | pronto (`crates/hyurax-usefulpow`), igual ao gabarito; o `medir` mostra quanto custa no aparelho |
+| Minerar blocos inteiros numa cadeia local gravada no disco (`hyurax-no`) | pronto; cada bloco passa pela validação completa |
+| Carteira de teste e saldo | pronto (`hyurax-no carteira`, `hyurax-no estado`) |
 | Conversar com outros nós (rede) | pronto: `--porta` e `--semente` põem o aparelho na rede; ele sincroniza e propaga o que minera |
 
 Ou seja: o celular já minera blocos de verdade, com as duas provas (trabalho
@@ -56,18 +56,18 @@ pkg update
 pkg install rust git
 ```
 
-3. Baixe o código do Auron (o arquivo `.zip` da seção "Engenharia aberta" do
+3. Baixe o código do Hyurax (o arquivo `.zip` da seção "Engenharia aberta" do
    site, ou pelo Git) e entre na pasta do projeto.
 4. Compile só o minerador (a primeira vez demora alguns minutos):
 
 ```bash
-cargo build --release -p auron-pow
+cargo build --release -p hyurax-pow
 ```
 
 5. Meça o aparelho:
 
 ```bash
-./target/release/auron-minerar medir --linhas 2 --segundos 30
+./target/release/hyurax-minerar medir --linhas 2 --segundos 30
 ```
 
 O Rust precisa ser 1.98 ou mais novo (`rustc --version`). Se o Termux tiver um
@@ -78,26 +78,26 @@ mais antigo, rode `pkg upgrade`.
 1. Compile o nó:
 
 ```bash
-cargo build --release -p auron-no
+cargo build --release -p hyurax-no
 ```
 
 2. Crie uma carteira de teste. Ela mostra o seu endereço:
 
 ```bash
-./target/release/auron-no carteira nova --arquivo carteira.txt
+./target/release/hyurax-no carteira nova --arquivo carteira.txt
 ```
 
 3. Minere, trocando `SEU_ENDERECO` pelo endereço do passo anterior. `--blocos 0`
    minera sem parar; `Ctrl+C` interrompe, e o que já foi minerado fica salvo:
 
 ```bash
-./target/release/auron-no minerar --rede testnet --pasta dados --endereco SEU_ENDERECO --blocos 10
+./target/release/hyurax-no minerar --rede testnet --pasta dados --endereco SEU_ENDERECO --blocos 10
 ```
 
 4. Veja a cadeia e o saldo:
 
 ```bash
-./target/release/auron-no estado --rede testnet --pasta dados --endereco SEU_ENDERECO
+./target/release/hyurax-no estado --rede testnet --pasta dados --endereco SEU_ENDERECO
 ```
 
 A recompensa de cada bloco fica "esperando liberar" por 20 blocos na testnet
@@ -111,13 +111,13 @@ um valida tudo por conta própria.
 No computador, deixe um nó no ar (descubra o IP dele na rede local):
 
 ```bash
-./target/release/auron-no no --rede testnet --pasta dados --porta 8790
+./target/release/hyurax-no no --rede testnet --pasta dados --porta 8790
 ```
 
 No celular, minere apontando para ele (troque `IP_DO_PC` e `SEU_ENDERECO`):
 
 ```bash
-./target/release/auron-no minerar --rede testnet --pasta dados --porta 8790 --semente IP_DO_PC:8790 --endereco SEU_ENDERECO --blocos 0
+./target/release/hyurax-no minerar --rede testnet --pasta dados --porta 8790 --semente IP_DO_PC:8790 --endereco SEU_ENDERECO --blocos 0
 ```
 
 O que acontece: o celular sincroniza a cadeia do PC, minera em cima dela e
@@ -143,7 +143,7 @@ guarda saldo.
 senha (mínimo de 10 caracteres). Quem copiar o arquivo sem saber a senha não
 gasta nada. Sem o arquivo **e** a senha, o saldo fica perdido: guarde uma cópia
 e não esqueça a senha. Carteira criada antes de 13/09/2026 guarda a chave em
-texto; proteja com `./target/release/auron-no carteira cifrar --arquivo carteira.txt`.
+texto; proteja com `./target/release/hyurax-no carteira cifrar --arquivo carteira.txt`.
 
 ## Opções
 
@@ -165,5 +165,5 @@ texto; proteja com `./target/release/auron-no carteira cifrar --arquivo carteira
 - **O Android pode fechar o Termux em segundo plano.** Deixe a tela do Termux
   aberta, ou use `termux-wake-lock`.
 
-**Lembrete do projeto:** a rede pública não existe e o AUR não tem valor.
+**Lembrete do projeto:** a rede pública não existe e o HYUR não tem valor.
 Minerar hoje é teste e medição, não ganho.

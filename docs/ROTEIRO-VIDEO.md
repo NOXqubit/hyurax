@@ -1,4 +1,4 @@
-# Roteiro do vídeo de apresentação do Auron
+# Roteiro do vídeo de apresentação do Hyurax
 
 Duração: cerca de 2 minutos. Oito cenas. Escrito em 11/09/2026.
 
@@ -15,7 +15,7 @@ Serve para dois usos:
 - **Avise na tela que o apresentador é gerado por inteligência
   artificial**, do começo ao fim, com uma legenda como "Apresentador
   gerado por IA". Um rosto inventado apresentado como se fosse uma pessoa
-  real do projeto é exatamente o tipo de coisa que o Auron diz que não
+  real do projeto é exatamente o tipo de coisa que o Hyurax diz que não
   faz.
 - **Não mude o sentido das frases sobre o que não prometemos** (cena 6).
   Pode encurtar o resto; essa parte não.
@@ -38,10 +38,10 @@ vez mais rápido, e se apagam sem deixar nada.
 ## Cena 2 — A pergunta (0:13 a 0:24)
 
 **Na tela:** os pontos param. Um deles acende em dourado. Aparece o
-símbolo do Auron: um "A" desenhado sobre uma matriz de pontos.
+símbolo do Hyurax: um "A" desenhado sobre uma matriz de pontos.
 
 **Narração:**
-> O Auron nasceu de uma pergunta: e se esse poder de cálculo servisse para
+> O Hyurax nasceu de uma pergunta: e se esse poder de cálculo servisse para
 > alguma coisa?
 
 ## Cena 3 — Onde queremos chegar (0:24 a 0:44)
@@ -54,7 +54,7 @@ cada quadro: "objetivo".
 **Narração:**
 > Escolher os cruzamentos de plantas com mais chance de resistir à seca.
 > Testar, no computador, milhares de moléculas candidatas a remédio. Treinar
-> inteligência artificial. Esses são os problemas que o Auron quer ajudar a
+> inteligência artificial. Esses são os problemas que o Hyurax quer ajudar a
 > resolver.
 
 ## Cena 4 — Como funciona (0:44 a 1:04)
@@ -83,7 +83,7 @@ fica vermelho. Aparece: "Recusado: as contas não batem".
 existe." "Venda de moeda: nenhuma." "Promessa de lucro: nenhuma."
 
 **Narração:**
-> O Auron ainda está em construção. A rede pública não existe, e a moeda não
+> O Hyurax ainda está em construção. A rede pública não existe, e a moeda não
 > tem valor. Não vendemos moeda, não fazemos pré-venda, e ninguém vai ficar
 > rico da noite para o dia.
 
@@ -100,9 +100,9 @@ com a outra e ficando verdes. Depois, uma lista com marcas de conferido.
 ## Cena 8 — O chamado (1:54 a 2:08)
 
 **Na tela:** a rede de pontos volta, agora com todas as linhas douradas,
-formando uma malha. O símbolo e o nome AURON. Embaixo: "Poder de cálculo
+formando uma malha. O símbolo e o nome HYURAX. Embaixo: "Poder de cálculo
 que serve para alguma coisa."
 
 **Narração:**
 > Precisamos de pessoas: quem teste, quem revise, quem traga problemas reais
-> para resolver. Auron. Poder de cálculo que serve para alguma coisa.
+> para resolver. Hyurax. Poder de cálculo que serve para alguma coisa.

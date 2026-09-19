@@ -12,7 +12,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from auron import crypto  # noqa: E402
+from hyurax import crypto  # noqa: E402
 
 # (secret, public, message, signature) — todos em hex, RFC 8032 secao 7.1
 RFC8032_VECTORS = [
@@ -96,11 +96,11 @@ def test_rfc8032_vectors():
 def test_verify_rejects_tampering():
     sk = crypto.generate_secret()
     pk = crypto.public_key(sk)
-    msg = b"pagar 10 AUR"
+    msg = b"pagar 10 HYUR"
     sig = crypto.sign(sk, msg)
 
     assert crypto.verify(pk, msg, sig)
-    assert not crypto.verify(pk, b"pagar 11 AUR", sig), "mensagem alterada passou"
+    assert not crypto.verify(pk, b"pagar 11 HYUR", sig), "mensagem alterada passou"
 
     flipped = bytearray(sig)
     flipped[0] ^= 0x01

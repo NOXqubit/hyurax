@@ -9,12 +9,12 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from auron import crypto, store  # noqa: E402
-from auron.chain import Chain  # noqa: E402
-from auron.consensus import REGTEST, TESTNET  # noqa: E402
-from auron.store import StoreError  # noqa: E402
-from auron.tx import sign_transfer  # noqa: E402
-from auron.units import to_units  # noqa: E402
+from hyurax import crypto, store  # noqa: E402
+from hyurax.chain import Chain  # noqa: E402
+from hyurax.consensus import REGTEST, TESTNET  # noqa: E402
+from hyurax.store import StoreError  # noqa: E402
+from hyurax.tx import sign_transfer  # noqa: E402
+from hyurax.units import to_units  # noqa: E402
 
 P = REGTEST
 
@@ -46,7 +46,7 @@ def build_chain(blocks: int = 4) -> tuple[Chain, Account, Account]:
 def test_roundtrip_preserves_state_exactly():
     chain, alice, bob = build_chain()
     with tempfile.TemporaryDirectory() as tmp:
-        path = Path(tmp) / "auron.db"
+        path = Path(tmp) / "hyurax.db"
         written = store.save_chain(chain, path)
         assert written == chain.height
 
@@ -66,7 +66,7 @@ def test_reload_revalidates_every_block():
     """Arquivo adulterado no disco nao pode virar estado valido."""
     chain, _, _ = build_chain(3)
     with tempfile.TemporaryDirectory() as tmp:
-        path = Path(tmp) / "auron.db"
+        path = Path(tmp) / "hyurax.db"
         store.save_chain(chain, path)
 
         raw = bytearray(path.read_bytes())
@@ -85,7 +85,7 @@ def test_reload_revalidates_every_block():
 def test_wrong_network_rejected():
     chain, _, _ = build_chain(2)
     with tempfile.TemporaryDirectory() as tmp:
-        path = Path(tmp) / "auron.db"
+        path = Path(tmp) / "hyurax.db"
         store.save_chain(chain, path)
         try:
             store.load_chain(path, params=TESTNET)
@@ -97,7 +97,7 @@ def test_wrong_network_rejected():
 
 def test_bad_magic_and_truncation_rejected():
     with tempfile.TemporaryDirectory() as tmp:
-        path = Path(tmp) / "auron.db"
+        path = Path(tmp) / "hyurax.db"
         path.write_bytes(b"NAOEAURON" + b"\x00" * 40)
         try:
             store.load_chain(path)
@@ -121,7 +121,7 @@ def test_trusted_reload_still_checks_everything_else():
     """`trust_pow` pula so o Argon2id. Estado e assinatura continuam valendo."""
     chain, _, _ = build_chain(3)
     with tempfile.TemporaryDirectory() as tmp:
-        path = Path(tmp) / "auron.db"
+        path = Path(tmp) / "hyurax.db"
         store.save_chain(chain, path)
 
         fast = store.load_chain(path, trust_pow=True)
@@ -144,7 +144,7 @@ def test_genesis_not_stored():
     """A genese vem dos parametros da rede, nao do arquivo."""
     chain, _, _ = build_chain(2)
     with tempfile.TemporaryDirectory() as tmp:
-        path = Path(tmp) / "auron.db"
+        path = Path(tmp) / "hyurax.db"
         count = store.save_chain(chain, path)
         assert count == chain.height, "contagem gravada inclui a genese"
         reloaded = store.load_chain(path)

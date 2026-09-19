@@ -1,0 +1,22 @@
+# Explorador de blocos da testnet: arquivos estáticos, só leitura.
+# Serve /var/lib/hyurax/publico (index.html e o estado.json que o nó exporta).
+[Unit]
+Description=Hyurax - explorador de blocos da testnet (estatico)
+After=hyurax-semente.service
+
+[Service]
+User=hyurax
+Group=hyurax
+ExecStart=/usr/bin/python3 -m http.server 8080 --bind 0.0.0.0 --directory /var/lib/hyurax/publico
+Restart=always
+RestartSec=5
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+PrivateDevices=true
+ReadOnlyPaths=/var/lib/hyurax/publico
+MemoryMax=128M
+
+[Install]
+WantedBy=multi-user.target

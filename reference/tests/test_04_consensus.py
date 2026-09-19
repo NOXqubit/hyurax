@@ -11,9 +11,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from auron import consensus  # noqa: E402
-from auron.consensus import ConsensusError, MAINNET, REGTEST, TESTNET  # noqa: E402
-from auron.units import AUR_UNIT, MAX_SUPPLY  # noqa: E402
+from hyurax import consensus  # noqa: E402
+from hyurax.consensus import ConsensusError, MAINNET, REGTEST, TESTNET  # noqa: E402
+from hyurax.units import HYUR_UNIT, MAX_SUPPLY  # noqa: E402
 
 
 def test_compact_target_roundtrip():
@@ -128,9 +128,9 @@ def test_median_time_past():
 
 def test_emission_halves_and_respects_cap():
     p = MAINNET
-    assert consensus.block_reward(0, p) == 50 * AUR_UNIT
-    assert consensus.block_reward(p.halving_interval - 1, p) == 50 * AUR_UNIT
-    assert consensus.block_reward(p.halving_interval, p) == 25 * AUR_UNIT
+    assert consensus.block_reward(0, p) == 50 * HYUR_UNIT
+    assert consensus.block_reward(p.halving_interval - 1, p) == 50 * HYUR_UNIT
+    assert consensus.block_reward(p.halving_interval, p) == 25 * HYUR_UNIT
     assert consensus.block_reward(2 * p.halving_interval, p) == 12_50000000
     assert consensus.block_reward(64 * p.halving_interval, p) == 0
 
@@ -139,10 +139,10 @@ def test_emission_halves_and_respects_cap():
     assert total > MAX_SUPPLY * 99 // 100, "emissao total ficou longe do teto"
 
     # emissao acumulada e monotonica e limitada
-    assert consensus.cumulative_emission(0, p) == 50 * AUR_UNIT
-    assert consensus.cumulative_emission(10, p) == 11 * 50 * AUR_UNIT
+    assert consensus.cumulative_emission(0, p) == 50 * HYUR_UNIT
+    assert consensus.cumulative_emission(10, p) == 11 * 50 * HYUR_UNIT
     assert consensus.cumulative_emission(10**9, p) <= MAX_SUPPLY
-    print(f"PASS emissao com halving, total {total / AUR_UNIT:,.0f} AUR")
+    print(f"PASS emissao com halving, total {total / HYUR_UNIT:,.0f} HYUR")
 
 
 def test_every_network_respects_cap():

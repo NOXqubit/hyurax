@@ -1,0 +1,31 @@
+[package]
+name = "hyurax-block"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+description = "Hyurax — cabeçalho v2 e bloco com prova de trabalho útil"
+
+[dependencies]
+hyurax-crypto.workspace = true
+hyurax-codec.workspace = true
+hyurax-tx.workspace = true
+hyurax-usefulpow.workspace = true
+hyurax-pow.workspace = true
+
+[dev-dependencies]
+hyurax-identidade.workspace = true
+serde_json.workspace = true
+hex.workspace = true
+
+[lints.rust]
+unsafe_code = "forbid"
+missing_docs = "warn"
+
+[lints.clippy]
+unwrap_used = "deny"
+expect_used = "deny"
+panic = "deny"
+indexing_slicing = "deny"
+arithmetic_side_effects = "warn"

@@ -1,6 +1,6 @@
-# Rode um nó do Auron em 5 minutos
+# Rode um nó do Hyurax em 5 minutos
 
-> **Rede de TESTE.** A rede pública ainda não existe e o AUR não tem valor.
+> **Rede de TESTE.** A rede pública ainda não existe e o HYUR não tem valor.
 > Não há venda, pré-venda nem promessa de lucro. Rodar um nó hoje é testar,
 > medir e ajudar a achar falhas.
 
@@ -10,7 +10,7 @@ com outros nós por uma **conexão cifrada** (Noise XX). A carteira fica
 
 ## 1. Baixar
 
-Na página de [Releases do GitHub](https://github.com/NOXqubit/auron/releases),
+Na página de [Releases do GitHub](https://github.com/NOXqubit/hyurax/releases),
 baixe o pacote do seu sistema:
 
 | Pacote | Para |
@@ -24,30 +24,30 @@ baixe o pacote do seu sistema:
 lado do pacote. No Windows:
 
 ```powershell
-Get-FileHash .\auron-*-windows-x86_64.zip -Algorithm SHA256
+Get-FileHash .\hyurax-*-windows-x86_64.zip -Algorithm SHA256
 ```
 
 No Linux, no Mac ou no Termux:
 
 ```bash
-sha256sum -c auron-*.tar.gz.sha256
+sha256sum -c hyurax-*.tar.gz.sha256
 ```
 
 Depois, descompacte e entre na pasta. Nos exemplos abaixo, o programa aparece
-como `./auron-no`; no Windows é `.\auron-no.exe`.
+como `./hyurax-no`; no Windows é `.\hyurax-no.exe`.
 
 Prefere compilar? Com Rust 1.98 ou mais novo:
-`cargo build --release -p auron-no -p auron-pow` (os programas ficam em
+`cargo build --release -p hyurax-no -p hyurax-pow` (os programas ficam em
 `.target/release/`).
 
-**Celular (Termux):** depois de descompactar, rode `chmod +x auron-no auron-minerar`.
+**Celular (Termux):** depois de descompactar, rode `chmod +x hyurax-no hyurax-minerar`.
 Se o sistema recusar o programa, compile no próprio aparelho, como está em
-[MINERAR-NO-CELULAR.md](https://github.com/NOXqubit/auron/blob/main/docs/MINERAR-NO-CELULAR.md).
+[MINERAR-NO-CELULAR.md](https://github.com/NOXqubit/hyurax/blob/main/docs/MINERAR-NO-CELULAR.md).
 
 ## 2. Criar a carteira
 
 ```bash
-./auron-no carteira nova --arquivo carteira.txt
+./hyurax-no carteira nova --arquivo carteira.txt
 ```
 
 O programa pede uma senha (mínimo de 10 caracteres), que não aparece na tela
@@ -57,12 +57,12 @@ enquanto você digita, e mostra o seu **endereço**.
 - **Sem o arquivo e a senha juntos, o saldo fica perdido.** Guarde uma cópia do
   arquivo e não esqueça a senha. Ninguém consegue recuperar por você.
 
-Para ver o endereço de novo: `./auron-no carteira ver --arquivo carteira.txt`.
+Para ver o endereço de novo: `./hyurax-no carteira ver --arquivo carteira.txt`.
 
 ## 3. Colocar o nó no ar
 
 ```bash
-./auron-no no --rede testnet --pasta dados --porta 8790
+./hyurax-no no --rede testnet --pasta dados --porta 8790
 ```
 
 - `--pasta dados` é onde ficam a cadeia e a **identidade do nó**
@@ -81,7 +81,7 @@ conhecido (várias, separadas por vírgula). O nó descobre os outros sozinho.
 ## 4. Minerar
 
 ```bash
-./auron-no minerar --rede testnet --pasta dados --endereco SEU_ENDERECO --blocos 0 --semente IP:PORTA
+./hyurax-no minerar --rede testnet --pasta dados --endereco SEU_ENDERECO --blocos 0 --semente IP:PORTA
 ```
 
 - `--blocos 0` minera sem parar; `Ctrl+C` interrompe, e o que já foi minerado
@@ -91,10 +91,10 @@ conhecido (várias, separadas por vírgula). O nó descobre os outros sozinho.
 - A recompensa espera 20 blocos na testnet para poder ser gasta.
 - No celular: `--linhas 1` e `--pausa-ms 200` esquentam menos.
 
-## 5. Enviar AUR de teste
+## 5. Enviar HYUR de teste
 
 ```bash
-./auron-no enviar --rede testnet --pasta dados --arquivo carteira.txt --para ENDERECO_DESTINO --valor 1.5 --semente IP:PORTA
+./hyurax-no enviar --rede testnet --pasta dados --arquivo carteira.txt --para ENDERECO_DESTINO --valor 1.5 --semente IP:PORTA
 ```
 
 O programa sincroniza, confere o saldo, pede a senha, assina e manda para a
@@ -104,7 +104,7 @@ valor (`1.5`), com até 8 casas.
 ## 6. Ver saldo e altura
 
 ```bash
-./auron-no estado --rede testnet --pasta dados --endereco SEU_ENDERECO
+./hyurax-no estado --rede testnet --pasta dados --endereco SEU_ENDERECO
 ```
 
 ## Problemas comuns
@@ -115,9 +115,9 @@ valor (`1.5`), com até 8 casas.
 | `saldo gastável insuficiente` | A recompensa de mineração ainda não liberou, ou o nó não sincronizou: confira com `estado` |
 | `não alcancei a rede em 90 s` | A semente está fora do ar ou a porta está bloqueada |
 | `aperto de mão recusado` | O outro nó é de outra rede (`--rede`) ou de uma versão antiga |
-| Carteira antiga, criada antes de 13/09/2026 | Proteja com `./auron-no carteira cifrar --arquivo carteira.txt` |
+| Carteira antiga, criada antes de 13/09/2026 | Proteja com `./hyurax-no carteira cifrar --arquivo carteira.txt` |
 
 ## Achou uma falha?
 
-Tentar quebrar o Auron é bem-vindo, desde que seja em nós seus ou na testnet do
-projeto. Veja como relatar em [SECURITY.md](https://github.com/NOXqubit/auron/blob/main/SECURITY.md).
+Tentar quebrar o Hyurax é bem-vindo, desde que seja em nós seus ou na testnet do
+projeto. Veja como relatar em [SECURITY.md](https://github.com/NOXqubit/hyurax/blob/main/SECURITY.md).

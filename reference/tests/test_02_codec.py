@@ -8,8 +8,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from auron import codec  # noqa: E402
-from auron.codec import CodecError  # noqa: E402
+from hyurax import codec  # noqa: E402
+from hyurax.codec import CodecError  # noqa: E402
 
 
 def test_uint_widths_and_bounds():

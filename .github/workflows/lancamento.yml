@@ -1,7 +1,7 @@
 # Programas prontos para baixar, montados pelo próprio GitHub.
 #
 # Roda quando uma etiqueta `v*` é enviada (ou à mão, em Actions). Compila o
-# `auron-no` e o `auron-minerar` para cada sistema, testa antes, e publica os
+# `hyurax-no` e o `hyurax-minerar` para cada sistema, testa antes, e publica os
 # pacotes numa Release com a soma SHA-256 de cada arquivo.
 #
 # O código é Rust puro (sem compilador C), então a compilação cruzada para o
@@ -25,7 +25,7 @@ jobs:
       - uses: actions/checkout@v5
       - uses: dtolnay/rust-toolchain@stable
       - run: cargo test --workspace --locked
-      - run: cargo test -p auron-net --locked -- --ignored --test-threads=1
+      - run: cargo test -p hyurax-net --locked -- --ignored --test-threads=1
 
   compilar:
     name: ${{ matrix.nome }}
@@ -59,18 +59,18 @@ jobs:
           target: ${{ matrix.alvo }}
       - name: compilar
         shell: bash
-        run: cargo build --release --locked --target ${{ matrix.alvo }} -p auron-no -p auron-pow
+        run: cargo build --release --locked --target ${{ matrix.alvo }} -p hyurax-no -p hyurax-pow
       - name: empacotar
         shell: bash
         run: |
           set -euo pipefail
           versao="${GITHUB_REF_NAME}"
-          pasta="auron-${versao}-${{ matrix.nome }}"
+          pasta="hyurax-${versao}-${{ matrix.nome }}"
           mkdir -p "$pasta"
           ext=""
           [ "${{ runner.os }}" = "Windows" ] && ext=".exe"
-          cp ".target/${{ matrix.alvo }}/release/auron-no${ext}" "$pasta/"
-          cp ".target/${{ matrix.alvo }}/release/auron-minerar${ext}" "$pasta/"
+          cp ".target/${{ matrix.alvo }}/release/hyurax-no${ext}" "$pasta/"
+          cp ".target/${{ matrix.alvo }}/release/hyurax-minerar${ext}" "$pasta/"
           cp LICENSE-MIT LICENSE-APACHE "$pasta/"
           cp docs/RODAR-UM-NO.md "$pasta/LEIA-ME.md"
           if [ "${{ runner.os }}" = "Windows" ]; then
@@ -104,7 +104,7 @@ jobs:
           prerelease: true
           files: pacotes/*
           body: |
-            **Rede de TESTE.** A rede pública não existe e o AUR não tem valor.
+            **Rede de TESTE.** A rede pública não existe e o HYUR não tem valor.
             Não há venda, pré-venda nem promessa de lucro.
 
             Como usar: veja o `LEIA-ME.md` dentro do pacote (é o `docs/RODAR-UM-NO.md`).

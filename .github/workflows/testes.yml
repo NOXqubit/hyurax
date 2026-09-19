@@ -50,4 +50,4 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       - uses: dtolnay/rust-toolchain@stable
-      - run: cargo test -p auron-net --locked -- --ignored --test-threads=1
+      - run: cargo test -p hyurax-net --locked -- --ignored --test-threads=1

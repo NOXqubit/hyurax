@@ -13,13 +13,13 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from auron import codec, crypto  # noqa: E402
-from auron.block import Block, BlockHeader  # noqa: E402
-from auron.chain import Chain, ChainError, make_genesis  # noqa: E402
-from auron.consensus import REGTEST, block_reward, target_to_compact  # noqa: E402
-from auron.state import State, StateError  # noqa: E402
-from auron.tx import AUR, Coinbase, decode_tx, sign_transfer  # noqa: E402
-from auron.units import AUR_UNIT, to_units  # noqa: E402
+from hyurax import codec, crypto  # noqa: E402
+from hyurax.block import Block, BlockHeader  # noqa: E402
+from hyurax.chain import Chain, ChainError, make_genesis  # noqa: E402
+from hyurax.consensus import REGTEST, block_reward, target_to_compact  # noqa: E402
+from hyurax.state import State, StateError  # noqa: E402
+from hyurax.tx import HYUR, Coinbase, decode_tx, sign_transfer  # noqa: E402
+from hyurax.units import HYUR_UNIT, to_units  # noqa: E402
 
 P = REGTEST
 
@@ -46,7 +46,7 @@ def test_genesis_is_single_and_deterministic():
     assert a.header.height == 0
     assert a.header.prev_hash == b"\x00" * 64
     # redes diferentes tem genese diferente
-    from auron.consensus import MAINNET, TESTNET
+    from hyurax.consensus import MAINNET, TESTNET
     assert make_genesis(MAINNET).block_hash() != make_genesis(TESTNET).block_hash()
     assert make_genesis(TESTNET).block_hash() != a.block_hash()
     print("PASS genese unica e deterministica por rede")
@@ -77,7 +77,7 @@ def test_signature_bound_to_network():
         amount=to_units("1"), fee=0, nonce=0,
     )
     assert tx.check_signature(P.magic)[0]
-    from auron.consensus import MAINNET
+    from hyurax.consensus import MAINNET
     ok, _ = tx.check_signature(MAINNET.magic)
     assert not ok, "transacao de testnet foi aceita na mainnet"
     print("PASS assinatura amarrada a rede")
@@ -94,7 +94,7 @@ def test_tampering_rejected():
     for label, bad in (
         ("valor", replace(tx, outputs=(replace(saida, amount=to_units("999")),))),
         ("destino", replace(tx, outputs=(replace(saida, recipient=mallory.address),))),
-        ("ativo", replace(tx, outputs=(replace(saida, asset_id=bytes([1]) + AUR[1:]),))),
+        ("ativo", replace(tx, outputs=(replace(saida, asset_id=bytes([1]) + HYUR[1:]),))),
         ("nonce", replace(tx, nonce=tx.nonce + 1)),
         ("taxa", replace(tx, fee=to_units("5"))),
     ):
@@ -140,7 +140,7 @@ def test_mine_and_spend_after_maturity():
     )
     # a taxa foi para o minerador, entao nao sumiu do sistema
     assert chain.state.immature_balance(alice.address) >= to_units("0.01")
-    print(f"PASS minerar, maturar e gastar (saldo alice {saldo / AUR_UNIT:.2f} AUR)")
+    print(f"PASS minerar, maturar e gastar (saldo alice {saldo / HYUR_UNIT:.2f} HYUR)")
 
 
 def test_coinbase_maturity_blocks_early_spend():
@@ -230,9 +230,9 @@ def test_inflated_coinbase_rejected():
     candidato = chain.build_candidate(alice.address, timestamp=ts)
     header = replace(candidato.header,
                      merkle_root=codec.merkle_root([t.encode() for t in txs]))
-    from auron.consensus import check_pow_target
+    from hyurax.consensus import check_pow_target
     target = chain.expected_bits()
-    from auron.consensus import compact_to_target
+    from hyurax.consensus import compact_to_target
     tgt = compact_to_target(target)
     for nonce in range(1 << 20):
         h = header.with_nonce(nonce)
@@ -314,7 +314,7 @@ def test_timestamp_rules():
     mtp = chain.median_time_past()
     ts_old = mtp  # nao passa do median-time-past
     cand = chain.build_candidate(alice.address, timestamp=ts_old)
-    from auron.consensus import check_pow_target, compact_to_target
+    from hyurax.consensus import check_pow_target, compact_to_target
     tgt = compact_to_target(cand.header.bits)
     header = cand.header
     for nonce in range(1 << 20):
@@ -365,7 +365,7 @@ def test_rollback_restores_state_exactly():
 
 def test_fork_choice_by_work_not_height():
     """Cadeia longa de blocos faceis nao pode ganhar de curta de dificeis."""
-    from auron.chain import compare_chains
+    from hyurax.chain import compare_chains
     alice = Account()
     a = Chain(params=P)
     b = Chain(params=P)
@@ -386,7 +386,7 @@ def test_supply_never_exceeds_cap():
     chain = Chain(params=P)
     mine_n(chain, alice.address, 5)
     chain.state.check_invariants()
-    from auron.units import MAX_SUPPLY
+    from hyurax.units import MAX_SUPPLY
     assert chain.state.total_emitted <= MAX_SUPPLY
     print("PASS teto de supply respeitado")
 

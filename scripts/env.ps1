@@ -1,6 +1,6 @@
 # ✝ Lucas 21:28 — “Quando essas coisas começarem a acontecer, olhai para cima e levantai a vossa cabeça, porque a vossa redenção está próxima.”
 # =============================================================================
-# Auron — prepara o ambiente do terminal.
+# Hyurax — prepara o ambiente do terminal.
 #
 # As variáveis já estão gravadas no perfil do usuário, então um terminal novo
 # já vem pronto. Este script existe para dois casos:
@@ -16,8 +16,8 @@
 # sessão, e não numa sessão filha que morre no fim.
 # =============================================================================
 
-$AURON_ROOT = "D:\auron"
-$TOOLCHAIN  = "$AURON_ROOT\.toolchain"
+$HYURAX_ROOT = "D:\auron"
+$TOOLCHAIN  = "$HYURAX_ROOT\.toolchain"
 
 $env:RUSTUP_HOME = "$TOOLCHAIN\rustup"
 $env:CARGO_HOME  = "$TOOLCHAIN\cargo"
@@ -37,7 +37,7 @@ foreach ($p in @("$TOOLCHAIN\cargo\bin", "$TOOLCHAIN\git\cmd",
 }
 
 Write-Host ""
-Write-Host "=== Ambiente Auron ===" -ForegroundColor Cyan
+Write-Host "=== Ambiente Hyurax ===" -ForegroundColor Cyan
 
 function Mostrar($nome, $comando) {
     $exe = Get-Command $comando -ErrorAction SilentlyContinue
@@ -62,7 +62,7 @@ Mostrar "python" "python"
 Write-Host ""
 Write-Host "  RUSTUP_HOME  $env:RUSTUP_HOME"
 Write-Host "  CARGO_HOME   $env:CARGO_HOME"
-Write-Host "  projeto      $AURON_ROOT"
+Write-Host "  projeto      $HYURAX_ROOT"
 
 $livre = [math]::Round((Get-CimInstance Win32_LogicalDisk -Filter "DeviceID='D:'").FreeSpace / 1GB, 1)
 $os = Get-CimInstance Win32_OperatingSystem

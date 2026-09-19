@@ -1,37 +1,43 @@
-# Auron
+# Hyurax
 
 Blockchain com prova de trabalho, em desenvolvimento.
 
 **Estado: pré-testnet. Não existe mainnet. Não existe token com valor.**
 Qualquer pessoa que disser o contrário está mentindo.
 
+> **O projeto se chamava Auron até 19/09/2026.** O nome mudou porque já havia
+> outros projetos com ele (inclusive o Apache Auron e o ticker AUR na bolsa),
+> e ninguém deveria confundir um com o outro. A tecnologia é a mesma. As
+> versões até `v0.1.0-teste.3` saíram com o nome antigo e falam uma rede
+> diferente (outra gênese): para testar, use a partir de `v0.2.0-teste.1`.
+
 ## O que existe hoje
 
 | Parte | Estado |
 |---|---|
-| Especificação `AURON-SPEC-01` | escrita, congelável quando a tokenomics fechar |
+| Especificação `HYURAX-SPEC-01` | escrita, congelável quando a tokenomics fechar |
 | Implementação de referência (Python) | completa, 122 testes |
 | Vetores de validação cruzada | 18 arquivos |
-| Nó de produção (Rust) | núcleo migrado e igual ao gabarito: `auron-types`, `auron-crypto`, `auron-codec`, `auron-pow`, `auron-usefulpow`, `auron-tx`, `auron-block`, `auron-consensus`, `auron-state`, `auron-chain`, `auron-store`, `auron-wire`, `auron-net` (80 testes) |
-| Rede entre nós | conexão TCP, aperto de mão, sincronização, propagação de blocos e transações, mempool, descoberta de pares (um nó novo acha a rede a partir de uma semente) e retomada automática — tudo em `auron-net`, mais reorganização profunda entre pares (a cadeia com mais trabalho vence, mesmo bifurcando fundo). **Conexão cifrada** com Noise XX e identidade de nó (protocolo versão 2) |
-| Nó local e minerador no celular | `auron-no` (carteira **com senha**, envio de AUR de teste, nó em rede com `--porta`/`--semente`, mineração de blocos inteiros, saldo) e `auron-minerar` (medição); rodam no Termux. Ver [`docs/MINERAR-NO-CELULAR.md`](docs/MINERAR-NO-CELULAR.md) |
+| Nó de produção (Rust) | núcleo migrado e igual ao gabarito: `hyurax-types`, `hyurax-crypto`, `hyurax-codec`, `hyurax-pow`, `hyurax-usefulpow`, `hyurax-tx`, `hyurax-block`, `hyurax-consensus`, `hyurax-state`, `hyurax-chain`, `hyurax-store`, `hyurax-wire`, `hyurax-net` (80 testes) |
+| Rede entre nós | conexão TCP, aperto de mão, sincronização, propagação de blocos e transações, mempool, descoberta de pares (um nó novo acha a rede a partir de uma semente) e retomada automática — tudo em `hyurax-net`, mais reorganização profunda entre pares (a cadeia com mais trabalho vence, mesmo bifurcando fundo). **Conexão cifrada** com Noise XX e identidade de nó (protocolo versão 2) |
+| Nó local e minerador no celular | `hyurax-no` (carteira **com senha**, envio de HYUR de teste, nó em rede com `--porta`/`--semente`, mineração de blocos inteiros, saldo) e `hyurax-minerar` (medição); rodam no Termux. Ver [`docs/MINERAR-NO-CELULAR.md`](docs/MINERAR-NO-CELULAR.md) |
 | Programas prontos | Windows, Linux, celular (Termux) e Mac, montados pelo GitHub a cada versão; guia em [`docs/RODAR-UM-NO.md`](docs/RODAR-UM-NO.md) |
 | Testnet pública | kit do nó semente pronto ([`docs/NO-SEMENTE.md`](docs/NO-SEMENTE.md)), com explorador de blocos; nenhum semente no ar ainda; roteiro de 12 semanas em [`docs/ROTEIRO-LANCAMENTO.md`](docs/ROTEIRO-LANCAMENTO.md) |
 | Mainnet | não existe |
-| Auron Flux (stablecoins e pagamentos) | arquitetura registrada em [`docs/AURON-FLUX.md`](docs/AURON-FLUX.md); estado RED, nada implementado |
-| Éter (transporte por qualquer meio) | núcleo pronto e testado em `auron-eter`: objeto fatiado em fragmentos que se provam sozinhos, espalhados por vários meios ao mesmo tempo; meios de hoje: pasta de arquivos e memória. Bluetooth, LoRa e rádio projetados, não implementados. Ver [`docs/AURON-ETER.md`](docs/AURON-ETER.md) |
-| Auron Direct, Resonance e Transport (pagamentos P2P, offline e mesh) | arquitetura registrada em [`docs/AURON-DIRECT-RESONANCE.md`](docs/AURON-DIRECT-RESONANCE.md); estado RED, nada implementado |
+| Hyurax Flux (stablecoins e pagamentos) | arquitetura registrada em [`docs/HYURAX-FLUX.md`](docs/HYURAX-FLUX.md); estado RED, nada implementado |
+| Éter (transporte por qualquer meio) | núcleo pronto e testado em `hyurax-eter`: objeto fatiado em fragmentos que se provam sozinhos, espalhados por vários meios ao mesmo tempo; meios de hoje: pasta de arquivos e memória. Bluetooth, LoRa e rádio projetados, não implementados. Ver [`docs/HYURAX-ETER.md`](docs/HYURAX-ETER.md) |
+| Hyurax Direct, Resonance e Transport (pagamentos P2P, offline e mesh) | arquitetura registrada em [`docs/HYURAX-DIRECT-RESONANCE.md`](docs/HYURAX-DIRECT-RESONANCE.md); estado RED, nada implementado |
 
 ## Rodar um nó
 
 Programas prontos e o passo a passo em [`docs/RODAR-UM-NO.md`](docs/RODAR-UM-NO.md):
-baixar, criar carteira com senha, colocar o nó no ar, minerar e enviar AUR de
+baixar, criar carteira com senha, colocar o nó no ar, minerar e enviar HYUR de
 teste.
 
 ## Como está organizado
 
 ```
-spec/          AURON-SPEC-01: as regras de consenso
+spec/          HYURAX-SPEC-01: as regras de consenso
 reference/     implementação Python. Não é o nó; é o oráculo
 vectors/       o contrato entre Python e Rust
 crates/        o nó de produção, em Rust
@@ -62,7 +68,7 @@ demanda, isolados (aperto de mão, sincronização, propagação, ataques e
 auto-reanimação):
 
 ```bash
-cargo test -p auron-net -- --ignored --test-threads=1
+cargo test -p hyurax-net -- --ignored --test-threads=1
 ```
 
 Terminal que não achar `cargo` ou `git`:
@@ -160,12 +166,12 @@ consenso, nenhum material vai apresentá-lo como lastro econômico da moeda.
 
 ## Contribuir e atacar
 
-Tentar quebrar o Auron é bem-vindo: veja [SECURITY.md](SECURITY.md) para saber
+Tentar quebrar o Hyurax é bem-vindo: veja [SECURITY.md](SECURITY.md) para saber
 como relatar. Ataque só nós seus ou a testnet do projeto.
 
 ## Doação
 
-O Auron é feito por um desenvolvedor independente. Se quiser ajudar a manter o
+O Hyurax é feito por um desenvolvedor independente. Se quiser ajudar a manter o
 trabalho, o endereço é da **rede Bitcoin** (envie só bitcoin):
 
 ```
@@ -179,6 +185,6 @@ nem retorno.
 
 ## Licença
 
-O código do Auron é distribuído sob a licença MIT ou a Apache-2.0, à escolha
+O código do Hyurax é distribuído sob a licença MIT ou a Apache-2.0, à escolha
 de quem usa. Os textos estão em [LICENSE-MIT](LICENSE-MIT) e
 [LICENSE-APACHE](LICENSE-APACHE).

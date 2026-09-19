@@ -4,7 +4,7 @@ Um **nó semente** é um nó sempre ligado, com endereço fixo, onde os nós nov
 batem primeiro para encontrar a rede. Depois eles descobrem os outros pares
 sozinhos.
 
-> Rede de **teste**: o AUR não tem valor. Não há venda, pré-venda nem promessa
+> Rede de **teste**: o HYUR não tem valor. Não há venda, pré-venda nem promessa
 > de lucro.
 
 ## Por que não dá para usar o GitHub
@@ -34,7 +34,7 @@ conta. **A conta é sua**, e o cadastro você mesmo faz.
 3. Entre pela SSH e rode:
 
 ```bash
-curl -fsSLO https://raw.githubusercontent.com/NOXqubit/auron/main/deploy/instalar-semente.sh
+curl -fsSLO https://raw.githubusercontent.com/NOXqubit/hyurax/main/deploy/instalar-semente.sh
 ```
 
 ```bash
@@ -45,14 +45,14 @@ less instalar-semente.sh
 sudo bash instalar-semente.sh
 ```
 
-O script baixa o `auron-no` da Release, **confere a soma SHA-256**, cria um
+O script baixa o `hyurax-no` da Release, **confere a soma SHA-256**, cria um
 usuário sem login, liga dois serviços que voltam sozinhos se a máquina
 reiniciar, e mostra o endereço final.
 
 4. Teste de outro computador:
 
 ```bash
-auron-no no --rede testnet --pasta teste --semente IP_DO_SERVIDOR:8790
+hyurax-no no --rede testnet --pasta teste --semente IP_DO_SERVIDOR:8790
 ```
 
 5. Abra o explorador: `http://IP_DO_SERVIDOR:8080/`.
@@ -60,7 +60,7 @@ auron-no no --rede testnet --pasta teste --semente IP_DO_SERVIDOR:8790
 ## Depois que ele responder
 
 Mande o endereço `IP:8790`. Ele entra na lista `SEMENTES_TESTNET` em
-`crates/auron-no/src/main.rs`, e a próxima versão do programa já conecta
+`crates/hyurax-no/src/main.rs`, e a próxima versão do programa já conecta
 sozinha, sem ninguém precisar digitar `--semente`.
 
 Só entra na lista um semente que já respondeu de verdade: endereço morto no
@@ -70,13 +70,13 @@ programa atrapalha quem está começando.
 
 | Tarefa | Comando |
 |---|---|
-| Ver o registro ao vivo | `journalctl -u auron-semente -f` |
-| Reiniciar | `sudo systemctl restart auron-semente` |
-| Atualizar a versão | `sudo AURON_VERSAO=vX.Y.Z bash instalar-semente.sh` |
-| Ver a identidade do nó | `sudo -u auron grep publica /var/lib/auron/testnet/no.chave` |
+| Ver o registro ao vivo | `journalctl -u hyurax-semente -f` |
+| Reiniciar | `sudo systemctl restart hyurax-semente` |
+| Atualizar a versão | `sudo HYURAX_VERSAO=vX.Y.Z bash instalar-semente.sh` |
+| Ver a identidade do nó | `sudo -u hyurax grep publica /var/lib/hyurax/testnet/no.chave` |
 
 ## O que o semente não faz
 
 - Não guarda carteira nem minera.
-- Não recebe comando pela rede: só conversa o protocolo do Auron, cifrado.
+- Não recebe comando pela rede: só conversa o protocolo do Hyurax, cifrado.
 - O explorador é só leitura: um arquivo JSON e uma página estática.

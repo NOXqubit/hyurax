@@ -1,0 +1,29 @@
+[package]
+name = "hyurax-net"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+description = "Hyurax — transporte da rede entre nós: conexões TCP cifradas (Noise XX), aperto de mão, sincronização e mempool"
+
+[dependencies]
+hyurax-identidade.workspace = true
+hyurax-wire.workspace = true
+hyurax-block.workspace = true
+hyurax-tx.workspace = true
+hyurax-chain.workspace = true
+hyurax-consensus.workspace = true
+hyurax-crypto.workspace = true
+snow.workspace = true
+
+[lints.rust]
+unsafe_code = "forbid"
+missing_docs = "warn"
+
+[lints.clippy]
+unwrap_used = "deny"
+expect_used = "deny"
+panic = "deny"
+indexing_slicing = "deny"
+arithmetic_side_effects = "warn"

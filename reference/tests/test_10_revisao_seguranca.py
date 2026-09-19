@@ -24,13 +24,13 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import numpy as np  # noqa: E402
 
-from auron import codec, consensus, crypto, store, utrax  # noqa: E402
-from auron.block import Block  # noqa: E402
-from auron.chain import Chain, ChainError  # noqa: E402
-from auron.consensus import REGTEST, block_reward, check_pow_target  # noqa: E402
-from auron.store import StoreError, save_chain  # noqa: E402
-from auron.tx import MAX_EXTRA_NONCE, Coinbase, TxError, decode_tx  # noqa: E402
-from auron.units import MAX_AMOUNT_TEXT, AmountError, to_units  # noqa: E402
+from hyurax import codec, consensus, crypto, store, utrax  # noqa: E402
+from hyurax.block import Block  # noqa: E402
+from hyurax.chain import Chain, ChainError  # noqa: E402
+from hyurax.consensus import REGTEST, block_reward, check_pow_target  # noqa: E402
+from hyurax.store import StoreError, save_chain  # noqa: E402
+from hyurax.tx import MAX_EXTRA_NONCE, Coinbase, TxError, decode_tx  # noqa: E402
+from hyurax.units import MAX_AMOUNT_TEXT, AmountError, to_units  # noqa: E402
 
 P = REGTEST
 ENDERECO = bytes(crypto.ADDRESS_LEN)
@@ -207,7 +207,7 @@ def test_arquivo_adulterado_vira_StoreError():
     chain = Chain(params=P)
     mina(chain, ENDERECO, 2)
     with tempfile.TemporaryDirectory() as pasta:
-        caminho = Path(pasta) / "cadeia.auron"
+        caminho = Path(pasta) / "cadeia.hyurax"
         save_chain(chain, caminho)
         bruto = caminho.read_bytes()
 

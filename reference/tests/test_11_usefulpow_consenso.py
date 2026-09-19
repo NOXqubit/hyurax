@@ -14,7 +14,7 @@ invariantes que ja existem em codigo:
   I10 o que e planejado nao aparece como ativo
 
 I8 (dado pessoal fora da cadeia) e I9 (chave de identidade separada da chave de
-carteira) sao regras da especificacao para a Data Chain e o Auron Identity,
+carteira) sao regras da especificacao para a Data Chain e o Hyurax Identity,
 que ainda nao existem em codigo. Nao ha teste de mentira para eles aqui.
 """
 
@@ -26,12 +26,12 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from auron import codec, consensus, crypto, tx, usefulpow, utrax  # noqa: E402
-from auron.block import Block, BlockHeader  # noqa: E402
-from auron.chain import Chain, ChainError  # noqa: E402
-from auron.consensus import REGTEST, check_pow_target, compact_to_target  # noqa: E402
-from auron.tx import sign_transfer  # noqa: E402
-from auron.units import to_units  # noqa: E402
+from hyurax import codec, consensus, crypto, tx, usefulpow, utrax  # noqa: E402
+from hyurax.block import Block, BlockHeader  # noqa: E402
+from hyurax.chain import Chain, ChainError  # noqa: E402
+from hyurax.consensus import REGTEST, check_pow_target, compact_to_target  # noqa: E402
+from hyurax.tx import sign_transfer  # noqa: E402
+from hyurax.units import to_units  # noqa: E402
 
 P = REGTEST
 
@@ -301,7 +301,7 @@ def test_conferir_e_mais_barato_que_fazer():
 
 def test_assinatura_confere_e_mensagem_alterada_recusada():
     conta = Conta()
-    mensagem = b"AURON teste de assinatura"
+    mensagem = b"HYURAX teste de assinatura"
     assinatura = crypto.sign(conta.secret, mensagem)
     assert crypto.verify(conta.pub, mensagem, assinatura)
     assert not crypto.verify(conta.pub, mensagem + b"!", assinatura)

@@ -53,7 +53,7 @@
     "lwma": [
       {
         "name": "rapido",
-        "network": "auron-regtest",
+        "network": "hyurax-regtest",
         "next_target": "0x7fff80000000000000000000000000000000000000000000000000000000",
         "targets_in": [
           "0xffff00000000000000000000000000000000000000000000000000000000",
@@ -124,7 +124,7 @@
       },
       {
         "name": "no_ritmo",
-        "network": "auron-regtest",
+        "network": "hyurax-regtest",
         "next_target": "0xffff00000000000000000000000000000000000000000000000000000000",
         "targets_in": [
           "0xffff00000000000000000000000000000000000000000000000000000000",
@@ -195,7 +195,7 @@
       },
       {
         "name": "lento",
-        "network": "auron-regtest",
+        "network": "hyurax-regtest",
         "next_target": "0x1fffe00000000000000000000000000000000000000000000000000000000",
         "targets_in": [
           "0xffff00000000000000000000000000000000000000000000000000000000",
@@ -266,7 +266,7 @@
       },
       {
         "name": "horario_alternado",
-        "network": "auron-regtest",
+        "network": "hyurax-regtest",
         "next_target": "0x1084100000000000000000000000000000000000000000000000000000000",
         "note": "timestamps nao monotonicos; a regra os torna nao decrescentes",
         "targets_in": [
@@ -338,7 +338,7 @@
       },
       {
         "name": "horario_para_tras",
-        "network": "auron-regtest",
+        "network": "hyurax-regtest",
         "next_target": "0x1008b00000000000000000000000000000000000000000000000000000000",
         "note": "timestamps nao monotonicos; a regra os torna nao decrescentes",
         "targets_in": [
@@ -410,7 +410,7 @@
       },
       {
         "name": "horarios_iguais",
-        "network": "auron-regtest",
+        "network": "hyurax-regtest",
         "next_target": "0x7fff80000000000000000000000000000000000000000000000000000000",
         "note": "timestamps nao monotonicos; a regra os torna nao decrescentes",
         "targets_in": [
@@ -483,5 +483,5 @@
     ]
   },
   "generator": "reference/tools/gen_vectors.py",
-  "spec": "AURON-SPEC-01"
+  "spec": "HYURAX-SPEC-01"
 }

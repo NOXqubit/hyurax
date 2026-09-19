@@ -1,6 +1,6 @@
 # ✝ Lucas 21:28 — “Quando essas coisas começarem a acontecer, olhai para cima e levantai a vossa cabeça, porque a vossa redenção está próxima.”
 # =============================================================================
-# Auron - arquivo de paginacao para o build de Rust caber na maquina.
+# Hyurax - arquivo de paginacao para o build de Rust caber na maquina.
 #
 # PRECISA SER EXECUTADO COMO ADMINISTRADOR.
 #

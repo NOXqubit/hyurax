@@ -1,32 +1,32 @@
 [workspace]
 resolver = "3"
 members = [
-    "crates/auron-identidade",
-    "crates/auron-types",
-    "crates/auron-crypto",
-    "crates/auron-codec",
-    "crates/auron-pow",
-    "crates/auron-usefulpow",
-    "crates/auron-tx",
-    "crates/auron-block",
-    "crates/auron-consensus",
-    "crates/auron-state",
-    "crates/auron-chain",
-    "crates/auron-store",
-    "crates/auron-wire",
-    "crates/auron-eter",
-    "crates/auron-net",
-    "crates/auron-no",
+    "crates/hyurax-identidade",
+    "crates/hyurax-types",
+    "crates/hyurax-crypto",
+    "crates/hyurax-codec",
+    "crates/hyurax-pow",
+    "crates/hyurax-usefulpow",
+    "crates/hyurax-tx",
+    "crates/hyurax-block",
+    "crates/hyurax-consensus",
+    "crates/hyurax-state",
+    "crates/hyurax-chain",
+    "crates/hyurax-store",
+    "crates/hyurax-wire",
+    "crates/hyurax-eter",
+    "crates/hyurax-net",
+    "crates/hyurax-no",
 ]
 
 [workspace.package]
 version = "0.1.0"
 edition = "2024"
 rust-version = "1.98"
-authors = ["Projeto Auron"]
+authors = ["Projeto Hyurax"]
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/"
-description = "Auron — implementação de nó em Rust"
+description = "Hyurax — implementação de nó em Rust"
 
 # ---------------------------------------------------------------------------
 # REGRA DO PROJETO: só dependência Rust pura.
@@ -48,22 +48,22 @@ description = "Auron — implementação de nó em Rust"
 # ---------------------------------------------------------------------------
 
 [workspace.dependencies]
-# Crates do proprio workspace. O auron-tx vai usar os tres.
-auron-identidade = { path = "crates/auron-identidade" }
-auron-types = { path = "crates/auron-types" }
-auron-crypto = { path = "crates/auron-crypto" }
-auron-codec = { path = "crates/auron-codec" }
-auron-usefulpow = { path = "crates/auron-usefulpow" }
-auron-tx = { path = "crates/auron-tx" }
-auron-block = { path = "crates/auron-block" }
-auron-pow = { path = "crates/auron-pow" }
-auron-consensus = { path = "crates/auron-consensus" }
-auron-state = { path = "crates/auron-state" }
-auron-chain = { path = "crates/auron-chain" }
-auron-store = { path = "crates/auron-store" }
-auron-wire = { path = "crates/auron-wire" }
-auron-eter = { path = "crates/auron-eter" }
-auron-net = { path = "crates/auron-net" }
+# Crates do proprio workspace. O hyurax-tx vai usar os tres.
+hyurax-identidade = { path = "crates/hyurax-identidade" }
+hyurax-types = { path = "crates/hyurax-types" }
+hyurax-crypto = { path = "crates/hyurax-crypto" }
+hyurax-codec = { path = "crates/hyurax-codec" }
+hyurax-usefulpow = { path = "crates/hyurax-usefulpow" }
+hyurax-tx = { path = "crates/hyurax-tx" }
+hyurax-block = { path = "crates/hyurax-block" }
+hyurax-pow = { path = "crates/hyurax-pow" }
+hyurax-consensus = { path = "crates/hyurax-consensus" }
+hyurax-state = { path = "crates/hyurax-state" }
+hyurax-chain = { path = "crates/hyurax-chain" }
+hyurax-store = { path = "crates/hyurax-store" }
+hyurax-wire = { path = "crates/hyurax-wire" }
+hyurax-eter = { path = "crates/hyurax-eter" }
+hyurax-net = { path = "crates/hyurax-net" }
 
 # Vetores de teste. Rust puro.
 serde = { version = "1", features = ["derive"] }
@@ -101,16 +101,16 @@ argon2 = { version = "=0.6.0", default-features = false }
 # Sem `default-features` e SEM a feature `std`: no snow 0.10 ela liga o
 # `getrandom`, que não compila aqui. As três features abaixo são o mínimo do
 # padrão Noise_XX_25519_ChaChaPoly_BLAKE2s; o gerador aleatório é nosso
-# (crates/auron-net/src/entropia.rs).
+# (crates/hyurax-net/src/entropia.rs).
 snow = { version = "=0.10.0", default-features = false, features = ["use-curve25519", "use-chacha20poly1305", "use-blake2"] }
 
-# Carteira com senha (crates/auron-no/src/carteira.rs). Rust puro, a mesma
+# Carteira com senha (crates/hyurax-no/src/carteira.rs). Rust puro, a mesma
 # que o snow já traz; sem `default-features` para não puxar o `getrandom`.
 chacha20poly1305 = { version = "0.10", default-features = false }
 
 # Sem crate de aleatoriedade: o `getrandom` 0.4 no Windows (alvo GNU) exige a
-# ferramenta `dlltool`, que não existe nesta máquina. O auron-no lê a entropia
-# do próprio sistema (ver `entropia_do_sistema` em crates/auron-no).
+# ferramenta `dlltool`, que não existe nesta máquina. O hyurax-no lê a entropia
+# do próprio sistema (ver `entropia_do_sistema` em crates/hyurax-no).
 
 [profile.dev]
 debug = 0

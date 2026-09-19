@@ -17,8 +17,8 @@
           "valid": true
         },
         {
-          "message": "4155524f4e",
-          "signature": "d182c128de4614f29d9473c506f51e77ba0943a96513f41df195ec7103e538c82c96e87660dff44df21a27ab6cf2c0f0a41222a564a0549512f5c703835fce02",
+          "message": "485955524158",
+          "signature": "ad1b97201b2089745d2dc5619965c1c9a0936c2774d56e56411d2814c307d0342f43db204a97c8fb929f63930372c3e0793d404ed9292b3347afcecc0ddc0f06",
           "valid": true
         },
         {
@@ -45,8 +45,8 @@
           "valid": true
         },
         {
-          "message": "4155524f4e",
-          "signature": "6511d52e1b5a85c6bfd12deae0341257cbbe87dd1cb998ad5294a2f674afc230702b158f860ed85820b2f8f1a4ce4fd1179559c7afe3a0401a6e92b83d3c4e05",
+          "message": "485955524158",
+          "signature": "11ccec1e4f6785bd727756fffe568c0eee823d301729e7e27a9aa3ee89a7837e14a070a9d98be2ccc4f08f9e751dc532b3ce56d9d8dff7cbea809890825a9605",
           "valid": true
         },
         {
@@ -58,5 +58,5 @@
     }
   ],
   "generator": "reference/tools/gen_vectors.py",
-  "spec": "AURON-SPEC-01"
+  "spec": "HYURAX-SPEC-01"
 }

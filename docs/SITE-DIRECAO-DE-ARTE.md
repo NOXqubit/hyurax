@@ -1,4 +1,4 @@
-# Direção de arte do site Auron
+# Direção de arte do site Hyurax
 
 Estudo de 13/09/2026: três direções (A cinematográfica, B instrumento vivo, C luxo arquitetônico), três jurados (placar A 121,5 · B 121,5 · C 116; dois jurados escolheram A). Vence A, com enxertos de B e C.
 
@@ -8,7 +8,7 @@ Partes 1 a 3 vêm da Direção A; a partir da 4, da síntese final (o começo da
 
 ## 1. Tese e os primeiros 3 segundos
 
-**Tese.** A página se comporta como o filme de lançamento de uma máquina. Ela tem um único objeto de metal, o "A" da Auron, e a luz quente aparece só onde existe algo real e conferido. Por isso, rolar a página é ver essa luz acender, se confirmar e depois se apagar, até o ponto em que o projeto ainda é só ideia.
+**Tese.** A página se comporta como o filme de lançamento de uma máquina. Ela tem um único objeto de metal, o "A" da Hyurax, e a luz quente aparece só onde existe algo real e conferido. Por isso, rolar a página é ver essa luz acender, se confirmar e depois se apagar, até o ponto em que o projeto ainda é só ideia.
 
 **A regra que sustenta tudo:** a luz quente (`--luz`) quer dizer "isto existe e foi conferido". Ela não é decoração. Quando uma coisa é recusada, a luz apaga e aparece um corte. Quando uma coisa ainda é ideia, ela vira contorno sem luz.
 
@@ -18,7 +18,7 @@ Os primeiros 1,3 s não dependem do Three.js. O arquivo `vendor/three.module.min
 
 | Tempo | O que a pessoa vê | Como é feito |
 |---|---|---|
-| 0 ms | Preto `#040405`. No canto superior esquerdo, o símbolo A com 20 px e "AURON" em Michroma 12 px. Mais nada. | HTML estático com os textos em pt-BR já no HTML. O i18n só troca o texto depois. |
+| 0 ms | Preto `#040405`. No canto superior esquerdo, o símbolo A com 20 px e "HYURAX" em Michroma 12 px. Mais nada. | HTML estático com os textos em pt-BR já no HTML. O i18n só troca o texto depois. |
 | 0–450 ms | Um fio de luz quente de 1,5 px atravessa a tela da esquerda para a direita. É a **lâmina do logo**, a curva `M8 90 C30 75 51 64 75 57`, ampliada para 120vw. Atrás dela há um rastro de 8 px com 12% de opacidade. | `stroke-dashoffset` num `<path>` do próprio símbolo, sem `filter`. |
 | 450–900 ms | Por onde a lâmina passou, surge o **A metálico gigante**: 78svh de altura, na metade direita, cortado uns 8% pela borda direita. Ele parece iluminado de raspão pela lâmina. | `clip-path` animado num único elemento com o `#simbolo-a` e o gradiente `#metal`. |
 | 600–1300 ms | O título sobe de dentro de máscaras, linha por linha, com 120 ms entre elas, alinhado à esquerda nas colunas 1–7: **"Todo bloco / prova um / cálculo útil."** Usa Archivo wdth 125, peso 780. O fio da lâmina termina embaixo de "útil." e fica ali. | `transform: translateY` dentro de linhas com `overflow: hidden`. É animação só de composição, sem blur e sem animar `filter`. |
@@ -170,7 +170,7 @@ O mundo 3D passa a ser dirigido por **planos**. Cada seção declara `data-plano
 | 04 | `#cadeia` | II | Mexa num bloco antigo. | 260svh | 1,0 |
 | 05 | `#nos` | II | Uma rede que se levanta sozinha. | 260svh | 1,0 |
 | 06 | `#seguranca` | II | Atacamos o próprio código. | 200svh | 1,0 |
-| 07 | `#aur` | II | Regras, não preço. | 160svh | 0,8, esfriando |
+| 07 | `#hyur` | II | Regras, não preço. | 160svh | 0,8, esfriando |
 | — | *silêncio* | `ATO III · EM CONSTRUÇÃO` | — | 70svh | — |
 | 08 | `#mercado` **(novo)** | III | Um mercado de cálculo que não paga erro. | 120svh | 0,6 |
 | 09 | `#rodar` **(novo)** | III | Rode um nó hoje. | 110svh | 0,5, o 3D dorme |
@@ -189,7 +189,7 @@ O mundo 3D passa a ser dirigido por **planos**. Cada seção declara `data-plano
 **O que sai de cena:**
 - Os ids `#radio`, `#armazenamento` e `#caminho` deixam de ser seções. `#caminho` continua como âncora alternativa dentro de `#onde`, para não quebrar links antigos.
 - A narrativa passa de 21 para 19 blocos.
-- Menu principal: **Visão · O que funciona · Em construção · Ideias · Onde estamos · Código**. Sai "AUR" e sai o botão duplicado "Explorar".
+- Menu principal: **Visão · O que funciona · Em construção · Ideias · Onde estamos · Código**. Sai "HYUR" e sai o botão duplicado "Explorar".
 - Na barra fica um único botão secundário: **"Assistir ao filme · 3 min · voz sintética"**, que abre `#palco-edit`.
 
 ### 3.2 Componentes globais (o que muda de verdade)
@@ -197,10 +197,10 @@ O mundo 3D passa a ser dirigido por **planos**. Cada seção declara `data-plano
 | Hoje | Agora |
 |---|---|
 | Cerca de 21 `.painel` de vidro com `backdrop-filter` | **Palco aberto sobre o preto**, com filetes de 1 px, como uma ficha técnica. No máximo **6 placas** na página, só onde há um objeto manipulável (QR, campo de texto, chave). Zero `backdrop-filter` no site. |
-| `.olho` Michroma + `h2` com `<em>` quente, 15 vezes | **Claquete**: Michroma 12 px `04 — CADEIA`, com um contador de ato `II · 2/5` à direita. Depois vem **um monumento ou um título, nunca os dois**. Cada capítulo escolhe **uma** escala: monumento em 5 capítulos (topo, visão, utrax, aur, fim) e título nos demais. |
+| `.olho` Michroma + `h2` com `<em>` quente, 15 vezes | **Claquete**: Michroma 12 px `04 — CADEIA`, com um contador de ato `II · 2/5` à direita. Depois vem **um monumento ou um título, nunca os dois**. Cada capítulo escolhe **uma** escala: monumento em 5 capítulos (topo, visão, utrax, hyur, fim) e título nos demais. |
 | Seis fileiras de chips `.etapas` com "→" | **Régua de máquina**: um filete horizontal com marcas de escala e rótulos mono 12 px embaixo. A etapa ativa é um **segmento de luz que corre pelo filete**. É um componente só, usado em no máximo 4 lugares (`#cadeia`, `#mercado`, `#direct`, `#fragmentacao`). No celular vira vertical. |
 | `.selo-sim` "SIMULATION" piscando 11 vezes (código de "AO VIVO") | **Dois rótulos fixos, sem pulso:** `CONTA REAL · neste aparelho · 0,38 ms` (ponto `--luz`) e `[dados de exemplo]` (colchetes `--chumbo`). A pessoa vê exatamente o que é cálculo de verdade e o que é cenário. |
-| Mosaicos de 1 px (`.fatos-aur`, `.mecanismos`, `.onde`) | **Tabela de especificação**: linhas com filete e três colunas (afirmação · prova em mono · link). Nada de cartões iguais. |
+| Mosaicos de 1 px (`.fatos-hyur`, `.mecanismos`, `.onde`) | **Tabela de especificação**: linhas com filete e três colunas (afirmação · prova em mono · link). Nada de cartões iguais. |
 | 3 cartões `.arquivo` e 2 `.id-cartao` lado a lado | Linhas de lista e a **árvore `├─ └─`**, que já é boa, em largura cheia |
 | Rodapé com "Qualidade 3D: HIGH" | Sai. O HUD de depuração (fps, `renderer.info.render.calls`, triângulos, perfil) só aparece com `?debug=1`. |
 | Barra de vidro com blur | Barra sólida `color-mix(--vazio 92%)` sem blur. Contém: símbolo A, **régua de progresso do filme** (1 px com 19 marcas, parte percorrida em `--luz`), idioma, som (com texto "Som: desligado", não só ícone) e menu. |
@@ -210,14 +210,14 @@ O mundo 3D passa a ser dirigido por **planos**. Cada seção declara `data-plano
 #### `#topo`: Abertura (160svh)
 - **Composição:** descrita na seção 1. O A ocupa as colunas 6–12 e invade o título. A frase fica colada à esquerda.
 - **Saída (p 0,6 → 1):** a câmera faz um dolly **para dentro da aresta da lâmina** até ela preencher a tela como uma linha horizontal. Essa mesma linha é a linha de corte de `#visao`. É um **corte por semelhança**: o fim de um plano tem a mesma forma do início do próximo.
-- **Removido:** wordmark AURON grande, "TECHNOLOGY", dois CTAs e a faixa `.verdade` ilegível. A faixa vira a linha de status em mono 12 px `--prata`, que passa no AA.
+- **Removido:** wordmark HYURAX grande, "TECHNOLOGY", dois CTAs e a faixa `.verdade` ilegível. A faixa vira a linha de status em mono 12 px `--prata`, que passa no AA.
 
 #### `#visao`: O desperdício (220svh)
 Substitui a visão abstrata, os 6 pilares e os lemas em inglês.
 
 - **p 0–0,35:** monumento à esquerda, "Trilhões de cálculos.", em wdth 62, peso 250. Ao fundo, uma **chuva de hashes SHA-512 reais**: `crypto.subtle.digest` sobre nonces crescentes, com ritmo limitado. No 3D, são glifos hexadecimais em quads instanciados com um atlas de 16 caracteres em `CanvasTexture`, na cor `--chumbo`, caindo devagar.
 - **p 0,35–0,55:** "Jogados fora." em wdth 125, peso 780. A chuva esfria para `--aco`. Um contador mono **verdadeiro** mostra `hashes calculados nesta página: 18 402 · úteis: 0`. A própria página demonstra o desperdício.
-- **p 0,55–0,8:** a lâmina varre a tela na horizontal. Abaixo da linha, os glifos se encaixam numa **matriz 8×8 de números**. Aparece a frase "O Auron exige que a conta sirva."
+- **p 0,55–0,8:** a lâmina varre a tela na horizontal. Abaixo da linha, os glifos se encaixam numa **matriz 8×8 de números**. Aparece a frase "O Hyurax exige que a conta sirva."
 - **p 0,8–1:** a matriz se condensa **na letra A**. Esse A é a matriz A de `A · B = C`, e isso só é explicado em `#utrax`.
 - **Celular:** 400 glifos e 160svh.
 
@@ -264,7 +264,7 @@ Hoje o capítulo leva o selo "Planejado". Passa a ser **implementado · rede de 
   - Selo: `reprodução de um teste real · integracao.rs · commit a244716`.
   - A sequência vem de um arquivo gravado a partir do teste (seção 8). Enquanto esse traço não existir, o rótulo diz `[ilustração do teste]`.
 - **p 0,55–0,8:** a câmera entra numa conexão, e a linha vira **um tubo de bytes cifrados rolando**.
-  - Texto: "Quem está no meio vê isto." Literal: `Noise_XX_25519_ChaChaPoly_BLAKE2s` com o prólogo `AURON-WIRE-v2`.
+  - Texto: "Quem está no meio vê isto." Literal: `Noise_XX_25519_ChaChaPoly_BLAKE2s` com o prólogo `HYURAX-WIRE-v2`.
   - Os bytes são AES-GCM real do navegador, com a nota "o nó usa ChaChaPoly".
   - Interação **"Trocar um byte"**: a lâmina corta o tubo, e aparece `conexão derrubada · intermediario_que_altera_derruba_a_conexao`.
 - **p 0,85–1:** dois nós acesos lado a lado, `PC · windows-x86_64` e `celular · linux-arm64 (Termux)`, com a frase "minerando juntos" (commit c9ff264).
@@ -273,18 +273,18 @@ Hoje o capítulo leva o selo "Planejado". Passa a ser **implementado · rede de 
 #### `#seguranca`: Atacamos o próprio código (200svh)
 - **O A vira corpo de prova** sob luz rasante. A lâmina desfere **um golpe por cenário de teste** (o número recontado; hoje são 17 funções em `integracao.rs`). Cada golpe é desviado e deixa um risco fino de luz na superfície.
 - **Log sincronizado:** à esquerda, cada golpe acende uma linha de terminal em mono: `ok  bloco_forjado_sem_prova_e_recusado`. É uma lista de nomes reais, não animação inventada.
-- **Parede de provas:** tabela de especificação com três colunas (afirmação | teste em mono | `crates/auron-net/tests/integracao.rs` com link "conferir"). Entram Conexão cifrada, Carteira com senha e Ataques com nós reais.
+- **Parede de provas:** tabela de especificação com três colunas (afirmação | teste em mono | `crates/hyurax-net/tests/integracao.rs` com link "conferir"). Entram Conexão cifrada, Carteira com senha e Ataques com nós reais.
 - **Revisão de ataque:** uma linha do tempo em régua, `11/09/2026 · 6 falhas encontradas → 12/09/2026 · 6 corrigidas, 1 teste cada`, com selo implementado.
 - **Sybil (planejado):** vira uma linha da tabela com ○ e "abrir a simulação", carregada sob demanda.
 
-#### `#aur`: Regras, não preço (160svh)
+#### `#hyur`: Regras, não preço (160svh)
 - **Sai:** a moeda girando, o texto circular e a curva de emissão com o ponto de luz subindo.
 - **Entra:** o A **fatiado em estratos horizontais**, com `clippingPlanes` do core ou fatias instanciadas. Cada estrato tem **metade da espessura do anterior**.
 - **A câmera desce** conforme `p` cresce: o movimento é para baixo e a luz vai esfriando. É o anti-hype.
-- **Rótulos das fatias** (todos com `PROVISÓRIO`, vindos de `auron-consensus`): `altura 0–209 999 · 50 AUR/bloco`, `210 000–419 999 · 25`, `… · 12,5`.
+- **Rótulos das fatias** (todos com `PROVISÓRIO`, vindos de `hyurax-consensus`): `altura 0–209 999 · 50 HYUR/bloco`, `210 000–419 999 · 25`, `… · 12,5`.
 - **Monumento:** "Sem preço." em wdth 62.
 - **Ficha técnica em linhas:** teto 21 000 000 · 8 casas · bloco 120 s · halving a cada 210 000 blocos (≈ 292 dias a 120 s) · maturidade 100 blocos · mineração **trabalho útil + Argon2id 32 MiB**.
-- **"O AUR não é":** marcadores de traço `--aco`, sem o × salmão.
+- **"O HYUR não é":** marcadores de traço `--aco`, sem o × salmão.
 
 #### `#mercado` (novo): Em construção (120svh)
 - **O que vem de `#utrax`:** os 5 candidatos e as 7 etapas.
@@ -294,11 +294,11 @@ Hoje o capítulo leva o selo "Planejado". Passa a ser **implementado · rede de 
 
 #### `#rodar` (novo): Rode um nó hoje (110svh)
 - **O 3D dorme:** a renderização pausa. É o silêncio antes do ato IV.
-- **Colunas 1–7:** a **gravação** de uma sessão real (`auron-no` iniciando, sincronizando e minerando), em texto estático completo com carimbos de tempo. **Sem efeito de digitação.** Selo `gravação de DD/09/2026 · commit xxxxxxx`.
+- **Colunas 1–7:** a **gravação** de uma sessão real (`hyurax-no` iniciando, sincronizando e minerando), em texto estático completo com carimbos de tempo. **Sem efeito de digitação.** Selo `gravação de DD/09/2026 · commit xxxxxxx`.
 - **Colunas 8–12, os 4 alvos em lista:**
   - `linux-x86_64`, `linux-arm64 (celular/Termux)`, `windows-x86_64`, `macos-arm64`;
   - tamanho e SHA-256 da Release, **só se a Release estiver publicada**; senão, "compile a partir do código", com link para `docs/RODAR-UM-NO.md`.
-- **Carteira:** `AURON-CARTEIRA-v2 · Argon2id 64 MiB · 3 passadas · ChaCha20-Poly1305 · senha de 10+ caracteres`.
+- **Carteira:** `HYURAX-CARTEIRA-v2 · Argon2id 64 MiB · 3 passadas · ChaCha20-Poly1305 · senha de 10+ caracteres`.
 
 #### Ato IV: a linguagem de "ideia"
 
@@ -349,7 +349,7 @@ A câmera **para no degrau 2/3**. O resto da rolagem é vazio escuro com a frase
 
 #### `#aberto`: Construído em público (110svh)
 - **Números recontados** em ficha: `testes Python · testes Rust · cenários de rede com nós reais · vetores em vectors/`. Os números estáticos, **sem contagem rolando**, porque rolagem de número lembra cotação.
-- **Os 14 crates em mono:** `auron-block · auron-chain · auron-codec · auron-consensus · auron-crypto · auron-net · auron-no · auron-pow · auron-state · auron-store · auron-tx · auron-types · auron-usefulpow · auron-wire`.
+- **Os 14 crates em mono:** `hyurax-block · hyurax-chain · hyurax-codec · hyurax-consensus · hyurax-crypto · hyurax-net · hyurax-no · hyurax-pow · hyurax-state · hyurax-store · hyurax-tx · hyurax-types · hyurax-usefulpow · hyurax-wire`.
 - **Downloads em linhas:** zip com commit, documento e roteiro, mais o GitHub.
 
 #### `#apoio` (100svh)
@@ -401,7 +401,7 @@ function rolar() {
 |---|---|---|
 | **Fusão** | Entre capítulos do mesmo ato | 1 batida (968 ms). Morph na GPU com atraso por nó proporcional à projeção na direção da lâmina, de modo que a troca varre a cena a 26,2°. |
 | **Corte seco** | Na claquete de cada ato | `#mundo.corte { opacity: 0 }`: 121 ms sem transição na ida, 242 ms na volta. A forma nova é montada nesse intervalo, sem morph visível. A trilha recua 6 dB por 2 batidas. |
-| **Corte por semelhança** | `#topo` → `#visao` (aresta da lâmina → linha horizontal); `#visao` → `#nucleo` (placa 6×6 → A); `#aur` → claquete do ato III (último estrato, fino como linha → filete da claquete) | A pose final de um é a pose inicial do outro |
+| **Corte por semelhança** | `#topo` → `#visao` (aresta da lâmina → linha horizontal); `#visao` → `#nucleo` (placa 6×6 → A); `#hyur` → claquete do ato III (último estrato, fino como linha → filete da claquete) | A pose final de um é a pose inicial do outro |
 
 ### 4.3 Entradas
 
@@ -468,7 +468,7 @@ Vale para `@media (prefers-reduced-motion: reduce)` e para `html.calmo` (escolha
 - **Correção de defeito:** `objeto()` passa a chamar `desenharParado()` no modo calmo e força `entrada = 1`. Hoje o vídeo, nesse modo, mostra o fundo sem o objeto.
 - **Critério de aceite:** 1 s depois do carregamento,
   - `document.getAnimations().length === 0`, sem contar transições de hover;
-  - `__auron.mundo.rodando === false`.
+  - `__hyurax.mundo.rodando === false`.
 
 ---
 
@@ -497,7 +497,7 @@ site/js/world/
 |---|---|
 | `nivel` | `"HIGH"`, `"MEDIUM"`, `"LOW"` ou `"2D"` |
 | `definirPlano(id, p)` | Interpola os quadros-chave de um dos 6 planos |
-| `definirPose(id, p)` | Fusão para a pose de um capítulo; `p` opcional (usado no deslize do `#aur`) |
+| `definirPose(id, p)` | Fusão para a pose de um capítulo; `p` opcional (usado no deslize do `#hyur`) |
 | `encaixar(id, elemento)` | Registra a âncora DOM que o 3D segue naquele plano ou pose |
 | `corte()` | Corte seco entre atos |
 | `golpe({ porTempo })` / `golpe({ p })` | Giro de 22° do A no `#topo`; ignora se não couber |
@@ -517,7 +517,7 @@ O `fallback2d.js` implementa todos esses métodos: vazios, ou trocando a pose em
 1. **Detecção (`quality.js`):**
    - `getContext("webgl2", { failIfMajorPerformanceCaveat: true })`. Se voltar nulo, é 2D, **sem importar** `three.module.min.js`;
    - perfis, tetos de megapixel e a regra do celular estão em 5.7;
-   - a escolha de `Ajustes` tem prioridade; `auron-imagem=auto-2d` expira em 7 dias.
+   - a escolha de `Ajustes` tem prioridade; `hyurax-imagem=auto-2d` expira em 7 dias.
 2. **Teto de FPS por agenda.** Hoje MEDIUM e LOW rodam a 30 e 20 fps reais em telas de 60 Hz.
    ```js
    const intervalo = 1000 / perfil.fps;
@@ -574,7 +574,7 @@ O `fallback2d.js` implementa todos esses métodos: vazios, ou trocando a pose em
   - mancha quente em (0,32; 0,28), raio 0,22, `#FFF3DF` a 90%;
   - aro prata em (0,78; 0,62), raio 0,3, `#D6D8DC` a 60%;
   - faixa de estúdio horizontal em y 0,36, altura 0,04, `#FDFDFB` a 70%. É ela que corre pelo chanfro quando a peça gira.
-  - A variante **fria** (AUR) não tem a mancha quente; a **fosca** (estratos) tem o contraste pela metade.
+  - A variante **fria** (HYUR) não tem a mancha quente; a **fosca** (estratos) tem o contraste pela metade.
 - O rosto do A reproduz exatamente o `linearGradient` do SVG (`x1=0 y1=0 x2=1 y2=1`, por caixa de cada path). Com o A a 0°, 3D e SVG ficam iguais:
 
 ```js
@@ -668,7 +668,7 @@ if (vVis < .01) gl_PointSize = 0.;
   ```
 - **Luz nos pontos:**
   - `uHalo = 0` no ato IV (só o miolo, 1,5 px);
-  - `uQuente` recebe `--luz` ou, no `#aur`, `--prata`;
+  - `uQuente` recebe `--luz` ou, no `#hyur`, `--prata`;
   - `uExposicao` substitui o `.veu` com 50% de preto.
 - **Vinheta:**
   - no HIGH, dentro da composição;
@@ -689,7 +689,7 @@ Draw calls incluem pontos, linhas e pacotes quando visíveis (formato H / M / L)
 | 04 `#cadeia` (plano) | 7 réguas e 6 pinos | `cadeia` a 30% | `.corrente`; câmera numa `CatmullRomCurve3` de p 0 a 1 | `InstancedMesh` (56 segmentos), cilindros de 8 lados | 4 / 4 / 3 |
 | 05 `#nos` (plano) | Vira pó de p 0 a 0,1 | `rede` com `aPapel`: 4 nós acesos, o resto a 15% | `.rede-teste`; passos em 0,1 / 0,25 / 0,4 / 0,55 / 0,7 / 0,85 | Morph, `foco()`, linhas | 4 / 4 / 3 |
 | 06 `#seguranca` (pose) | Corpo de prova sob luz rasante; um risco por grupo | `rede` a 40% | `.corpo-de-prova` | Matcap com luz direcional; `LineSegments` (sem riscos no LOW) | 4 / 3 / 3 |
-| 07 `#aur` (pose com deslize) | 7 estratos, aço frio, sem luz quente | Exposição 0 | `.estratos`; a câmera desce com p | Geometria de estratos unida | 2 / 2 / 2 |
+| 07 `#hyur` (pose com deslize) | 7 estratos, aço frio, sem luz quente | Exposição 0 | `.estratos`; a câmera desce com p | Geometria de estratos unida | 2 / 2 / 2 |
 | corte seco (ato III) | | | | | |
 | 08 `#mercado` (pose) | 5 As em andaime, 1 revestido pela metade | `andaime` a 45% | `.candidatos` | Arestas unidas + 1 malha | 3 / 3 / 3 |
 | 09 `#rodar` | **Dorme** | — | — | — | 0 |
@@ -779,8 +779,8 @@ Conta de memória: HIGH a 4,5 MP ≈ 72 MB de MSAA + 18 de resolve + 7 de brilho
   6. linhas em 50%;
   7. só contorno;
   8. 2D.
-- **Queda para 2D:** no último degrau, com p95 acima de 50 ms por 3 s, chama `trocarPara2D("automatico")` e grava `auron-imagem=auto-2d`. O rodapé mostra "Imagem: leve (escolhida automaticamente)", com a opção de tentar "Plena".
-- **Registro:** cada decisão vai para `__auron.relatorio()` com hora, plano e motivo.
+- **Queda para 2D:** no último degrau, com p95 acima de 50 ms por 3 s, chama `trocarPara2D("automatico")` e grava `hyurax-imagem=auto-2d`. O rodapé mostra "Imagem: leve (escolhida automaticamente)", com a opção de tentar "Plena".
+- **Registro:** cada decisão vai para `__hyurax.relatorio()` com hora, plano e motivo.
 
 ### 5.10 2D e vídeo
 
@@ -792,7 +792,7 @@ Conta de memória: HIGH a 4,5 MP ≈ 72 MB de MSAA + 18 de resolve + 7 de brilho
 - **Poses:**
   - A a 12% à direita (ato II);
   - planta do A com 4 marcas (`#nucleo`);
-  - 7 estratos (`#aur`);
+  - 7 estratos (`#hyur`);
   - A em andaime com grade de 24 px recortada (ato III);
   - A tracejado com hachura e cotas (ato IV);
   - círculo com meridianos e 2 pontos (`#escala`);
@@ -803,7 +803,7 @@ Conta de memória: HIGH a 4,5 MP ≈ 72 MB de MSAA + 18 de resolve + 7 de brilho
 - **Materiais do estúdio por perfil:**
   - HIGH e MEDIUM mantêm PBR e PMREM;
   - no LOW, `cromo` e `grafite` viram `MeshMatcapMaterial`, e `luz` vira `MeshBasicMaterial`.
-- **Cores:** o material `ouro` vira `quente` (`#F3E2C4`), sem ouro perto do AUR. `RECUSADO`, `FRIO` e `ACEITO` seguem 5.2.
+- **Cores:** o material `ouro` vira `quente` (`#F3E2C4`), sem ouro perto do HYUR. `RECUSADO`, `FRIO` e `ACEITO` seguem 5.2.
 - **Pré-aquecimento por intenção:** `pointerenter`, `focus` ou `touchstart` no botão da apresentação chama `mundo.aquecerEstudio()` (PMREM + `compileAsync`). O travamento de cerca de 1,85 s sai do meio do vídeo.
 - **Textos:** selos por `t()` (`fonte.ilustrado`, `estado.pesquisa`, `estado.planejado`) e lema final por `t("fim.lema")`.
 - **Gravação:** a ordem `compor()` → `drawImage(mundoCanvas)` fica no mesmo rAF.
@@ -825,7 +825,7 @@ Conta de memória: HIGH a 4,5 MP ≈ 72 MB de MSAA + 18 de resolve + 7 de brilho
    - ordem de recaída mp3 → wav → voz do navegador → só legenda;
    - gravação `.webm` e `tools/teste_video.html`.
 4. **Doação:** QR (`vendor/qrcode.min.js`), endereço em `data.js`, botão de copiar, textos de cuidado e "sem contrapartida".
-5. **Honestidade:** o conteúdo de "Onde estamos", o aviso da rede, a lista do que o AUR não é e a regra "estado real de cada item" em `data.js`. A forma muda; o compromisso não.
+5. **Honestidade:** o conteúdo de "Onde estamos", o aviso da rede, a lista do que o HYUR não é e a regra "estado real de cada item" em `data.js`. A forma muda; o compromisso não.
 6. **Marca em SVG inline:** `#simbolo-a`, `#palavra`, `#metal` e `#metal-h` nos `<defs>`, reusados com `<use>`. `logo.svg`, `favicon.svg` e as peças de `assets/brand/`.
 7. **Conceito do mundo único** de partículas que muda de forma por capítulo, e o zoom guiado pela rolagem de `#escala`.
 8. **Engenharia de leveza:**
@@ -855,8 +855,8 @@ Conta de memória: HIGH a 4,5 MP ≈ 72 MB de MSAA + 18 de resolve + 7 de brilho
 
 | Arquivo | Mudança | Tamanho |
 |---|---|---|
-| `site/tools/extrair_dados.py` (novo) | Lê `vectors/genesis.json` (testnet), `vectors/usefulpow.json` (3 provas e 6 recusas, com a magic `AURR` e os alvos completados para 64 dígitos) e `vectors/emission.json`; importa `reference/auron/consensus.py` (MAINNET e TESTNET) e **para com erro se a importação falhar**. Conta `#[test]` em `crates/`, `def test_` em `reference/tests/`, testes de `integracao.rs` (e quantos têm `#[ignore]`) e arquivos de `vectors/`. Grava `site/dados/genese-teste.json`, `trabalho-util.json`, `emissao.json`, `contagem.json` e `provas.json` (nome e linha de cada teste), todos com data e commit. `--release TAG` grava `release.json`, só depois de a Release ser conferida no GitHub. | ~200 |
-| `site/tools/gravar_testes.py` (novo) | Roda `cargo test -p auron-net --locked -- --ignored --test-threads=1` e grava `site/dados/gravacao-rede.json` (comando, data, commit, sistema, duração, linhas). | ~80 |
+| `site/tools/extrair_dados.py` (novo) | Lê `vectors/genesis.json` (testnet), `vectors/usefulpow.json` (3 provas e 6 recusas, com a magic `HYXR` e os alvos completados para 64 dígitos) e `vectors/emission.json`; importa `reference/hyurax/consensus.py` (MAINNET e TESTNET) e **para com erro se a importação falhar**. Conta `#[test]` em `crates/`, `def test_` em `reference/tests/`, testes de `integracao.rs` (e quantos têm `#[ignore]`) e arquivos de `vectors/`. Grava `site/dados/genese-teste.json`, `trabalho-util.json`, `emissao.json`, `contagem.json` e `provas.json` (nome e linha de cada teste), todos com data e commit. `--release TAG` grava `release.json`, só depois de a Release ser conferida no GitHub. | ~200 |
+| `site/tools/gravar_testes.py` (novo) | Roda `cargo test -p hyurax-net --locked -- --ignored --test-threads=1` e grava `site/dados/gravacao-rede.json` (comando, data, commit, sistema, duração, linhas). | ~80 |
 | `site/locales/pt-BR.js`, `en.js`, `es.js`, `ja.js` | Correções factuais nas chaves atuais: Noise XX, carteira e programas passam a Implementado; sai "Reputação: ATIVA"; checagens com trabalho útil; sai a data de dezembro; números novos; frase da Liquid; "cálculo útil" sai de `meta` e `hero`. | ~+40 / −30 cada |
 | `site/js/data.js` | Estados corrigidos (`redep2p` implementado; itens novos `cifra`, `carteira`, `programas`); sai `CORES`. | ~+12 / −4 |
 | `site/tools/servidor_dev.py` | Envia o `Content-Security-Policy` lido de `site/_headers` em tudo, **menos `/tools/`**, onde as páginas de ferramenta usam script inline. | ~+25 |
@@ -875,7 +875,7 @@ Conta de memória: HIGH a 4,5 MP ≈ 72 MB de MSAA + 18 de resolve + 7 de brilho
 | `site/js/world/mundo.js` (novo) | Fachada com troca a quente para o 2D. | ~70 |
 | `site/js/world/fallback2d.js` | Métodos vazios para toda a API de 5.1. | ~+25 |
 | `site/js/main.js` | Import do mundo em paralelo; capítulos sob demanda; sai `#qualidade`. | ~+60 / −25 |
-| `site/js/depurar.js` (novo) | HUD com `?debug=1` (perfil, escala, dpr, mediana e p95, draw calls, triângulos, pontos, cobertura, memória estimada, plano e p, rebaixamentos, contagem de `setSize`); `__auron.relatorio()`; `?debug=gpu` com `gl.finish()`. | ~150 |
+| `site/js/depurar.js` (novo) | HUD com `?debug=1` (perfil, escala, dpr, mediana e p95, draw calls, triângulos, pontos, cobertura, memória estimada, plano e p, rebaixamentos, contagem de `setSize`); `__hyurax.relatorio()`; `?debug=gpu` com `gl.finish()`. | ~150 |
 | `site/tools/gerar-vizinhos.html` + `.js` (novos) e `site/dados/vizinhos-v2-{240,360,700,1500}.bin` | Pré-cálculo dos vizinhos. | ~90 + ~17 KB |
 
 **Pronto quando** (Atom x5, perfil LOW, 1440×900, `?debug=1`):
@@ -908,8 +908,8 @@ Conta de memória: HIGH a 4,5 MP ≈ 72 MB de MSAA + 18 de resolve + 7 de brilho
 |---|---|---|
 | `site/index.html` | Reescrito na ordem de 3.1: `data-ato`, `data-plano`, `data-pose`, textos pt-BR estáticos, ids antigos como âncoras, `<defs>` com os `clipPath` da fresta e os glifos de estado, `#mercado` e `#rodar` novos, zero `style=""`. | 635 → ~780 |
 | `site/styles/capitulos.css` (novo) | Layout de todos os capítulos, alturas de plano, recolhidos do ato IV. `styles/main.css` é removido. | ~850 / −508 |
-| `site/locales/*.js` (4) | Chaves novas: `placa.*`, `fonte.*`, `ato.*`, `capitulo.<id>.codigo`, `abertura.*`, `visao.*`, `utrax.*`, `mercado.*`, `rodar.*`, `aur.*`, `escala.*`, `onde.*`, `fim.*`, `ajustes.*`, `barra.*`, `provas.<teste>`. Saem pilares, lemas, barras da IA e todo o inglês solto. Monumentos em spans de linha, com até 12 caracteres. | ~+220 / −160 cada |
-| `site/locales/glossary.js` | Sai "Build the infrastructure."; entram `MATRIX-FREIVALDS-V1`, `AURON-UPOW-PROOF-v1`, `AURON-WIRE-v2`, `AURON-CARTEIRA-v2`, `Noise_XX_25519_ChaChaPoly_BLAKE2s`, `LWMA-1` e a regra dos 12 caracteres. | ~+14 / −2 |
+| `site/locales/*.js` (4) | Chaves novas: `placa.*`, `fonte.*`, `ato.*`, `capitulo.<id>.codigo`, `abertura.*`, `visao.*`, `utrax.*`, `mercado.*`, `rodar.*`, `hyur.*`, `escala.*`, `onde.*`, `fim.*`, `ajustes.*`, `barra.*`, `provas.<teste>`. Saem pilares, lemas, barras da IA e todo o inglês solto. Monumentos em spans de linha, com até 12 caracteres. | ~+220 / −160 cada |
+| `site/locales/glossary.js` | Sai "Build the infrastructure."; entram `MATRIX-FREIVALDS-V1`, `HYURAX-UPOW-PROOF-v1`, `HYURAX-WIRE-v2`, `HYURAX-CARTEIRA-v2`, `Noise_XX_25519_ChaChaPoly_BLAKE2s`, `LWMA-1` e a regra dos 12 caracteres. | ~+14 / −2 |
 | `site/js/i18n.js` | Carrega Noto Sans JP para `ja`; remove `idioma-pendente` depois de `aplicar()`. | ~+30 |
 | `site/js/main.js` | Barra de status e progresso, menu na ordem nova, mecânica de 4.1. | ~+90 / −40 |
 | `site/js/ajustes.js` (novo) | Imagem, Movimento e Som, com persistência e aplicação imediata. | ~110 |
@@ -930,7 +930,7 @@ Conta de memória: HIGH a 4,5 MP ≈ 72 MB de MSAA + 18 de resolve + 7 de brilho
 
 | Arquivo | Mudança | Tamanho |
 |---|---|---|
-| `site/js/prova/trabalho-util.js` (novo) | Port da §9A: `xof` (bloco i = `SHA-512(domínio ‖ semente ‖ u64be(i))`), `inteirosDaSemente`, `sementeDaTarefa`, `gerarMatrizes` (domínio `AURON-UTRAX-INSTANCE-v1`), `ladoExigido`, `decodificarProva`, `compromisso` (`AURON-UPOW-PROOF-v1`) e `conferir()`. A ordem das checagens e as mensagens são **idênticas** às do Rust. Aritmética em `Number` para n ≤ 92, porque n² · 999² · (2²⁰ − 1) < 2⁵³; acima disso, `BigInt`. Devolve `{ ok, motivo, rodada, r, esq, dir, ms }`. | ~190 |
+| `site/js/prova/trabalho-util.js` (novo) | Port da §9A: `xof` (bloco i = `SHA-512(domínio ‖ semente ‖ u64be(i))`), `inteirosDaSemente`, `sementeDaTarefa`, `gerarMatrizes` (domínio `HYURAX-UTRAX-INSTANCE-v1`), `ladoExigido`, `decodificarProva`, `compromisso` (`HYURAX-UPOW-PROOF-v1`) e `conferir()`. A ordem das checagens e as mensagens são **idênticas** às do Rust. Aritmética em `Number` para n ≤ 92, porque n² · 999² · (2²⁰ − 1) < 2⁵³; acima disso, `BigInt`. Devolve `{ ok, motivo, rodada, r, esq, dir, ms }`. | ~190 |
 | `site/js/abertura.js` (novo) | Confere a prova da altura 1, acende o "=", preenche a leitura, dispara o golpe por tempo, soma aos totais. | ~110 |
 | `site/js/totais.js` (novo) | `somar("hashes" \| "provas" \| "recusas", n)` e `ler()`. | ~45 |
 | `site/styles/capitulos.css` | Keyframes da abertura (`capa`, `laje-sobe`, `laje-desce`, `derrame`, `varre`, `sobe`) e as variantes `.leve`, `.calmo`, `.abertura-vista` e `.idioma-pendente`. | ~+150 |
@@ -964,7 +964,7 @@ Conta de memória: HIGH a 4,5 MP ≈ 72 MB de MSAA + 18 de resolve + 7 de brilho
 **Pronto quando:**
 - **Emenda:** diferença média ≤ 8/255 por canal a 1440×900 e a 390×844.
 - **Golpe:** sem salto de posição maior que 1 px (medido no HUD).
-- **FPS no LOW** (`__auron.relatorio()` depois de rolar tudo em cerca de 2 minutos), em cada plano: mediana ≤ 34,5 ms, p95 ≤ 50 ms, zero rebaixamentos, nenhum quadro acima de 100 ms fora das trocas de ato (no máximo 2 por troca).
+- **FPS no LOW** (`__hyurax.relatorio()` depois de rolar tudo em cerca de 2 minutos), em cada plano: mediana ≤ 34,5 ms, p95 ≤ 50 ms, zero rebaixamentos, nenhum quadro acima de 100 ms fora das trocas de ato (no máximo 2 por troca).
 - **Rotação:** voltar do `#nos` ao `#topo` depois de 5 minutos não desenrola nenhuma volta.
 
 ### Etapa 6: ato I e ato II
@@ -980,7 +980,7 @@ Conta de memória: HIGH a 4,5 MP ≈ 72 MB de MSAA + 18 de resolve + 7 de brilho
 | `site/js/simulation/engine.js` | `mineBlock` aceita `prev_hash` real; `camposDoCabecalho(bytes)`; `trocarByte`. A Freivalds antiga (3 rodadas, r de 1 a 97) é substituída por `prova/trabalho-util.js`. | ~+60 / −15 |
 | `site/js/sections/nos.js` | Passos do teste, gravação, cifra, ficha sem reputação, diagrama 2D. | 87 → ~230 |
 | `site/js/sections/seguranca.js` | Tabela de `provas.json`, linha do tempo da revisão, Sybil em `<details>`. | 80 → ~170 |
-| `site/js/sections/aur.js` (novo) | Ficha, gráfico em degraus, rótulos dos estratos. | ~120 |
+| `site/js/sections/hyur.js` (novo) | Ficha, gráfico em degraus, rótulos dos estratos. | ~120 |
 | `site/js/world/props/estratos.js` (novo) | Geometria dos estratos. | ~160 |
 | `site/tools/teste_fontes.html` + `.js` (novos) | Acusa qualquer `.leitura` sem `data-fonte`, e qualquer número em `.espec` sem fonte no mesmo capítulo. | ~70 |
 
@@ -1000,7 +1000,7 @@ Conta de memória: HIGH a 4,5 MP ≈ 72 MB de MSAA + 18 de resolve + 7 de brilho
 | `site/js/sections/direct.js` | Cotas, chave, orçamento, gasto duplo. | 90 → ~150 |
 | `site/js/sections/malha.js` | Malha em SVG, Dijkstra, pacote com AES-GCM real, duas vistas. | 106 → ~170 |
 | `site/js/sections/fragmentacao.js` | Fachada, caixilho, trinca, recusa em duas camadas, régua do armazenamento. | 98 → ~190 |
-| `site/js/sections/radio.js` e `economia.js` | Removidos: o rádio vira anotação, a IA fica estática e o AUR vai para `aur.js`. | −145 |
+| `site/js/sections/radio.js` e `economia.js` | Removidos: o rádio vira anotação, a IA fica estática e o HYUR vai para `hyur.js`. | −145 |
 | `site/js/sections/caminho.js` → `onde.js` | Colunas e sulcos a partir de `data.js`. | 63 → ~120 |
 
 **Pronto quando:**
@@ -1082,7 +1082,7 @@ Conta de memória: HIGH a 4,5 MP ≈ 72 MB de MSAA + 18 de resolve + 7 de brilho
 - Glassmorphism, `backdrop-filter`, painel dentro de painel.
 - Tudo centralizado. Só há dois centros na página.
 - Orbe, blob, planeta, moeda, logo girando sozinho, marcas de registro de HUD, anéis girando, hexágonos, glitch, scanline.
-- Luz quente decorativa: em hover, em progresso, em foco, em título, perto do AUR.
+- Luz quente decorativa: em hover, em progresso, em foco, em título, perto do HYUR.
 - Tachado em PREÇO, VENDA ou PROMESSA.
 - Sala clara, mármore, "premium", "exclusivo".
 

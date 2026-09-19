@@ -13,8 +13,8 @@ import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from auron import crypto, utrax  # noqa: E402
-from auron.utrax import (  # noqa: E402
+from hyurax import crypto, utrax  # noqa: E402
+from hyurax.utrax import (  # noqa: E402
     Marketplace,
     TaskStatus,
     WorkSpec,

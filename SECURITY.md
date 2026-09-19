@@ -1,6 +1,6 @@
 # Segurança
 
-O Auron está em **pré-testnet**. Não existe mainnet e nenhum AUR tem valor.
+O Hyurax está em **pré-testnet**. Não existe mainnet e nenhum HYUR tem valor.
 Mesmo assim, falha de segurança é tratada com seriedade: é agora que ela custa
 menos.
 
@@ -27,7 +27,7 @@ ataque computadores de outras pessoas.
 
 Inclua o passo a passo para reproduzir e, se der, um teste que falha.
 
-## O que o Auron ainda não tem
+## O que o Hyurax ainda não tem
 
 Está escrito para ninguém confiar no que não existe:
 
@@ -35,7 +35,7 @@ Está escrito para ninguém confiar no que não existe:
   de fora;
 - **carteira com senha:** existe (Argon2id + ChaCha20-Poly1305); carteiras
   criadas antes de 13/09/2026 guardam a chave em texto e precisam de
-  `auron-no carteira cifrar`;
+  `hyurax-no carteira cifrar`;
 - **auditoria externa:** nenhuma foi feita.
 
 Não há recompensa em dinheiro por falha encontrada. Quem relatar recebe crédito

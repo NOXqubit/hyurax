@@ -59,7 +59,7 @@ Próximo: **subir o primeiro nó semente**. Precisa de uma máquina ligada 24 h,
 - [ ] pelo menos 5 nós de pessoas diferentes rodaram a testnet;
 - [ ] Python e Rust concordando em todos os vetores;
 - [ ] spec congelada, com o hash do documento publicado;
-- [ ] aviso público de que AUR não é investimento e não tem valor garantido.
+- [ ] aviso público de que HYUR não é investimento e não tem valor garantido.
 
 ## Divulgação (TikTok, Instagram, Facebook e X)
 

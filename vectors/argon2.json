@@ -43,10 +43,10 @@
       "m_kib": 32,
       "p": 1,
       "password": "",
-      "salt": "4155524f4e2d504f572d763100000000",
-      "source": "auron regtest",
+      "salt": "4859555241582d504f572d7631000000",
+      "source": "hyurax regtest",
       "t": 1,
-      "tag": "89ad3003dffa1c0492a54d76cac50b3e38b10f9539adc94e6d161c3054375854",
+      "tag": "a12edd2344c272babcb5fa6971e08dc78df194621dfb6bd586aa8d7b59b3224b",
       "tag_len": 32,
       "variant": "argon2id"
     },
@@ -54,14 +54,14 @@
       "m_kib": 32,
       "p": 1,
       "password": "6361626563616c686f206465207465737465",
-      "salt": "4155524f4e2d504f572d763100000000",
-      "source": "auron regtest",
+      "salt": "4859555241582d504f572d7631000000",
+      "source": "hyurax regtest",
       "t": 1,
-      "tag": "e31e5ff5f6d3ddd4558a82ac3a4bc292fafced93f0e69ba258f61eaf6df3ee1a",
+      "tag": "d941ca0effffd8379babd28f8b2d070da0156166f59b587dc63f2cd8f3ef6565",
       "tag_len": 32,
       "variant": "argon2id"
     }
   ],
   "generator": "reference/tools/gen_vectors.py",
-  "spec": "AURON-SPEC-01"
+  "spec": "HYURAX-SPEC-01"
 }

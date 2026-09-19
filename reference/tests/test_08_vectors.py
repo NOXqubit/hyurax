@@ -18,7 +18,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from auron import crypto  # noqa: E402
+from hyurax import crypto  # noqa: E402
 
 VECTORS = Path(__file__).resolve().parents[2] / "vectors"
 

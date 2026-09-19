@@ -12,8 +12,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from auron import units  # noqa: E402
-from auron.units import AUR_UNIT, MAX_SUPPLY, AmountError, to_aur_str, to_units  # noqa: E402
+from hyurax import units  # noqa: E402
+from hyurax.units import HYUR_UNIT, MAX_SUPPLY, AmountError, to_hyur_str, to_units  # noqa: E402
 
 
 def esperar_erro(fn, *args, rotulo=""):
@@ -26,28 +26,28 @@ def esperar_erro(fn, *args, rotulo=""):
 
 def test_conversao_basica():
     assert to_units("0") == 0
-    assert to_units("1") == AUR_UNIT
+    assert to_units("1") == HYUR_UNIT
     assert to_units("0.1") == 10_000_000
     assert to_units("0.00000001") == 1
     assert to_units("1.5") == 150_000_000
-    assert to_units("50") == 50 * AUR_UNIT
+    assert to_units("50") == 50 * HYUR_UNIT
     assert to_units("21000000") == MAX_SUPPLY
-    assert to_units("+2") == 2 * AUR_UNIT
+    assert to_units("+2") == 2 * HYUR_UNIT
     assert to_units("  3.25  ") == 325_000_000
     assert to_units(".5") == 50_000_000
-    assert to_units("7.") == 7 * AUR_UNIT
+    assert to_units("7.") == 7 * HYUR_UNIT
     print("PASS conversao basica")
 
 
 def test_formatacao_e_ida_e_volta():
-    assert to_aur_str(0) == "0.00000000"
-    assert to_aur_str(1) == "0.00000001"
-    assert to_aur_str(AUR_UNIT) == "1.00000000"
-    assert to_aur_str(150_000_000) == "1.50000000"
+    assert to_hyur_str(0) == "0.00000000"
+    assert to_hyur_str(1) == "0.00000001"
+    assert to_hyur_str(HYUR_UNIT) == "1.00000000"
+    assert to_hyur_str(150_000_000) == "1.50000000"
     for texto in ("0", "1", "0.1", "1.5", "123.45678901", "21000000"):
-        assert to_aur_str(to_units(texto)) == to_aur_str(to_units(texto))
+        assert to_hyur_str(to_units(texto)) == to_hyur_str(to_units(texto))
         # ida e volta preserva o valor, nao necessariamente o texto
-        assert to_units(to_aur_str(to_units(texto))) == to_units(texto)
+        assert to_units(to_hyur_str(to_units(texto))) == to_units(texto)
     print("PASS formatacao e ida e volta")
 
 
@@ -145,9 +145,9 @@ def test_aritmetica_conferida():
 
 
 def test_teto_de_supply_cabe_em_u64():
-    assert MAX_SUPPLY == 21_000_000 * AUR_UNIT
+    assert MAX_SUPPLY == 21_000_000 * HYUR_UNIT
     assert MAX_SUPPLY <= units.MAX_AMOUNT
-    assert to_aur_str(MAX_SUPPLY) == "21000000.00000000"
+    assert to_hyur_str(MAX_SUPPLY) == "21000000.00000000"
     print("PASS teto de supply consistente")
 
 

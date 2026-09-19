@@ -26,13 +26,13 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 OUT_DIR = ROOT.parent / "vectors"
 
-from auron import argon2, codec, consensus, crypto, identidade, usefulpow, utrax  # noqa: E402
-from auron.block import BlockHeader  # noqa: E402
-from auron.chain import Chain, make_genesis  # noqa: E402
-from auron.consensus import MAINNET, REGTEST, TESTNET  # noqa: E402
-from auron.tx import AUR, Coinbase, Output, sign_transfer, sign_transfer_outputs  # noqa: E402
-from auron.units import MAX_SUPPLY as MAX_SUPPLY_UNITS  # noqa: E402
-from auron.units import to_aur_str, to_units  # noqa: E402
+from hyurax import argon2, codec, consensus, crypto, identidade, usefulpow, utrax  # noqa: E402
+from hyurax.block import BlockHeader  # noqa: E402
+from hyurax.chain import Chain, make_genesis  # noqa: E402
+from hyurax.consensus import MAINNET, REGTEST, TESTNET  # noqa: E402
+from hyurax.tx import HYUR, Coinbase, Output, sign_transfer, sign_transfer_outputs  # noqa: E402
+from hyurax.units import MAX_SUPPLY as MAX_SUPPLY_UNITS  # noqa: E402
+from hyurax.units import to_hyur_str, to_units  # noqa: E402
 
 # Segredos FIXOS, so para vetores. Nunca usar em rede de verdade.
 SEED_A = bytes.fromhex(
@@ -76,7 +76,7 @@ def vec_units() -> list[dict]:
     for text in aceitos:
         units = to_units(text)
         parse.append({"input": text, "accepted": True,
-                      "units": str(units), "formatted": to_aur_str(units)})
+                      "units": str(units), "formatted": to_hyur_str(units)})
     for text in recusados:
         try:
             units = to_units(text)
@@ -88,7 +88,7 @@ def vec_units() -> list[dict]:
 
     # unidades -> texto. Sem sinal, que e o que o tipo Amount do Rust cobre.
     fmt = [
-        {"units": str(u), "formatted": to_aur_str(u)}
+        {"units": str(u), "formatted": to_hyur_str(u)}
         for u in (0, 1, 10_000_000, 100_000_000, 150_000_000,
                   MAX_SUPPLY_UNITS, 2**64 - 1)
     ]
@@ -106,8 +106,8 @@ def vec_units() -> list[dict]:
                                 "error": type(exc).__name__,
                                 "note": "no Rust o tipo f64 nem compila aqui"})
     python_only.append({
-        "case": "to_aur_str(-150000000)",
-        "formatted": to_aur_str(-150_000_000),
+        "case": "to_hyur_str(-150000000)",
+        "formatted": to_hyur_str(-150_000_000),
         "note": "formatacao aceita negativo por ser exibicao de diferenca; "
                 "o tipo Amount do Rust e u64 e nao representa isto",
     })
@@ -127,7 +127,7 @@ def vec_crypto() -> list[dict]:
             "address": h(addr),
             "signatures": [],
         }
-        for msg in (b"", b"a", b"AURON", bytes(range(64))):
+        for msg in (b"", b"a", b"HYURAX", bytes(range(64))):
             sig = crypto.sign(seed, msg)
             entry["signatures"].append({
                 "message": h(msg),
@@ -140,7 +140,7 @@ def vec_crypto() -> list[dict]:
 
 def vec_hash() -> list[dict]:
     out = []
-    for data in (b"", b"a", b"AURON", bytes(range(256))):
+    for data in (b"", b"a", b"HYURAX", bytes(range(256))):
         out.append({"input": h(data), "sha512": h(crypto.H(data))})
     for n in (1, 32, 100):
         out.append({
@@ -197,7 +197,7 @@ def vec_argon2() -> list[dict]:
     p = REGTEST
     for msg in (b"", b"cabecalho de teste"):
         out.append({
-            "source": "auron regtest",
+            "source": "hyurax regtest",
             "variant": "argon2id",
             "password": h(msg), "salt": h(consensus.POW_SALT),
             "m_kib": p.pow_memory_kib, "t": p.pow_time_cost,
@@ -312,8 +312,8 @@ def vec_transactions() -> dict:
     ]
     # Varias saidas, ja na ordem estrita que o consenso exige.
     saidas = sorted(
-        (Output(recipient=addr_b, asset_id=AUR, amount=to_units("2")),
-         Output(recipient=addr_c, asset_id=AUR, amount=to_units("0.5"))),
+        (Output(recipient=addr_b, asset_id=HYUR, amount=to_units("2")),
+         Output(recipient=addr_c, asset_id=HYUR, amount=to_units("0.5"))),
         key=lambda o: (o.recipient, o.asset_id),
     )
     casos.append(sign_transfer_outputs(SEED_A, p.magic, sender=addr_a, outputs=saidas,
@@ -354,8 +354,8 @@ def vec_transactions_edge() -> list[dict]:
     uma transferência, `check` (a conferência de assinatura e estrutura). O
     Rust precisa chegar ao mesmo veredito, pelo mesmo motivo.
     """
-    from auron.tx import MAX_EXTRA_NONCE, Transfer, TxError, decode_tx
-    from auron.codec import CodecError
+    from hyurax.tx import MAX_EXTRA_NONCE, Transfer, TxError, decode_tx
+    from hyurax.codec import CodecError
 
     p = REGTEST
     addr_a = crypto.address_from_pubkey(crypto.public_key(SEED_A))
@@ -367,7 +367,7 @@ def vec_transactions_edge() -> list[dict]:
         return sign_transfer_outputs(SEED_A, magic, sender=addr_a, outputs=outputs,
                                      fee=fee, nonce=nonce)
 
-    def saida(dest, valor, ativo=AUR):
+    def saida(dest, valor, ativo=HYUR):
         return Output(recipient=dest, asset_id=ativo, amount=valor)
 
     valida = assinada([saida(addr_b, to_units("1"))], fee=to_units("0.001"))
@@ -455,9 +455,9 @@ def vec_state() -> dict:
     da recusa) e a fotografia do estado depois. Bloco recusado precisa deixar
     o estado exatamente como estava; desfazer precisa voltar byte a byte.
     """
-    from auron.state import State, StateError
-    from auron.tx import Transfer, TxError
-    from auron.units import AmountError
+    from hyurax.state import State, StateError
+    from hyurax.tx import Transfer, TxError
+    from hyurax.units import AmountError
 
     p = REGTEST
     a = crypto.address_from_pubkey(crypto.public_key(SEED_A))
@@ -503,12 +503,12 @@ def vec_state() -> dict:
     aplicar("coinbase_0", 0, [cb(0)])
     aplicar("coinbase_1", 1, [cb(1)])
     aplicar("coinbase_2_amadurece_0", 2, [cb(2)])
-    t1 = envio([Output(recipient=b, asset_id=AUR, amount=10 * um)], fee=um, nonce=0)
+    t1 = envio([Output(recipient=b, asset_id=HYUR, amount=10 * um)], fee=um, nonce=0)
     aplicar("transferencia_com_taxa", 3, [cb(3, consensus.block_reward(3, p) + um), t1])
     aplicar("replay_recusado", 4, [cb(4), t1])
     aplicar("saldo_insuficiente", 4,
-            [cb(4), envio([Output(recipient=b, asset_id=AUR, amount=500 * um)], fee=0, nonce=1)])
-    t2 = envio([Output(recipient=c, asset_id=AUR, amount=um)], fee=0, nonce=1)
+            [cb(4), envio([Output(recipient=b, asset_id=HYUR, amount=500 * um)], fee=0, nonce=1)])
+    t2 = envio([Output(recipient=c, asset_id=HYUR, amount=um)], fee=0, nonce=1)
     aplicar("duplicada_no_bloco", 4, [cb(4), t2, t2])
     aplicar("coinbase_acima_do_permitido", 4, [cb(4, consensus.block_reward(4, p) + 1)])
     aplicar("coinbase_altura_errada", 4, [cb(5)])
@@ -519,12 +519,12 @@ def vec_state() -> dict:
                                public_key=t2.public_key,
                                signature=t2.signature[:-1] + bytes([t2.signature[-1] ^ 1]))
     aplicar("assinatura_invalida", 4, [cb(4), assinatura_ruim])
-    saidas = sorted([Output(recipient=b, asset_id=AUR, amount=2 * um),
-                     Output(recipient=c, asset_id=AUR, amount=3 * um)],
+    saidas = sorted([Output(recipient=b, asset_id=HYUR, amount=2 * um),
+                     Output(recipient=c, asset_id=HYUR, amount=3 * um)],
                     key=lambda o: (o.recipient, o.asset_id))
     aplicar("duas_saidas_e_coinbase_zero", 4, [cb(4, 0), envio(saidas, fee=5, nonce=1)])
     aplicar("b_gasta_o_que_recebeu", 5,
-            [cb(5, dest=c), envio([Output(recipient=a, asset_id=AUR, amount=um)], fee=0,
+            [cb(5, dest=c), envio([Output(recipient=a, asset_id=HYUR, amount=um)], fee=0,
                                   nonce=0, segredo=SEED_B, origem=b)])
     reverter("desfaz_5")
     reverter("desfaz_4")
@@ -535,7 +535,7 @@ def vec_state() -> dict:
 
 
 def vec_wire() -> dict:
-    """Formato das mensagens da rede (AURON-WIRE-v1, seção 21).
+    """Formato das mensagens da rede (HYURAX-WIRE-v1, seção 21).
 
     Quadros válidos, para o Rust decodificar e recodificar byte a byte, e
     quadros inválidos com o motivo da recusa. O corpo de cada mensagem usa a
@@ -639,10 +639,10 @@ def vec_chain_edge() -> dict:
     e não um efeito colateral.
     """
     from dataclasses import replace as trocar
-    from auron.block import Block
-    from auron.chain import ChainError
-    from auron.consensus import check_pow_target, compact_to_target, target_to_compact
-    from auron.tx import Transfer
+    from hyurax.block import Block
+    from hyurax.chain import ChainError
+    from hyurax.consensus import check_pow_target, compact_to_target, target_to_compact
+    from hyurax.tx import Transfer
 
     p = REGTEST
     a = crypto.address_from_pubkey(crypto.public_key(SEED_A))
@@ -761,7 +761,7 @@ def vec_chain() -> dict:
     # O arquivo de persistência dessa mesma cadeia, e versões adulteradas com a
     # mensagem de recusa do gabarito ao recarregar.
     import tempfile
-    from auron.store import StoreError, load_chain, save_chain
+    from hyurax.store import StoreError, load_chain, save_chain
 
     with tempfile.TemporaryDirectory() as pasta:
         arquivo = Path(pasta) / "cadeia.bin"
@@ -784,7 +784,7 @@ def vec_chain() -> dict:
             {"label": label, "file": h(dados), "error": recusa(dados)}
             for label, dados in (
                 ("magic_errado", identidade.STORE_MAGIC[:7] + b"2" + gravado[8:]),
-                ("rede_desconhecida", gravado[:12] + b"auron-xxxxxxx" + gravado[25:]),
+                ("rede_desconhecida", gravado[:12] + b"hyurax-xxxxxxx" + gravado[25:]),
                 ("truncado", gravado[:-1]),
                 ("sobra_no_fim", gravado + b"\x00"),
                 ("ultimo_byte_trocado_quebra_a_leitura",
@@ -904,7 +904,7 @@ def vec_crypto_verify() -> list[dict]:
     - chave publica em encoding nao-canonico e recusada (o ed25519-dalek,
       sozinho, aceita);
     - ponto de ordem pequena em A ou em R e aceito (o verify_strict do dalek
-      recusa). Regra escrita na AURON-SPEC-01, secao 2.
+      recusa). Regra escrita na HYURAX-SPEC-01, secao 2.
 
     O campo "valid" sai de crypto.verify, nunca de uma suposicao.
     """
@@ -926,7 +926,7 @@ def vec_crypto_verify() -> list[dict]:
                 return r + le(s)
         raise RuntimeError("forja nao encontrada em 5000 tentativas")
 
-    msg = b"AURON vetor de borda"
+    msg = b"HYURAX vetor de borda"
     pub = crypto.public_key(SEED_A)
     a, _ = crypto._secret_expand(SEED_A)
     sig = crypto.sign(SEED_A, msg)

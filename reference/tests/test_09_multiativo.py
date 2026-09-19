@@ -1,7 +1,7 @@
 # ✝ Daniel 12:4 — “Tu, porém, Daniel, fecha estas palavras e sela este livro, até ao fim do tempo; muitos correrão de uma parte para outra, e a ciência se multiplicará.”
 """Transferencia versao 2: varios ativos e varias saidas.
 
-A arquitetura (docs/AURON-DIRECT-RESONANCE.md, paragrafo 19) exige que a
+A arquitetura (docs/HYURAX-DIRECT-RESONANCE.md, paragrafo 19) exige que a
 transacao nasca preparada para mais de um ativo. Estes testes cobrem as regras
 novas e os ataques contra elas: contagem de saidas, ordem e repeticao, ativo
 desconhecido, saida para si mesmo, soma que estoura, saldo que so falta na
@@ -16,15 +16,15 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from auron import codec, crypto  # noqa: E402
-from auron.chain import Chain, ChainError  # noqa: E402
-from auron.consensus import REGTEST, block_reward  # noqa: E402
-from auron.state import State, StateError  # noqa: E402
-from auron.tx import (  # noqa: E402
-    AUR, MAX_OUTPUTS, Output, Transfer, TxError, decode_tx, sign_transfer,
+from hyurax import codec, crypto  # noqa: E402
+from hyurax.chain import Chain, ChainError  # noqa: E402
+from hyurax.consensus import REGTEST, block_reward  # noqa: E402
+from hyurax.state import State, StateError  # noqa: E402
+from hyurax.tx import (  # noqa: E402
+    HYUR, MAX_OUTPUTS, Output, Transfer, TxError, decode_tx, sign_transfer,
     sign_transfer_outputs,
 )
-from auron.units import MAX_AMOUNT, to_units  # noqa: E402
+from hyurax.units import MAX_AMOUNT, to_units  # noqa: E402
 
 P = REGTEST
 OUTRO_ATIVO = bytes([1]) + bytes(31)
@@ -58,8 +58,8 @@ def test_multi_output_roundtrip_and_apply():
     alice, bob, carol = Account(), Account(), Account()
     chain = cadeia_com_saldo(alice)
     saidas = ordenadas(
-        Output(bob.address, AUR, to_units("2")),
-        Output(carol.address, AUR, to_units("0.5")),
+        Output(bob.address, HYUR, to_units("2")),
+        Output(carol.address, HYUR, to_units("0.5")),
     )
     tx = sign_transfer_outputs(
         alice.secret, P.magic, sender=alice.address, outputs=saidas,
@@ -68,7 +68,7 @@ def test_multi_output_roundtrip_and_apply():
     ok, msg = tx.check_signature(P.magic)
     assert ok, msg
     assert decode_tx(tx.encode()) == tx, "roundtrip com varias saidas falhou"
-    assert tx.costs() == {AUR: to_units("2.51")}
+    assert tx.costs() == {HYUR: to_units("2.51")}
 
     antes = chain.state.balance(alice.address)
     # Alice minera o bloco da propria transferencia, e ele faz amadurecer uma
@@ -90,7 +90,7 @@ def test_output_count_bounds():
                      public_key=alice.pub)
     for label, func in (("codificar zero saidas", vazia.encode),
                         ("codificar 17 saidas", replace(
-                            vazia, outputs=tuple(Output(bob.address, AUR, 1)
+                            vazia, outputs=tuple(Output(bob.address, HYUR, 1)
                                                  for _ in range(MAX_OUTPUTS + 1))).encode)):
         try:
             func()
@@ -113,7 +113,7 @@ def test_output_count_bounds():
 
 def test_outputs_must_be_sorted_and_unique():
     alice, bob, carol = Account(), Account(), Account()
-    certas = ordenadas(Output(bob.address, AUR, 1), Output(carol.address, AUR, 1))
+    certas = ordenadas(Output(bob.address, HYUR, 1), Output(carol.address, HYUR, 1))
     invertidas = (certas[1], certas[0])
     repetidas = (certas[0], certas[0])
     for label, saidas in (("fora de ordem", invertidas), ("repetidas", repetidas)):
@@ -144,12 +144,12 @@ def test_unknown_asset_rejected():
         raise AssertionError("ativo sem regra de emissao foi aceito")
     except ChainError as exc:
         assert "ativo desconhecido" in str(exc)
-    print("PASS so o AUR e aceito ate existir regra de emissao")
+    print("PASS so o HYUR e aceito ate existir regra de emissao")
 
 
 def test_output_to_self_rejected():
     alice, bob = Account(), Account()
-    saidas = ordenadas(Output(bob.address, AUR, 1), Output(alice.address, AUR, 1))
+    saidas = ordenadas(Output(bob.address, HYUR, 1), Output(alice.address, HYUR, 1))
     tx = sign_transfer_outputs(alice.secret, P.magic, sender=alice.address,
                                outputs=saidas, fee=0, nonce=0)
     ok, msg = tx.check_signature(P.magic)
@@ -159,13 +159,13 @@ def test_output_to_self_rejected():
 
 def test_sum_overflow_rejected():
     alice, bob, carol = Account(), Account(), Account()
-    saidas = ordenadas(Output(bob.address, AUR, MAX_AMOUNT), Output(carol.address, AUR, 1))
+    saidas = ordenadas(Output(bob.address, HYUR, MAX_AMOUNT), Output(carol.address, HYUR, 1))
     tx = sign_transfer_outputs(alice.secret, P.magic, sender=alice.address,
                                outputs=saidas, fee=0, nonce=0)
     ok, msg = tx.check_signature(P.magic)
     assert not ok and "estoura" in msg, msg
 
-    # A taxa entra na soma do AUR.
+    # A taxa entra na soma do HYUR.
     tx = sign_transfer(alice.secret, P.magic, sender=alice.address, recipient=bob.address,
                        amount=MAX_AMOUNT, fee=1, nonce=0)
     ok, msg = tx.check_signature(P.magic)
@@ -179,7 +179,7 @@ def test_balance_checked_against_the_sum():
     chain = cadeia_com_saldo(alice)
     saldo = chain.state.balance(alice.address) + chain.state.immature_balance(alice.address)
     metade = saldo // 2 + to_units("100")
-    saidas = ordenadas(Output(bob.address, AUR, metade), Output(carol.address, AUR, metade))
+    saidas = ordenadas(Output(bob.address, HYUR, metade), Output(carol.address, HYUR, metade))
     tx = sign_transfer_outputs(alice.secret, P.magic, sender=alice.address, outputs=saidas,
                                fee=0, nonce=chain.state.next_nonce(alice.address))
     antes = dict(chain.state.balances)
@@ -197,7 +197,7 @@ def test_v1_domain_signature_not_valid():
     alice, bob = Account(), Account()
     tx = sign_transfer(alice.secret, P.magic, sender=alice.address, recipient=bob.address,
                        amount=1, fee=0, nonce=0)
-    antigo = b"AURON-TX-v1" + P.magic + tx._body()
+    antigo = b"HYURAX-TX-v1" + P.magic + tx._body()
     forjada = replace(tx, signature=crypto.sign(alice.secret, antigo))
     ok, msg = forjada.check_signature(P.magic)
     assert not ok and msg == "assinatura inválida", msg
@@ -221,8 +221,8 @@ def test_rollback_multi_output():
     chain = cadeia_com_saldo(alice)
     antes_saldos = dict(chain.state.balances)
     antes_nonces = dict(chain.state.nonces)
-    saidas = ordenadas(Output(bob.address, AUR, to_units("1")),
-                       Output(carol.address, AUR, to_units("2")))
+    saidas = ordenadas(Output(bob.address, HYUR, to_units("1")),
+                       Output(carol.address, HYUR, to_units("2")))
     tx = sign_transfer_outputs(alice.secret, P.magic, sender=alice.address, outputs=saidas,
                                fee=to_units("0.01"),
                                nonce=chain.state.next_nonce(alice.address))

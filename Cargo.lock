@@ -24,194 +24,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "auron-block"
-version = "0.1.0"
-dependencies = [
- "auron-codec",
- "auron-crypto",
- "auron-identidade",
- "auron-pow",
- "auron-tx",
- "auron-usefulpow",
- "hex",
- "serde_json",
-]
-
-[[package]]
-name = "auron-chain"
-version = "0.1.0"
-dependencies = [
- "auron-block",
- "auron-codec",
- "auron-consensus",
- "auron-crypto",
- "auron-identidade",
- "auron-pow",
- "auron-state",
- "auron-tx",
- "auron-usefulpow",
- "hex",
- "serde_json",
-]
-
-[[package]]
-name = "auron-codec"
-version = "0.1.0"
-dependencies = [
- "auron-crypto",
- "auron-identidade",
- "hex",
- "serde_json",
-]
-
-[[package]]
-name = "auron-consensus"
-version = "0.1.0"
-dependencies = [
- "auron-identidade",
- "auron-pow",
- "auron-types",
- "auron-usefulpow",
- "serde_json",
-]
-
-[[package]]
-name = "auron-crypto"
-version = "0.1.0"
-dependencies = [
- "auron-identidade",
- "ed25519-dalek",
- "hex",
- "serde_json",
- "sha2",
-]
-
-[[package]]
-name = "auron-eter"
-version = "0.1.0"
-dependencies = [
- "auron-codec",
- "auron-crypto",
-]
-
-[[package]]
-name = "auron-identidade"
-version = "0.1.0"
-
-[[package]]
-name = "auron-net"
-version = "0.1.0"
-dependencies = [
- "auron-block",
- "auron-chain",
- "auron-consensus",
- "auron-crypto",
- "auron-identidade",
- "auron-tx",
- "auron-wire",
- "snow",
-]
-
-[[package]]
-name = "auron-no"
-version = "0.1.0"
-dependencies = [
- "argon2",
- "auron-block",
- "auron-chain",
- "auron-consensus",
- "auron-crypto",
- "auron-identidade",
- "auron-net",
- "auron-pow",
- "auron-store",
- "auron-tx",
- "chacha20poly1305",
-]
-
-[[package]]
-name = "auron-pow"
-version = "0.1.0"
-dependencies = [
- "argon2",
- "auron-identidade",
- "auron-usefulpow",
- "hex",
- "serde_json",
-]
-
-[[package]]
-name = "auron-state"
-version = "0.1.0"
-dependencies = [
- "auron-consensus",
- "auron-crypto",
- "auron-identidade",
- "auron-tx",
- "auron-types",
- "hex",
- "serde_json",
-]
-
-[[package]]
-name = "auron-store"
-version = "0.1.0"
-dependencies = [
- "auron-block",
- "auron-chain",
- "auron-codec",
- "auron-consensus",
- "auron-crypto",
- "auron-identidade",
- "hex",
- "serde_json",
-]
-
-[[package]]
-name = "auron-tx"
-version = "0.1.0"
-dependencies = [
- "auron-codec",
- "auron-crypto",
- "auron-identidade",
- "auron-types",
- "hex",
- "serde_json",
-]
-
-[[package]]
-name = "auron-types"
-version = "0.1.0"
-dependencies = [
- "auron-identidade",
- "serde_json",
-]
-
-[[package]]
-name = "auron-usefulpow"
-version = "0.1.0"
-dependencies = [
- "auron-codec",
- "auron-crypto",
- "auron-identidade",
- "hex",
- "serde_json",
-]
-
-[[package]]
-name = "auron-wire"
-version = "0.1.0"
-dependencies = [
- "auron-block",
- "auron-codec",
- "auron-consensus",
- "auron-identidade",
- "auron-tx",
- "hex",
- "serde_json",
-]
-
-[[package]]
 name = "base64ct"
 version = "1.8.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -466,6 +278,194 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "27f864f10dfb56725ce5ce5472bc52252c8f93a4ab86327122cebf62c5f59a17"
 dependencies = [
  "typenum",
+]
+
+[[package]]
+name = "hyurax-block"
+version = "0.1.0"
+dependencies = [
+ "hex",
+ "hyurax-codec",
+ "hyurax-crypto",
+ "hyurax-identidade",
+ "hyurax-pow",
+ "hyurax-tx",
+ "hyurax-usefulpow",
+ "serde_json",
+]
+
+[[package]]
+name = "hyurax-chain"
+version = "0.1.0"
+dependencies = [
+ "hex",
+ "hyurax-block",
+ "hyurax-codec",
+ "hyurax-consensus",
+ "hyurax-crypto",
+ "hyurax-identidade",
+ "hyurax-pow",
+ "hyurax-state",
+ "hyurax-tx",
+ "hyurax-usefulpow",
+ "serde_json",
+]
+
+[[package]]
+name = "hyurax-codec"
+version = "0.1.0"
+dependencies = [
+ "hex",
+ "hyurax-crypto",
+ "hyurax-identidade",
+ "serde_json",
+]
+
+[[package]]
+name = "hyurax-consensus"
+version = "0.1.0"
+dependencies = [
+ "hyurax-identidade",
+ "hyurax-pow",
+ "hyurax-types",
+ "hyurax-usefulpow",
+ "serde_json",
+]
+
+[[package]]
+name = "hyurax-crypto"
+version = "0.1.0"
+dependencies = [
+ "ed25519-dalek",
+ "hex",
+ "hyurax-identidade",
+ "serde_json",
+ "sha2",
+]
+
+[[package]]
+name = "hyurax-eter"
+version = "0.1.0"
+dependencies = [
+ "hyurax-codec",
+ "hyurax-crypto",
+]
+
+[[package]]
+name = "hyurax-identidade"
+version = "0.1.0"
+
+[[package]]
+name = "hyurax-net"
+version = "0.1.0"
+dependencies = [
+ "hyurax-block",
+ "hyurax-chain",
+ "hyurax-consensus",
+ "hyurax-crypto",
+ "hyurax-identidade",
+ "hyurax-tx",
+ "hyurax-wire",
+ "snow",
+]
+
+[[package]]
+name = "hyurax-no"
+version = "0.1.0"
+dependencies = [
+ "argon2",
+ "chacha20poly1305",
+ "hyurax-block",
+ "hyurax-chain",
+ "hyurax-consensus",
+ "hyurax-crypto",
+ "hyurax-identidade",
+ "hyurax-net",
+ "hyurax-pow",
+ "hyurax-store",
+ "hyurax-tx",
+]
+
+[[package]]
+name = "hyurax-pow"
+version = "0.1.0"
+dependencies = [
+ "argon2",
+ "hex",
+ "hyurax-identidade",
+ "hyurax-usefulpow",
+ "serde_json",
+]
+
+[[package]]
+name = "hyurax-state"
+version = "0.1.0"
+dependencies = [
+ "hex",
+ "hyurax-consensus",
+ "hyurax-crypto",
+ "hyurax-identidade",
+ "hyurax-tx",
+ "hyurax-types",
+ "serde_json",
+]
+
+[[package]]
+name = "hyurax-store"
+version = "0.1.0"
+dependencies = [
+ "hex",
+ "hyurax-block",
+ "hyurax-chain",
+ "hyurax-codec",
+ "hyurax-consensus",
+ "hyurax-crypto",
+ "hyurax-identidade",
+ "serde_json",
+]
+
+[[package]]
+name = "hyurax-tx"
+version = "0.1.0"
+dependencies = [
+ "hex",
+ "hyurax-codec",
+ "hyurax-crypto",
+ "hyurax-identidade",
+ "hyurax-types",
+ "serde_json",
+]
+
+[[package]]
+name = "hyurax-types"
+version = "0.1.0"
+dependencies = [
+ "hyurax-identidade",
+ "serde_json",
+]
+
+[[package]]
+name = "hyurax-usefulpow"
+version = "0.1.0"
+dependencies = [
+ "hex",
+ "hyurax-codec",
+ "hyurax-crypto",
+ "hyurax-identidade",
+ "serde_json",
+]
+
+[[package]]
+name = "hyurax-wire"
+version = "0.1.0"
+dependencies = [
+ "hex",
+ "hyurax-block",
+ "hyurax-codec",
+ "hyurax-consensus",
+ "hyurax-identidade",
+ "hyurax-tx",
+ "serde_json",
 ]
 
 [[package]]

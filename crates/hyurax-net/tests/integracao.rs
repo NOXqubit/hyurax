@@ -1,0 +1,503 @@
+// ✝ João 17:21 — “Para que todos sejam um.”
+//! Integração da rede entre nós, com nós de verdade em loopback.
+//!
+//! Tudo num binário só, de propósito: com `--test-threads=1` os cenários rodam
+//! um de cada vez, e nunca dois nós-de-teste disputam os poucos núcleos desta
+//! máquina. Não é vetor byte a byte (isto é I/O, não consenso): é integração.
+//!
+//! Os testes que sobem sockets são `#[ignore]` e rodam sob demanda:
+//!
+//! ```text
+//! cargo test -p hyurax-net -- --ignored --test-threads=1
+//! ```
+//!
+//! O gasto duplo no mempool é lógica pura (sem socket), então fica sempre ativo.
+
+#![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::arithmetic_side_effects, clippy::indexing_slicing, clippy::collapsible_if)]
+
+use std::io::Write;
+use std::sync::Arc;
+use std::time::{Duration, Instant};
+
+use hyurax_chain::Chain;
+use hyurax_consensus::ParametrosRede;
+use hyurax_net::{Conexao, Identidade, No, Papel, Rede};
+use hyurax_tx::{HYUR, Output, sign_transfer_outputs};
+use hyurax_wire::{MAX_FRAME_BODY, Message, PROTOCOL_VERSION, Ponta};
+
+const MINERADOR: [u8; 20] = [7u8; 20];
+
+fn regtest_com(n: u64, minerador: [u8; 20]) -> Chain {
+    let p = ParametrosRede::REGTEST;
+    let mut chain = Chain::nova(p).unwrap();
+    for _ in 0..n {
+        let ts = chain.tip().unwrap().header.timestamp + p.target_spacing;
+        let bloco = chain.mine(minerador, vec![], Some(ts), 2).unwrap();
+        chain.accept_block(bloco, Some(ts + 10)).unwrap();
+    }
+    chain
+}
+
+fn cadeia_com(n: u64) -> Chain {
+    regtest_com(n, MINERADOR)
+}
+
+fn rede(no: No) -> Arc<Rede> {
+    Rede::nova(no).unwrap()
+}
+
+fn zerado() -> Arc<Rede> {
+    rede(No::novo(regtest_com(0, MINERADOR)))
+}
+
+fn esperar(prazo: Duration, mut cond: impl FnMut() -> bool) -> bool {
+    let ate = Instant::now() + prazo;
+    while Instant::now() < ate {
+        if cond() {
+            return true;
+        }
+        std::thread::sleep(Duration::from_millis(50));
+    }
+    cond()
+}
+
+fn altura(rede: &Arc<Rede>) -> u64 {
+    rede.no.lock().unwrap().chain.height()
+}
+fn ponta(rede: &Arc<Rede>) -> [u8; 64] {
+    rede.no.lock().unwrap().chain.tip_hash()
+}
+
+// ============================================================ SINCRONIZAÇÃO
+
+#[test]
+#[ignore = "sobe sockets — ver cabeçalho do arquivo"]
+fn no_atrasado_alcanca_o_no_a_frente() {
+    let a = rede(No::novo(cadeia_com(4)));
+    let b = rede(No::novo(cadeia_com(0)));
+    let porta = a.escutar("127.0.0.1:0").unwrap();
+    b.conectar(("127.0.0.1", porta)).unwrap();
+
+    assert!(esperar(Duration::from_secs(60), || altura(&b) == 4), "B não sincronizou: {}", altura(&b));
+    assert_eq!(ponta(&a), ponta(&b), "pontas diferentes depois de sincronizar");
+    a.desligar();
+    b.desligar();
+}
+
+#[test]
+#[ignore = "sobe sockets — ver cabeçalho do arquivo"]
+fn bloco_novo_se_espalha_para_os_pares() {
+    let a = rede(No::novo(cadeia_com(2)));
+    let b = rede(No::novo(cadeia_com(2)));
+    let porta = a.escutar("127.0.0.1:0").unwrap();
+    b.conectar(("127.0.0.1", porta)).unwrap();
+    assert!(esperar(Duration::from_secs(60), || a.pares_conectados() == 1 && b.pares_conectados() == 1));
+
+    let bloco = {
+        let no = a.no.lock().unwrap();
+        let ts = no.chain.tip().unwrap().header.timestamp + ParametrosRede::REGTEST.target_spacing;
+        no.chain.mine(MINERADOR, vec![], Some(ts), 2).unwrap()
+    };
+    assert!(a.submeter_bloco(bloco).unwrap());
+    assert_eq!(altura(&a), 3);
+    assert!(esperar(Duration::from_secs(60), || altura(&b) == 3), "B não recebeu o bloco: {}", altura(&b));
+    assert_eq!(ponta(&a), ponta(&b));
+    a.desligar();
+    b.desligar();
+}
+
+#[test]
+#[ignore = "sobe sockets — ver cabeçalho do arquivo"]
+fn rede_errada_nao_conecta() {
+    let a = rede(No::novo(cadeia_com(1)));
+    let porta = a.escutar("127.0.0.1:0").unwrap();
+    let b = rede(No::novo(Chain::nova(ParametrosRede::TESTNET).unwrap()));
+    b.conectar(("127.0.0.1", porta)).unwrap();
+    std::thread::sleep(Duration::from_secs(2));
+    assert_eq!(a.pares_conectados(), 0, "A aceitou um par de outra rede");
+    assert_eq!(b.pares_conectados(), 0, "B ficou conectado a outra rede");
+    a.desligar();
+    b.desligar();
+}
+
+/// Duas cadeias que saem do mesmo tronco e divergem: `base` blocos em comum,
+/// depois `extra` blocos minerados por `minerador` (minerador diferente = ramo
+/// diferente).
+fn ramo(base: &Chain, extra: u64, minerador: [u8; 20]) -> Chain {
+    let p = ParametrosRede::REGTEST;
+    let mut chain = base.clone();
+    for _ in 0..extra {
+        let ts = chain.tip().unwrap().header.timestamp + p.target_spacing;
+        let bloco = chain.mine(minerador, vec![], Some(ts), 2).unwrap();
+        chain.accept_block(bloco, Some(ts + 10)).unwrap();
+    }
+    chain
+}
+
+#[test]
+#[ignore = "sobe sockets — ver cabeçalho do arquivo"]
+fn cadeia_com_mais_trabalho_vence_mesmo_bifurcando_fundo() {
+    // Tronco comum de 2 blocos. A segue com 3 (altura 5); B segue com 6
+    // (altura 8), num ramo diferente. A precisa abandonar os seus 3 e adotar
+    // os 6 de B: reorganização profunda.
+    let tronco = cadeia_com(2);
+    let cadeia_a = ramo(&tronco, 3, [0xA1; 20]);
+    let cadeia_b = ramo(&tronco, 6, [0xB2; 20]);
+    assert_eq!(cadeia_a.height(), 5);
+    assert_eq!(cadeia_b.height(), 8);
+    assert_ne!(cadeia_a.tip_hash(), cadeia_b.tip_hash(), "os ramos precisam divergir");
+    let ponta_b = cadeia_b.tip_hash();
+
+    let a = rede(No::novo(cadeia_a));
+    let b = rede(No::novo(cadeia_b));
+    let porta = b.escutar("127.0.0.1:0").unwrap();
+    a.conectar(("127.0.0.1", porta)).unwrap();
+
+    assert!(esperar(Duration::from_secs(60), || altura(&a) == 8),
+        "A não reorganizou: altura {}", altura(&a));
+    assert_eq!(ponta(&a), ponta_b, "A adotou uma cadeia diferente da de B");
+    // B não muda: tem mais trabalho.
+    assert_eq!(altura(&b), 8);
+    a.desligar();
+    b.desligar();
+}
+
+#[test]
+#[ignore = "sobe sockets — ver cabeçalho do arquivo"]
+fn ramo_mais_curto_nao_desvia_a_cadeia() {
+    // O contrário: B tem MENOS trabalho. A não pode trocar.
+    let tronco = cadeia_com(2);
+    let cadeia_a = ramo(&tronco, 5, [0xA1; 20]);
+    let cadeia_b = ramo(&tronco, 2, [0xB2; 20]);
+    let ponta_a = cadeia_a.tip_hash();
+
+    let a = rede(No::novo(cadeia_a));
+    let b = rede(No::novo(cadeia_b));
+    let porta = b.escutar("127.0.0.1:0").unwrap();
+    a.conectar(("127.0.0.1", porta)).unwrap();
+
+    // Dá tempo de trocarem tudo o que quiserem; B é que deve alcançar A.
+    assert!(esperar(Duration::from_secs(60), || altura(&b) == 7), "B não alcançou A: {}", altura(&b));
+    assert_eq!(altura(&a), 7, "A trocou por um ramo mais fraco");
+    assert_eq!(ponta(&a), ponta_a, "A mudou de ponta sem precisar");
+    a.desligar();
+    b.desligar();
+}
+
+// ==================================================================== ATAQUES
+
+fn conectar_e_apertar_mao(porta: u16, magic: [u8; 4]) -> Conexao {
+    let stream = std::net::TcpStream::connect(("127.0.0.1", porta)).unwrap();
+    // O atacante tem a própria identidade: passa pela cifra e ataca por dentro.
+    let (mut c, _) = Conexao::com_cifra(stream, magic, &Identidade::nova().unwrap(), Papel::Discou, Duration::from_secs(10)).unwrap();
+    let meu = Ponta { protocolo: PROTOCOL_VERSION, magic, altura: 0, trabalho: [0u8; 32], nonce: 0xA1, porta_escuta: 0 };
+    c.enviar(&Message::Hello(meu)).unwrap();
+    match c.receber().unwrap() {
+        Message::HelloAck { eco, .. } => assert_eq!(eco, 0xA1, "alvo não ecoou o nonce"),
+        outra => panic!("esperava HELLO_ACK, veio {outra:?}"),
+    }
+    c
+}
+
+fn alvo_continua_vivo(porta: u16, altura_esperada: u64) {
+    let honesto = rede(No::novo(regtest_com(0, MINERADOR)));
+    honesto.conectar(("127.0.0.1", porta)).unwrap();
+    assert!(
+        esperar(Duration::from_secs(60), || altura(&honesto) == altura_esperada),
+        "o alvo não respondeu a um par honesto depois do ataque: {}",
+        altura(&honesto)
+    );
+    honesto.desligar();
+}
+
+#[test]
+#[ignore = "sobe sockets — ver cabeçalho do arquivo"]
+fn quadro_gigante_nao_estoura_a_memoria() {
+    let alvo = rede(No::novo(regtest_com(2, MINERADOR)));
+    let porta = alvo.escutar("127.0.0.1:0").unwrap();
+    let magic = ParametrosRede::REGTEST.magic;
+
+    let mut conexao = conectar_e_apertar_mao(porta, magic);
+    let mut quadro = Vec::new();
+    quadro.extend_from_slice(&magic);
+    quadro.extend_from_slice(&PROTOCOL_VERSION.to_be_bytes());
+    quadro.extend_from_slice(&1u16.to_be_bytes());
+    quadro.extend_from_slice(&(MAX_FRAME_BODY + 1).to_be_bytes());
+    let _ = conexao.enviar_cru(&quadro);
+
+    assert!(esperar(Duration::from_secs(60), || alvo.pares_conectados() == 0), "o atacante não foi desconectado");
+    assert_eq!(altura(&alvo), 2);
+    alvo_continua_vivo(porta, 2);
+    alvo.desligar();
+}
+
+#[test]
+#[ignore = "sobe sockets — ver cabeçalho do arquivo"]
+fn bloco_forjado_sem_prova_e_recusado() {
+    let alvo = rede(No::novo(regtest_com(3, MINERADOR)));
+    let porta = alvo.escutar("127.0.0.1:0").unwrap();
+    let magic = ParametrosRede::REGTEST.magic;
+
+    // A cópia vem da própria cadeia do alvo. Minerar outra cópia à parte não
+    // serve: com duas linhas e dificuldade de regtest, o nonce achado varia, e
+    // o bloco forjado deixaria de encaixar na ponta do alvo (falhou assim no
+    // GitHub Actions).
+    let espelho = alvo.no.lock().unwrap().chain.clone();
+    let forjado = espelho
+        .build_candidate(MINERADOR, vec![], Some(espelho.tip().unwrap().header.timestamp + 120), Vec::new())
+        .unwrap();
+
+    let mut conexao = conectar_e_apertar_mao(porta, magic);
+    conexao.enviar(&Message::Block(Box::new(forjado))).unwrap();
+
+    assert!(esperar(Duration::from_secs(60), || alvo.pares_conectados() == 0), "o forjador não foi desconectado");
+    assert_eq!(altura(&alvo), 3, "a cadeia mudou com um bloco forjado");
+    alvo_continua_vivo(porta, 3);
+    alvo.desligar();
+}
+
+#[test]
+#[ignore = "sobe sockets — ver cabeçalho do arquivo"]
+fn lixo_puro_nao_vira_par() {
+    let alvo = rede(No::novo(regtest_com(1, MINERADOR)));
+    let porta = alvo.escutar("127.0.0.1:0").unwrap();
+    let mut cru = std::net::TcpStream::connect(("127.0.0.1", porta)).unwrap();
+    let _ = cru.write_all(&[0xABu8; 4096]);
+    let _ = cru.flush();
+    std::thread::sleep(Duration::from_secs(2));
+    assert_eq!(alvo.pares_conectados(), 0, "lixo virou par");
+    assert_eq!(altura(&alvo), 1);
+    alvo_continua_vivo(porta, 1);
+    alvo.desligar();
+}
+
+#[test]
+fn gasto_duplo_no_mempool_nao_passa() {
+    // Lógica pura, sem socket: fica sempre ativo (sem #[ignore]).
+    let p = ParametrosRede::REGTEST;
+    let segredo = [0x21u8; 32];
+    let dono = hyurax_crypto::address_from_ed25519_pubkey(&hyurax_crypto::ed25519_public_key(&segredo));
+    let chain = regtest_com(p.coinbase_maturity + 1, dono);
+    let mut no = No::novo(chain);
+    assert!(no.chain.state.balance(&dono, &HYUR) > 0, "a conta precisa de saldo maduro");
+
+    let uma = |dest: [u8; 20]| {
+        sign_transfer_outputs(&segredo, &p.magic, dono, vec![Output { recipient: dest, asset_id: HYUR, amount: 1_000 }], 0, 0).unwrap()
+    };
+    assert_eq!(no.adicionar_tx(uma([0x31u8; 20])), Ok(true), "a primeira devia entrar");
+    assert_eq!(no.adicionar_tx(uma([0x32u8; 20])), Ok(false), "o gasto duplo entrou no mempool");
+    assert_eq!(no.mempool_len(), 1, "o mempool tem mais de uma versão do mesmo gasto");
+}
+
+// =============================================================== REANIMAÇÃO
+
+#[test]
+#[ignore = "sobe sockets — ver cabeçalho do arquivo"]
+fn um_no_sobrevivente_ressemeia_a_rede() {
+    let sobrevivente = rede(No::novo(regtest_com(5, MINERADOR)));
+    let porta_s = sobrevivente.escutar("127.0.0.1:0").unwrap();
+    let alvo = ponta(&sobrevivente);
+
+    let n1 = zerado();
+    let n2 = zerado();
+    n1.conectar(("127.0.0.1", porta_s)).unwrap();
+    n2.conectar(("127.0.0.1", porta_s)).unwrap();
+    assert!(esperar(Duration::from_secs(60), || altura(&n1) == 5 && altura(&n2) == 5),
+        "os novos não reconstruíram: n1={} n2={}", altura(&n1), altura(&n2));
+    assert_eq!(ponta(&n1), alvo);
+    assert_eq!(ponta(&n2), alvo);
+
+    let porta_1 = n1.escutar("127.0.0.1:0").unwrap();
+    sobrevivente.desligar();
+    std::thread::sleep(Duration::from_secs(1));
+
+    let tarde = zerado();
+    tarde.conectar(("127.0.0.1", porta_1)).unwrap();
+    assert!(esperar(Duration::from_secs(60), || altura(&tarde) == 5),
+        "o nó tardio não reconstruiu a partir de um sobrevivente: {}", altura(&tarde));
+    assert_eq!(ponta(&tarde), alvo, "reconstruiu uma cadeia diferente");
+    n1.desligar();
+    n2.desligar();
+    tarde.desligar();
+}
+
+// =============================================================== DESCOBERTA
+
+#[test]
+#[ignore = "sobe sockets — ver cabeçalho do arquivo"]
+fn no_novo_descobre_a_rede_a_partir_de_uma_semente() {
+    let a = zerado();
+    let b = zerado();
+    let c = zerado();
+    let porta_a = a.escutar("127.0.0.1:0").unwrap();
+    b.escutar("127.0.0.1:0").unwrap();
+    c.escutar("127.0.0.1:0").unwrap();
+    b.conectar(("127.0.0.1", porta_a)).unwrap();
+    c.conectar(("127.0.0.1", porta_a)).unwrap();
+
+    assert!(esperar(Duration::from_secs(60), || a.enderecos_conhecidos() >= 2),
+        "A não aprendeu os vizinhos: {}", a.enderecos_conhecidos());
+
+    let novo = zerado();
+    novo.escutar("127.0.0.1:0").unwrap();
+    novo.semear(&format!("127.0.0.1:{porta_a}"));
+    assert!(esperar(Duration::from_secs(120), || novo.pares_conectados() >= 3),
+        "o nó novo não descobriu a rede: {} pares", novo.pares_conectados());
+
+    a.desligar();
+    b.desligar();
+    c.desligar();
+    novo.desligar();
+}
+
+#[test]
+#[ignore = "sobe sockets — ver cabeçalho do arquivo"]
+fn par_que_cai_libera_a_vaga() {
+    let a = zerado();
+    let b = zerado();
+    let porta_a = a.escutar("127.0.0.1:0").unwrap();
+    b.escutar("127.0.0.1:0").unwrap();
+    b.conectar(("127.0.0.1", porta_a)).unwrap();
+    assert!(esperar(Duration::from_secs(60), || a.pares_conectados() >= 1));
+    b.desligar();
+    assert!(esperar(Duration::from_secs(60), || a.pares_conectados() == 0),
+        "A não soltou o par que caiu: {}", a.pares_conectados());
+    a.desligar();
+}
+
+// ================================================================== CIFRA
+
+/// Um intermediário no caminho: aceita a conexão de um lado, abre outra para o
+/// alvo e repassa os bytes nos dois sentidos, guardando tudo o que passou.
+/// Com `trocar_em = Some(n)`, inverte um bit do n-ésimo byte que vem do alvo.
+fn intermediario(alvo: u16, trocar_em: Option<usize>) -> (u16, Arc<std::sync::Mutex<Vec<u8>>>) {
+    use std::io::Read;
+    let escuta = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+    let porta = escuta.local_addr().unwrap().port();
+    let gravado = Arc::new(std::sync::Mutex::new(Vec::new()));
+    let g = Arc::clone(&gravado);
+    std::thread::spawn(move || {
+        let Ok((cliente, _)) = escuta.accept() else { return };
+        let Ok(servidor) = std::net::TcpStream::connect(("127.0.0.1", alvo)) else { return };
+        let repassa = move |mut de: std::net::TcpStream, mut para: std::net::TcpStream, g: Arc<std::sync::Mutex<Vec<u8>>>, trocar: Option<usize>| {
+            let mut total = 0usize;
+            let mut buf = [0u8; 4096];
+            loop {
+                let n = match de.read(&mut buf) { Ok(0) | Err(_) => break, Ok(n) => n };
+                if let Some(pos) = trocar {
+                    if pos >= total && pos < total + n {
+                        buf[pos - total] ^= 0x01;
+                    }
+                }
+                total += n;
+                g.lock().unwrap().extend_from_slice(&buf[..n]);
+                if para.write_all(&buf[..n]).is_err() { break; }
+            }
+            let _ = para.shutdown(std::net::Shutdown::Both);
+        };
+        let (c2, s2) = (cliente.try_clone().unwrap(), servidor.try_clone().unwrap());
+        let g2 = Arc::clone(&g);
+        std::thread::spawn(move || repassa(c2, s2, g2, None));
+        repassa(servidor, cliente, g, trocar_em);
+    });
+    (porta, gravado)
+}
+
+#[test]
+#[ignore = "sobe sockets — ver cabeçalho do arquivo"]
+fn intermediario_so_ve_bytes_cifrados() {
+    let a = rede(No::novo(cadeia_com(4)));
+    let porta_a = a.escutar("127.0.0.1:0").unwrap();
+    let (porta_meio, gravado) = intermediario(porta_a, None);
+    let b = zerado();
+    b.conectar(("127.0.0.1", porta_meio)).unwrap();
+
+    assert!(esperar(Duration::from_secs(60), || altura(&b) == 4), "B não sincronizou pelo intermediário: {}", altura(&b));
+    let visto = gravado.lock().unwrap().clone();
+    assert!(visto.len() > 1000, "o intermediário quase não viu tráfego: {} bytes", visto.len());
+    // O que o intermediário guardou não tem nada legível: nem o hash da ponta,
+    // nem a magic dos quadros do hyurax-wire.
+    let ponta_a = ponta(&a);
+    assert!(!visto.windows(64).any(|w| w == ponta_a), "o hash da ponta passou em claro");
+    let magic = ParametrosRede::REGTEST.magic;
+    assert!(!visto.windows(4).any(|w| w == magic), "a magic dos quadros passou em claro");
+    a.desligar();
+    b.desligar();
+}
+
+#[test]
+#[ignore = "sobe sockets — ver cabeçalho do arquivo"]
+fn intermediario_que_altera_derruba_a_conexao() {
+    let a = rede(No::novo(cadeia_com(4)));
+    let porta_a = a.escutar("127.0.0.1:0").unwrap();
+    // A resposta do XX (e, ee, s, es) tem 96 bytes mais 2 de tamanho. O byte
+    // 110 cai no primeiro pedaço cifrado depois do aperto de mão.
+    let (porta_meio, _) = intermediario(porta_a, Some(110));
+    let b = zerado();
+    b.conectar(("127.0.0.1", porta_meio)).unwrap();
+
+    std::thread::sleep(Duration::from_secs(5));
+    assert_eq!(altura(&b), 0, "B aceitou dados alterados no caminho");
+    assert_eq!(b.pares_conectados(), 0, "B manteve uma conexão adulterada");
+    a.desligar();
+    b.desligar();
+}
+
+#[test]
+#[ignore = "sobe sockets — ver cabeçalho do arquivo"]
+fn identidade_do_no_e_provada_na_cifra() {
+    let segredo = [0x42u8; 32];
+    let identidade = Identidade::de_segredo(segredo).unwrap();
+    let a = Rede::com_identidade(No::novo(cadeia_com(1)), identidade.clone());
+    assert_eq!(a.identidade_publica(), identidade.publica());
+    let porta = a.escutar("127.0.0.1:0").unwrap();
+    let stream = std::net::TcpStream::connect(("127.0.0.1", porta)).unwrap();
+    let (_, chave_do_par) = Conexao::com_cifra(stream, ParametrosRede::REGTEST.magic, &Identidade::nova().unwrap(), Papel::Discou, Duration::from_secs(10)).unwrap();
+    assert_eq!(chave_do_par, identidade.publica(), "a chave provada no aperto não é a do nó");
+    a.desligar();
+}
+
+#[test]
+#[ignore = "sobe sockets — ver cabeçalho do arquivo"]
+fn uma_conexao_por_no_mesmo_discando_varias_vezes() {
+    let a = zerado();
+    let b = zerado();
+    let porta_a = a.escutar("127.0.0.1:0").unwrap();
+    let porta_b = b.escutar("127.0.0.1:0").unwrap();
+    for _ in 0..3 {
+        b.conectar(("127.0.0.1", porta_a)).unwrap();
+        a.conectar(("127.0.0.1", porta_b)).unwrap();
+    }
+    // e um nó discando para si mesmo
+    a.conectar(("127.0.0.1", porta_a)).unwrap();
+    std::thread::sleep(Duration::from_secs(6));
+    assert!(esperar(Duration::from_secs(30), || a.pares_conectados() == 1 && b.pares_conectados() == 1),
+        "conexões duplicadas: A={} B={}", a.pares_conectados(), b.pares_conectados());
+    a.desligar();
+    b.desligar();
+}
+
+#[test]
+#[ignore = "sobe sockets — ver cabeçalho do arquivo"]
+fn orfao_forjado_derruba_quem_mandou() {
+    let alvo = rede(No::novo(regtest_com(2, MINERADOR)));
+    let porta = alvo.escutar("127.0.0.1:0").unwrap();
+    let magic = ParametrosRede::REGTEST.magic;
+
+    // Um bloco que não encaixa na ponta (pai inventado) e sem prova de trabalho
+    // de verdade: alvo o mais difícil possível, nonce qualquer.
+    let espelho = alvo.no.lock().unwrap().chain.clone();
+    let mut forjado = espelho
+        .build_candidate(MINERADOR, vec![], Some(espelho.tip().unwrap().header.timestamp + 120), Vec::new())
+        .unwrap();
+    forjado.header.prev_hash = [0x66; 64];
+    forjado.header.bits = 0x0300_0001;
+
+    let mut conexao = conectar_e_apertar_mao(porta, magic);
+    conexao.enviar(&Message::Block(Box::new(forjado))).unwrap();
+
+    assert!(esperar(Duration::from_secs(60), || alvo.pares_conectados() == 0), "quem mandou órfão forjado continua conectado");
+    assert_eq!(altura(&alvo), 2);
+    alvo_continua_vivo(porta, 2);
+    alvo.desligar();
+}
