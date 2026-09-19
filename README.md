@@ -19,6 +19,7 @@ Qualquer pessoa que disser o contrário está mentindo.
 | Testnet pública | kit do nó semente pronto ([`docs/NO-SEMENTE.md`](docs/NO-SEMENTE.md)), com explorador de blocos; nenhum semente no ar ainda; roteiro de 12 semanas em [`docs/ROTEIRO-LANCAMENTO.md`](docs/ROTEIRO-LANCAMENTO.md) |
 | Mainnet | não existe |
 | Auron Flux (stablecoins e pagamentos) | arquitetura registrada em [`docs/AURON-FLUX.md`](docs/AURON-FLUX.md); estado RED, nada implementado |
+| Transporte por qualquer meio | núcleo pronto e testado em `auron-transporte`: objeto fatiado em fragmentos que se provam sozinhos, espalhados por vários meios ao mesmo tempo; meios de hoje: pasta de arquivos e memória. Bluetooth, LoRa e rádio projetados, não implementados. Ver [`docs/AURON-TRANSPORTE.md`](docs/AURON-TRANSPORTE.md) |
 | Auron Direct, Resonance e Transport (pagamentos P2P, offline e mesh) | arquitetura registrada em [`docs/AURON-DIRECT-RESONANCE.md`](docs/AURON-DIRECT-RESONANCE.md); estado RED, nada implementado |
 
 ## Rodar um nó

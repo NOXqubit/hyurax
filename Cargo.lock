@@ -146,6 +146,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "auron-transporte"
+version = "0.1.0"
+dependencies = [
+ "auron-codec",
+ "auron-crypto",
+]
+
+[[package]]
 name = "auron-tx"
 version = "0.1.0"
 dependencies = [

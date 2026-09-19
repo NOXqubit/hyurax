@@ -478,6 +478,37 @@ pub fn merkle_verify_path(
     &calculada == raiz
 }
 
+/// Raiz e o caminho de **todas** as folhas, numa passada só.
+///
+/// [`merkle_path`] refaz a árvore a cada chamada, então tirar o caminho de
+/// todas as folhas custa uma volta por folha: com muitas folhas, isso deixa de
+/// ser aceitável (quem transporta um arquivo precisa da prova de cada pedaço).
+/// Aqui as subárvores são calculadas uma vez e aproveitadas na subida.
+///
+/// O resultado é idêntico ao de [`merkle_root`] e [`merkle_path`] folha a
+/// folha — há teste travando essa igualdade. Lista vazia devolve a raiz vazia
+/// e nenhum caminho.
+pub fn merkle_raiz_e_caminhos<F: AsRef<[u8]>>(
+    folhas: &[F],
+) -> ([u8; HASH_LEN], Vec<Vec<[u8; HASH_LEN]>>) {
+    let Some((esquerda, direita)) = dividir(folhas) else {
+        return match folhas.first() {
+            Some(unica) => (merkle_leaf_hash(unica.as_ref()), vec![Vec::new()]),
+            None => (sha512(b""), Vec::new()),
+        };
+    };
+    let (raiz_esquerda, mut caminhos) = merkle_raiz_e_caminhos(esquerda);
+    let (raiz_direita, caminhos_direita) = merkle_raiz_e_caminhos(direita);
+    for caminho in &mut caminhos {
+        caminho.push(raiz_direita);
+    }
+    for mut caminho in caminhos_direita {
+        caminho.push(raiz_esquerda);
+        caminhos.push(caminho);
+    }
+    (no(&raiz_esquerda, &raiz_direita), caminhos)
+}
+
 #[cfg(test)]
 mod testes {
     use super::*;
@@ -661,5 +692,25 @@ mod testes {
         assert_eq!(merkle_path(&folhas(0), 0), Err(CodecError::IndiceForaDaFaixa));
         assert_eq!(merkle_path(&folhas(3), 3), Err(CodecError::IndiceForaDaFaixa));
         assert!(merkle_path(&folhas(1), 0).unwrap().is_empty());
+    }
+
+    #[test]
+    fn todos_os_caminhos_de_uma_vez_dao_o_mesmo_resultado() {
+        for n in [0usize, 1, 2, 3, 4, 5, 6, 7, 8, 9, 16, 17, 33] {
+            let lista = folhas(n);
+            let (raiz, caminhos) = merkle_raiz_e_caminhos(&lista);
+            assert_eq!(raiz, merkle_root(&lista), "raiz diferente com {n} folhas");
+            assert_eq!(caminhos.len(), n);
+            for (i, caminho) in caminhos.iter().enumerate() {
+                assert_eq!(caminho, &merkle_path(&lista, i).unwrap(), "caminho {i} de {n}");
+                assert!(merkle_verify_path(
+                    &lista[i],
+                    i as u64,
+                    n as u64,
+                    caminho,
+                    &raiz
+                ));
+            }
+        }
     }
 }
