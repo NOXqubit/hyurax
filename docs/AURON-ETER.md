@@ -1,6 +1,13 @@
-# Auron Transporte — o meio é peça trocável
+# Éter — o meio é peça trocável
 
-> Estado em 18/09/2026: **implementado e testado** o núcleo (`crates/auron-transporte`),
+> **Éter** é o nome da tecnologia de comunicação entre nós do Auron: a camada
+> que trata Wi-Fi, Bluetooth, rádio, pendrive e satélite como maneiras
+> diferentes de atravessar a mesma coisa. Na especificação, o formato se chama
+> `AURON-ETER-v1`; o crate é `auron-eter`.
+>
+> *"O nó não fala Wi-Fi nem Bluetooth. O nó fala Auron — e o Éter escolhe o caminho."*
+
+> Estado em 18/09/2026: **implementado e testado** o núcleo (`crates/auron-eter`),
 > com dois meios reais: pasta de arquivos e memória. Bluetooth, LoRa e rádio
 > estão **projetados, não implementados**. Nada disto entra no consenso.
 

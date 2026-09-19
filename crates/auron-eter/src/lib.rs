@@ -1,5 +1,8 @@
 // ✝ Isaías 52:7 — “Como são formosos sobre os montes os pés do que anuncia as boas novas.”
-//! Auron — transporte por qualquer meio (`AURON-TRANSPORTE-v1`).
+//! Auron Éter — a camada onde o meio é peça trocável (`AURON-ETER-v1`).
+//!
+//! Éter é o nome da tecnologia: o meio que preenche tudo. Wi-Fi, Bluetooth,
+//! rádio, pendrive e satélite são só maneiras de atravessá-lo.
 //!
 //! Esta camada existe para uma frase: **o Auron define a mensagem, o meio é
 //! trocável** (documento mestre, §24 e §68). O nó não fala "Wi-Fi" nem
@@ -42,7 +45,7 @@ use auron_crypto::sha512;
 pub mod meios;
 
 /// Marca de todo quadro deste transporte.
-pub const MAGIC: [u8; 4] = *b"AURT";
+pub const MAGIC: [u8; 4] = *b"ETER";
 
 /// Versão do formato.
 pub const VERSAO: u16 = 1;
@@ -71,7 +74,7 @@ pub type ObjetoId = [u8; HASH_LEN];
 
 /// O que pode dar errado no transporte.
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub enum TransporteError {
+pub enum EterError {
     /// Bytes que não são um quadro deste transporte.
     MagicErrado,
     /// Versão que este programa não conhece.
@@ -121,10 +124,10 @@ pub enum TransporteError {
     Meio(String),
 }
 
-impl fmt::Display for TransporteError {
+impl fmt::Display for EterError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::MagicErrado => write!(f, "não é um quadro do transporte Auron"),
+            Self::MagicErrado => write!(f, "não é um quadro do Éter"),
             Self::VersaoDesconhecida(v) => write!(f, "versão {v} desconhecida"),
             Self::TipoDesconhecido(t) => write!(f, "tipo de quadro {t} desconhecido"),
             Self::Codec(e) => write!(f, "{e}"),
@@ -147,9 +150,9 @@ impl fmt::Display for TransporteError {
     }
 }
 
-impl core::error::Error for TransporteError {}
+impl core::error::Error for EterError {}
 
-impl From<CodecError> for TransporteError {
+impl From<CodecError> for EterError {
     fn from(e: CodecError) -> Self {
         Self::Codec(e)
     }
@@ -203,7 +206,7 @@ impl Manifesto {
         usize::try_from(resto.min(pedaco)).ok()
     }
 
-    fn escrever(&self, w: &mut Writer) -> Result<(), TransporteError> {
+    fn escrever(&self, w: &mut Writer) -> Result<(), EterError> {
         w.fixed(&self.id);
         w.u64(self.tamanho);
         w.u32(self.pedaco);
@@ -213,7 +216,7 @@ impl Manifesto {
         Ok(())
     }
 
-    fn ler(r: &mut Reader<'_>) -> Result<Self, TransporteError> {
+    fn ler(r: &mut Reader<'_>) -> Result<Self, EterError> {
         Ok(Self {
             id: r.fixed()?,
             tamanho: r.u64()?,
@@ -260,7 +263,7 @@ pub enum Quadro {
 
 impl Quadro {
     /// Serializa o quadro para entregar a um meio.
-    pub fn codificar(&self) -> Result<Vec<u8>, TransporteError> {
+    pub fn codificar(&self) -> Result<Vec<u8>, EterError> {
         let mut w = Writer::new();
         w.fixed(&MAGIC);
         w.u16(VERSAO);
@@ -294,15 +297,15 @@ impl Quadro {
     /// Lê um quadro que chegou por um meio qualquer.
     ///
     /// Bytes de outro protocolo, ou truncados, viram erro — nunca pânico.
-    pub fn decodificar(dados: &[u8]) -> Result<Self, TransporteError> {
+    pub fn decodificar(dados: &[u8]) -> Result<Self, EterError> {
         let mut r = Reader::new(dados);
         let magic: [u8; 4] = r.fixed()?;
         if magic != MAGIC {
-            return Err(TransporteError::MagicErrado);
+            return Err(EterError::MagicErrado);
         }
         let versao = r.u16()?;
         if versao != VERSAO {
-            return Err(TransporteError::VersaoDesconhecida(versao));
+            return Err(EterError::VersaoDesconhecida(versao));
         }
         let quadro = match r.u8()? {
             TIPO_MANIFESTO => Self::Manifesto(Manifesto::ler(&mut r)?),
@@ -316,7 +319,7 @@ impl Quadro {
                 id: r.fixed()?,
                 indices: r.read_list(Reader::u32)?,
             },
-            outro => return Err(TransporteError::TipoDesconhecido(outro)),
+            outro => return Err(EterError::TipoDesconhecido(outro)),
         };
         r.finish()?;
         Ok(quadro)
@@ -332,12 +335,12 @@ impl Quadro {
 /// O caminho de prova cresce com o número de pedaços, e o número de pedaços
 /// cresce quando o pedaço encolhe. A conta é feita por tentativa, subindo a
 /// profundidade até a escolha se sustentar.
-pub fn pedaco_para_o_meio(mtu: usize, tamanho: u64) -> Result<u32, TransporteError> {
+pub fn pedaco_para_o_meio(mtu: usize, tamanho: u64) -> Result<u32, EterError> {
     if tamanho == 0 {
-        return Err(TransporteError::ObjetoVazio);
+        return Err(EterError::ObjetoVazio);
     }
     if tamanho > TAMANHO_MAX {
-        return Err(TransporteError::ObjetoGrandeDemais(tamanho));
+        return Err(EterError::ObjetoGrandeDemais(tamanho));
     }
     for profundidade in 0..=PROFUNDIDADE_MAX {
         let prova = (profundidade as usize).saturating_mul(HASH_LEN);
@@ -352,7 +355,7 @@ pub fn pedaco_para_o_meio(mtu: usize, tamanho: u64) -> Result<u32, TransporteErr
         }
     }
     // Nem com a árvore mais rasa o meio comporta um pedaço útil.
-    Err(TransporteError::MeioPequenoDemais {
+    Err(EterError::MeioPequenoDemais {
         mtu,
         preciso: CUSTO_DO_QUADRO.saturating_add(1),
     })
@@ -379,21 +382,21 @@ pub fn fatiar(
     dados: &[u8],
     nome: &str,
     pedaco: u32,
-) -> Result<(Manifesto, Vec<Fragmento>), TransporteError> {
+) -> Result<(Manifesto, Vec<Fragmento>), EterError> {
     if dados.is_empty() {
-        return Err(TransporteError::ObjetoVazio);
+        return Err(EterError::ObjetoVazio);
     }
     let tamanho = u64::try_from(dados.len()).unwrap_or(u64::MAX);
     if tamanho > TAMANHO_MAX {
-        return Err(TransporteError::ObjetoGrandeDemais(tamanho));
+        return Err(EterError::ObjetoGrandeDemais(tamanho));
     }
     let passo = usize::try_from(pedaco).unwrap_or(usize::MAX);
     if passo == 0 {
-        return Err(TransporteError::ManifestoIncoerente);
+        return Err(EterError::ManifestoIncoerente);
     }
 
     let folhas: Vec<&[u8]> = dados.chunks(passo).collect();
-    let quantidade = u32::try_from(folhas.len()).map_err(|_| TransporteError::ManifestoIncoerente)?;
+    let quantidade = u32::try_from(folhas.len()).map_err(|_| EterError::ManifestoIncoerente)?;
     // Uma passada só pela árvore: a prova de cada pedaço sai junto com a raiz.
     let (raiz, caminhos) = merkle_raiz_e_caminhos(&folhas);
     let manifesto = Manifesto {
@@ -407,11 +410,11 @@ pub fn fatiar(
 
     let mut fragmentos = Vec::with_capacity(folhas.len());
     for (posicao, pedacinho) in folhas.iter().enumerate() {
-        let indice = u32::try_from(posicao).map_err(|_| TransporteError::ManifestoIncoerente)?;
+        let indice = u32::try_from(posicao).map_err(|_| EterError::ManifestoIncoerente)?;
         let caminho = caminhos
             .get(posicao)
             .cloned()
-            .ok_or(TransporteError::ManifestoIncoerente)?;
+            .ok_or(EterError::ManifestoIncoerente)?;
         fragmentos.push(Fragmento {
             id: manifesto.id,
             indice,
@@ -436,12 +439,12 @@ pub struct Montador {
 
 impl Montador {
     /// Abre a montagem de um objeto anunciado por um manifesto.
-    pub fn novo(manifesto: Manifesto) -> Result<Self, TransporteError> {
+    pub fn novo(manifesto: Manifesto) -> Result<Self, EterError> {
         if !manifesto.coerente() {
-            return Err(TransporteError::ManifestoIncoerente);
+            return Err(EterError::ManifestoIncoerente);
         }
         let quantidade =
-            usize::try_from(manifesto.quantidade).map_err(|_| TransporteError::ManifestoIncoerente)?;
+            usize::try_from(manifesto.quantidade).map_err(|_| EterError::ManifestoIncoerente)?;
         Ok(Self {
             manifesto,
             pedacos: vec![None; quantidade],
@@ -460,14 +463,14 @@ impl Montador {
     /// tamanho errado e o que não bate com a raiz. Repetido não é erro:
     /// devolve `false`, porque em rede com vários meios o mesmo pedaço chega
     /// duas vezes o tempo todo.
-    pub fn aceitar(&mut self, fragmento: &Fragmento) -> Result<bool, TransporteError> {
+    pub fn aceitar(&mut self, fragmento: &Fragmento) -> Result<bool, EterError> {
         if fragmento.id != self.manifesto.id {
-            return Err(TransporteError::OutroObjeto);
+            return Err(EterError::OutroObjeto);
         }
         let posicao = usize::try_from(fragmento.indice)
-            .map_err(|_| TransporteError::IndiceForaDaFaixa(fragmento.indice))?;
+            .map_err(|_| EterError::IndiceForaDaFaixa(fragmento.indice))?;
         let Some(vaga) = self.pedacos.get(posicao) else {
-            return Err(TransporteError::IndiceForaDaFaixa(fragmento.indice));
+            return Err(EterError::IndiceForaDaFaixa(fragmento.indice));
         };
         if vaga.is_some() {
             return Ok(false);
@@ -475,9 +478,9 @@ impl Montador {
         let esperado = self
             .manifesto
             .tamanho_do_pedaco(fragmento.indice)
-            .ok_or(TransporteError::IndiceForaDaFaixa(fragmento.indice))?;
+            .ok_or(EterError::IndiceForaDaFaixa(fragmento.indice))?;
         if fragmento.dados.len() != esperado {
-            return Err(TransporteError::TamanhoDoPedaco {
+            return Err(EterError::TamanhoDoPedaco {
                 indice: fragmento.indice,
                 veio: fragmento.dados.len(),
                 esperado,
@@ -491,7 +494,7 @@ impl Montador {
             &self.manifesto.raiz,
         );
         if !vale {
-            return Err(TransporteError::ProvaInvalida(fragmento.indice));
+            return Err(EterError::ProvaInvalida(fragmento.indice));
         }
         if let Some(vaga) = self.pedacos.get_mut(posicao) {
             *vaga = Some(fragmento.dados.clone());
@@ -524,9 +527,9 @@ impl Montador {
     ///
     /// Esta é a última trava: mesmo que alguém tenha mentido na raiz ou no
     /// total, o conteúdo remontado precisa ter exatamente o `id` do manifesto.
-    pub fn montar(&self) -> Result<Vec<u8>, TransporteError> {
+    pub fn montar(&self) -> Result<Vec<u8>, EterError> {
         if !self.pronto() {
-            return Err(TransporteError::Incompleto {
+            return Err(EterError::Incompleto {
                 tenho: self.tenho,
                 total: self.manifesto.quantidade,
             });
@@ -537,7 +540,7 @@ impl Montador {
             match pedaco {
                 Some(bytes) => inteiro.extend_from_slice(bytes),
                 None => {
-                    return Err(TransporteError::Incompleto {
+                    return Err(EterError::Incompleto {
                         tenho: self.tenho,
                         total: self.manifesto.quantidade,
                     });
@@ -545,7 +548,7 @@ impl Montador {
             }
         }
         if sha512(&inteiro) != self.manifesto.id {
-            return Err(TransporteError::HashNaoConfere);
+            return Err(EterError::HashNaoConfere);
         }
         Ok(inteiro)
     }
@@ -567,10 +570,10 @@ pub trait Meio {
     fn mtu(&self) -> usize;
 
     /// Entrega um quadro já codificado.
-    fn enviar(&mut self, quadro: &[u8]) -> Result<(), TransporteError>;
+    fn enviar(&mut self, quadro: &[u8]) -> Result<(), EterError>;
 
     /// Recolhe o que chegou desde a última chamada. Vazio é normal.
-    fn receber(&mut self) -> Result<Vec<Vec<u8>>, TransporteError>;
+    fn receber(&mut self) -> Result<Vec<Vec<u8>>, EterError>;
 }
 
 /// Espalha um objeto pelos meios disponíveis.
@@ -592,9 +595,9 @@ pub fn espalhar(
     dados: &[u8],
     nome: &str,
     meios: &mut [&mut dyn Meio],
-) -> Result<Manifesto, TransporteError> {
+) -> Result<Manifesto, EterError> {
     if meios.is_empty() {
-        return Err(TransporteError::Meio("nenhum meio disponível".into()));
+        return Err(EterError::Meio("nenhum meio disponível".into()));
     }
     let tamanho = u64::try_from(dados.len()).unwrap_or(u64::MAX);
     let maior = meios.iter().map(|m| m.mtu()).max().unwrap_or(0);
@@ -618,7 +621,7 @@ pub fn espalhar(
         .filter(|i| meios.get(*i).is_some_and(|m| m.mtu() >= maior_quadro))
         .collect();
     if carregadores.is_empty() {
-        return Err(TransporteError::MeioPequenoDemais {
+        return Err(EterError::MeioPequenoDemais {
             mtu: maior,
             preciso: maior_quadro,
         });
@@ -654,7 +657,7 @@ impl Recepcao {
     /// Processa um quadro cru vindo de qualquer meio.
     ///
     /// Quadro estragado não derruba a recepção: vira erro e a vida segue.
-    pub fn quadro(&mut self, cru: &[u8]) -> Result<Option<Vec<u8>>, TransporteError> {
+    pub fn quadro(&mut self, cru: &[u8]) -> Result<Option<Vec<u8>>, EterError> {
         match Quadro::decodificar(cru)? {
             Quadro::Manifesto(m) => {
                 if self.montador.is_none() {
@@ -735,7 +738,7 @@ mod testes {
         mentiroso.dados[0] ^= 0xff;
         assert_eq!(
             montador.aceitar(&mentiroso),
-            Err(TransporteError::ProvaInvalida(2))
+            Err(EterError::ProvaInvalida(2))
         );
         assert_eq!(montador.tenho(), 0);
     }
@@ -745,7 +748,7 @@ mod testes {
         let (m1, _) = fatiar(&objeto(2_000), "a", 1024).unwrap();
         let (_, f2) = fatiar(b"outro conteudo qualquer", "b", 1024).unwrap();
         let mut montador = Montador::novo(m1).unwrap();
-        assert_eq!(montador.aceitar(&f2[0]), Err(TransporteError::OutroObjeto));
+        assert_eq!(montador.aceitar(&f2[0]), Err(EterError::OutroObjeto));
     }
 
     #[test]
@@ -757,7 +760,7 @@ mod testes {
         assert_eq!(montador.faltando(), vec![1, 2]);
         assert!(matches!(
             montador.montar(),
-            Err(TransporteError::Incompleto { tenho: 1, total: 3 })
+            Err(EterError::Incompleto { tenho: 1, total: 3 })
         ));
     }
 
@@ -776,7 +779,7 @@ mod testes {
 
     #[test]
     fn bytes_de_outro_protocolo_nao_derrubam() {
-        assert_eq!(Quadro::decodificar(b"HTTP/1.1 200 OK"), Err(TransporteError::MagicErrado));
+        assert_eq!(Quadro::decodificar(b"HTTP/1.1 200 OK"), Err(EterError::MagicErrado));
         assert!(Quadro::decodificar(&[]).is_err());
         let (m, _) = fatiar(&objeto(100), "", 50).unwrap();
         let mut cru = Quadro::Manifesto(m).codificar().unwrap();
@@ -810,7 +813,7 @@ mod testes {
         // Um quadro de rádio de 100 bytes não carrega nem o cabeçalho.
         assert!(matches!(
             pedaco_para_o_meio(100, 1_000_000),
-            Err(TransporteError::MeioPequenoDemais { .. })
+            Err(EterError::MeioPequenoDemais { .. })
         ));
     }
 
@@ -820,7 +823,7 @@ mod testes {
         manifesto.quantidade = 7; // não bate com tamanho e pedaço
         assert_eq!(
             Montador::novo(manifesto).err(),
-            Some(TransporteError::ManifestoIncoerente)
+            Some(EterError::ManifestoIncoerente)
         );
     }
 }

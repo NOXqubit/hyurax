@@ -1,11 +1,11 @@
 [package]
-name = "auron-transporte"
+name = "auron-eter"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 authors.workspace = true
 license.workspace = true
-description = "Auron — transporte por qualquer meio (AURON-TRANSPORTE-v1)"
+description = "Auron Éter — transporte por qualquer meio (AURON-ETER-v1)"
 
 [dependencies]
 auron-codec.workspace = true

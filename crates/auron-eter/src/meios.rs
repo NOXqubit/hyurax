@@ -14,13 +14,13 @@ use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use crate::{Meio, TransporteError};
+use crate::{Meio, EterError};
 
 /// Extensão dos quadros gravados em disco.
-const EXTENSAO: &str = "aurt";
+const EXTENSAO: &str = "eter";
 
-fn falha(e: impl core::fmt::Display) -> TransporteError {
-    TransporteError::Meio(e.to_string())
+fn falha(e: impl core::fmt::Display) -> EterError {
+    EterError::Meio(e.to_string())
 }
 
 /// Transporte por pasta: pendrive, cartão, pasta compartilhada.
@@ -46,7 +46,7 @@ impl MeioPasta {
         saida: impl AsRef<Path>,
         entrada: impl AsRef<Path>,
         mtu: usize,
-    ) -> Result<Self, TransporteError> {
+    ) -> Result<Self, EterError> {
         let saida = saida.as_ref().to_path_buf();
         let entrada = entrada.as_ref().to_path_buf();
         fs::create_dir_all(&saida).map_err(falha)?;
@@ -80,9 +80,9 @@ impl Meio for MeioPasta {
         self.mtu
     }
 
-    fn enviar(&mut self, quadro: &[u8]) -> Result<(), TransporteError> {
+    fn enviar(&mut self, quadro: &[u8]) -> Result<(), EterError> {
         if quadro.len() > self.mtu {
-            return Err(TransporteError::MeioPequenoDemais {
+            return Err(EterError::MeioPequenoDemais {
                 mtu: self.mtu,
                 preciso: quadro.len(),
             });
@@ -95,7 +95,7 @@ impl Meio for MeioPasta {
         fs::rename(&temporario, &arquivo).map_err(falha)
     }
 
-    fn receber(&mut self) -> Result<Vec<Vec<u8>>, TransporteError> {
+    fn receber(&mut self) -> Result<Vec<Vec<u8>>, EterError> {
         let lidos = self.entrada.join("lidos");
         let mut arquivos: Vec<PathBuf> = fs::read_dir(&self.entrada)
             .map_err(falha)?
@@ -161,9 +161,9 @@ impl Meio for MeioMemoria {
         self.mtu
     }
 
-    fn enviar(&mut self, quadro: &[u8]) -> Result<(), TransporteError> {
+    fn enviar(&mut self, quadro: &[u8]) -> Result<(), EterError> {
         if quadro.len() > self.mtu {
-            return Err(TransporteError::MeioPequenoDemais {
+            return Err(EterError::MeioPequenoDemais {
                 mtu: self.mtu,
                 preciso: quadro.len(),
             });
@@ -173,14 +173,14 @@ impl Meio for MeioMemoria {
                 fila.push(quadro.to_vec());
                 Ok(())
             }
-            Err(_) => Err(TransporteError::Meio("fila travada".into())),
+            Err(_) => Err(EterError::Meio("fila travada".into())),
         }
     }
 
-    fn receber(&mut self) -> Result<Vec<Vec<u8>>, TransporteError> {
+    fn receber(&mut self) -> Result<Vec<Vec<u8>>, EterError> {
         match self.minha_entrada.lock() {
             Ok(mut fila) => Ok(core::mem::take(&mut fila)),
-            Err(_) => Err(TransporteError::Meio("fila travada".into())),
+            Err(_) => Err(EterError::Meio("fila travada".into())),
         }
     }
 }

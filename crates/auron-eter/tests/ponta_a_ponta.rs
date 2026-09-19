@@ -8,8 +8,8 @@
 use std::fs;
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use auron_transporte::meios::{MeioMemoria, MeioPasta};
-use auron_transporte::{Meio, Recepcao, TransporteError, espalhar, pedaco_para_o_meio};
+use auron_eter::meios::{MeioMemoria, MeioPasta};
+use auron_eter::{Meio, Recepcao, EterError, espalhar, pedaco_para_o_meio};
 
 fn objeto(n: usize) -> Vec<u8> {
     (0..n).map(|i| u8::try_from(i % 251).unwrap_or(0)).collect()
@@ -94,7 +94,7 @@ fn sem_nenhum_meio_que_carregue_o_dado_o_erro_e_claro() {
     let (mut radio_a, _radio_b) = MeioMemoria::par("rádio", 400);
     assert!(matches!(
         espalhar(&dados, "", &mut [&mut radio_a]),
-        Err(TransporteError::MeioPequenoDemais { .. })
+        Err(EterError::MeioPequenoDemais { .. })
     ));
 }
 
@@ -104,7 +104,7 @@ fn atravessa_o_tempo_numa_pasta_como_num_pendrive() {
         .duration_since(UNIX_EPOCH)
         .map(|d| d.as_nanos())
         .unwrap_or(0);
-    let base = std::env::temp_dir().join(format!("auron-transporte-{agora}"));
+    let base = std::env::temp_dir().join(format!("auron-eter-{agora}"));
     let pendrive = base.join("pendrive");
 
     let dados = objeto(90_000);

@@ -82,6 +82,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "auron-eter"
+version = "0.1.0"
+dependencies = [
+ "auron-codec",
+ "auron-crypto",
+]
+
+[[package]]
 name = "auron-net"
 version = "0.1.0"
 dependencies = [
@@ -143,14 +151,6 @@ dependencies = [
  "auron-crypto",
  "hex",
  "serde_json",
-]
-
-[[package]]
-name = "auron-transporte"
-version = "0.1.0"
-dependencies = [
- "auron-codec",
- "auron-crypto",
 ]
 
 [[package]]
