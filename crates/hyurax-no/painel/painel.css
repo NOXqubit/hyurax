@@ -110,6 +110,20 @@ small { color: var(--tinta-3); font-size: 11px; }
 /* Ligado: botão invertido, e o círculo cheio pulsa. */
 .minerar[aria-pressed="true"] { background: var(--tinta); color: var(--fundo); }
 .minerar[aria-pressed="true"] i { background: currentColor; animation: pulso 1.1s ease-in-out infinite; }
+/* Sem carteira: borda tracejada e apagado, como tudo o que ainda não vale. */
+.minerar:disabled { background: transparent; color: var(--tinta-3); border-style: dashed; cursor: not-allowed; }
+.ajustes-botao {
+  background: none;
+  border: 1px solid var(--fio-forte);
+  border-radius: var(--r);
+  padding: 0 12px;
+  cursor: pointer;
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--tinta-2);
+}
+.ajustes-botao:hover { color: var(--tinta); border-color: var(--tinta); }
 .so-ver { margin: 0 0 0 auto; color: var(--tinta-3); font-size: 11px; letter-spacing: 0.08em; }
 
 @keyframes pulso { 50% { transform: scale(0.55); opacity: 0.5; } }
@@ -288,6 +302,174 @@ tbody tr:not(.meu) td { color: var(--tinta-2); }
   z-index: 10;
 }
 
+/* ---------- diálogos: primeira abertura e ajustes ---------- */
+.dialogo {
+  width: 520px;
+  max-width: calc(100vw - 32px);
+  max-height: calc(100vh - 32px);
+  overflow: auto;
+  padding: 0;
+  border: 1px solid var(--tinta);
+  border-radius: var(--r);
+  background: var(--painel);
+  color: var(--tinta);
+}
+.dialogo::backdrop { background: rgba(3, 3, 3, 0.86); }
+.dialogo .rotulo { position: sticky; top: 0; z-index: 1; background: var(--painel); }
+.rotulo > h2 { margin: 0; font: inherit; letter-spacing: inherit; }
+.rotulo > h2::before { content: "▪ "; color: var(--tinta); }
+.dialogo-corpo { padding: 16px 20px 20px; }
+.pilha > * { margin-block: 0; }
+.pilha > * + * { margin-top: 14px; }
+/* Mensagem vazia não ocupa lugar, mas fica na página para o leitor de tela anunciar quando mudar. */
+.pilha > .erro:empty,
+.pilha > .salvo:empty,
+.pilha > .nota:empty { margin-top: 0; padding: 0; border: 0; }
+
+.dialogo .titulo {
+  font: 700 26px/1.05 var(--display);
+  font-stretch: condensed;
+  letter-spacing: 0.03em;
+}
+.dialogo .titulo:focus { outline: none; }
+.dialogo .texto { color: var(--tinta-2); }
+.dialogo .nota { color: var(--tinta-2); font-size: 11.5px; overflow-wrap: anywhere; }
+/* Rede de teste: tracejado, como tudo o que ainda não vale. */
+.dialogo .aviso-teste { border: 1px dashed var(--fio-forte); border-radius: var(--r); padding: 8px 10px; }
+.dialogo .aviso-teste b { letter-spacing: 0.12em; }
+/* O aviso que não pode passar batido: invertido. */
+.dialogo .aviso-forte {
+  background: var(--tinta);
+  color: var(--fundo);
+  font-weight: 700;
+  padding: 12px 14px;
+  border-radius: var(--r);
+}
+
+/* Dois caminhos: rádios com cara de abas; o escolhido fica invertido. */
+.caminhos { border: 0; padding: 0; margin-inline: 0; min-width: 0; }
+.caminhos legend { padding: 0; color: var(--tinta-2); }
+.segmentos {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  margin-top: 8px;
+  border: 1px solid var(--fio-forte);
+  border-radius: var(--r);
+}
+.segmentos label { position: relative; display: flex; cursor: pointer; }
+.segmentos label + label { border-left: 1px solid var(--fio-forte); }
+.segmentos input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+.segmentos span { flex: 1; padding: 10px 8px; text-align: center; }
+.segmentos label:hover span { background: var(--painel-2); }
+.segmentos input:checked + span { background: var(--tinta); color: var(--fundo); font-weight: 700; }
+.segmentos input:focus-visible + span { outline: 1px solid var(--tinta); outline-offset: 2px; }
+.caminhos:disabled .segmentos { opacity: 0.5; }
+.caminhos:disabled label,
+.caminhos:disabled input { cursor: default; }
+
+.dialogo .campo { display: grid; gap: 6px; min-width: 0; }
+.dialogo .campo label,
+.dialogo .rotulo-campo {
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--tinta-2);
+}
+.dialogo input[type="password"],
+.dialogo input[type="text"],
+.dialogo textarea {
+  width: 100%;
+  min-width: 0;
+  font: 14px/1.4 var(--mono);
+  color: var(--tinta);
+  background: var(--fundo);
+  border: 1px solid var(--fio-forte);
+  border-radius: var(--r);
+  padding: 9px 10px;
+}
+.dialogo textarea { resize: vertical; min-height: 8em; font-size: 12px; word-break: break-all; }
+.dialogo input::placeholder,
+.dialogo textarea::placeholder { color: var(--tinta-3); }
+.dialogo input:focus-visible,
+.dialogo textarea:focus-visible { outline: 1px solid var(--tinta); outline-offset: 1px; border-color: var(--tinta); }
+.dialogo input[type="file"] { max-width: 100%; font-size: 12px; color: var(--tinta-2); }
+.dialogo input[type="file"]::file-selector-button {
+  font: inherit;
+  color: var(--tinta);
+  background: transparent;
+  border: 1px solid var(--fio-forte);
+  border-radius: var(--r);
+  padding: 7px 12px;
+  margin-right: 10px;
+  cursor: pointer;
+}
+.dialogo input[type="file"]::file-selector-button:hover { border-color: var(--tinta); }
+.com-botao { display: flex; gap: 6px; min-width: 0; }
+.com-botao input { flex: 1; }
+.com-botao button { flex: none; }
+
+/* Regras da senha: quadrado vazado falta, quadrado cheio cumprida. */
+.regras { list-style: none; padding: 0; display: grid; gap: 4px; font-size: 12px; color: var(--tinta-2); }
+.regras li { display: flex; align-items: center; gap: 8px; }
+.regras li::before { content: ""; flex: none; width: 8px; height: 8px; border: 1px solid currentColor; }
+.regras li.cumprida { color: var(--tinta); }
+.regras li.cumprida::before { background: currentColor; }
+
+.dialogo .erro {
+  border: 1px dashed var(--tinta);
+  border-radius: var(--r);
+  padding: 8px 10px;
+  font-size: 12px;
+  color: var(--tinta);
+  overflow-wrap: anywhere;
+}
+.dialogo .salvo { font-size: 12px; color: var(--tinta); display: flex; align-items: center; gap: 8px; }
+.dialogo .salvo:not(:empty)::before { content: ""; width: 8px; height: 8px; background: currentColor; }
+
+.dialogo .endereco-grande,
+.dialogo .caminho {
+  font-family: var(--mono);
+  word-break: break-all;
+  background: var(--fundo);
+  border: 1px solid var(--fio-forte);
+  border-radius: var(--r);
+  padding: 10px 12px;
+}
+.dialogo .endereco-grande { font-size: 15px; line-height: 1.5; user-select: all; }
+.dialogo .caminho { font-size: 12px; color: var(--tinta-2); }
+
+.dialogo .acoes { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; }
+.dialogo .acoes.esquerda { justify-content: flex-start; }
+.dialogo .principal,
+.dialogo .secundario {
+  border-radius: var(--r);
+  cursor: pointer;
+  font: 700 12px/1 var(--mono);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  padding: 11px 16px;
+}
+.dialogo .principal { background: var(--tinta); color: var(--fundo); border: 1px solid var(--tinta); }
+.dialogo .principal:hover { background: #fff; border-color: #fff; }
+.dialogo .secundario { background: transparent; color: var(--tinta); border: 1px solid var(--fio-forte); font-weight: 400; }
+.dialogo .secundario:hover { background: var(--painel-2); border-color: var(--tinta); }
+/* Desabilitado: vazado e tracejado. */
+.dialogo .principal:disabled,
+.dialogo .secundario:disabled {
+  background: transparent;
+  color: var(--tinta-3);
+  border: 1px dashed var(--fio-forte);
+  cursor: not-allowed;
+}
+/* Pedido em curso: o botão segue focável, só apaga e ignora cliques. */
+.dialogo [aria-disabled="true"] { opacity: 0.55; cursor: progress; }
+.com-botao .secundario { padding-inline: 12px; }
+
+.dialogo .grupo + .grupo { border-top: 1px dashed var(--fio); padding-top: 16px; }
+.dialogo .pares { margin-inline: 0; }
+.dialogo .pares dd { word-break: break-all; }
+
 /* ---------- telas menores (o celular vendo o PC) ---------- */
 @media (max-width: 1100px) {
   .grade {
@@ -304,8 +486,11 @@ tbody tr:not(.meu) td { color: var(--tinta-2); }
 @media (max-width: 680px) {
   .barra { gap: 14px; }
   .leituras { gap: 14px; }
-  .controles { width: 100%; margin-left: 0; }
-  .minerar { flex: 1; }
+  /* Em tela estreita os controles quebram linha em vez de empurrar a página para o lado. */
+  .controles { width: 100%; margin-left: 0; flex-wrap: wrap; }
+  .nucleos { flex: 1 1 auto; }
+  .nucleos span { flex: 1; text-align: center; }
+  .minerar { flex: 1 1 auto; }
   .grade {
     grid-template-columns: minmax(0, 1fr);
     grid-template-rows: minmax(280px, 48vh) auto minmax(240px, auto) minmax(200px, auto) minmax(240px, auto);
@@ -316,7 +501,15 @@ tbody tr:not(.meu) td { color: var(--tinta-2); }
   .estacao-pe div:nth-child(3) { border-left: 0; }
   .estacao-pe div:nth-child(n + 3) { border-top: 1px solid var(--fio); }
 }
+@media (max-width: 480px) {
+  .dialogo-corpo { padding: 14px 16px 16px; }
+  .dialogo .titulo { font-size: 23px; }
+  .dialogo .acoes > button { flex: 1 1 auto; }
+}
 @media (prefers-reduced-motion: reduce) {
   #fita-trilho { animation: none; padding-left: 12px; }
   .minerar[aria-pressed="true"] i { animation: none; }
 }
+
+/* Aviso que só aparece enquanto a carteira está sendo criada. */
+.dica { color: var(--tinta-3); border-left: 1px solid var(--fio-forte); padding-left: 10px; }

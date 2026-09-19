@@ -6,6 +6,9 @@
 <title>Hyurax · Minerador</title>
 <meta name="color-scheme" content="dark">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14'/%3E%3Cg stroke='%23fff' stroke-width='3.6' stroke-linecap='round' opacity='.6'%3E%3Cline x1='18' y1='14' x2='18' y2='50'/%3E%3Cline x1='46' y1='14' x2='46' y2='50'/%3E%3Cline x1='18' y1='32' x2='46' y2='32'/%3E%3C/g%3E%3Cg fill='%23fff'%3E%3Ccircle cx='18' cy='14' r='5'/%3E%3Ccircle cx='18' cy='50' r='5'/%3E%3Ccircle cx='46' cy='14' r='5'/%3E%3Ccircle cx='46' cy='50' r='5'/%3E%3Ccircle cx='18' cy='32' r='5.6'/%3E%3Ccircle cx='46' cy='32' r='5.6'/%3E%3C/g%3E%3C/svg%3E">
+<!-- Preto desde o primeiro quadro: sem isso a janela pisca branca enquanto o
+     motor do navegador carrega a folha de estilo. -->
+<style>html, body { background: #030303; color: #f3f3f1; }</style>
 <link rel="stylesheet" href="/painel.css">
 <script type="module" src="/painel.js"></script>
 </head>
@@ -32,6 +35,7 @@
     <button type="button" id="minerar" class="minerar" aria-pressed="false">
       <i aria-hidden="true"></i><span>MINERAR</span>
     </button>
+    <button type="button" id="abrir-ajustes" class="ajustes-botao" aria-haspopup="dialog">Ajustes</button>
   </div>
   <p class="so-ver" id="so-ver" hidden>Somente leitura · os comandos ficam no computador que minera</p>
 </header>
@@ -93,6 +97,115 @@
 </main>
 
 <footer class="fita" aria-hidden="true"><div id="fita-trilho"></div></footer>
-<p id="desligado" class="desligado" hidden>Sem resposta do nó. O programa hyurax-no painel ainda está aberto?</p>
+<p id="desligado" class="desligado" hidden>Sem resposta do nó. O programa ainda está aberto?</p>
+
+<!-- Primeira abertura: sem carteira não há para onde mandar a recompensa.
+     Obrigatório: não fecha com Esc nem clicando fora. -->
+<dialog id="boas" class="dialogo" aria-labelledby="boas-titulo" aria-describedby="boas-texto boas-teste" closedby="none">
+  <header class="rotulo"><span>Primeira abertura</span><span>rede de teste</span></header>
+
+  <div class="dialogo-corpo pilha" id="boas-escolha">
+    <h2 class="titulo" id="boas-titulo">Boas-vindas ao Hyurax</h2>
+    <p class="texto" id="boas-texto">Este programa liga um nó do Hyurax neste computador e minera. Cada bloco que você achar paga uma recompensa, e ela cai na sua carteira.</p>
+    <p class="aviso-teste" id="boas-teste"><b>REDE DE TESTE.</b> O HYUR minerado aqui é de teste e não tem valor.</p>
+
+    <fieldset class="caminhos" id="caminhos">
+      <legend>Para receber a recompensa, você precisa de uma carteira.</legend>
+      <div class="segmentos">
+        <label for="c-criar"><input type="radio" name="caminho" id="c-criar" value="criar" checked><span>Criar carteira nova</span></label>
+        <label for="c-importar"><input type="radio" name="caminho" id="c-importar" value="importar"><span>Já tenho uma carteira</span></label>
+      </div>
+    </fieldset>
+
+    <form id="f-criar" class="pilha">
+      <div class="campo">
+        <label for="senha">Senha</label>
+        <div class="com-botao">
+          <input type="password" id="senha" name="senha" autocomplete="new-password" spellcheck="false" aria-describedby="r-tamanho">
+          <button type="button" id="ver-senha" class="secundario" aria-label="Mostrar as senhas">mostrar</button>
+        </div>
+      </div>
+      <div class="campo">
+        <label for="senha2">Repita a senha</label>
+        <input type="password" id="senha2" name="senha2" autocomplete="new-password" spellcheck="false" aria-describedby="r-iguais">
+      </div>
+      <ul class="regras">
+        <li id="r-tamanho">0 de no mínimo 10 caracteres</li>
+        <li id="r-iguais">Repita a senha no segundo campo</li>
+      </ul>
+      <p class="nota">A senha não é pedida para minerar, só para enviar HYUR. Anote num lugar seguro: ninguém consegue recuperá-la.</p>
+      <p class="texto dica" id="dica-criar" hidden>A senha é embaralhada de propósito devagar, para ninguém adivinhar por tentativa. Em computador antigo isso leva até um minuto.</p>
+      <p class="erro" id="erro-criar" role="alert"></p>
+      <div class="acoes"><button type="submit" id="criar" class="principal" disabled>Criar carteira</button></div>
+    </form>
+
+    <form id="f-importar" class="pilha" hidden>
+      <div class="campo">
+        <label for="arquivo">Escolha o arquivo carteira.txt</label>
+        <input type="file" id="arquivo" accept=".txt,text/plain">
+      </div>
+      <div class="campo">
+        <label for="conteudo">Ou cole aqui o conteúdo do arquivo</label>
+        <textarea id="conteudo" name="conteudo" rows="6" spellcheck="false" autocomplete="off" autocapitalize="off" placeholder="formato=HYURAX-CARTEIRA-v2&#10;endereco=…"></textarea>
+      </div>
+      <p class="nota">Minerar só precisa do endereço. A senha continua sendo a mesma de quando a carteira foi criada e só é pedida para enviar HYUR.</p>
+      <p class="erro" id="erro-importar" role="alert"></p>
+      <div class="acoes"><button type="submit" id="importar" class="principal" disabled>Importar</button></div>
+    </form>
+  </div>
+
+  <div class="dialogo-corpo pilha" id="boas-pronto" hidden>
+    <h2 class="titulo" id="pronto-titulo" tabindex="-1">Carteira pronta</h2>
+    <div class="campo">
+      <span class="rotulo-campo">Seu endereço</span>
+      <p class="endereco-grande" id="pronto-endereco"></p>
+    </div>
+    <p class="aviso-forte" id="pronto-aviso">Guarde a senha e uma cópia do arquivo carteira.txt. Sem os dois, o saldo se perde para sempre. Ninguém consegue recuperar.</p>
+    <p class="nota" id="pronto-pasta"></p>
+    <p class="erro" id="erro-pronto" role="alert"></p>
+    <div class="acoes">
+      <button type="button" id="abrir-pasta-carteira" class="secundario">Abrir a pasta da carteira</button>
+      <button type="button" id="comecar" class="principal">Começar a minerar</button>
+    </div>
+  </div>
+</dialog>
+
+<!-- Ajustes: fecha com Esc e com o botão Fechar. -->
+<dialog id="ajustes" class="dialogo" aria-labelledby="ajustes-titulo">
+  <header class="rotulo"><h2 id="ajustes-titulo">Ajustes</h2></header>
+  <div class="dialogo-corpo pilha">
+    <section class="grupo pilha" aria-labelledby="a-pasta-titulo">
+      <h3 class="rotulo-campo" id="a-pasta-titulo">Pasta de dados</h3>
+      <p class="caminho" id="a-dados">—</p>
+      <p class="nota">A carteira (carteira.txt) fica nesta pasta. Guarde uma cópia dela fora deste computador.</p>
+      <div class="acoes esquerda"><button type="button" id="a-abrir" class="secundario">Abrir pasta</button></div>
+      <p class="erro" id="a-abrir-erro" role="alert"></p>
+    </section>
+
+    <form class="grupo pilha" id="f-sementes">
+      <div class="campo">
+        <label for="sementes">Nós semente</label>
+        <div class="com-botao">
+          <input type="text" id="sementes" name="lista" autocomplete="off" spellcheck="false" autocapitalize="off" placeholder="203.0.113.5:8790, 198.51.100.7:8790" aria-describedby="sementes-dica">
+          <button type="submit" id="sementes-salvar" class="secundario">Salvar</button>
+        </div>
+      </div>
+      <p class="nota" id="sementes-dica">Os nós que este programa procura para entrar na rede. Separe por vírgula, no formato IP:PORTA.</p>
+      <p class="salvo" id="sementes-ok" role="status"></p>
+      <p class="erro" id="sementes-erro" role="alert"></p>
+    </form>
+
+    <section class="grupo pilha" aria-labelledby="a-sobre-titulo">
+      <h3 class="rotulo-campo" id="a-sobre-titulo">Sobre</h3>
+      <dl class="pares">
+        <div><dt>Versão</dt><dd id="a-versao">—</dd></div>
+        <div><dt>Rede</dt><dd id="a-rede">—</dd></div>
+        <div><dt>Porta P2P</dt><dd id="a-porta" class="num">—</dd></div>
+      </dl>
+    </section>
+
+    <div class="acoes"><button type="button" id="ajustes-fechar" class="secundario">Fechar</button></div>
+  </div>
+</dialog>
 </body>
 </html>

@@ -33,6 +33,7 @@
     <a href="#trabalho" data-i18n="nav.trabalho">Trabalho útil</a>
     <a href="#confira" data-i18n="nav.confira">Confira</a>
     <a href="#eter" data-i18n="nav.eter">Éter</a>
+    <a href="#baixar" data-i18n="nav.baixar">Baixar</a>
     <a href="#rodar" data-i18n="nav.rodar">Rode um nó</a>
     <a href="#estado" data-i18n="nav.estado">Onde estamos</a>
   </nav>
@@ -60,7 +61,7 @@
       <div class="topo-lado">
         <p class="lide" data-i18n="topo.lide">Celulares e computadores comuns formam a rede e conferem tudo sozinhos. Sem data center, sem dono, sem precisar confiar em ninguém.</p>
         <div class="acoes">
-          <a class="botao botao-luz" href="#rodar" data-i18n="topo.rodar">Rode um nó</a>
+          <a class="botao botao-luz" href="#baixar" data-i18n="topo.rodar">Baixar o minerador</a>
           <a class="botao botao-linha" href="#laco" data-i18n="topo.ver">Veja funcionando</a>
         </div>
       </div>
@@ -217,8 +218,46 @@
   </div>
 </section>
 
+<!-- ============================ BAIXAR ============================ -->
+<section class="faixa claro" id="baixar" aria-labelledby="t-baixar">
+  <div class="capitulo">
+    <p class="grito" data-i18n-html="baixar.grito">Baixe. Ligue. <em>Minere.</em></p>
+    <div class="corpo">
+      <header class="cabeca">
+        <p class="rotulo" data-i18n="baixar.rotulo">Minerador para Windows</p>
+        <h2 id="t-baixar" data-i18n="baixar.titulo">Minere sem digitar nenhum comando.</h2>
+        <p class="lide" data-i18n="baixar.lide">Um programa só: liga o nó, minera e mostra num painel a sua carteira e cada bloco que entra na cadeia. Sem instalar nada.</p>
+      </header>
+      <div class="baixar-caixa">
+        <a class="botao botao-luz botao-baixar" href="https://github.com/NOXqubit/hyurax/releases/latest/download/hyurax-minerador-windows-x86_64.zip" rel="noopener">
+          <span class="botao-baixar-texto"><span data-i18n="baixar.botao">Baixar para Windows</span><small data-i18n="baixar.sistema">Windows 10 e 11 · 64 bits</small></span>
+        </a>
+        <ul class="baixar-links">
+          <li><a href="https://github.com/NOXqubit/hyurax/releases" rel="noopener" data-i18n="baixar.versoes">Todas as versões e as somas SHA-256</a></li>
+          <li><a href="#rodar" data-i18n="baixar.outros">Linux, Mac ou Android? Rode o nó pelo terminal</a></li>
+        </ul>
+        <p class="nota" data-i18n="baixar.nota">É a rede de teste: o HYUR de teste não tem valor. Não há venda nem promessa de lucro.</p>
+      </div>
+    </div>
+    <ol class="passos">
+      <li>
+        <h3 data-i18n="baixar.p1t">Baixe e descompacte</h3>
+        <p data-i18n="baixar.p1">Baixe o .zip e descompacte numa pasta: botão direito no arquivo, “Extrair tudo”.</p>
+      </li>
+      <li>
+        <h3 data-i18n="baixar.p2t">Abra o programa</h3>
+        <p data-i18n="baixar.p2">Abra “Hyurax Minerador.exe”. Como ele ainda não tem assinatura digital, o Windows pode avisar “O Windows protegeu o computador”: clique em “Mais informações” e depois em “Executar assim mesmo”.</p>
+      </li>
+      <li>
+        <h3 data-i18n="baixar.p3t">Crie a carteira e minere</h3>
+        <p data-i18n="baixar.p3">Crie a sua carteira com uma senha e aperte MINERAR. Guarde a senha: sem ela, a carteira não abre.</p>
+      </li>
+    </ol>
+  </div>
+</section>
+
 <!-- ============================ RODAR ============================ -->
-<section class="faixa claro" id="rodar" aria-labelledby="t-rodar">
+<section class="faixa escuro" id="rodar" aria-labelledby="t-rodar">
   <div class="capitulo">
     <p class="grito" data-i18n-html="rodar.grito">Seja <em>a rede.</em></p>
     <div class="corpo">
@@ -250,7 +289,7 @@
 </section>
 
 <!-- ============================ ONDE ESTAMOS ============================ -->
-<section class="faixa escuro" id="estado" aria-labelledby="t-estado">
+<section class="faixa claro" id="estado" aria-labelledby="t-estado">
   <div class="capitulo">
     <p class="grito" data-i18n-html="estado.grito">Sem promessa. <em>Só prova.</em></p>
     <div class="corpo">
@@ -265,7 +304,7 @@
 </section>
 
 <!-- ============================ APOIE ============================ -->
-<section class="faixa claro" id="apoie" aria-labelledby="t-apoie">
+<section class="faixa escuro" id="apoie" aria-labelledby="t-apoie">
   <div class="capitulo">
     <p class="grito" data-i18n-html="apoie.grito">Sem dono. <em>Sem patrão.</em></p>
     <div class="corpo">

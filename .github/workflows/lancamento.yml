@@ -1,8 +1,9 @@
 # Programas prontos para baixar, montados pelo próprio GitHub.
 #
 # Roda quando uma etiqueta `v*` é enviada (ou à mão, em Actions). Compila o
-# `hyurax-no` e o `hyurax-minerar` para cada sistema, testa antes, e publica os
-# pacotes numa Release com a soma SHA-256 de cada arquivo.
+# `hyurax-no` e o `hyurax-minerar` para cada sistema, monta o minerador com
+# janela para Windows, testa antes, e publica os pacotes numa Release com a
+# soma SHA-256 de cada arquivo.
 #
 # O código é Rust puro (sem compilador C), então a compilação cruzada para o
 # ARM de celular não precisa de nada além do linker do alvo.
@@ -89,9 +90,104 @@ jobs:
             ${{ env.ARQUIVO }}
             ${{ env.ARQUIVO }}.sha256
 
+  # O programa de verdade para quem não usa terminal: baixa, abre e minera.
+  # Fica num job à parte porque precisa da feature `janela`, que puxa o
+  # WebView2 e só faz sentido no Windows; os pacotes de terminal acima
+  # continuam sem ela.
+  minerador-windows:
+    name: minerador com janela (Windows)
+    needs: testes
+    runs-on: windows-latest
+    env:
+      # O executável carrega a biblioteca de C da Microsoft dentro dele. Sem
+      # isso ele pede o VCRUNTIME140.dll, que não vem num Windows recém-
+      # instalado, e o programa nem abre. O WebView2 já vem no Windows 10 e 11.
+      RUSTFLAGS: -C target-feature=+crt-static
+    steps:
+      - uses: actions/checkout@v5
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-msvc
+      - name: compilar
+        shell: bash
+        run: cargo build --release --locked --target x86_64-pc-windows-msvc -p hyurax-no --features janela --bin hyurax-minerador
+      - name: empacotar
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Nome sem versão de propósito: o site aponta para
+          # releases/latest/download/hyurax-minerador-windows-x86_64.zip, e
+          # esse link só continua valendo se o nome nunca mudar.
+          arquivo="hyurax-minerador-windows-x86_64.zip"
+          pasta="Hyurax Minerador"
+          mkdir -p "$pasta"
+          cp ".target/x86_64-pc-windows-msvc/release/hyurax-minerador.exe" "$pasta/Hyurax Minerador.exe"
+          # O programa liga no WebView2 por esta DLL pequena da Microsoft
+          # (redistribuível, vem dentro do pacote webview2-com-sys). Sem ela ao
+          # lado do .exe, o Windows nem abre o programa.
+          dll=$(ls .target/x86_64-pc-windows-msvc/release/build/webview2-com-sys-*/out/x64/WebView2Loader.dll | head -1)
+          cp "$dll" "$pasta/"
+          cp LICENSE-MIT LICENSE-APACHE "$pasta/"
+          # LEIA-ME em .txt porque quem baixa o zip abre no Bloco de Notas.
+          # Vai com marca UTF-8 e fim de linha do Windows para os acentos e as
+          # quebras de linha saírem certos em qualquer versão do Bloco de Notas.
+          {
+            printf '\xEF\xBB\xBF'
+            sed 's/$/\r/' <<'FIM'
+          HYURAX MINERADOR
+          ================
+
+          O que é
+          -------
+          O programa com janela do Hyurax (HYUR): cria a carteira, minera e
+          mostra o saldo, sem precisar de terminal. É só abrir o
+          "Hyurax Minerador.exe".
+
+          Rede de TESTE
+          -------------
+          A rede pública ainda não existe e o HYUR de teste não tem valor.
+          Não há venda, pré-venda nem promessa de lucro.
+
+          O Windows pode avisar
+          ---------------------
+          O programa ainda não tem assinatura digital, então o Windows pode
+          mostrar "O Windows protegeu o computador". Para abrir, clique em
+          "Mais informações" e depois em "Executar assim mesmo".
+          Antes disso, confira a soma SHA-256 publicada ao lado do zip na
+          página de lançamentos do projeto.
+
+          Onde ficam os dados
+          -------------------
+          %APPDATA%\Hyurax
+          (cole esse caminho na barra de endereço do Explorador de Arquivos)
+
+          Cuidado com a carteira
+          ----------------------
+          Guarde a senha e uma cópia do arquivo da carteira em lugar seguro.
+          Sem a senha e sem o arquivo da carteira, o saldo se perde. Ninguém
+          consegue recuperar, nem o projeto.
+
+          Licença: MIT ou Apache 2.0, à sua escolha (LICENSE-MIT e
+          LICENSE-APACHE nesta pasta).
+          Código: https://github.com/NOXqubit/hyurax
+          FIM
+          } > "$pasta/LEIA-ME.txt"
+          7z a "$arquivo" "$pasta" > /dev/null
+          # Mostra no registro o que foi para dentro do zip, para conferir.
+          7z l "$arquivo"
+          sha256sum "$arquivo" > "${arquivo}.sha256"
+          echo "ARQUIVO=$arquivo" >> "$GITHUB_ENV"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: minerador-windows-x86_64
+          path: |
+            ${{ env.ARQUIVO }}
+            ${{ env.ARQUIVO }}.sha256
+
   publicar:
     name: publicar a Release
-    needs: compilar
+    # Espera os dois: sem o minerador na Release, o link fixo do site quebra.
+    needs: [compilar, minerador-windows]
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     steps:
@@ -101,16 +197,21 @@ jobs:
           merge-multiple: true
       - uses: softprops/action-gh-release@v2
         with:
-          prerelease: true
+          # Não é pré-lançamento de propósito: o link do site usa
+          # releases/latest, e o GitHub pula pré-lançamentos nesse endereço.
+          # Quem avisa que é rede de teste é o texto abaixo e o LEIA-ME.
+          prerelease: false
+          make_latest: true
           files: pacotes/*
           body: |
             **Rede de TESTE.** A rede pública não existe e o HYUR não tem valor.
             Não há venda, pré-venda nem promessa de lucro.
 
-            Como usar: veja o `LEIA-ME.md` dentro do pacote (é o `docs/RODAR-UM-NO.md`).
+            Como usar: o minerador com janela traz um `LEIA-ME.txt`; os pacotes de terminal trazem o `LEIA-ME.md` (é o `docs/RODAR-UM-NO.md`).
 
             | Pacote | Para |
             |---|---|
+            | `hyurax-minerador-windows-x86_64.zip` | Minerador com janela, para Windows 10 e 11 |
             | `linux-x86_64` | PC com Linux |
             | `linux-arm64-e-celular` | Linux em ARM e celular Android pelo Termux |
             | `windows-x86_64` | Windows 10 ou 11 |

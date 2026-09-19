@@ -18,7 +18,7 @@ e abra `http://localhost:8767`.
 | Arquivo | O que faz |
 |---|---|
 | `index.html` | A página inteira, com as chaves de tradução em `data-i18n` |
-| `styles/main.css` | Um tema só, escuro de propósito: luz quente para os nós, azul-gelo só no Éter |
+| `styles/main.css` | Preto e branco puro: os capítulos alternam claro e escuro, e estado se mostra por forma, nunca por cor |
 | `js/main.js` | Liga idiomas, abertura, experimentos, menu, doação e o quadro de estado |
 | `js/rede/viva.js` | A abertura em Three.js: nós em aglomerados, blocos se espalhando pelo grafo, ondas do Éter |
 | `js/secoes/trabalho.js` | Freivalds de verdade: toque num número de C e veja a linha exata ser recusada |
@@ -39,6 +39,18 @@ e abra `http://localhost:8767`.
   resolução automática.
 - **Segurança**: todo JavaScript vem de arquivo (`_headers` traz a política de
   conteúdo); nada de script inline.
+
+## Download do minerador
+
+A seção `#baixar` aponta o botão principal para
+`https://github.com/NOXqubit/hyurax/releases/latest/download/hyurax-minerador-windows-x86_64.zip`.
+Esse endereço só funciona se a Release mais recente (que não seja pré-lançamento
+nem rascunho) trouxer um arquivo com **exatamente** esse nome; se o nome mudar,
+mude o `href` em `index.html` junto. O link secundário leva à página de todas as
+versões, onde ficam as somas SHA-256.
+
+Os capítulos alternam claro e escuro; quem acrescentar uma seção no meio
+precisa inverter as que vêm depois para manter a alternância.
 
 ## O que ficou de fora nesta versão
 

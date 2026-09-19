@@ -7,9 +7,23 @@ authors.workspace = true
 license.workspace = true
 description = "Hyurax — nó: carteira com senha, mineração, envio de HYUR de teste, saldo e rede cifrada"
 
+[lib]
+path = "src/lib.rs"
+
 [[bin]]
 name = "hyurax-no"
 path = "src/main.rs"
+
+# O programa com janela: `cargo build --release -p hyurax-no --features janela --bin hyurax-minerador`.
+# Só compila com a feature, para o nó de terminal (Linux, celular, servidor)
+# continuar leve e sem nada de interface gráfica.
+[[bin]]
+name = "hyurax-minerador"
+path = "src/bin/hyurax-minerador.rs"
+required-features = ["janela"]
+
+[features]
+janela = ["dep:wry", "dep:tao"]
 
 [dependencies]
 hyurax-identidade.workspace = true
@@ -23,6 +37,19 @@ hyurax-pow.workspace = true
 hyurax-block.workspace = true
 argon2.workspace = true
 chacha20poly1305.workspace = true
+
+# Janela nativa (só com a feature `janela`), Rust puro no Windows: conferido
+# com cargo tree, sem `cc`, `cmake`, `ring` nem `pkg-config`.
+#
+# Versões fixas de propósito. As ligações novas do Windows (`windows-link` 0.2,
+# usada pela wry 0.57 e pela tao 0.37) geram as bibliotecas de importação na
+# hora, com o `dlltool` e um montador que o Rust não traz. Estas versões usam o
+# `windows-targets` 0.52, que já vem com as bibliotecas prontas. Pelo mesmo
+# motivo o Cargo.lock trava `parking_lot_core` em 0.9.11 e `windows-version` em
+# 0.1.1: não rode `cargo update` sem conferir de novo.
+[target.'cfg(windows)'.dependencies]
+wry = { version = "=0.48.1", optional = true, default-features = false, features = ["os-webview"] }
+tao = { version = "=0.31.1", optional = true, default-features = false, features = ["rwh_06"] }
 
 [lints.rust]
 unsafe_code = "forbid"

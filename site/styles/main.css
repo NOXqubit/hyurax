@@ -73,7 +73,7 @@ h1, h2, h3 { text-wrap: balance; }
 .marca { display: flex; align-items: center; gap: 0.7rem; color: inherit; text-decoration: none; }
 .marca img { filter: invert(0); }
 .marca-nome { font-weight: 800; font-variation-settings: "wdth" 125; letter-spacing: 0.18em; font-size: 0.86rem; }
-.menu { display: flex; gap: 1.6rem; margin-left: auto; }
+.menu { display: flex; gap: clamp(0.9rem, 1.6vw, 1.6rem); margin-left: auto; }
 .menu a { color: inherit; text-decoration: none; font-family: var(--mono); font-size: 0.74rem; letter-spacing: 0.08em; text-transform: uppercase; opacity: 0.7; }
 .menu a:hover, .menu a[aria-current="true"] { opacity: 1; text-decoration: line-through; text-decoration-thickness: 1px; }
 .barra-direita { display: flex; align-items: center; gap: 1rem; }
@@ -249,6 +249,16 @@ h1, h2, h3 { text-wrap: balance; }
 .meio[data-projetado="true"] { border-style: dashed; cursor: default; }
 .meio[data-projetado="true"] .marcador { background: transparent; border: 1px dashed var(--tinta); }
 
+/* ---------- baixar: um botão só, cheio, com a seta para baixo ---------- */
+.baixar-caixa { display: grid; gap: 1.2rem; align-content: start; }
+.botao-baixar { justify-content: space-between; gap: 1.2rem; padding: 1.3rem 1.5rem; text-align: left; }
+.botao-baixar::after { content: "↓"; font-size: 1.8rem; line-height: 1; }
+.botao-baixar-texto { display: grid; gap: 0.35rem; min-width: 0; }
+.botao-baixar-texto span { font-size: clamp(0.92rem, 1.6vw, 1.15rem); font-weight: 500; }
+.botao-baixar-texto small { font-size: 0.68rem; letter-spacing: 0.08em; opacity: 0.7; }
+.baixar-links { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.6rem; font-family: var(--mono); font-size: 0.74rem; letter-spacing: 0.06em; text-transform: uppercase; }
+.baixar-links a::after { content: " →"; font-family: var(--texto); }
+
 /* ---------- rodar ---------- */
 .passos { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, 1fr); border: 1px solid var(--tinta); counter-reset: passo; }
 .passos li { counter-increment: passo; padding: 1.5rem; display: grid; gap: 0.8rem; align-content: start; }
@@ -280,7 +290,7 @@ h1, h2, h3 { text-wrap: balance; }
 .endereco { font-size: clamp(0.76rem, 1.7vw, 1rem); overflow-wrap: anywhere; border: 1px solid var(--tinta); padding: 0.65rem 0.85rem; }
 
 /* ---------- rodapé ---------- */
-.rodape { background: #000; color: #fff; padding: clamp(4rem, 8vw, 6rem) var(--lado) calc(2.4rem + env(safe-area-inset-bottom, 0px)); }
+.rodape { background: #000; color: #fff; border-top: 1px solid rgba(255, 255, 255, 0.3); padding: clamp(4rem, 8vw, 6rem) var(--lado) calc(2.4rem + env(safe-area-inset-bottom, 0px)); }
 .rodape-dentro { max-width: var(--largura); margin: 0 auto; display: grid; gap: 2.2rem; }
 .rodape-lema { font-family: var(--condensada); font-weight: 800; font-variation-settings: "wdth" 62; font-size: clamp(3.4rem, 14vw, 14rem); line-height: 0.82; text-transform: uppercase; letter-spacing: -0.01em; }
 .rodape-lema span { display: block; }
@@ -297,7 +307,10 @@ h1, h2, h3 { text-wrap: balance; }
 }
 
 /* ---------- telas estreitas ---------- */
-@media (max-width: 980px) {
+/* O menu vira gaveta um pouco antes do resto: com sete links, em espanhol e com
+   barra de rolagem, a linha não cabe abaixo de uns 1065 px e os links
+   quebrariam em duas linhas. */
+@media (max-width: 1080px) {
   .menu { position: fixed; inset: 0; padding: 6rem var(--lado) 2rem; background: #000; flex-direction: column; gap: 1.4rem; transform: translateY(-105%); transition: transform 0.3s ease; margin: 0; }
   .menu a { font-size: 1.1rem; opacity: 1; }
   .barra.menu-aberto { mix-blend-mode: normal; }
@@ -305,6 +318,8 @@ h1, h2, h3 { text-wrap: balance; }
   .abrir-menu { display: flex; position: relative; z-index: 2; }
   .marca, .barra-direita { position: relative; z-index: 2; }
   .barra-direita { margin-left: auto; }
+}
+@media (max-width: 980px) {
   .corpo, .corpo.empilhado .cabeca { grid-template-columns: 1fr; }
   .explica, .passos, .quadro-estado { grid-template-columns: 1fr; }
   .explica li + li, .passos li + li, .coluna-estado + .coluna-estado { border-left: 0; padding-left: 0; }
