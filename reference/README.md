@@ -109,7 +109,7 @@ As três foram descartadas em favor deste pacote. `hyurax_reference.py` era a ma
 correta das três e serviu de ponto de partida.
 
 Os arquivos originais **não foram copiados para o disco**: eles chegaram pelo
-chat e nunca existiram em `D:\auron`. Se quiser preservar a proveniência,
+chat e nunca existiram em `D:\hyurax`. Se quiser preservar a proveniência,
 coloque-os em `reference/archive/` — a pasta já está criada e não é lida por
 nada.
 

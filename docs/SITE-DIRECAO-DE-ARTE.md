@@ -847,7 +847,7 @@ Conta de memória: HIGH a 4,5 MP ≈ 72 MB de MSAA + 18 de resolve + 7 de brilho
 **Regras gerais:**
 - As Etapas 0 e 1 vão para o ar sozinhas: são verdade e desempenho, sem mudar o visual.
 - Da 2 à 5, o trabalho acontece no ramo `site-v2` e só substitui o site publicado quando a Etapa 5 passar nos critérios.
-- Python: `D:\auron\.toolchain\python\python`.
+- Python: `D:\hyurax\.toolchain\python\python`.
 - Servidor: `python site/tools/servidor_dev.py 8766`.
 - O autor só avalia o visual depois da Etapa 1, com o HUD confirmando o perfil.
 

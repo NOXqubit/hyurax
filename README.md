@@ -74,7 +74,7 @@ cargo test -p hyurax-net -- --ignored --test-threads=1
 Terminal que não achar `cargo` ou `git`:
 
 ```bash
-. "D:\auron\scripts\env.ps1"
+. "D:\hyurax\scripts\env.ps1"
 ```
 
 ## Máquina nova
@@ -93,7 +93,7 @@ perde são as variáveis do perfil do usuário, não as ferramentas.
 Se as variáveis do perfil se perderem:
 
 ```powershell
-$tc = "D:\auron\.toolchain"
+$tc = "D:\hyurax\.toolchain"
 [Environment]::SetEnvironmentVariable('RUSTUP_HOME',   "$tc\rustup",    'User')
 [Environment]::SetEnvironmentVariable('CARGO_HOME',    "$tc\cargo",     'User')
 [Environment]::SetEnvironmentVariable('PIP_CACHE_DIR', "$tc\pip-cache", 'User')
@@ -106,14 +106,14 @@ Windows reinstalado troca o SID do usuário, e o git passa a recusar o
 repositório por dono diferente. Uma vez:
 
 ```bash
-git config --global --add safe.directory D:/auron
+git config --global --add safe.directory D:/hyurax
 ```
 
 Memória virtual, uma vez, como administrador. A mudança só vale depois de
 reiniciar:
 
 ```powershell
-& "D:\auron\scripts\setup-pagefile.ps1"
+& "D:\hyurax\scripts\setup-pagefile.ps1"
 ```
 
 ## Decisões de projeto

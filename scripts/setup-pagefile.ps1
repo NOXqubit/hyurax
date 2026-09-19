@@ -14,7 +14,7 @@
 #
 # Se um dia o C: apertar de novo, da para mandar para o D::
 #
-#     & "D:\auron\scripts\setup-pagefile.ps1" -Unidade D
+#     & "D:\hyurax\scripts\setup-pagefile.ps1" -Unidade D
 #
 # RISCO do HD externo, dito na cara: com paginacao ativa nele, desconectar o
 # HD com o computador ligado deixa o Windows instavel ate reiniciar. Se
@@ -24,7 +24,7 @@
 #   1. Menu Iniciar, digite "powershell"
 #   2. Clique com o botao direito, "Executar como administrador"
 #   3. Cole:
-#        & "D:\auron\scripts\setup-pagefile.ps1"
+#        & "D:\hyurax\scripts\setup-pagefile.ps1"
 #
 # A mudanca so vale depois de REINICIAR o computador.
 # =============================================================================

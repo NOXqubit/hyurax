@@ -10,13 +10,13 @@
 #   2. Conferir rapidamente se tudo está no lugar.
 #
 # Uso:
-#   . "D:\auron\scripts\env.ps1"
+#   . "D:\hyurax\scripts\env.ps1"
 #
 # O ponto e o espaço no começo importam: eles fazem o script rodar na sua
 # sessão, e não numa sessão filha que morre no fim.
 # =============================================================================
 
-$HYURAX_ROOT = "D:\auron"
+$HYURAX_ROOT = "D:\hyurax"
 $TOOLCHAIN  = "$HYURAX_ROOT\.toolchain"
 
 $env:RUSTUP_HOME = "$TOOLCHAIN\rustup"
