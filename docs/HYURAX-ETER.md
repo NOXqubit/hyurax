@@ -7,9 +7,50 @@
 >
 > *"O nó não fala Wi-Fi nem Bluetooth. O nó fala Hyurax — e o Éter escolhe o caminho."*
 
-> Estado em 18/09/2026: **implementado e testado** o núcleo (`crates/hyurax-eter`),
-> com dois meios reais: pasta de arquivos e memória. Bluetooth, LoRa e rádio
-> estão **projetados, não implementados**. Nada disto entra no consenso.
+> Estado em 19/09/2026: **implementado e testado** o núcleo (`crates/hyurax-eter`)
+> e os meios **Wi-Fi** (UDP na rede local), **som** (modem FSK para FM, cabo e
+> ar) e **fio serial** (Bluetooth SPP e rádios USB), além de pasta e memória. Um
+> objeto se divide entre eles pela velocidade de cada um. Falta o teste em
+> aparelho real: este PC não tem microfone, e o Termux não abre Bluetooth.
+> LoRa continua **projetado**. Nada disto entra no consenso.
+
+## Os três meios juntos (19/09/2026)
+
+```text
+eter enviar  foto.jpg  --wifi --som saida --bluetooth COM5
+eter receber recebidos --wifi --som gravacoes --bluetooth COM5
+```
+
+| Meio | Módulo | Como atravessa | Vazão | Estado |
+|---|---|---|---|---|
+| Wi-Fi | `wifi.rs` | UDP em difusão na rede local; serve o roteador do celular, sem internet | centenas de KB/s | testado no PC |
+| Som / FM | `som.rs` | Bytes viram tons (FSK, Bell 202). Alto-falante → microfone, ou transmissor FM → rádio | 109 B/s (perfil `fm`), 27 B/s (perfil `ar`) | testado em simulação de canal real |
+| Bluetooth | `serial.rs` | Porta serial do Bluetooth (SPP): `COM5`, `/dev/rfcomm0`. Também rádios LoRa por USB | ~20 KB/s | testado com fio simulado |
+
+**Como um objeto se divide.** Cada pedaço vai pelo meio que terminaria de
+entregá-lo primeiro, contando a fila que já está nele (`Meio::vazao`). Um meio
+dez vezes mais rápido leva dez vezes mais; o lento nunca vira gargalo. O aviso
+(manifesto) vai por todos. Se um meio cai, o receptor sabe exatamente o que
+falta (`Faltando`) e o reenvio vai pelos que sobraram.
+
+**A moldura dos fios** (`enquadramento.rs`). Som e serial são rios de bytes com
+ruído, sem começo nem fim de pacote. Cada quadro vai em `E7 3C 5A C3 ·
+tamanho(2) · quadro · CRC-32`. O CRC só separa o que o fio estragou; quem
+garante o conteúdo continua sendo a prova de Merkle.
+
+**O modem de som** resiste, nos testes, a gravação em outra taxa (48 kHz
+tocado, 44,1 kHz gravado), relógio 300 ppm fora, volume a 20% e ruído de um
+terço do sinal. Cada byte ressincroniza o relógio (moldura de UART).
+
+**O que não é possível sem hardware ou app próprio, dito com clareza:**
+- Wi-Fi de placa para placa sem roteador (Wi-Fi Direct) não é exposto a
+  programa comum no Windows nem no Termux. O roteador do celular cumpre o papel.
+- Bluetooth no celular exige um aplicativo Android; o Termux não tem acesso.
+- Transmitir em FM exige um transmissor (os de carro, baratos, servem). Receber
+  exige um rádio FM, que muitos celulares têm. O modem já é o mesmo.
+
+Tocar e gravar no Windows, sem instalar nada: `scripts/eter-tocar.ps1` e
+`scripts/eter-gravar.ps1` (este também faz o teste de eco com `-Tocar`).
 
 ## O problema
 

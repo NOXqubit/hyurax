@@ -42,7 +42,11 @@ use hyurax_codec::{
 };
 use hyurax_crypto::sha512;
 
+pub mod enquadramento;
 pub mod meios;
+pub mod serial;
+pub mod som;
+pub mod wifi;
 
 /// Marca de todo quadro deste transporte.
 pub const MAGIC: [u8; 4] = *b"ETER";
@@ -574,6 +578,21 @@ pub trait Meio {
 
     /// Recolhe o que chegou desde a última chamada. Vazio é normal.
     fn receber(&mut self) -> Result<Vec<Vec<u8>>, EterError>;
+
+    /// Quantos bytes por segundo este meio entrega, estimado.
+    ///
+    /// É o que decide quanto do objeto cada meio leva. O padrão é "rápido";
+    /// meios lentos (som, rádio) dizem o seu número.
+    fn vazao(&self) -> u64 {
+        10_000_000
+    }
+
+    /// Termina o que ficou acumulado: grava o áudio, esvazia o buffer da porta.
+    ///
+    /// [`espalhar`] chama no fim. Meios que entregam na hora não fazem nada.
+    fn descarregar(&mut self) -> Result<(), EterError> {
+        Ok(())
+    }
 }
 
 /// Espalha um objeto pelos meios disponíveis.
@@ -585,9 +604,11 @@ pub trait Meio {
 ///   viaja longe mesmo quando o dado não pode.
 /// - **O tamanho do pedaço é ditado pelo maior meio**, para não desperdiçar a
 ///   banda de quem tem banda.
-/// - **Os fragmentos são repartidos em rodízio entre os meios que comportam
-///   aquele quadro.** Um pedaço sai pelo Wi-Fi, o seguinte pelo Bluetooth, e
-///   quem escuta só um dos dois nunca vê o objeto inteiro.
+/// - **Os fragmentos são repartidos pela velocidade de cada meio.** Cada pedaço
+///   vai pelo meio que terminaria de entregá-lo primeiro, contando o que já
+///   está na fila dele ([`Meio::vazao`]). Meios iguais se alternam; um meio dez
+///   vezes mais rápido leva dez vezes mais. Assim o objeto inteiro chega no
+///   menor tempo, e nenhum meio lento vira gargalo.
 ///
 /// Um meio pequeno demais para o dado não é erro: ele fica com o aviso. Erro é
 /// quando **nenhum** meio comporta um fragmento.
@@ -626,14 +647,30 @@ pub fn espalhar(
             preciso: maior_quadro,
         });
     }
-    for (posicao, quadro) in quadros.iter().enumerate() {
-        let vez = posicao.checked_rem(carregadores.len()).unwrap_or(0);
-        let Some(escolhido) = carregadores.get(vez) else {
+    // Fila de cada meio em nanossegundos: cada quadro vai para quem termina antes.
+    let mut fila: Vec<u128> = vec![0; meios.len()];
+    for quadro in &quadros {
+        let mut melhor: Option<(usize, u128)> = None;
+        for &i in &carregadores {
+            let vazao = meios.get(i).map(|m| u128::from(m.vazao().max(1))).unwrap_or(1);
+            let custo = (quadro.len() as u128).saturating_mul(1_000_000_000).checked_div(vazao).unwrap_or(u128::MAX);
+            let fim = fila.get(i).copied().unwrap_or(0).saturating_add(custo);
+            if melhor.is_none_or(|(_, f)| fim < f) {
+                melhor = Some((i, fim));
+            }
+        }
+        let Some((escolhido, fim)) = melhor else {
             continue;
         };
-        if let Some(meio) = meios.get_mut(*escolhido) {
+        if let Some(meio) = meios.get_mut(escolhido) {
             meio.enviar(quadro)?;
         }
+        if let Some(f) = fila.get_mut(escolhido) {
+            *f = fim;
+        }
+    }
+    for meio in meios.iter_mut() {
+        meio.descarregar()?;
     }
     Ok(manifesto)
 }
