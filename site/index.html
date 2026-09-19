@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Hyurax — a rede somos nós</title>
 <meta name="description" content="Hyurax é uma blockchain em que celulares e computadores comuns formam a rede e conferem tudo sozinhos. Rede de teste, código aberto, sem valor.">
-<meta name="theme-color" content="#05070a">
+<meta name="theme-color" content="#000000">
 <meta name="color-scheme" content="dark">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Hyurax">
@@ -21,10 +21,11 @@
 </head>
 <body>
 <a class="pular" href="#conteudo" data-i18n="ui.pular">Pular para o conteúdo</a>
+<div class="lente" id="lente" aria-hidden="true"></div>
 
 <header class="barra" id="barra">
   <a class="marca" href="#topo" aria-label="Hyurax">
-    <img src="assets/logo.svg" alt="" width="26" height="26">
+    <img src="assets/logo.svg" alt="" width="22" height="22">
     <span class="marca-nome">HYURAX</span>
   </a>
   <nav class="menu" id="menu" aria-label="Seções" data-i18n-attr="aria-label:nav.rotulo">
@@ -48,203 +49,240 @@
 <main id="conteudo">
 
 <!-- ============================ ABERTURA ============================ -->
-<section class="topo" id="topo" aria-labelledby="t-topo">
+<section class="topo escuro" id="topo" aria-labelledby="t-topo">
   <canvas class="rede" id="rede" aria-hidden="true"></canvas>
+  <p class="legenda-rede" data-i18n="topo.legenda">Cada luz é um aparelho. Cada pulso é um bloco sendo conferido de nó em nó.</p>
   <div class="topo-conteudo">
-    <p class="selo-rede"><span class="ponto" aria-hidden="true"></span><span data-i18n="topo.selo">Rede de teste · sem valor · código aberto</span></p>
+    <p class="selo-rede"><span data-i18n="topo.selo_1">Rede de teste</span><span data-i18n="topo.selo_2">Sem valor</span><span data-i18n="topo.selo_3">Código aberto</span></p>
     <h1 class="palavra" id="t-topo">HYURAX</h1>
-    <p class="lema" data-i18n="topo.lema">Os nós são a rede.</p>
-    <p class="lide" data-i18n="topo.lide">Celulares e computadores comuns formam a rede e conferem tudo sozinhos. Sem data center, sem dono, sem precisar confiar em ninguém.</p>
-    <div class="acoes">
-      <a class="botao botao-luz" href="#rodar" data-i18n="topo.rodar">Rode um nó</a>
-      <a class="botao botao-linha" href="#laco" data-i18n="topo.ver">Veja funcionando</a>
+    <div class="topo-pe">
+      <p class="lema" data-i18n="topo.lema">Os nós são a rede.</p>
+      <div class="topo-lado">
+        <p class="lide" data-i18n="topo.lide">Celulares e computadores comuns formam a rede e conferem tudo sozinhos. Sem data center, sem dono, sem precisar confiar em ninguém.</p>
+        <div class="acoes">
+          <a class="botao botao-luz" href="#rodar" data-i18n="topo.rodar">Rode um nó</a>
+          <a class="botao botao-linha" href="#laco" data-i18n="topo.ver">Veja funcionando</a>
+        </div>
+      </div>
     </div>
   </div>
-  <aside class="ao-vivo" aria-label="Blocos simulados" data-i18n-attr="aria-label:topo.ao_vivo">
-    <p class="ao-vivo-rotulo"><span class="ponto" aria-hidden="true"></span><span data-i18n="topo.ao_vivo">Simulação no seu navegador</span></p>
-    <ol class="ao-vivo-blocos mono" id="blocos-vivos"></ol>
-  </aside>
-  <p class="legenda-rede" data-i18n="topo.legenda">Cada luz é um aparelho. Cada pulso é um bloco sendo conferido de nó em nó.</p>
 </section>
 
-<!-- ============================ O LAÇO ============================ -->
-<section class="capitulo laco" id="laco" aria-labelledby="t-laco">
-  <header class="cabeca">
-    <p class="rotulo"><span data-i18n="laco.rotulo">Provado em 18/09/2026</span></p>
-    <h2 id="t-laco" data-i18n="laco.titulo">Um PC e um celular. Nenhum confia no outro. Os dois chegaram à mesma verdade.</h2>
-    <p class="lide" data-i18n="laco.lide">O computador minerou dois blocos. O celular conferiu cada um sozinho e aceitou. Depois o celular minerou um bloco, e o computador conferiu e aceitou. Dois sistemas, duas arquiteturas, a mesma cadeia.</p>
-  </header>
-
-  <div class="laco-palco">
-    <figure class="aparelho">
-      <div class="aparelho-icone" aria-hidden="true">
-        <svg viewBox="0 0 48 40"><rect x="3" y="3" width="42" height="26" rx="3"/><path d="M16 36h16M24 29v7"/></svg>
-      </div>
-      <figcaption>
-        <b data-i18n="laco.pc">Computador</b>
-        <span class="mono">Windows · x86_64</span>
-      </figcaption>
-      <ul class="feitos mono">
-        <li><span data-i18n="laco.bloco">bloco</span> 1 · 26,7 s</li>
-        <li><span data-i18n="laco.bloco">bloco</span> 2 · 30,8 s</li>
-      </ul>
-    </figure>
-
-    <div class="fluxo" aria-hidden="true">
-      <svg viewBox="0 0 200 90">
-        <path class="trilho" d="M4 30 C70 8 130 8 196 30"/>
-        <path class="trilho" d="M196 60 C130 82 70 82 4 60"/>
-        <circle class="bola ida" r="4"/>
-        <circle class="bola volta" r="4"/>
-      </svg>
-      <span class="fluxo-rotulo ida-rotulo" data-i18n="laco.ida">blocos 1 e 2 →</span>
-      <span class="fluxo-rotulo volta-rotulo" data-i18n="laco.volta">← bloco 3</span>
-    </div>
-
-    <figure class="aparelho">
-      <div class="aparelho-icone" aria-hidden="true">
-        <svg viewBox="0 0 48 40"><rect x="15" y="2" width="18" height="36" rx="4"/><path d="M21 33h6"/></svg>
-      </div>
-      <figcaption>
-        <b data-i18n="laco.celular">Celular</b>
-        <span class="mono">Android · arm64</span>
-      </figcaption>
-      <ul class="feitos mono">
-        <li><span data-i18n="laco.bloco">bloco</span> 3 · 39,4 s</li>
-        <li>128 MiB · 4 <span data-i18n="laco.linhas">linhas</span></li>
-      </ul>
-    </figure>
+<!-- ============================ A FITA ============================ -->
+<div class="fita" aria-label="Blocos simulados" data-i18n-attr="aria-label:topo.ao_vivo">
+  <div class="fita-trilho" id="fita-trilho">
+    <ol id="blocos-vivos"></ol>
+    <ol id="blocos-vivos-eco" aria-hidden="true"></ol>
   </div>
+</div>
 
-  <dl class="numeros">
-    <div><dt data-i18n="laco.n_altura">altura final, igual nos dois</dt><dd class="mono">3</dd></div>
-    <div><dt data-i18n="laco.n_aceitos">blocos aceitos pelo outro lado</dt><dd class="mono">3 / 3</dd></div>
-    <div><dt data-i18n="laco.n_falhas">falhas</dt><dd class="mono">0</dd></div>
-    <div><dt data-i18n="laco.n_trabalho">trabalho útil por bloco</dt><dd class="mono">48×48</dd></div>
-  </dl>
-  <p class="nota" data-i18n="laco.nota">Com os programas publicados no GitHub, pela rede local (cabo no computador, Wi-Fi no celular), com conexão cifrada. Três blocos provam que o laço fecha; ainda não são medida de desempenho.</p>
+<!-- ============================ O LAÇO ============================ -->
+<section class="faixa claro" id="laco" aria-labelledby="t-laco">
+  <div class="capitulo">
+    <p class="grito" data-i18n-html="laco.grito">Nenhum confia. <em>Todos conferem.</em></p>
+    <div class="corpo">
+      <header class="cabeca">
+        <p class="rotulo" data-i18n="laco.rotulo">Provado em 18/09/2026</p>
+        <h2 id="t-laco" data-i18n="laco.titulo">Um PC e um celular. Nenhum confia no outro. Os dois chegaram à mesma verdade.</h2>
+        <p class="lide" data-i18n="laco.lide">O computador minerou dois blocos. O celular conferiu cada um sozinho e aceitou. Depois o celular minerou um bloco, e o computador conferiu e aceitou. Dois sistemas, duas arquiteturas, a mesma cadeia.</p>
+      </header>
+      <div class="laco-palco">
+        <figure class="aparelho">
+          <div class="aparelho-icone" aria-hidden="true">
+            <svg viewBox="0 0 48 40"><rect x="3" y="3" width="42" height="26" rx="2"/><path d="M16 36h16M24 29v7"/></svg>
+          </div>
+          <figcaption>
+            <b data-i18n="laco.pc">Computador</b>
+            <span class="mono">Windows · x86_64</span>
+          </figcaption>
+          <ul class="feitos mono">
+            <li><span data-i18n="laco.bloco">bloco</span> 1 · 26,7 s</li>
+            <li><span data-i18n="laco.bloco">bloco</span> 2 · 30,8 s</li>
+          </ul>
+        </figure>
+        <div class="fluxo" aria-hidden="true">
+          <svg viewBox="0 0 200 90">
+            <path class="trilho" d="M4 30 C70 8 130 8 196 30"/>
+            <path class="trilho" d="M196 60 C130 82 70 82 4 60"/>
+            <circle class="bola ida" r="4"/>
+            <circle class="bola volta" r="4"/>
+          </svg>
+          <span class="fluxo-rotulo ida-rotulo" data-i18n="laco.ida">blocos 1 e 2 →</span>
+          <span class="fluxo-rotulo volta-rotulo" data-i18n="laco.volta">← bloco 3</span>
+        </div>
+        <figure class="aparelho">
+          <div class="aparelho-icone" aria-hidden="true">
+            <svg viewBox="0 0 48 40"><rect x="15" y="2" width="18" height="36" rx="3"/><path d="M21 33h6"/></svg>
+          </div>
+          <figcaption>
+            <b data-i18n="laco.celular">Celular</b>
+            <span class="mono">Android · arm64</span>
+          </figcaption>
+          <ul class="feitos mono">
+            <li><span data-i18n="laco.bloco">bloco</span> 3 · 39,4 s</li>
+            <li>128 MiB · 4 <span data-i18n="laco.linhas">linhas</span></li>
+          </ul>
+        </figure>
+      </div>
+    </div>
+    <dl class="numeros">
+      <div><dt data-i18n="laco.n_altura">altura final, igual nos dois</dt><dd>3</dd></div>
+      <div><dt data-i18n="laco.n_aceitos">blocos aceitos pelo outro lado</dt><dd>3/3</dd></div>
+      <div><dt data-i18n="laco.n_falhas">falhas</dt><dd>0</dd></div>
+      <div><dt data-i18n="laco.n_trabalho">trabalho útil por bloco</dt><dd>48×48</dd></div>
+    </dl>
+    <p class="nota" data-i18n="laco.nota">Com os programas publicados no GitHub, pela rede local (cabo no computador, Wi-Fi no celular), com conexão cifrada. Três blocos provam que o laço fecha; ainda não são medida de desempenho.</p>
+  </div>
 </section>
 
 <!-- ============================ TRABALHO ÚTIL ============================ -->
-<section class="capitulo trabalho" id="trabalho" aria-labelledby="t-trabalho">
-  <header class="cabeca">
-    <p class="rotulo" data-i18n="trabalho.rotulo">Trabalho útil</p>
-    <h2 id="t-trabalho" data-i18n="trabalho.titulo">Pegue a mentira sem refazer a conta.</h2>
-    <p class="lide" data-i18n="trabalho.lide">Todo bloco traz uma multiplicação de matrizes, a mesma conta que sustenta a inteligência artificial. Conferir não exige refazer: basta sortear um vetor e comparar os dois lados.</p>
-  </header>
-
-  <div class="bancada freivalds">
-    <div class="matrizes">
-      <figure><div class="grade" id="fv-a"></div><figcaption>A</figcaption></figure>
-      <span class="op" aria-hidden="true">×</span>
-      <figure><div class="grade" id="fv-b"></div><figcaption>B</figcaption></figure>
-      <span class="op" aria-hidden="true">=</span>
-      <figure class="figura-c"><div class="grade grade-c" id="fv-c"></div><figcaption data-i18n="trabalho.c">C · toque num número para mentir</figcaption></figure>
+<section class="faixa escuro" id="trabalho" aria-labelledby="t-trabalho">
+  <div class="capitulo">
+    <p class="grito" data-i18n-html="trabalho.grito">Minta. <em>A rede pega.</em></p>
+    <div class="corpo empilhado">
+      <header class="cabeca">
+        <p class="rotulo" data-i18n="trabalho.rotulo">Trabalho útil</p>
+        <h2 id="t-trabalho" data-i18n="trabalho.titulo">Pegue a mentira sem refazer a conta.</h2>
+        <p class="lide" data-i18n="trabalho.lide">Todo bloco traz uma multiplicação de matrizes, a mesma conta que sustenta a inteligência artificial. Conferir não exige refazer: basta sortear um vetor e comparar os dois lados.</p>
+      </header>
+      <div class="bancada freivalds">
+        <div class="matrizes">
+          <figure><div class="grade" id="fv-a"></div><figcaption>A</figcaption></figure>
+          <span class="op" aria-hidden="true">×</span>
+          <figure><div class="grade" id="fv-b"></div><figcaption>B</figcaption></figure>
+          <span class="op" aria-hidden="true">=</span>
+          <figure class="figura-c"><div class="grade grade-c" id="fv-c"></div><figcaption data-i18n="trabalho.c">C · toque num número para mentir</figcaption></figure>
+        </div>
+        <div class="vetor">
+          <span class="rotulo-vetor">r</span>
+          <div class="vetor-valores mono" id="fv-r"></div>
+          <span class="semente mono" id="fv-semente"></span>
+        </div>
+        <div class="comparacao" id="fv-linhas" aria-hidden="true"></div>
+        <p class="veredito" id="fv-veredito" role="status" aria-live="polite"></p>
+        <div class="controles">
+          <button class="botao botao-linha botao-pequeno" type="button" id="fv-nova" data-i18n="trabalho.nova">Nova tarefa honesta</button>
+        </div>
+        <p class="rotulo-real"><span class="ponto" aria-hidden="true"></span><span data-i18n="trabalho.real">Conta real · Freivalds no seu aparelho · matrizes de exemplo</span></p>
+      </div>
     </div>
-    <div class="vetor">
-      <span class="rotulo-vetor">r</span>
-      <div class="vetor-valores mono" id="fv-r"></div>
-      <span class="semente mono" id="fv-semente"></span>
-    </div>
-    <div class="comparacao" id="fv-linhas" aria-hidden="true"></div>
-    <p class="veredito" id="fv-veredito" role="status" aria-live="polite"></p>
-    <div class="controles">
-      <button class="botao botao-linha botao-pequeno" type="button" id="fv-nova" data-i18n="trabalho.nova">Nova tarefa honesta</button>
-    </div>
-    <p class="rotulo-real"><span class="ponto" aria-hidden="true"></span><span data-i18n="trabalho.real">Conta real · Freivalds no seu aparelho · matrizes de exemplo</span></p>
+    <ol class="explica">
+      <li><b data-i18n="trabalho.p1t">Alguém entrega C.</b> <span data-i18n="trabalho.p1">E diz que multiplicou A por B. Refazer tudo custaria caro.</span></li>
+      <li><b data-i18n="trabalho.p2t">O vetor r sai do próprio C.</b> <span data-i18n="trabalho.p2">É o SHA-512 do resultado. Quem fez a conta não sabe r antes de entregar.</span></li>
+      <li><b data-i18n="trabalho.p3t">Os dois lados têm de bater.</b> <span data-i18n="trabalho.p3">A·(B·r) contra C·r: só multiplicações de matriz por vetor. Uma mentira aparece na linha exata.</span></li>
+    </ol>
+    <p class="nota" data-i18n="trabalho.nota">Numa rodada desta demonstração, uma mentira escapa com chance de no máximo 1 em 97. O consenso do Hyurax usa 4 rodadas de 20 bits: no máximo 1 em 2⁸⁰.</p>
   </div>
-
-  <ol class="explica">
-    <li><b data-i18n="trabalho.p1t">Alguém entrega C.</b> <span data-i18n="trabalho.p1">E diz que multiplicou A por B. Refazer tudo custaria caro.</span></li>
-    <li><b data-i18n="trabalho.p2t">O vetor r sai do próprio C.</b> <span data-i18n="trabalho.p2">É o SHA-512 do resultado. Quem fez a conta não sabe r antes de entregar.</span></li>
-    <li><b data-i18n="trabalho.p3t">Os dois lados têm de bater.</b> <span data-i18n="trabalho.p3">A·(B·r) contra C·r: só multiplicações de matriz por vetor. Uma mentira aparece na linha exata.</span></li>
-  </ol>
-  <p class="nota" data-i18n="trabalho.nota">Numa rodada desta demonstração, uma mentira escapa com chance de no máximo 1 em 97. O consenso do Hyurax usa 4 rodadas de 20 bits: no máximo 1 em 2⁸⁰.</p>
 </section>
 
 <!-- ============================ CONFIRA ============================ -->
-<section class="capitulo confira" id="confira" aria-labelledby="t-confira">
-  <header class="cabeca">
-    <p class="rotulo" data-i18n="confira.rotulo">Cadeia</p>
-    <h2 id="t-confira" data-i18n="confira.titulo">Não confie. Confira.</h2>
-    <p class="lide" data-i18n="confira.lide">Cada bloco carrega o resumo do anterior. Mexa em qualquer bloco antigo: o resumo dele muda, e todos os que vêm depois denunciam na hora.</p>
-  </header>
-  <div class="bancada cadeia">
-    <ol class="blocos" id="cd-blocos"></ol>
-    <p class="veredito" id="cd-status" role="status" aria-live="polite"></p>
-    <div class="controles">
-      <button class="botao botao-linha botao-pequeno" type="button" id="cd-restaurar" data-i18n="confira.restaurar" hidden>Desfazer a mexida</button>
+<section class="faixa claro" id="confira" aria-labelledby="t-confira">
+  <div class="capitulo">
+    <p class="grito" data-i18n-html="confira.grito">Apague o passado. <em>Tente.</em></p>
+    <div class="corpo">
+      <header class="cabeca">
+        <p class="rotulo" data-i18n="confira.rotulo">Cadeia</p>
+        <h2 id="t-confira" data-i18n="confira.titulo">Não confie. Confira.</h2>
+        <p class="lide" data-i18n="confira.lide">Cada bloco carrega o resumo do anterior. Mexa em qualquer bloco antigo: o resumo dele muda, e todos os que vêm depois denunciam na hora.</p>
+      </header>
+      <div class="bancada cadeia">
+        <ol class="blocos" id="cd-blocos"></ol>
+        <p class="veredito" id="cd-status" role="status" aria-live="polite"></p>
+        <div class="controles">
+          <button class="botao botao-linha botao-pequeno" type="button" id="cd-restaurar" data-i18n="confira.restaurar" hidden>Desfazer a mexida</button>
+        </div>
+        <p class="rotulo-real"><span class="ponto" aria-hidden="true"></span><span data-i18n="confira.real">SHA-512 real no seu navegador · blocos de exemplo</span></p>
+      </div>
     </div>
-    <p class="rotulo-real"><span class="ponto" aria-hidden="true"></span><span data-i18n="confira.real">SHA-512 real no seu navegador · blocos de exemplo</span></p>
   </div>
 </section>
 
 <!-- ============================ ÉTER ============================ -->
-<section class="capitulo eter" id="eter" aria-labelledby="t-eter">
-  <header class="cabeca">
-    <p class="rotulo" data-i18n="eter.rotulo">Éter · comunicação entre nós</p>
-    <h2 id="t-eter" data-i18n="eter.titulo">O nó não fala Wi-Fi nem Bluetooth. Fala Hyurax.</h2>
-    <p class="lide" data-i18n="eter.lide">Um arquivo vira pedaços, e cada pedaço carrega a própria prova. Os pedaços saem por caminhos diferentes ao mesmo tempo e se montam do outro lado. Corte um caminho: os outros levam o resto.</p>
-  </header>
-  <div class="bancada eter-bancada">
-    <canvas class="eter-tela" id="eter-tela" aria-hidden="true"></canvas>
-    <div class="meios" id="eter-meios" role="group" aria-label="Caminhos" data-i18n-attr="aria-label:eter.caminhos"></div>
-    <p class="veredito" id="eter-status" role="status" aria-live="polite"></p>
+<section class="faixa escuro" id="eter" aria-labelledby="t-eter">
+  <div class="capitulo">
+    <p class="grito" data-i18n-html="eter.grito">Corte um caminho. <em>A rede acha outro.</em></p>
+    <div class="corpo">
+      <header class="cabeca">
+        <p class="rotulo" data-i18n="eter.rotulo">Éter · comunicação entre nós</p>
+        <h2 id="t-eter" data-i18n="eter.titulo">O nó não fala Wi-Fi nem Bluetooth. Fala Hyurax.</h2>
+        <p class="lide" data-i18n="eter.lide">Um arquivo vira pedaços, e cada pedaço carrega a própria prova. Os pedaços saem por caminhos diferentes ao mesmo tempo e se montam do outro lado. Corte um caminho: os outros levam o resto.</p>
+      </header>
+      <div class="bancada eter-bancada">
+        <canvas class="eter-tela" id="eter-tela" aria-hidden="true"></canvas>
+        <div class="meios" id="eter-meios" role="group" aria-label="Caminhos" data-i18n-attr="aria-label:eter.caminhos"></div>
+        <p class="veredito" id="eter-status" role="status" aria-live="polite"></p>
+      </div>
+    </div>
+    <p class="nota" data-i18n="eter.nota">Pronto e testado: o núcleo do Éter e o caminho por pasta, que funciona até com pendrive. Bluetooth e rádio LoRa estão projetados, ainda sem código. Aqui, os caminhos são desenhados; os pedaços e as provas são de verdade.</p>
   </div>
-  <p class="nota" data-i18n="eter.nota">Pronto e testado: o núcleo do Éter e o caminho por pasta, que funciona até com pendrive. Bluetooth e rádio LoRa estão projetados, ainda sem código. Aqui, os caminhos são desenhados; os pedaços e as provas são de verdade.</p>
 </section>
 
 <!-- ============================ RODAR ============================ -->
-<section class="capitulo rodar" id="rodar" aria-labelledby="t-rodar">
-  <header class="cabeca">
-    <p class="rotulo" data-i18n="rodar.rotulo">Participe</p>
-    <h2 id="t-rodar" data-i18n="rodar.titulo">Rode um nó.</h2>
-    <p class="lide" data-i18n="rodar.lide">Um programa só, sem instalar nada. Roda no Windows, no Linux, no Mac e no celular Android (pelo Termux).</p>
-  </header>
-  <ol class="passos">
-    <li>
-      <h3 data-i18n="rodar.p1t">Baixe</h3>
-      <p data-i18n="rodar.p1">Na página de versões, escolha o pacote do seu sistema e confira a soma SHA-256 que vem junto.</p>
-      <a class="botao botao-linha botao-pequeno" href="https://github.com/NOXqubit/hyurax/releases" rel="noopener" data-i18n="rodar.versoes">Versões no GitHub</a>
-    </li>
-    <li>
-      <h3 data-i18n="rodar.p2t">Crie uma carteira</h3>
-      <p data-i18n="rodar.p2">A carteira fica cifrada com a sua senha. Sem a senha, o arquivo não gasta nada.</p>
-      <pre class="comando"><code>hyurax-no carteira nova --arquivo carteira.txt</code></pre>
-    </li>
-    <li>
-      <h3 data-i18n="rodar.p3t">Entre na rede</h3>
-      <p data-i18n="rodar.p3">O nó confere cada bloco sozinho. Para minerar, troque <code>no</code> por <code>minerar</code> e informe o seu endereço.</p>
-      <pre class="comando"><code>hyurax-no no --rede testnet --pasta dados --porta 8790</code></pre>
-    </li>
-  </ol>
-  <p class="nota" data-i18n="rodar.nota">Rede de teste: o HYUR não tem valor, não há venda nem promessa de lucro. Use as versões a partir de v0.2.0-teste.1; as anteriores saíram com o nome antigo e falam outra rede.</p>
+<section class="faixa claro" id="rodar" aria-labelledby="t-rodar">
+  <div class="capitulo">
+    <p class="grito" data-i18n-html="rodar.grito">Seja <em>a rede.</em></p>
+    <div class="corpo">
+      <header class="cabeca">
+        <p class="rotulo" data-i18n="rodar.rotulo">Participe</p>
+        <h2 id="t-rodar" data-i18n="rodar.titulo">Rode um nó.</h2>
+        <p class="lide" data-i18n="rodar.lide">Um programa só, sem instalar nada. Roda no Windows, no Linux, no Mac e no celular Android (pelo Termux).</p>
+      </header>
+      <p class="nota" data-i18n="rodar.nota">Rede de teste: o HYUR não tem valor, não há venda nem promessa de lucro. Use as versões a partir de v0.2.0-teste.1; as anteriores saíram com o nome antigo e falam outra rede.</p>
+    </div>
+    <ol class="passos">
+      <li>
+        <h3 data-i18n="rodar.p1t">Baixe</h3>
+        <p data-i18n="rodar.p1">Na página de versões, escolha o pacote do seu sistema e confira a soma SHA-256 que vem junto.</p>
+        <a class="botao botao-linha botao-pequeno" href="https://github.com/NOXqubit/hyurax/releases" rel="noopener" data-i18n="rodar.versoes">Versões no GitHub</a>
+      </li>
+      <li>
+        <h3 data-i18n="rodar.p2t">Crie uma carteira</h3>
+        <p data-i18n="rodar.p2">A carteira fica cifrada com a sua senha. Sem a senha, o arquivo não gasta nada.</p>
+        <pre class="comando"><code>hyurax-no carteira nova --arquivo carteira.txt</code></pre>
+      </li>
+      <li>
+        <h3 data-i18n="rodar.p3t">Entre na rede</h3>
+        <p data-i18n="rodar.p3">O nó confere cada bloco sozinho. Para minerar, troque “no” por “minerar” e informe o seu endereço.</p>
+        <pre class="comando"><code>hyurax-no no --rede testnet --pasta dados --porta 8790</code></pre>
+      </li>
+    </ol>
+  </div>
 </section>
 
 <!-- ============================ ONDE ESTAMOS ============================ -->
-<section class="capitulo estado" id="estado" aria-labelledby="t-estado">
-  <header class="cabeca">
-    <p class="rotulo" data-i18n="estado.rotulo">Sem exagero</p>
-    <h2 id="t-estado" data-i18n="estado.titulo">Onde estamos, de verdade.</h2>
-    <p class="lide" data-i18n="estado.lide">Não existe mainnet. Não existe token com valor. Qualquer pessoa que disser o contrário está mentindo.</p>
-  </header>
-  <div class="quadro-estado" id="quadro-estado"></div>
+<section class="faixa escuro" id="estado" aria-labelledby="t-estado">
+  <div class="capitulo">
+    <p class="grito" data-i18n-html="estado.grito">Sem promessa. <em>Só prova.</em></p>
+    <div class="corpo">
+      <header class="cabeca">
+        <p class="rotulo" data-i18n="estado.rotulo">Sem exagero</p>
+        <h2 id="t-estado" data-i18n="estado.titulo">Onde estamos, de verdade.</h2>
+      </header>
+      <p class="lide" data-i18n="estado.lide">Não existe mainnet. Não existe token com valor. Qualquer pessoa que disser o contrário está mentindo.</p>
+    </div>
+    <div class="quadro-estado" id="quadro-estado"></div>
+  </div>
 </section>
 
 <!-- ============================ APOIE ============================ -->
-<section class="capitulo apoie" id="apoie" aria-labelledby="t-apoie">
-  <header class="cabeca">
-    <p class="rotulo" data-i18n="apoie.rotulo">Apoie</p>
-    <h2 id="t-apoie" data-i18n="apoie.titulo">Feito por um desenvolvedor independente.</h2>
-    <p class="lide" data-i18n="apoie.lide">Se quiser ajudar a manter o trabalho, o endereço é da rede Bitcoin. Envie só bitcoin.</p>
-  </header>
-  <div class="doacao">
-    <div class="qr" id="qr" aria-hidden="true"></div>
-    <div class="doacao-texto">
-      <code class="endereco mono" id="endereco">bc1qkp7d90t9tnmuv2rwq742pwc8pnet28a59zdzt7</code>
-      <button class="botao botao-linha botao-pequeno" type="button" id="copiar" data-i18n="apoie.copiar">Copiar endereço</button>
-      <p class="nota" data-i18n="apoie.confira">Depois de colar, confira o começo e o fim: bc1qkp7d … zdzt7.</p>
-      <p class="nota" data-i18n="apoie.nada">Doação é voluntária e não dá direito a nada: nem token, nem participação, nem retorno.</p>
+<section class="faixa claro" id="apoie" aria-labelledby="t-apoie">
+  <div class="capitulo">
+    <p class="grito" data-i18n-html="apoie.grito">Sem dono. <em>Sem patrão.</em></p>
+    <div class="corpo">
+      <header class="cabeca">
+        <p class="rotulo" data-i18n="apoie.rotulo">Apoie</p>
+        <h2 id="t-apoie" data-i18n="apoie.titulo">Feito por um desenvolvedor independente.</h2>
+        <p class="lide" data-i18n="apoie.lide">Se quiser ajudar a manter o trabalho, o endereço é da rede Bitcoin. Envie só bitcoin.</p>
+      </header>
+      <div class="doacao">
+        <div class="qr" id="qr" aria-hidden="true"></div>
+        <div class="doacao-texto">
+          <code class="endereco mono" id="endereco">bc1qkp7d90t9tnmuv2rwq742pwc8pnet28a59zdzt7</code>
+          <button class="botao botao-linha botao-pequeno" type="button" id="copiar" data-i18n="apoie.copiar">Copiar endereço</button>
+          <p class="nota" data-i18n="apoie.confira">Depois de colar, confira o começo e o fim: bc1qkp7d … zdzt7.</p>
+          <p class="nota" data-i18n="apoie.nada">Doação é voluntária e não dá direito a nada: nem token, nem participação, nem retorno.</p>
+        </div>
+      </div>
     </div>
   </div>
 </section>
@@ -252,16 +290,18 @@
 </main>
 
 <footer class="rodape">
-  <div class="rodape-marca">
-    <img src="assets/logo.svg" alt="" width="40" height="40">
-    <p class="rodape-lema" data-i18n="rodape.lema">Não confie. Confira.</p>
+  <div class="rodape-dentro">
+    <p class="rodape-lema" aria-label="Não confie. Confira." data-i18n-attr="aria-label:rodape.lema"><span data-i18n="rodape.lema_1">Não confie.</span><span data-i18n="rodape.lema_2">Confira.</span></p>
+    <div class="rodape-linha">
+      <p class="rodape-marca"><img src="assets/logo.svg" alt="" width="22" height="22"> HYURAX</p>
+      <ul class="rodape-links">
+        <li><a href="https://github.com/NOXqubit/hyurax" rel="noopener" data-i18n="rodape.codigo">Código aberto no GitHub</a></li>
+        <li><a href="https://github.com/NOXqubit/hyurax/blob/main/spec/HYURAX-SPEC-01.md" rel="noopener" data-i18n="rodape.spec">Especificação</a></li>
+        <li><span data-i18n="rodape.licenca">Licença MIT ou Apache-2.0</span></li>
+      </ul>
+    </div>
+    <p class="rodape-nota" data-i18n="rodape.antes">O Hyurax se chamava Auron até 19/09/2026. A tecnologia é a mesma.</p>
   </div>
-  <ul class="rodape-links">
-    <li><a href="https://github.com/NOXqubit/hyurax" rel="noopener" data-i18n="rodape.codigo">Código aberto no GitHub</a></li>
-    <li><a href="https://github.com/NOXqubit/hyurax/blob/main/spec/HYURAX-SPEC-01.md" rel="noopener" data-i18n="rodape.spec">Especificação</a></li>
-    <li><span data-i18n="rodape.licenca">Licença MIT ou Apache-2.0</span></li>
-  </ul>
-  <p class="rodape-nota" data-i18n="rodape.antes">O Hyurax se chamava Auron até 19/09/2026. A tecnologia é a mesma.</p>
 </footer>
 
 <script src="vendor/qrcode.min.js" defer></script>

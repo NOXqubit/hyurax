@@ -11,7 +11,8 @@ export default {
     laco: "Provado", trabalho: "Trabalho útil", confira: "Confira", eter: "Éter", rodar: "Rode um nó", estado: "Onde estamos",
   },
   topo: {
-    selo: "Rede de teste · sem valor · código aberto",
+    selo_1: "Rede de teste", selo_2: "Sem valor", selo_3: "Código aberto",
+    fita: "Bloco #{a} · {tipo} · {h} · conferido nó a nó",
     lema: "Os nós são a rede.",
     lide: "Celulares e computadores comuns formam a rede e conferem tudo sozinhos. Sem data center, sem dono, sem precisar confiar em ninguém.",
     rodar: "Rode um nó",
@@ -21,6 +22,7 @@ export default {
     tipo: { servidor: "servidor", computador: "computador", celular: "celular", genese: "gênese" },
   },
   laco: {
+    grito: "Nenhum confia. <em>Todos conferem.</em>",
     rotulo: "Provado em 18/09/2026",
     titulo: "Um PC e um celular. Nenhum confia no outro. Os dois chegaram à mesma verdade.",
     lide: "O computador minerou dois blocos. O celular conferiu cada um sozinho e aceitou. Depois o celular minerou um bloco, e o computador conferiu e aceitou. Dois sistemas, duas arquiteturas, a mesma cadeia.",
@@ -30,6 +32,7 @@ export default {
     nota: "Com os programas publicados no GitHub, pela rede local (cabo no computador, Wi-Fi no celular), com conexão cifrada. Três blocos provam que o laço fecha; ainda não são medida de desempenho.",
   },
   trabalho: {
+    grito: "Minta. <em>A rede pega.</em>",
     rotulo: "Trabalho útil",
     titulo: "Pegue a mentira sem refazer a conta.",
     lide: "Todo bloco traz uma multiplicação de matrizes, a mesma conta que sustenta a inteligência artificial. Conferir não exige refazer: basta sortear um vetor e comparar os dois lados.",
@@ -46,6 +49,7 @@ export default {
     recusado: "Recusado na rodada {r}: a linha {l} não bate. A mentira foi pega sem refazer a conta.",
   },
   confira: {
+    grito: "Apague o passado. <em>Tente.</em>",
     rotulo: "Cadeia",
     titulo: "Não confie. Confira.",
     lide: "Cada bloco carrega o resumo do anterior. Mexa em qualquer bloco antigo: o resumo dele muda, e todos os que vêm depois denunciam na hora.",
@@ -58,6 +62,7 @@ export default {
     quebrada: "Pego: o bloco {a} foi alterado, o hash dele mudou, e {n} bloco(s) depois dele deixaram de bater. Ninguém precisou avisar.",
   },
   eter: {
+    grito: "Corte um caminho. <em>A rede acha outro.</em>",
     rotulo: "Éter · comunicação entre nós",
     titulo: "O nó não fala Wi-Fi nem Bluetooth. Fala Hyurax.",
     lide: "Um arquivo vira pedaços, e cada pedaço carrega a própria prova. Os pedaços saem por caminhos diferentes ao mesmo tempo e se montam do outro lado. Corte um caminho: os outros levam o resto.",
@@ -73,6 +78,7 @@ export default {
     falhou: "A raiz não bateu: o objeto foi recusado.",
   },
   rodar: {
+    grito: "Seja <em>a rede.</em>",
     rotulo: "Participe",
     titulo: "Rode um nó.",
     lide: "Um programa só, sem instalar nada. Roda no Windows, no Linux, no Mac e no celular Android (pelo Termux).",
@@ -83,6 +89,7 @@ export default {
     nota: "Rede de teste: o HYUR não tem valor, não há venda nem promessa de lucro. Use as versões a partir de v0.2.0-teste.1; as anteriores saíram com o nome antigo e falam outra rede.",
   },
   estado: {
+    grito: "Sem promessa. <em>Só prova.</em>",
     rotulo: "Sem exagero",
     titulo: "Onde estamos, de verdade.",
     lide: "Não existe mainnet. Não existe token com valor. Qualquer pessoa que disser o contrário está mentindo.",
@@ -115,6 +122,7 @@ export default {
     },
   },
   apoie: {
+    grito: "Sem dono. <em>Sem patrão.</em>",
     rotulo: "Apoie",
     titulo: "Feito por um desenvolvedor independente.",
     lide: "Se quiser ajudar a manter o trabalho, o endereço é da rede Bitcoin. Envie só bitcoin.",
@@ -124,6 +132,7 @@ export default {
   },
   rodape: {
     lema: "Não confie. Confira.",
+    lema_1: "Não confie.", lema_2: "Confira.",
     codigo: "Código aberto no GitHub",
     spec: "Especificação",
     licenca: "Licença MIT ou Apache-2.0",

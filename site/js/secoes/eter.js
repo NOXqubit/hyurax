@@ -16,8 +16,6 @@ const MEIOS = [
   { id: "bluetooth", pronto: false },
   { id: "radio", pronto: false },
 ];
-const COR_ETER = "169, 216, 255";
-const COR_LUZ = "242, 217, 168";
 
 export function iniciarEter({ t, calmo }) {
   const tela = document.getElementById("eter-tela");
@@ -92,6 +90,9 @@ export function iniciarEter({ t, calmo }) {
   }
 
   function desenhar(agora) {
+    // A cor vem do capítulo (preto no branco ou branco no preto).
+    const tinta = getComputedStyle(tela).getPropertyValue("--tinta-rgb").trim() || "255, 255, 255";
+    const COR_ETER = tinta, COR_LUZ = tinta;
     ctx.clearRect(0, 0, w, h);
     ctx.font = `11px "IBM Plex Mono", ui-monospace, monospace`;
     // caminhos
@@ -132,7 +133,7 @@ export function iniciarEter({ t, calmo }) {
       ctx.beginPath(); ctx.arc(c.x, c.y, r, 0, Math.PI * 2); ctx.fill();
       ctx.shadowBlur = 0;
     }
-    ctx.fillStyle = "rgba(178, 181, 186, 0.9)";
+    ctx.fillStyle = `rgba(${tinta}, 0.6)`;
     ctx.fillText(t("eter.origem"), o.x - 12, o.y + 24);
     ctx.textAlign = "right";
     ctx.fillText(t("eter.destino"), d.x - 12, d.y + 24);
@@ -142,7 +143,7 @@ export function iniciarEter({ t, calmo }) {
     const x0 = d.x + 22, y0 = d.y - lado * 2;
     chegou.forEach((c, i) => {
       const cx = x0 + (i % 6) * (lado + 2), cy = y0 + Math.floor(i / 6) * (lado + 2);
-      ctx.fillStyle = c ? `rgba(${COR_LUZ}, ${0.35 + ((i * 37) % 60) / 100})` : "rgba(236, 234, 228, 0.06)";
+      ctx.fillStyle = c ? `rgba(${COR_LUZ}, ${0.35 + ((i * 37) % 60) / 100})` : `rgba(${tinta}, 0.08)`;
       ctx.fillRect(cx, cy, lado, lado);
     });
   }

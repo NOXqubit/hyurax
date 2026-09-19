@@ -10,7 +10,8 @@ export default {
     laco: "Proven", trabalho: "Useful work", confira: "Verify", eter: "Éter", rodar: "Run a node", estado: "Where we are",
   },
   topo: {
-    selo: "Test network · no value · open source",
+    selo_1: "Test network", selo_2: "No value", selo_3: "Open source",
+    fita: "Block #{a} · {tipo} · {h} · checked node by node",
     lema: "The nodes are the network.",
     lide: "Ordinary phones and computers form the network and check everything on their own. No data center, no owner, no need to trust anyone.",
     rodar: "Run a node",
@@ -20,6 +21,7 @@ export default {
     tipo: { servidor: "server", computador: "computer", celular: "phone", genese: "genesis" },
   },
   laco: {
+    grito: "Nobody trusts. <em>Everyone verifies.</em>",
     rotulo: "Proven on 2026-09-18",
     titulo: "A PC and a phone. Neither trusts the other. Both reached the same truth.",
     lide: "The computer mined two blocks. The phone checked each one on its own and accepted them. Then the phone mined a block, and the computer checked and accepted it. Two systems, two architectures, one chain.",
@@ -29,6 +31,7 @@ export default {
     nota: "Using the programs published on GitHub, over the local network (cable on the computer, Wi-Fi on the phone), on an encrypted connection. Three blocks prove the loop closes; they are not a performance measurement yet.",
   },
   trabalho: {
+    grito: "Lie. <em>The network catches it.</em>",
     rotulo: "Useful work",
     titulo: "Catch the lie without redoing the math.",
     lide: "Every block carries a matrix multiplication, the same math behind artificial intelligence. Checking it doesn't mean redoing it: draw a vector and compare both sides.",
@@ -45,6 +48,7 @@ export default {
     recusado: "Rejected in round {r}: row {l} doesn't match. The lie was caught without redoing the math.",
   },
   confira: {
+    grito: "Erase the past. <em>Try it.</em>",
     rotulo: "Chain",
     titulo: "Don't trust. Verify.",
     lide: "Each block carries the digest of the previous one. Tamper with any old block: its digest changes, and every block after it gives it away at once.",
@@ -57,6 +61,7 @@ export default {
     quebrada: "Caught: block {a} was altered, its hash changed, and {n} block(s) after it stopped matching. Nobody had to raise the alarm.",
   },
   eter: {
+    grito: "Cut a path. <em>The network finds another.</em>",
     rotulo: "Éter · communication between nodes",
     titulo: "A node doesn't speak Wi-Fi or Bluetooth. It speaks Hyurax.",
     lide: "A file becomes pieces, and each piece carries its own proof. The pieces leave through different paths at the same time and reassemble on the other side. Cut a path: the others carry the rest.",
@@ -72,6 +77,7 @@ export default {
     falhou: "The root didn't match: the object was rejected.",
   },
   rodar: {
+    grito: "Be <em>the network.</em>",
     rotulo: "Take part",
     titulo: "Run a node.",
     lide: "A single program, nothing to install. It runs on Windows, Linux, Mac and Android phones (through Termux).",
@@ -82,6 +88,7 @@ export default {
     nota: "Test network: HYUR has no value, and there is no sale or promise of profit. Use releases from v0.2.0-teste.1 on; earlier ones shipped under the old name and speak a different network.",
   },
   estado: {
+    grito: "No promises. <em>Only proof.</em>",
     rotulo: "No hype",
     titulo: "Where we really are.",
     lide: "There is no mainnet. There is no token with value. Anyone who says otherwise is lying.",
@@ -114,6 +121,7 @@ export default {
     },
   },
   apoie: {
+    grito: "No owner. <em>No boss.</em>",
     rotulo: "Support",
     titulo: "Built by an independent developer.",
     lide: "If you'd like to help keep the work going, this is a Bitcoin network address. Send only bitcoin.",
@@ -123,6 +131,7 @@ export default {
   },
   rodape: {
     lema: "Don't trust. Verify.",
+    lema_1: "Don't trust.", lema_2: "Verify.",
     codigo: "Open source on GitHub",
     spec: "Specification",
     licenca: "MIT or Apache-2.0 license",

@@ -17,9 +17,9 @@ const TIPOS = [
   { nome: "computador", tamanho: 2.2, parte: 0.34 },
   { nome: "celular", tamanho: 1.45, parte: 0.58 },
 ];
-const LUZ = new THREE.Color("#f2d9a8");
-const LUZ_FORTE = new THREE.Color("#fff4e0");
-const ETER = new THREE.Color("#a9d8ff");
+const LUZ = new THREE.Color("#ffffff");
+const LUZ_FORTE = new THREE.Color("#ffffff");
+const ETER = new THREE.Color("#ffffff");
 
 const QUANTOS = { HIGH: 240, MEDIUM: 160, LOW: 96 };
 const MAX_PULSOS = 220;
@@ -86,7 +86,7 @@ function material(escala, anel = false) {
  * Cria a rede no canvas. Devolve { parar }.
  * aoBloco({ altura, no, tipo }) é chamado quando um nó minera um bloco.
  */
-export function criarRedeViva(canvas, { nivel = "MEDIUM", calmo = false, aoBloco = () => {} } = {}) {
+export function criarRedeViva(canvas, { nivel = "MEDIUM", calmo = false, alturaInicial = 0, aoBloco = () => {} } = {}) {
   const sorte = aleatorio(2026);
   const n = QUANTOS[nivel] || QUANTOS.MEDIUM;
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: nivel !== "LOW", alpha: true, powerPreference: "low-power" });
@@ -142,7 +142,7 @@ export function criarRedeViva(canvas, { nivel = "MEDIUM", calmo = false, aoBloco
   const geoLinhas = new THREE.BufferGeometry();
   geoLinhas.setAttribute("position", new THREE.BufferAttribute(linhasPos, 3));
   const linhas = new THREE.LineSegments(geoLinhas, new THREE.LineBasicMaterial({
-    color: LUZ, transparent: true, opacity: 0.16, blending: THREE.AdditiveBlending, depthWrite: false,
+    color: LUZ, transparent: true, opacity: 0.2, blending: THREE.AdditiveBlending, depthWrite: false,
   }));
   grupo.add(linhas);
 
@@ -187,7 +187,7 @@ export function criarRedeViva(canvas, { nivel = "MEDIUM", calmo = false, aoBloco
   const ondas = []; // { no, inicio, slot }
 
   // ---------- a propagação de um bloco ----------
-  let altura = 0;
+  let altura = alturaInicial;
   const alcancado = new Map(); // bloco -> Set de nós
   function propagar(bloco, de, agora) {
     for (const para of vizinhos[de]) {
@@ -309,7 +309,6 @@ export function criarRedeViva(canvas, { nivel = "MEDIUM", calmo = false, aoBloco
     // Movimento reduzido: um retrato parado da rede, com alguns nós acesos.
     for (let i = 0; i < n; i += 7) brilhoNos[i] = 0.9;
     geoNos.attributes.brilho.needsUpdate = true;
-    aoBloco({ altura: 1, no: 0, tipo: TIPOS[tipo[0]].nome });
     renderer.render(cena, camera);
   } else {
     quadro = requestAnimationFrame((t) => { ultimo = t; laco(t); });

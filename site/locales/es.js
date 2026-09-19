@@ -10,7 +10,8 @@ export default {
     laco: "Probado", trabalho: "Trabajo útil", confira: "Verifica", eter: "Éter", rodar: "Ejecuta un nodo", estado: "Dónde estamos",
   },
   topo: {
-    selo: "Red de prueba · sin valor · código abierto",
+    selo_1: "Red de prueba", selo_2: "Sin valor", selo_3: "Código abierto",
+    fita: "Bloque #{a} · {tipo} · {h} · verificado nodo a nodo",
     lema: "Los nodos son la red.",
     lide: "Teléfonos y computadoras comunes forman la red y lo verifican todo por sí mismos. Sin centro de datos, sin dueño, sin necesidad de confiar en nadie.",
     rodar: "Ejecuta un nodo",
@@ -20,6 +21,7 @@ export default {
     tipo: { servidor: "servidor", computador: "computadora", celular: "teléfono", genese: "génesis" },
   },
   laco: {
+    grito: "Nadie confía. <em>Todos verifican.</em>",
     rotulo: "Probado el 18/09/2026",
     titulo: "Una PC y un teléfono. Ninguno confía en el otro. Los dos llegaron a la misma verdad.",
     lide: "La computadora minó dos bloques. El teléfono verificó cada uno por su cuenta y los aceptó. Después el teléfono minó un bloque, y la computadora lo verificó y lo aceptó. Dos sistemas, dos arquitecturas, la misma cadena.",
@@ -29,6 +31,7 @@ export default {
     nota: "Con los programas publicados en GitHub, por la red local (cable en la computadora, Wi-Fi en el teléfono), con conexión cifrada. Tres bloques prueban que el ciclo se cierra; todavía no son una medida de rendimiento.",
   },
   trabalho: {
+    grito: "Miente. <em>La red te atrapa.</em>",
     rotulo: "Trabajo útil",
     titulo: "Atrapa la mentira sin rehacer la cuenta.",
     lide: "Cada bloque trae una multiplicación de matrices, la misma cuenta que sostiene la inteligencia artificial. Verificar no exige rehacer: basta sortear un vector y comparar los dos lados.",
@@ -45,6 +48,7 @@ export default {
     recusado: "Rechazado en la ronda {r}: la fila {l} no coincide. La mentira fue atrapada sin rehacer la cuenta.",
   },
   confira: {
+    grito: "Borra el pasado. <em>Inténtalo.</em>",
     rotulo: "Cadena",
     titulo: "No confíes. Verifica.",
     lide: "Cada bloque lleva el resumen del anterior. Altera cualquier bloque antiguo: su resumen cambia, y todos los que vienen después lo delatan al instante.",
@@ -57,6 +61,7 @@ export default {
     quebrada: "Atrapado: el bloque {a} fue alterado, su hash cambió, y {n} bloque(s) después de él dejaron de coincidir. Nadie tuvo que avisar.",
   },
   eter: {
+    grito: "Corta un camino. <em>La red encuentra otro.</em>",
     rotulo: "Éter · comunicación entre nodos",
     titulo: "El nodo no habla Wi-Fi ni Bluetooth. Habla Hyurax.",
     lide: "Un archivo se vuelve pedazos, y cada pedazo lleva su propia prueba. Los pedazos salen por caminos distintos al mismo tiempo y se arman del otro lado. Corta un camino: los otros llevan el resto.",
@@ -72,6 +77,7 @@ export default {
     falhou: "La raíz no coincidió: el objeto fue rechazado.",
   },
   rodar: {
+    grito: "Sé <em>la red.</em>",
     rotulo: "Participa",
     titulo: "Ejecuta un nodo.",
     lide: "Un solo programa, sin instalar nada. Funciona en Windows, Linux, Mac y teléfonos Android (con Termux).",
@@ -82,6 +88,7 @@ export default {
     nota: "Red de prueba: HYUR no tiene valor, no hay venta ni promesa de ganancias. Usa las versiones a partir de v0.2.0-teste.1; las anteriores salieron con el nombre antiguo y hablan otra red.",
   },
   estado: {
+    grito: "Sin promesas. <em>Solo pruebas.</em>",
     rotulo: "Sin exagerar",
     titulo: "Dónde estamos, de verdad.",
     lide: "No existe mainnet. No existe token con valor. Quien diga lo contrario está mintiendo.",
@@ -114,6 +121,7 @@ export default {
     },
   },
   apoie: {
+    grito: "Sin dueño. <em>Sin jefe.</em>",
     rotulo: "Apoya",
     titulo: "Hecho por un desarrollador independiente.",
     lide: "Si quieres ayudar a mantener el trabajo, esta es una dirección de la red Bitcoin. Envía solo bitcoin.",
@@ -123,6 +131,7 @@ export default {
   },
   rodape: {
     lema: "No confíes. Verifica.",
+    lema_1: "No confíes.", lema_2: "Verifica.",
     codigo: "Código abierto en GitHub",
     spec: "Especificación",
     licenca: "Licencia MIT o Apache-2.0",
