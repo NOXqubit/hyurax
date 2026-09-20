@@ -60,3 +60,6 @@ site/downloads/
 
 # Narracao gerada por site/tools/build_narracao.py
 site/assets/voz/
+
+# Pasta de build da prova da janela (wry/tao), criada em 19/09/2026.
+.target-prova/
