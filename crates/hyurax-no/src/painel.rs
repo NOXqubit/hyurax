@@ -321,7 +321,7 @@ fn ler_ajustes(dados: &Path) -> Ajustes {
             Some(("centavos_kwh", v)) => a.centavos_kwh = v.trim().parse().ok().filter(|n| (1..=99999).contains(n)),
             Some(("na_rede", v)) => a.na_rede = Some(v.trim() == "1"),
             Some(("mercado", v)) => a.mercado = Some(v.trim() == "1"),
-            Some(("paineis", v)) if paineis_validos(v.trim()) => a.paineis = Some(v.trim().to_string()),
+            Some(("paineis", v)) if paineis_validos(v.trim()) => a.paineis = Some(completar_paineis(v.trim())),
             Some(("cena", v)) if CENAS.contains(&v.trim()) => a.cena = Some(v.trim().to_string()),
             Some(("semente", v)) if semente_valida(v.trim()) && a.sementes.len() < SEMENTES_MAX => {
                 a.sementes.push(v.trim().to_string());
@@ -333,6 +333,19 @@ fn ler_ajustes(dados: &Path) -> Ajustes {
         }
     }
     a
+}
+
+/// Completa a lista com os painéis que o programa aprendeu depois de ela ter
+/// sido salva. Painel novo nasce fechado, mas precisa **existir** na lista:
+/// senão ele não aparece nem no menu, e o dono não teria como abrir.
+fn completar_paineis(lista: &str) -> String {
+    let mut saida: Vec<String> = lista.split(',').map(str::trim).filter(|s| !s.is_empty()).map(String::from).collect();
+    for nome in PAINEIS_CONHECIDOS {
+        if !saida.iter().any(|item| item.trim_start_matches('-') == nome) {
+            saida.push(format!("-{nome}"));
+        }
+    }
+    saida.join(",")
 }
 
 /// A lista de painéis só aceita nomes conhecidos, sem repetição.
@@ -896,7 +909,7 @@ fn trocar_ajustes(painel: &Painel, campos: &[(String, String)]) -> Result<(), St
                     return Err("lista de painéis inválida".into());
                 }
                 if let Ok(mut p) = painel.paineis.lock() {
-                    valor.clone_into(&mut p);
+                    *p = completar_paineis(valor);
                 }
             }
             "cena" => {
@@ -1707,6 +1720,22 @@ mod testes {
         assert!(!semente_valida("203.0.113.7:99999"));
         assert!(!semente_valida("host com espaço:8790"));
         assert!(!semente_valida(":8790"));
+    }
+
+    #[test]
+    fn painel_novo_entra_fechado_na_lista_salva_antes_dele() {
+        // Lista salva por uma versão que ainda não tinha "mercado" nem "maquinas".
+        let velha = "estacao,carteira,rede,livro,ritmo,fluxo";
+        let nova = completar_paineis(velha);
+        assert!(nova.starts_with(velha), "a ordem de quem já estava não muda: {nova}");
+        for nome in PAINEIS_CONHECIDOS {
+            assert!(nova.split(',').any(|i| i.trim_start_matches('-') == nome), "faltou {nome} em {nova}");
+        }
+        assert!(nova.contains("-mercado") && nova.contains("-maquinas"), "painel novo nasce fechado: {nova}");
+        assert!(paineis_validos(&nova));
+        // Completar de novo não duplica nada, e quem já estava aberto continua aberto.
+        assert_eq!(completar_paineis(&nova), nova);
+        assert!(completar_paineis("mercado,estacao").starts_with("mercado,estacao,"));
     }
 
     #[test]

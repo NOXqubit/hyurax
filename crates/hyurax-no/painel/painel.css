@@ -682,9 +682,10 @@ input[type="number"] {
 .dialogo input.codigo,
 .boot input.codigo {
   font: 600 22px/1 var(--mono);
-  letter-spacing: 0.42em;
+  letter-spacing: 0.38em;
   text-align: center;
-  max-width: 11ch;
+  /* Cabem os seis dígitos com o espaçamento largo: em 11ch o último sumia. */
+  max-width: 14ch;
   padding: 12px 10px;
 }
 
