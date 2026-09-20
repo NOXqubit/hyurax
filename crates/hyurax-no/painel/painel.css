@@ -129,16 +129,17 @@ small { color: var(--tinta-3); font-size: 11px; }
 @keyframes pulso { 50% { transform: scale(0.55); opacity: 0.5; } }
 
 /* ---------- grade ---------- */
+/* Sem lugares fixos: cada painel escolhe a sua vez pela propriedade "order",
+   que o JavaScript acerta com o que está salvo nos ajustes. Fechar um painel
+   não deixa buraco: os outros ocupam o espaço. */
 .grade {
   display: grid;
   gap: 1px;
   background: var(--fio);
-  grid-template-columns: minmax(0, 1.25fr) minmax(0, 0.9fr) minmax(300px, 0.85fr);
-  grid-template-rows: minmax(340px, 1.35fr) minmax(220px, 1fr);
-  grid-template-areas:
-    "estacao estacao lateral"
-    "livro   ritmo   fluxo";
+  grid-template-columns: repeat(auto-fit, minmax(330px, 1fr));
+  grid-auto-rows: minmax(230px, auto);
   min-height: 0;
+  align-content: start;
 }
 .bloco {
   background: var(--painel);
@@ -148,35 +149,24 @@ small { color: var(--tinta-3); font-size: 11px; }
   min-height: 0;
   position: relative;
 }
-.rotulo {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-  padding: 8px 12px;
-  font-size: 10px;
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
-  color: var(--tinta-2);
-  border-bottom: 1px solid var(--fio);
+/* A estação é a peça grande: ocupa duas colunas e duas linhas quando cabe. */
+.bloco.estacao { grid-column: span 2; grid-row: span 2; }
+@media (max-width: 760px) {
+  .bloco.estacao { grid-column: span 1; grid-row: span 1; min-height: 300px; }
 }
-.rotulo > span:first-child::before { content: "▪ "; color: var(--tinta); }
-.link {
-  background: none;
-  border: 0;
-  padding: 0;
-  cursor: pointer;
-  font-size: 10px;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: var(--tinta-2);
-  text-decoration: underline;
-  text-underline-offset: 3px;
-}
-.link:hover { color: var(--tinta); }
+/* Modo destacado: um painel só, ocupando a janela inteira. */
+body.destacado .grade { grid-template-columns: 1fr; }
+body.destacado .bloco.estacao { grid-column: span 1; grid-row: span 1; }
+body.destacado .fita, body.destacado .controles, body.destacado .leituras { display: none; }
+/* Na janela destacada o painel é o dono da tela: sem botão de fechar (a janela
+   já fecha), sem borda dupla, e ocupando tudo. */
+body.destacado .fechar-painel { display: none; }
+body.destacado .grade { grid-auto-rows: 1fr; }
+body.destacado .barra { padding: 6px 12px; gap: 12px; }
+body.destacado .bloco { border: 0; }
 
 /* ---------- estação 3D ---------- */
-.estacao { grid-area: estacao; }
+
 .estacao canvas { flex: 1; width: 100%; min-height: 0; display: block; cursor: grab; }
 .estacao canvas:active { cursor: grabbing; }
 #estado-rodada { color: var(--tinta); }
@@ -191,7 +181,7 @@ small { color: var(--tinta-3); font-size: 11px; }
 .estacao-pe b { font-size: 16px; font-weight: 500; }
 
 /* ---------- lateral ---------- */
-.lateral { grid-area: lateral; display: grid; grid-template-rows: auto 1fr; gap: 1px; background: var(--fio); }
+
 .carteira { padding-bottom: 12px; }
 .endereco {
   margin: 12px 12px 0;
@@ -218,7 +208,7 @@ small { color: var(--tinta-3); font-size: 11px; }
 .curto { max-width: 17ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* ---------- livro ---------- */
-.livro { grid-area: livro; }
+
 .rolar { overflow: auto; flex: 1; min-height: 0; }
 table { width: 100%; border-collapse: collapse; }
 th {
@@ -246,11 +236,11 @@ tbody tr:not(.meu) td { color: var(--tinta-2); }
 .chave .q { margin-left: 6px; }
 
 /* ---------- ritmo ---------- */
-.ritmo { grid-area: ritmo; }
+
 .ritmo canvas { flex: 1; width: 100%; min-height: 0; display: block; }
 
 /* ---------- fluxo ---------- */
-.fluxo { grid-area: fluxo; }
+
 #fluxo { list-style: none; margin: 0; padding: 4px 0; }
 #fluxo li {
   display: grid;
@@ -471,18 +461,6 @@ tbody tr:not(.meu) td { color: var(--tinta-2); }
 .dialogo .pares dd { word-break: break-all; }
 
 /* ---------- telas menores (o celular vendo o PC) ---------- */
-@media (max-width: 1100px) {
-  .grade {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    grid-template-rows: minmax(320px, 55vh) auto minmax(220px, auto) minmax(220px, auto);
-    grid-template-areas:
-      "estacao estacao"
-      "lateral lateral"
-      "livro   livro"
-      "ritmo   fluxo";
-  }
-  .lateral { grid-template-columns: 1fr 1fr; grid-template-rows: auto; }
-}
 @media (max-width: 680px) {
   .barra { gap: 14px; }
   .leituras { gap: 14px; }
@@ -491,12 +469,6 @@ tbody tr:not(.meu) td { color: var(--tinta-2); }
   .nucleos { flex: 1 1 auto; }
   .nucleos span { flex: 1; text-align: center; }
   .minerar { flex: 1 1 auto; }
-  .grade {
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: minmax(280px, 48vh) auto minmax(240px, auto) minmax(200px, auto) minmax(240px, auto);
-    grid-template-areas: "estacao" "lateral" "livro" "ritmo" "fluxo";
-  }
-  .lateral { grid-template-columns: 1fr; }
   .estacao-pe { grid-template-columns: repeat(2, 1fr); }
   .estacao-pe div:nth-child(3) { border-left: 0; }
   .estacao-pe div:nth-child(n + 3) { border-top: 1px solid var(--fio); }
@@ -554,3 +526,60 @@ input[type="number"] {
   .trabalho-grade { grid-template-columns: 1fr; }
   .dois { grid-template-columns: 1fr; }
 }
+
+/* ---------- painéis: fechar, ordenar, destacar ---------- */
+.painel-acoes { display: flex; align-items: center; gap: 8px; }
+.fechar-painel {
+  background: none;
+  border: 0;
+  color: var(--tinta-3);
+  cursor: pointer;
+  font-size: 15px;
+  line-height: 1;
+  padding: 0 2px;
+}
+.fechar-painel:hover { color: var(--tinta); }
+.lista-paineis { list-style: none; margin: 0; padding: 0; display: grid; gap: 1px; background: var(--fio); }
+.lista-paineis li {
+  background: var(--painel);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+}
+.lista-paineis label { display: flex; align-items: center; gap: 10px; flex: 1; cursor: pointer; }
+.lista-paineis input { accent-color: var(--tinta); width: 16px; height: 16px; }
+.lista-paineis button {
+  background: none;
+  border: 1px solid var(--fio-forte);
+  border-radius: var(--r);
+  color: var(--tinta-2);
+  cursor: pointer;
+  padding: 2px 7px;
+  font-size: 12px;
+}
+.lista-paineis button:hover { color: var(--tinta); border-color: var(--tinta); }
+.lista-paineis button:disabled { opacity: 0.3; cursor: default; }
+.nota-painel { margin: 10px 12px; }
+
+/* ---------- mercado ---------- */
+.mercado td:first-child { font-weight: 500; }
+/* Sem cor: a variação se lê pela seta e pelo traço embaixo do número. */
+.sobe::before { content: "▲ "; }
+.desce::before { content: "▼ "; }
+.desce { text-decoration: line-through; text-decoration-thickness: 1px; }
+
+/* ---------- tipos de trabalho ---------- */
+.tipos { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.tipos li { border-left: 1px solid var(--fio-forte); padding-left: 10px; }
+.tipos small { display: block; margin-top: 3px; color: var(--tinta-3); }
+.marca-estado {
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  background: var(--tinta);
+  color: var(--fundo);
+  padding: 1px 6px;
+}
+/* Planejado não é conquista: fica vazado, como tudo o que ainda não existe. */
+.marca-estado.planejado { background: transparent; color: var(--tinta-3); border: 1px dashed var(--fio-forte); }

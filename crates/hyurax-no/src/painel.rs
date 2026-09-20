@@ -62,6 +62,18 @@ const PORTA_P2P: u16 = 8790;
 const CENAS: [&str; 5] = ["auto", "alta", "media", "baixa", "desligada"];
 /// Quanto um núcleo minerando gasta, em watts, e o preço do kWh em centavos.
 /// São estimativas honestas, e o usuário ajusta as duas nos Ajustes.
+/// Painéis que existem, na ordem de fábrica. Um "-" na frente quer dizer fechado.
+const PAINEIS_PADRAO: &str = "estacao,carteira,rede,livro,ritmo,fluxo,-mercado";
+const PAINEIS_CONHECIDOS: [&str; 7] = ["estacao", "carteira", "rede", "livro", "ritmo", "fluxo", "mercado"];
+/// De quanto em quanto tempo o mercado é consultado, e as moedas seguidas.
+const MERCADO_INTERVALO: Duration = Duration::from_secs(120);
+const MERCADO_MOEDAS: [(&str, &str); 5] = [
+    ("bitcoin", "Bitcoin"),
+    ("ethereum", "Ethereum"),
+    ("solana", "Solana"),
+    ("monero", "Monero"),
+    ("dogecoin", "Dogecoin"),
+];
 const WATTS_NUCLEO_PADRAO: u32 = 12;
 const CENTAVOS_KWH_PADRAO: u32 = 90;
 
@@ -107,6 +119,12 @@ struct Painel {
     na_rede: AtomicBool,
     /// Qualidade da cena 3D escolhida: auto, alta, media, baixa, desligada.
     cena: Mutex<String>,
+    /// Acompanhar o mercado das criptomoedas grandes (liga a internet).
+    mercado_ligado: AtomicBool,
+    /// Última leitura do mercado, e quando veio.
+    mercado: Mutex<Option<(u64, String)>>,
+    /// Quais painéis o dono deixou abertos, e em que ordem.
+    paineis: Mutex<String>,
 }
 
 struct Evento {
@@ -221,6 +239,10 @@ impl Painel {
         let _ = writeln!(texto, "watts_nucleo={}", self.watts_nucleo.load(Ordering::Relaxed));
         let _ = writeln!(texto, "centavos_kwh={}", self.centavos_kwh.load(Ordering::Relaxed));
         let _ = writeln!(texto, "na_rede={}", u8::from(self.na_rede.load(Ordering::Relaxed)));
+        let _ = writeln!(texto, "mercado={}", u8::from(self.mercado_ligado.load(Ordering::Relaxed)));
+        if let Ok(p) = self.paineis.lock() {
+            let _ = writeln!(texto, "paineis={p}");
+        }
         if let Ok(c) = self.cena.lock() {
             let _ = writeln!(texto, "cena={c}");
         }
@@ -244,6 +266,8 @@ struct Ajustes {
     linhas: Option<u32>,
     sementes: Vec<String>,
     uso_cpu: Option<u32>,
+    mercado: Option<bool>,
+    paineis: Option<String>,
     watts_nucleo: Option<u32>,
     centavos_kwh: Option<u32>,
     na_rede: Option<bool>,
@@ -261,6 +285,8 @@ fn ler_ajustes(dados: &Path) -> Ajustes {
             Some(("watts_nucleo", v)) => a.watts_nucleo = v.trim().parse().ok().filter(|n| (1..=200).contains(n)),
             Some(("centavos_kwh", v)) => a.centavos_kwh = v.trim().parse().ok().filter(|n| (1..=99999).contains(n)),
             Some(("na_rede", v)) => a.na_rede = Some(v.trim() == "1"),
+            Some(("mercado", v)) => a.mercado = Some(v.trim() == "1"),
+            Some(("paineis", v)) if paineis_validos(v.trim()) => a.paineis = Some(v.trim().to_string()),
             Some(("cena", v)) if CENAS.contains(&v.trim()) => a.cena = Some(v.trim().to_string()),
             Some(("semente", v)) if semente_valida(v.trim()) && a.sementes.len() < SEMENTES_MAX => {
                 a.sementes.push(v.trim().to_string());
@@ -269,6 +295,19 @@ fn ler_ajustes(dados: &Path) -> Ajustes {
         }
     }
     a
+}
+
+/// A lista de painéis só aceita nomes conhecidos, sem repetição.
+fn paineis_validos(lista: &str) -> bool {
+    let mut vistos: Vec<&str> = Vec::new();
+    for item in lista.split(',').map(str::trim).filter(|s| !s.is_empty()) {
+        let nome = item.strip_prefix('-').unwrap_or(item);
+        if !PAINEIS_CONHECIDOS.contains(&nome) || vistos.contains(&nome) {
+            return false;
+        }
+        vistos.push(nome);
+    }
+    !vistos.is_empty()
 }
 
 /// `host:porta`, com porta de 1 a 65535 e host sem espaço nem caractere estranho.
@@ -479,6 +518,9 @@ fn ligar(o: Opcoes, rede: Arc<Rede>, partida: Partida, ajustes: &Ajustes) -> Res
         centavos_kwh: AtomicU32::new(ajustes.centavos_kwh.unwrap_or(CENTAVOS_KWH_PADRAO)),
         na_rede: AtomicBool::new(ajustes.na_rede.unwrap_or(na_rede)),
         cena: Mutex::new(ajustes.cena.clone().unwrap_or_else(|| "auto".to_string())),
+        mercado_ligado: AtomicBool::new(ajustes.mercado.unwrap_or(false)),
+        mercado: Mutex::new(None),
+        paineis: Mutex::new(ajustes.paineis.clone().unwrap_or_else(|| PAINEIS_PADRAO.to_string())),
     });
     painel.registrar("no", format!("nó no ar na rede {}", o.rede.nome));
     if app && endereco.is_none() {
@@ -500,6 +542,10 @@ fn ligar(o: Opcoes, rede: Arc<Rede>, partida: Partida, ajustes: &Ajustes) -> Res
     {
         let (painel, rede, o) = (Arc::clone(&painel), Arc::clone(&rede), Arc::clone(&o));
         std::thread::spawn(move || minerador(&painel, &rede, &o));
+    }
+    {
+        let painel = Arc::clone(&painel);
+        std::thread::spawn(move || vigia_do_mercado(&painel));
     }
     Ok(Pronto { porta: porta_painel, painel, rede, o })
 }
@@ -783,6 +829,26 @@ fn trocar_ajustes(painel: &Painel, campos: &[(String, String)]) -> Result<(), St
                     if ligado { "painel visível na rede local (só leitura)".into() } else { "painel só neste computador".to_string() },
                 );
             }
+            "mercado" => {
+                let ligado = valor == "1";
+                painel.mercado_ligado.store(ligado, Ordering::Relaxed);
+                painel.registrar(
+                    "mercado",
+                    if ligado {
+                        "acompanhando o mercado (fala com api.coingecko.com a cada 2 min)".into()
+                    } else {
+                        "mercado desligado: nada sai deste computador".to_string()
+                    },
+                );
+            }
+            "paineis" => {
+                if !paineis_validos(valor) {
+                    return Err("lista de painéis inválida".into());
+                }
+                if let Ok(mut p) = painel.paineis.lock() {
+                    valor.clone_into(&mut p);
+                }
+            }
             "cena" => {
                 if !CENAS.contains(&valor.as_str()) {
                     return Err("qualidade da cena desconhecida".into());
@@ -810,6 +876,93 @@ fn abrir_pasta(painel: &Painel) -> Result<(), String> {
         .spawn()
         .map(|_| ())
         .map_err(|e| format!("não consegui abrir {}: {e}", pasta.display()))
+}
+
+
+// ---------------------------------------------------------------------------
+// Mercado das criptomoedas
+// ---------------------------------------------------------------------------
+
+/// Busca os preços das moedas grandes, de tempos em tempos, quando o dono liga.
+///
+/// Usa o `curl` que já vem no Windows 10 e 11 (e em quase todo Linux) em vez de
+/// puxar uma biblioteca de HTTPS: a regra do projeto é só dependência Rust pura,
+/// e uma biblioteca de TLS traria compilador C junto.
+///
+/// Só sai daqui quando o ajuste está ligado, e o painel avisa que isso fala com
+/// um site de fora (api.coingecko.com). Nenhum dado do usuário vai junto: o
+/// pedido é a lista fixa de moedas e mais nada.
+fn vigia_do_mercado(painel: &Arc<Painel>) {
+    loop {
+        if painel.mercado_ligado.load(Ordering::Relaxed) {
+            let velho = painel
+                .mercado
+                .lock()
+                .ok()
+                .and_then(|m| m.as_ref().map(|(q, _)| *q))
+                .unwrap_or(0);
+            if agora_unix().saturating_sub(velho) >= MERCADO_INTERVALO.as_secs() {
+                match buscar_mercado() {
+                    Ok(json) => {
+                        if let Ok(mut m) = painel.mercado.lock() {
+                            *m = Some((agora_unix(), json));
+                        }
+                    }
+                    Err(e) => painel.registrar("mercado", format!("não consegui ler os preços: {e}")),
+                }
+            }
+        }
+        std::thread::sleep(Duration::from_secs(5));
+    }
+}
+
+fn buscar_mercado() -> Result<String, String> {
+    let ids: Vec<&str> = MERCADO_MOEDAS.iter().map(|(id, _)| *id).collect();
+    let url = format!(
+        "https://api.coingecko.com/api/v3/simple/price?ids={}&vs_currencies=brl,usd&include_24hr_change=true",
+        ids.join(",")
+    );
+    let saida = std::process::Command::new("curl")
+        .args(["-s", "-S", "--max-time", "20", "--max-filesize", "65536", &url])
+        .output()
+        .map_err(|e| format!("curl não abriu: {e}"))?;
+    if !saida.status.success() {
+        return Err(String::from_utf8_lossy(&saida.stderr).trim().to_string());
+    }
+    let texto = String::from_utf8_lossy(&saida.stdout).into_owned();
+    if !texto.starts_with('{') || texto.len() > 65_536 {
+        return Err("resposta estranha".into());
+    }
+    Ok(monta_mercado(&texto))
+}
+
+/// Tira os números da resposta e monta o JSON que o painel entende.
+///
+/// Leitura na unha, sem biblioteca: o formato é conhecido e minúsculo, e um
+/// campo que falte simplesmente não aparece no painel.
+fn monta_mercado(bruto: &str) -> String {
+    let mut itens: Vec<String> = Vec::new();
+    for (id, nome) in MERCADO_MOEDAS {
+        let Some(pedaco) = bruto.split(&format!("\"{id}\":{{")).nth(1).and_then(|p| p.split('}').next()) else {
+            continue;
+        };
+        let numero = |campo: &str| -> Option<f64> {
+            pedaco
+                .split(&format!("\"{campo}\":"))
+                .nth(1)?
+                .split(',')
+                .next()?
+                .trim()
+                .parse()
+                .ok()
+        };
+        let (Some(brl), Some(usd)) = (numero("brl"), numero("usd")) else { continue };
+        let variacao = numero("brl_24h_change").unwrap_or(0.0);
+        itens.push(format!(
+            "{{\"id\":\"{id}\",\"nome\":\"{nome}\",\"brl\":{brl:.2},\"usd\":{usd:.2},\"variacao\":{variacao:.2}}}"
+        ));
+    }
+    format!("[{}]", itens.join(","))
 }
 
 // ---------------------------------------------------------------------------
@@ -1068,6 +1221,12 @@ fn estado_json(painel: &Painel, rede: &Rede, o: &Opcoes, pode_mandar: bool, port
         .and_then(|b| b.useful_proof.as_ref().map(|p| p.n))
         .unwrap_or(o.rede.uteis.useful_size_base);
     let (watts, custo_centavos) = painel.energia();
+    let (mercado_quando, mercado_json) = painel
+        .mercado
+        .lock()
+        .ok()
+        .and_then(|m| m.clone())
+        .unwrap_or_else(|| (0, "[]".to_string()));
     let centavos = custo_centavos as u64;
     let custo_reais = format!("{}.{:02}", centavos / 100, centavos % 100);
     // Endereço para abrir o painel no celular, só quando o dono ligou isso.
@@ -1087,7 +1246,7 @@ fn estado_json(painel: &Painel, rede: &Rede, o: &Opcoes, pode_mandar: bool, port
          \"app\":{},\"versao\":\"{VERSAO}\",\"carteira\":{},\"pode_minerar\":{},\"dados\":{},\"sementes\":[{}],\"porta_p2p\":{},\
          \"uso_cpu\":{},\"ms_tentativa\":{:.1},\"watts\":{:.1},\"watts_nucleo\":{},\"centavos_kwh\":{},\"custo_mes\":\"{}\",\
          \"memoria_total_mib\":{},\"na_rede\":{},\"cena\":{},\"url_celular\":{},\
-         \"trabalho_util\":{{\"familia\":\"matrizes\",\"n\":{},\"rodadas\":{},\"lado_min\":{},\"lado_base\":{},\"lado_max\":{},\"bytes\":{}}},",
+         \"paineis\":{},\"mercado_ligado\":{},\"mercado_quando\":{},\"mercado\":{},         \"trabalho_util\":{{\"familia\":\"matrizes\",\"n\":{},\"rodadas\":{},\"lado_min\":{},\"lado_base\":{},\"lado_max\":{},\"bytes\":{}}},",
         texto_json(o.rede.nome),
         hex(&c.tip_hash()),
         c.total_work().to_decimal(),
@@ -1129,6 +1288,10 @@ fn estado_json(painel: &Painel, rede: &Rede, o: &Opcoes, pode_mandar: bool, port
         painel.na_rede.load(Ordering::Relaxed),
         texto_json(&painel.cena.lock().map(|c| c.clone()).unwrap_or_default()),
         texto_json(&url_celular),
+        texto_json(&painel.paineis.lock().map(|p| p.clone()).unwrap_or_default()),
+        painel.mercado_ligado.load(Ordering::Relaxed),
+        mercado_quando,
+        mercado_json,
         trabalho_n,
         o.rede.uteis.useful_rounds,
         o.rede.uteis.useful_size_min,

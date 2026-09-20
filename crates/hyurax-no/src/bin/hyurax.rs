@@ -11,11 +11,13 @@
 
 #![windows_subsystem = "windows"]
 
+use std::collections::HashMap;
+
 use tao::dpi::LogicalSize;
 use tao::event::{Event, WindowEvent};
-use tao::event_loop::{ControlFlow, EventLoop};
-use tao::window::{Icon, Theme, WindowBuilder};
-use wry::{WebContext, WebViewBuilder};
+use tao::event_loop::{ControlFlow, EventLoopBuilder, EventLoopWindowTarget};
+use tao::window::{Icon, Theme, Window, WindowBuilder, WindowId};
+use wry::{WebContext, WebView, WebViewBuilder};
 
 use hyurax_no::painel::{self, JaAberto};
 
@@ -35,58 +37,110 @@ fn main() {
     abrir_janela(url.as_deref(), None, motor);
 }
 
-fn abrir_janela(url: Option<&str>, erro: Option<&str>, motor: Option<painel::Pronto>) {
-    let laco = EventLoop::new();
-    let janela = match WindowBuilder::new()
+/// Pedido que vem de dentro da página para o programa.
+enum Pedido {
+    /// A página pediu uma janela nova (botão "destacar" de um painel).
+    Janela(String),
+}
+
+/// Monta uma janela com o painel dentro. Serve para a principal e para as
+/// destacadas: a diferença é só o tamanho e o endereço aberto.
+fn montar_janela(
+    alvo: &EventLoopWindowTarget<Pedido>,
+    contexto: &mut WebContext,
+    proxy: &tao::event_loop::EventLoopProxy<Pedido>,
+    origem: &str,
+    conteudo: Result<&str, &str>,
+    principal: bool,
+) -> Option<(Window, WebView)> {
+    let tamanho = if principal { (1320.0, 820.0) } else { (760.0, 560.0) };
+    let janela = WindowBuilder::new()
         .with_title(TITULO)
-        .with_inner_size(LogicalSize::new(1320.0, 820.0))
-        .with_min_inner_size(LogicalSize::new(900.0, 600.0))
+        .with_inner_size(LogicalSize::new(tamanho.0, tamanho.1))
+        .with_min_inner_size(LogicalSize::new(420.0, 360.0))
         .with_window_icon(icone())
         .with_theme(Some(Theme::Dark))
-        .build(&laco)
-    {
-        Ok(j) => j,
-        Err(_) => return,
-    };
+        .build(alvo)
+        .ok()?;
 
+    let dentro = origem.to_string();
+    let pedir = proxy.clone();
+    let construtor = WebViewBuilder::with_web_context(contexto)
+        .with_background_color((3, 3, 3, 255))
+        .with_devtools(false)
+        // Links para fora (GitHub, site) abrem no navegador do sistema; o que é
+        // do próprio painel continua dentro do programa.
+        .with_navigation_handler({
+            let dentro = dentro.clone();
+            move |destino: String| {
+                if destino.starts_with(&dentro) || destino.starts_with("about:") || destino.starts_with("data:") {
+                    true
+                } else {
+                    abrir_no_navegador(&destino);
+                    false
+                }
+            }
+        })
+        // Janela nova pedida pela página: se for do painel, o programa abre outra
+        // janela dele mesmo. Qualquer outro endereço vai para o navegador.
+        .with_new_window_req_handler(move |destino: String| {
+            if destino.starts_with(&dentro) {
+                let _ = pedir.send_event(Pedido::Janela(destino));
+            } else {
+                abrir_no_navegador(&destino);
+            }
+            false
+        });
+    let construtor = match conteudo {
+        Ok(endereco) => construtor.with_url(endereco),
+        Err(erro) => construtor.with_html(pagina_de_erro(erro)),
+    };
+    let visao = construtor.build(&janela).ok()?;
+    Some((janela, visao))
+}
+
+fn abrir_janela(url: Option<&str>, erro: Option<&str>, motor: Option<painel::Pronto>) {
+    let laco = EventLoopBuilder::<Pedido>::with_user_event().build();
+    let proxy = laco.create_proxy();
     let origem = url.map(|u| u.trim_end_matches('/').to_string()).unwrap_or_default();
-    let dentro = origem.clone();
     // O motor do navegador guarda o cache na pasta de dados do usuário, e não ao
     // lado do .exe: assim o programa roda de qualquer pasta, mesmo sem permissão
     // de escrita (Arquivos de Programas, pendrive protegido).
     let mut contexto = WebContext::new(painel::pasta_de_dados().ok().map(|d| d.join("navegador")));
-    let construtor = WebViewBuilder::with_web_context(&mut contexto)
-        .with_background_color((3, 3, 3, 255))
-        .with_devtools(false)
-        // Links para fora (GitHub, site) abrem no navegador, não dentro do programa.
-        .with_navigation_handler(move |destino: String| {
-            if destino.starts_with(&dentro) || destino.starts_with("about:") || destino.starts_with("data:") {
-                true
-            } else {
-                abrir_no_navegador(&destino);
-                false
-            }
-        })
-        .with_new_window_req_handler(|destino: String| {
-            abrir_no_navegador(&destino);
-            false
-        });
-    let construtor = match (url, erro) {
-        (Some(u), _) => construtor.with_url(u),
-        (None, e) => construtor.with_html(pagina_de_erro(e.unwrap_or("erro desconhecido"))),
+    let conteudo = match (url, erro) {
+        (Some(u), _) => Ok(u),
+        (None, e) => Err(e.unwrap_or("erro desconhecido")),
     };
-    let Ok(_visao) = construtor.build(&janela) else {
+    let Some((principal, visao)) = montar_janela(&laco, &mut contexto, &proxy, &origem, conteudo, true) else {
         return;
     };
+    let id_principal = principal.id();
+    // As janelas destacadas ficam guardadas: fechar uma não fecha o programa.
+    let mut janelas: HashMap<WindowId, (Window, WebView)> = HashMap::new();
 
-    laco.run(move |evento, _, controle| {
+    laco.run(move |evento, alvo, controle| {
         *controle = ControlFlow::Wait;
-        if let Event::WindowEvent { event: WindowEvent::CloseRequested, .. } = evento {
-            if let Some(m) = &motor {
-                m.encerrar();
+        match evento {
+            Event::UserEvent(Pedido::Janela(endereco)) => {
+                if let Some((j, v)) = montar_janela(alvo, &mut contexto, &proxy, &origem, Ok(&endereco), false) {
+                    janelas.insert(j.id(), (j, v));
+                }
             }
-            *controle = ControlFlow::Exit;
+            Event::WindowEvent { event: WindowEvent::CloseRequested, window_id, .. } => {
+                if window_id == id_principal {
+                    // Fechar a janela principal encerra o programa, e antes disso
+                    // a mineração para e a cadeia é gravada.
+                    if let Some(m) = &motor {
+                        m.encerrar();
+                    }
+                    *controle = ControlFlow::Exit;
+                } else {
+                    janelas.remove(&window_id);
+                }
+            }
+            _ => {}
         }
+        let _ = &visao;
     });
 }
 

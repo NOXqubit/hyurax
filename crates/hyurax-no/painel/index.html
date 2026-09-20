@@ -36,13 +36,14 @@
     <button type="button" id="minerar" class="minerar" aria-pressed="false">
       <i aria-hidden="true"></i><span>MINERAR</span>
     </button>
+    <button type="button" id="abrir-paineis" class="ajustes-botao" aria-haspopup="dialog">Painéis</button>
     <button type="button" id="abrir-ajustes" class="ajustes-botao" aria-haspopup="dialog">Ajustes</button>
   </div>
   <p class="so-ver" id="so-ver" hidden>Somente leitura · os comandos ficam no computador que minera</p>
 </header>
 
 <main class="grade">
-  <section class="bloco estacao" aria-label="Estação de mineração">
+  <section class="bloco estacao" id="painel-estacao" data-painel="estacao" aria-label="Estação de mineração">
     <header class="rotulo"><span>Estação · PC-01</span><span class="rotulo-fim"><button type="button" id="abrir-trabalho" class="link" aria-haspopup="dialog">ver o trabalho</button><span id="estado-rodada">parado</span></span></header>
     <canvas id="cena" aria-hidden="true"></canvas>
     <div class="estacao-pe">
@@ -55,8 +56,7 @@
     </div>
   </section>
 
-  <aside class="lateral">
-    <section class="bloco carteira" aria-label="Carteira">
+    <section class="bloco carteira" id="painel-carteira" data-painel="carteira" aria-label="Carteira">
       <header class="rotulo"><span>Carteira</span><button type="button" id="copiar" class="link">copiar endereço</button></header>
       <p class="endereco" id="endereco">—</p>
       <p class="saldo"><span id="saldo" class="num">0.00000000</span><small>HYUR</small></p>
@@ -67,7 +67,7 @@
         <div><dt>Libera depois de</dt><dd><span id="maturidade" class="num">0</span> blocos</dd></div>
       </dl>
     </section>
-    <section class="bloco rede" aria-label="Rede">
+    <section class="bloco rede" id="painel-rede" data-painel="rede" aria-label="Rede">
       <header class="rotulo"><span>Rede</span><span id="r-nome">—</span></header>
       <dl class="pares">
         <div><dt>Emitido</dt><dd><span id="r-emitido" class="num">0</span> HYUR</dd></div>
@@ -76,9 +76,8 @@
         <div><dt>Ponta da cadeia</dt><dd id="r-ponta" class="num curto">—</dd></div>
       </dl>
     </section>
-  </aside>
 
-  <section class="bloco livro" aria-label="Livro de blocos">
+  <section class="bloco livro" id="painel-livro" data-painel="livro" aria-label="Livro de blocos">
     <header class="rotulo"><span>Livro de blocos</span><span class="chave"><i class="q meu"></i>meu <i class="q"></i>outro nó</span></header>
     <div class="rolar">
       <table>
@@ -88,15 +87,26 @@
     </div>
   </section>
 
-  <section class="bloco ritmo" aria-label="Ritmo da mineração">
+  <section class="bloco ritmo" id="painel-ritmo" data-painel="ritmo" aria-label="Ritmo da mineração">
     <header class="rotulo"><span>Ritmo · 2 min</span><span><span id="g-atual" class="num">0</span> tent/s</span></header>
     <canvas id="grafico" aria-label="Tentativas por segundo nos últimos dois minutos" role="img"></canvas>
   </section>
 
-  <section class="bloco fluxo" aria-label="Fluxo de eventos">
+  <section class="bloco fluxo" id="painel-fluxo" data-painel="fluxo" aria-label="Fluxo de eventos">
     <header class="rotulo"><span>Fluxo</span><span id="relogio" class="num">--:--:--</span></header>
     <ol id="fluxo" class="rolar"></ol>
   </section>
+  <section class="bloco mercado" id="painel-mercado" data-painel="mercado" aria-label="Mercado das criptomoedas">
+    <header class="rotulo"><span>Mercado</span><span id="m-quando">desligado</span></header>
+    <div class="rolar">
+      <table>
+        <thead><tr><th>Moeda</th><th>Preço (R$)</th><th>Dólar</th><th>24 h</th></tr></thead>
+        <tbody id="mercado"></tbody>
+      </table>
+    </div>
+    <p class="nota nota-painel" id="m-aviso">Desligado. Ligue nos Ajustes: o programa passa a consultar a api.coingecko.com a cada 2 minutos.</p>
+  </section>
+
 </main>
 
 <footer class="fita" aria-hidden="true"><div id="fita-trilho"></div></footer>
@@ -245,6 +255,12 @@
       </div>
     </section>
 
+    <section class="grupo pilha" aria-labelledby="a-mercado-titulo">
+      <h3 class="rotulo-campo" id="a-mercado-titulo">Mercado das criptomoedas</h3>
+      <p class="nota">Ligando isto, o programa passa a consultar a <b>api.coingecko.com</b> a cada 2 minutos para mostrar os preços. É a única coisa aqui que fala com um site de fora. Nada seu vai junto: o pedido é a lista fixa de moedas.</p>
+      <label class="chave-liga" for="a-mercado"><input type="checkbox" id="a-mercado" autocomplete="off"><span>Acompanhar o mercado</span></label>
+    </section>
+
     <section class="grupo pilha" aria-labelledby="a-cena-titulo">
       <h3 class="rotulo-campo" id="a-cena-titulo">Estação 3D</h3>
       <p class="nota">O desenho da mesa também gasta máquina. Em computador fraco, deixe em baixa ou desligue: a mineração não muda.</p>
@@ -286,9 +302,29 @@
         <div><dt>Faixa da rede</dt><dd><span id="t-faixa">—</span></dd></div>
       </dl>
     </div>
+    <section class="grupo pilha">
+      <h3 class="rotulo-campo">Tipos de trabalho</h3>
+      <ul class="tipos">
+        <li><b>Matrizes conferidas por Freivalds</b> — <span class="marca-estado">em uso agora</span><br><small>A conta que todo bloco carrega hoje. O tamanho sobe e desce com a dificuldade da rede.</small></li>
+        <li><b>Trabalho encomendado de fora</b> — <span class="marca-estado planejado">planejado</span><br><small>Genética, clima, engenharia: alguém manda a conta, paga por ela, e os mineradores resolvem. Exige uma fila de pedidos e pagamento na rede, que ainda não existem.</small></li>
+        <li><b>Escolher o tipo</b> — <span class="marca-estado planejado">depende do de cima</span><br><small>Enquanto só existe uma família de trabalho, escolher seria enfeite: o consenso recusa bloco de qualquer outra família.</small></li>
+      </ul>
+    </section>
     <p class="nota">Quem confere não refaz a conta: três sorteios bastam para pegar qualquer resultado errado, e custam quase nada. É por isso que a rede aceita trabalho pesado sem cada nó repetir o trabalho.</p>
     <p class="aviso-teste"><b>O que ainda não é.</b> As contas de hoje são geradas pelo próprio bloco, não vêm de ninguém de fora. O próximo passo do projeto é abrir a fila para trabalho de verdade — genética, clima, engenharia — com quem precisa pagando pela conta. Enquanto isso não existe, o programa não vai dizer que existe.</p>
     <div class="acoes"><button type="button" id="trabalho-fechar" class="secundario">Fechar</button></div>
+  </div>
+</dialog>
+
+<!-- Quais painéis ficam abertos, em que ordem, e quais viram janela à parte. -->
+<dialog id="paineis" class="dialogo" aria-labelledby="paineis-titulo">
+  <header class="rotulo"><h2 id="paineis-titulo">Painéis</h2><span>a janela é sua</span></header>
+  <div class="dialogo-corpo pilha">
+    <p class="nota">Marque o que quer ver, use as setas para mudar a ordem, e o botão de destacar para abrir um painel numa janela separada.</p>
+    <ul class="lista-paineis" id="lista-paineis"></ul>
+    <div class="acoes esquerda"><button type="button" id="paineis-padrao" class="secundario">Voltar ao padrão</button></div>
+    <p class="erro" id="paineis-erro" role="alert"></p>
+    <div class="acoes"><button type="button" id="paineis-fechar" class="secundario">Fechar</button></div>
   </div>
 </dialog>
 </body>

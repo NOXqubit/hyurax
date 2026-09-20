@@ -557,6 +557,7 @@ function desenharAjustes(e) {
     ? `Agora: cerca de ${fmt1.format(e.watts || 0)} W, ou R$ ${reais(e.custo_mes)} por mês se ficar ligado o tempo todo.`
     : "Ligue a mineração para ver o consumo estimado.");
   $("a-na-rede").checked = e.na_rede === true;
+  $("a-mercado").checked = e.mercado_ligado === true;
   $("a-qr-caixa").hidden = !e.na_rede;
   texto("a-url", e.url_celular || "—");
   if (e.na_rede) desenharQr(e.url_celular || "");
@@ -617,6 +618,7 @@ for (const id of ["a-watts", "a-kwh"]) {
   $(id).addEventListener("change", () => salvarAjuste({ watts_nucleo: $("a-watts").value, centavos_kwh: $("a-kwh").value }));
 }
 $("a-na-rede").addEventListener("change", () => salvarAjuste({ na_rede: $("a-na-rede").checked ? "1" : "0" }));
+$("a-mercado").addEventListener("change", () => salvarAjuste({ mercado: $("a-mercado").checked ? "1" : "0" }));
 for (const nome of ["auto", "alta", "media", "baixa", "desligada"]) {
   $(`c-${nome}`).addEventListener("change", async () => {
     // A qualidade da cena muda o desenho inteiro: recarrega a página para valer já.
@@ -728,6 +730,152 @@ trabalho.addEventListener("keydown", (ev) => {
   trabalho.close();
 });
 
+// ---------- painéis: quais aparecem, em que ordem, e o modo destacado ----------
+// A janela é do dono: ele fecha o que não quer, muda a ordem e pode abrir um
+// painel sozinho numa janela à parte (endereço /?so=NOME).
+const NOMES_PAINEIS = {
+  estacao: "Estação 3D",
+  carteira: "Carteira",
+  rede: "Rede",
+  livro: "Livro de blocos",
+  ritmo: "Ritmo",
+  fluxo: "Fluxo de eventos",
+  mercado: "Mercado",
+};
+const PAINEIS_PADRAO = "estacao,carteira,rede,livro,ritmo,fluxo,-mercado";
+const destacado = new URLSearchParams(location.search).get("so");
+let listaPaineis = PAINEIS_PADRAO;
+
+function pecas(lista) {
+  return lista.split(",").map((s) => s.trim()).filter(Boolean).map((item) => ({
+    nome: item.startsWith("-") ? item.slice(1) : item,
+    aberto: !item.startsWith("-"),
+  }));
+}
+
+function aplicarPaineis(lista) {
+  listaPaineis = lista;
+  const partes = pecas(lista);
+  document.querySelectorAll("[data-painel]").forEach((secao) => {
+    const nome = secao.dataset.painel;
+    const parte = partes.find((p) => p.nome === nome);
+    const visivel = destacado ? nome === destacado : !!parte?.aberto;
+    secao.hidden = !visivel;
+    secao.style.order = String(partes.findIndex((p) => p.nome === nome));
+  });
+  document.body.classList.toggle("destacado", !!destacado);
+}
+
+async function salvarPaineis(lista) {
+  const res = await postar("/api/ajustes", { paineis: lista });
+  if (!res.ok) {
+    texto("paineis-erro", erroDe(res, "Não deu para salvar a escolha dos painéis."));
+    return false;
+  }
+  aplicarPaineis(lista);
+  desenharListaPaineis();
+  return true;
+}
+
+function desenharListaPaineis() {
+  const partes = pecas(listaPaineis);
+  const ul = $("lista-paineis");
+  ul.replaceChildren(...partes.map((parte, i) => {
+    const li = document.createElement("li");
+    const rotulo = document.createElement("label");
+    const caixa = document.createElement("input");
+    caixa.type = "checkbox";
+    caixa.checked = parte.aberto;
+    caixa.addEventListener("change", () => {
+      const novas = partes.map((p, j) => (j === i ? `${caixa.checked ? "" : "-"}${p.nome}` : `${p.aberto ? "" : "-"}${p.nome}`));
+      salvarPaineis(novas.join(","));
+    });
+    rotulo.append(caixa, Object.assign(document.createElement("span"), { textContent: NOMES_PAINEIS[parte.nome] || parte.nome }));
+    const mover = (delta) => {
+      const j = i + delta;
+      if (j < 0 || j >= partes.length) return;
+      const novas = partes.map((p) => `${p.aberto ? "" : "-"}${p.nome}`);
+      [novas[i], novas[j]] = [novas[j], novas[i]];
+      salvarPaineis(novas.join(","));
+    };
+    const sobe = Object.assign(document.createElement("button"), { type: "button", textContent: "↑", title: "Subir" });
+    sobe.disabled = i === 0;
+    sobe.addEventListener("click", () => mover(-1));
+    const desce = Object.assign(document.createElement("button"), { type: "button", textContent: "↓", title: "Descer" });
+    desce.disabled = i === partes.length - 1;
+    desce.addEventListener("click", () => mover(1));
+    const janela = Object.assign(document.createElement("button"), { type: "button", textContent: "⧉", title: "Abrir em janela separada" });
+    janela.addEventListener("click", () => window.open(`/?so=${parte.nome}`, "_blank", "noopener"));
+    li.append(rotulo, sobe, desce, janela);
+    return li;
+  }));
+}
+
+// Cada painel ganha o seu botão de fechar, sem repetir HTML.
+function prepararBotoesDePainel() {
+  document.querySelectorAll("[data-painel]").forEach((secao) => {
+    const cabecalho = secao.querySelector(".rotulo");
+    if (!cabecalho || cabecalho.querySelector(".fechar-painel")) return;
+    const fechar = document.createElement("button");
+    fechar.type = "button";
+    fechar.className = "fechar-painel";
+    fechar.textContent = "×";
+    fechar.title = "Fechar este painel (volta pelo menu Painéis)";
+    fechar.setAttribute("aria-label", `Fechar o painel ${NOMES_PAINEIS[secao.dataset.painel] || ""}`);
+    fechar.addEventListener("click", () => {
+      const novas = pecas(listaPaineis).map((p) => (p.nome === secao.dataset.painel ? `-${p.nome}` : `${p.aberto ? "" : "-"}${p.nome}`));
+      salvarPaineis(novas.join(","));
+    });
+    const fim = cabecalho.querySelector(".rotulo-fim");
+    if (fim) fim.append(fechar);
+    else cabecalho.append(fechar);
+  });
+}
+
+$("abrir-paineis").addEventListener("click", () => {
+  if ($("paineis").open) return;
+  texto("paineis-erro", "");
+  desenharListaPaineis();
+  $("paineis").showModal();
+});
+$("paineis-fechar").addEventListener("click", () => $("paineis").close());
+$("paineis-padrao").addEventListener("click", () => salvarPaineis(PAINEIS_PADRAO));
+$("paineis").addEventListener("keydown", (ev) => {
+  if (ev.key !== "Escape") return;
+  ev.preventDefault();
+  $("paineis").close();
+});
+
+// ---------- mercado ----------
+function desenharMercado(e) {
+  const ligado = e.mercado_ligado === true;
+  const moedas = Array.isArray(e.mercado) ? e.mercado : [];
+  $("m-aviso").hidden = ligado && moedas.length > 0;
+  texto("m-quando", !ligado ? "desligado" : e.mercado_quando ? hora(e.mercado_quando) : "buscando…");
+  if (ligado && moedas.length === 0) {
+    texto("m-aviso", "Buscando os preços… se não vier nada, pode ser internet fora ou o site de preços fora do ar.");
+    $("m-aviso").hidden = false;
+  }
+  const dinheiro = (v, casas) => v.toLocaleString("pt-BR", { minimumFractionDigits: casas, maximumFractionDigits: casas });
+  $("mercado").replaceChildren(...moedas.map((m) => {
+    const tr = document.createElement("tr");
+    const cel = (txt, classe) => {
+      const td = document.createElement("td");
+      td.textContent = txt;
+      if (classe) td.className = classe;
+      return td;
+    };
+    const casas = m.brl >= 100 ? 0 : 2;
+    tr.append(
+      cel(m.nome),
+      cel(dinheiro(m.brl, casas)),
+      cel(`US$ ${dinheiro(m.usd, casas)}`),
+      cel(`${dinheiro(Math.abs(m.variacao), 1)}%`, m.variacao >= 0 ? "num sobe" : "num desce"),
+    );
+    return tr;
+  }));
+}
+
 // ---------- ciclo ----------
 async function ler() {
   try {
@@ -743,6 +891,8 @@ async function ler() {
     desenharLateral(e);
     desenharLivro(e);
     desenharFluxo(e);
+    if (typeof e.paineis === "string" && e.paineis !== listaPaineis) { aplicarPaineis(e.paineis); if ($("paineis").open) desenharListaPaineis(); }
+    desenharMercado(e);
     desenharFita(e);
     desenharGrafico(e);
     garantirEstacao(e);
@@ -754,4 +904,6 @@ async function ler() {
 setInterval(() => { texto("relogio", new Date().toLocaleTimeString("pt-BR", { hour12: false })); }, 1000);
 setInterval(ler, 1000);
 addEventListener("resize", () => ultimo && desenharGrafico(ultimo));
+prepararBotoesDePainel();
+aplicarPaineis(listaPaineis);
 ler();
