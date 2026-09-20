@@ -14,12 +14,12 @@ path = "src/lib.rs"
 name = "hyurax-no"
 path = "src/main.rs"
 
-# O programa com janela: `cargo build --release -p hyurax-no --features janela --bin hyurax-minerador`.
+# O programa com janela: `cargo build --release -p hyurax-no --features janela --bin hyurax`.
 # Só compila com a feature, para o nó de terminal (Linux, celular, servidor)
 # continuar leve e sem nada de interface gráfica.
 [[bin]]
-name = "hyurax-minerador"
-path = "src/bin/hyurax-minerador.rs"
+name = "hyurax"
+path = "src/bin/hyurax.rs"
 required-features = ["janela"]
 
 [features]

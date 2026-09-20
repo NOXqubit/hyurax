@@ -1,4 +1,4 @@
-// Hyurax Minerador: o programa com janela.
+// Hyurax: o programa com janela.
 //
 // Abre com dois cliques, sem terminal. Liga o nó na rede de teste, a
 // mineração e o painel, tudo guardado em %APPDATA%\Hyurax, e mostra o painel
@@ -19,7 +19,7 @@ use wry::{WebContext, WebViewBuilder};
 
 use hyurax_no::painel::{self, JaAberto};
 
-const TITULO: &str = "Hyurax Minerador";
+const TITULO: &str = "Hyurax";
 
 fn main() {
     let (url, motor) = match painel::ja_aberto() {
@@ -114,8 +114,8 @@ fn pagina_de_erro(erro: &str) -> String {
         "<!doctype html><meta charset=utf-8><body style=\"margin:0;background:#030303;color:#f3f3f1;\
          font:15px/1.6 Consolas,monospace;display:grid;place-items:center;min-height:100vh\">\
          <div style=\"max-width:560px;padding:24px;border:1px solid rgba(243,243,241,.3)\">\
-         <p style=\"letter-spacing:.3em;font-size:11px;opacity:.6\">HYURAX MINERADOR</p>\
-         <h1 style=\"font:700 28px Bahnschrift,sans-serif\">O minerador não conseguiu ligar</h1>\
+         <p style=\"letter-spacing:.3em;font-size:11px;opacity:.6\">HYURAX</p>\
+         <h1 style=\"font:700 28px Bahnschrift,sans-serif\">O Hyurax não conseguiu ligar</h1>\
          <p>{seguro}</p><p style=\"opacity:.6\">Feche esta janela e abra o programa de novo. \
          Se continuar, a pasta de dados fica em %APPDATA%\\Hyurax.</p></div>"
     )

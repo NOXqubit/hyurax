@@ -4,7 +4,7 @@
 //!
 //! ```text
 //! hyurax-no painel --arquivo carteira.txt [--painel-porta 8800] [--painel-rede]   (terminal + navegador)
-//! Hyurax Minerador.exe                                                          (programa com janela)
+//! Hyurax.exe                                                                    (programa com janela)
 //! ```
 //!
 //! No programa com janela ([`app`]), tudo mora na pasta de dados do usuário
@@ -44,6 +44,8 @@ const CSS: &str = include_str!("../painel/painel.css");
 const JS: &str = include_str!("../painel/painel.js");
 const ESTACAO: &str = include_str!("../painel/estacao.js");
 const THREE: &str = include_str!("../../../site/vendor/three.module.min.js");
+/// Gerador de QR Code, o mesmo do site: serve para abrir o painel no celular.
+const QRCODE: &str = include_str!("../../../site/vendor/qrcode.min.js");
 
 /// Versão mostrada no painel.
 pub const VERSAO: &str = env!("CARGO_PKG_VERSION");
@@ -56,6 +58,12 @@ const SEMENTES_MAX: usize = 16;
 /// Porta padrão do painel e do nó no programa com janela.
 const PORTA_PAINEL: u16 = 8800;
 const PORTA_P2P: u16 = 8790;
+/// Qualidades da cena 3D que o painel aceita.
+const CENAS: [&str; 5] = ["auto", "alta", "media", "baixa", "desligada"];
+/// Quanto um núcleo minerando gasta, em watts, e o preço do kWh em centavos.
+/// São estimativas honestas, e o usuário ajusta as duas nos Ajustes.
+const WATTS_NUCLEO_PADRAO: u32 = 12;
+const CENTAVOS_KWH_PADRAO: u32 = 90;
 
 /// Onde o motor guarda as coisas e como ele se apresenta.
 struct Ambiente {
@@ -88,6 +96,17 @@ struct Painel {
     amostras: Mutex<VecDeque<(f64, u64)>>,
     /// Quando a rodada atual começou e em que altura.
     rodada: Mutex<Option<(Instant, u64)>>,
+    /// Quanto da CPU a mineração pode ocupar, de 10 a 100 por cento.
+    uso_cpu: AtomicU32,
+    /// Tempo medido de uma tentativa, em milissegundos: base do limitador.
+    ms_tentativa: Mutex<f64>,
+    /// Watts que um núcleo minerando gasta, e o preço do kWh em centavos.
+    watts_nucleo: AtomicU32,
+    centavos_kwh: AtomicU32,
+    /// O painel aceita ser visto por outros aparelhos da rede local.
+    na_rede: AtomicBool,
+    /// Qualidade da cena 3D escolhida: auto, alta, media, baixa, desligada.
+    cena: Mutex<String>,
 }
 
 struct Evento {
@@ -134,6 +153,50 @@ impl Painel {
         self.endereco.lock().ok().and_then(|e| *e)
     }
 
+    /// Pausa entre tentativas para a mineração ocupar só a fatia escolhida da
+    /// CPU. Com 50%, a linha trabalha um tempo e descansa o mesmo tempo. A base
+    /// é o tempo medido de uma tentativa nesta máquina, então o limite vale
+    /// igual num Atom e num PC de jogo.
+    fn pausa_do_limite(&self) -> Duration {
+        let uso = f64::from(self.uso_cpu.load(Ordering::Relaxed).clamp(10, 100));
+        if uso >= 100.0 {
+            return Duration::ZERO;
+        }
+        let ms = self.ms_tentativa.lock().map(|m| *m).unwrap_or(0.0);
+        if ms <= 0.0 {
+            // Ainda não medi nada: começa com uma pausa modesta e corrige depois.
+            return Duration::from_millis(u64::from(100 - uso.min(99.0) as u32));
+        }
+        let descanso = ms * (100.0 / uso - 1.0);
+        Duration::from_millis(descanso.clamp(0.0, 5_000.0) as u64)
+    }
+
+    /// Guarda quanto durou, em média, uma tentativa nesta rodada.
+    fn medir_tentativa(&self, tentativas: u64, duracao: Duration, linhas: u32) {
+        if tentativas == 0 {
+            return;
+        }
+        let ms = duracao.as_secs_f64() * 1000.0 * f64::from(linhas.max(1)) / tentativas as f64;
+        // Desconta a pausa que eu mesmo impus: quero o tempo puro de cálculo.
+        let ms = (ms - self.pausa_do_limite().as_secs_f64() * 1000.0).max(1.0);
+        if let Ok(mut m) = self.ms_tentativa.lock() {
+            // Média que esquece devagar: um pico não estraga o limite.
+            *m = if *m <= 0.0 { ms } else { *m * 0.7 + ms * 0.3 };
+        }
+    }
+
+    /// Watts estimados agora e o custo por mês, em centavos.
+    fn energia(&self) -> (f64, f64) {
+        if !self.minerando.load(Ordering::Relaxed) {
+            return (0.0, 0.0);
+        }
+        let linhas = f64::from(self.linhas.load(Ordering::Relaxed));
+        let uso = f64::from(self.uso_cpu.load(Ordering::Relaxed).clamp(10, 100)) / 100.0;
+        let watts = linhas * f64::from(self.watts_nucleo.load(Ordering::Relaxed)) * uso;
+        let kwh_mes = watts * 24.0 * 30.0 / 1000.0;
+        (watts, kwh_mes * f64::from(self.centavos_kwh.load(Ordering::Relaxed)))
+    }
+
     /// Tentativas por segundo nos últimos ~10 s.
     fn ritmo(&self) -> f64 {
         let Ok(a) = self.amostras.lock() else { return 0.0 };
@@ -150,10 +213,17 @@ impl Painel {
             return;
         }
         let mut texto = String::from(
-            "# Ajustes do Hyurax Minerador. Pode apagar: volta tudo ao padrão.\n",
+            "# Ajustes do Hyurax. Pode apagar: volta tudo ao padrão.\n",
         );
         let _ = writeln!(texto, "minerar={}", u8::from(self.minerando.load(Ordering::Relaxed)));
         let _ = writeln!(texto, "linhas={}", self.linhas.load(Ordering::Relaxed));
+        let _ = writeln!(texto, "uso_cpu={}", self.uso_cpu.load(Ordering::Relaxed));
+        let _ = writeln!(texto, "watts_nucleo={}", self.watts_nucleo.load(Ordering::Relaxed));
+        let _ = writeln!(texto, "centavos_kwh={}", self.centavos_kwh.load(Ordering::Relaxed));
+        let _ = writeln!(texto, "na_rede={}", u8::from(self.na_rede.load(Ordering::Relaxed)));
+        if let Ok(c) = self.cena.lock() {
+            let _ = writeln!(texto, "cena={c}");
+        }
         if let Ok(s) = self.sementes.lock() {
             for semente in s.iter() {
                 let _ = writeln!(texto, "semente={semente}");
@@ -173,6 +243,11 @@ struct Ajustes {
     minerar: bool,
     linhas: Option<u32>,
     sementes: Vec<String>,
+    uso_cpu: Option<u32>,
+    watts_nucleo: Option<u32>,
+    centavos_kwh: Option<u32>,
+    na_rede: Option<bool>,
+    cena: Option<String>,
 }
 
 fn ler_ajustes(dados: &Path) -> Ajustes {
@@ -182,6 +257,11 @@ fn ler_ajustes(dados: &Path) -> Ajustes {
         match linha.trim().split_once('=') {
             Some(("minerar", v)) => a.minerar = v.trim() == "1",
             Some(("linhas", v)) => a.linhas = v.trim().parse().ok().filter(|n| *n >= 1),
+            Some(("uso_cpu", v)) => a.uso_cpu = v.trim().parse().ok().filter(|n| (10..=100).contains(n)),
+            Some(("watts_nucleo", v)) => a.watts_nucleo = v.trim().parse().ok().filter(|n| (1..=200).contains(n)),
+            Some(("centavos_kwh", v)) => a.centavos_kwh = v.trim().parse().ok().filter(|n| (1..=99999).contains(n)),
+            Some(("na_rede", v)) => a.na_rede = Some(v.trim() == "1"),
+            Some(("cena", v)) if CENAS.contains(&v.trim()) => a.cena = Some(v.trim().to_string()),
             Some(("semente", v)) if semente_valida(v.trim()) && a.sementes.len() < SEMENTES_MAX => {
                 a.sementes.push(v.trim().to_string());
             }
@@ -198,6 +278,19 @@ fn semente_valida(s: &str) -> bool {
         && host.len() <= 253
         && host.chars().all(|c| c.is_ascii_alphanumeric() || matches!(c, '.' | '-' | '[' | ']' | ':'))
         && porta.parse::<u16>().is_ok_and(|p| p > 0)
+}
+
+/// O endereço deste computador na rede local, para abrir o painel no celular.
+///
+/// Não manda pacote nenhum: só pergunta ao sistema por qual placa ele sairia
+/// para fora, e lê o endereço dessa placa.
+fn ip_local() -> Option<Ipv4Addr> {
+    let s = std::net::UdpSocket::bind(("0.0.0.0", 0)).ok()?;
+    s.connect(("8.8.8.8", 53)).ok()?;
+    match s.local_addr().ok()?.ip() {
+        IpAddr::V4(ip) if !ip.is_loopback() && !ip.is_unspecified() => Some(ip),
+        _ => None,
+    }
 }
 
 /// A pasta de dados do programa com janela: `%APPDATA%\Hyurax` no Windows,
@@ -238,7 +331,7 @@ impl Pronto {
 pub enum JaAberto {
     /// Porta livre: pode ligar o motor.
     Nao,
-    /// Já há um Hyurax Minerador respondendo nesta porta.
+    /// Já há um Hyurax respondendo nesta porta.
     Sim(u16),
 }
 
@@ -292,7 +385,14 @@ pub fn app() -> Result<Pronto, String> {
     let arquivo_carteira = dados.join("carteira.txt");
     let endereco = std::fs::read_to_string(&arquivo_carteira).ok().and_then(|t| carteira::endereco(&t).ok());
     let ambiente = Ambiente { dados, arquivo_carteira: Some(arquivo_carteira), app: true, porta_p2p };
-    let pronto = ligar(o, rede, ambiente, endereco, ajustes.sementes, PORTA_PAINEL, false)?;
+    let partida = Partida {
+        ambiente,
+        endereco,
+        sementes: ajustes.sementes.clone(),
+        porta_painel: PORTA_PAINEL,
+        na_rede: false,
+    };
+    let pronto = ligar(o, rede, partida, &ajustes)?;
     if ajustes.minerar && endereco.is_some() {
         pronto.painel.minerando.store(true, Ordering::Relaxed);
     }
@@ -335,7 +435,8 @@ pub fn painel(args: &[String]) -> Result<(), String> {
     let rede = subir_rede(&o)?;
     let ambiente = Ambiente { dados: o.pasta.clone(), arquivo_carteira: o.arquivo.clone(), app: false, porta_p2p: o.porta };
     let sementes = o.sementes.clone();
-    let pronto = ligar(o, rede, ambiente, Some(endereco), sementes, porta_painel, na_rede)?;
+    let partida = Partida { ambiente, endereco: Some(endereco), sementes, porta_painel, na_rede };
+    let pronto = ligar(o, rede, partida, &Ajustes::default())?;
     println!("Painel: {}", pronto.url());
     if na_rede {
         println!("  (visível na rede local; comandos só deste computador)");
@@ -344,15 +445,17 @@ pub fn painel(args: &[String]) -> Result<(), String> {
 }
 
 /// Monta o painel, abre a porta local e põe o servidor e o minerador para rodar.
-fn ligar(
-    o: Opcoes,
-    rede: Arc<Rede>,
+/// O que o motor precisa saber para subir, junto num lugar só.
+struct Partida {
     ambiente: Ambiente,
     endereco: Option<[u8; ADDRESS_LEN]>,
     sementes: Vec<String>,
     porta_painel: u16,
     na_rede: bool,
-) -> Result<Pronto, String> {
+}
+
+fn ligar(o: Opcoes, rede: Arc<Rede>, partida: Partida, ajustes: &Ajustes) -> Result<Pronto, String> {
+    let Partida { ambiente, endereco, sementes, porta_painel, na_rede } = partida;
     let nucleos = u32::try_from(std::thread::available_parallelism().map_or(1, |n| n.get())).unwrap_or(1);
     let app = ambiente.app;
     let painel = Arc::new(Painel {
@@ -370,13 +473,23 @@ fn ligar(
         eventos: Mutex::new(VecDeque::new()),
         amostras: Mutex::new(VecDeque::new()),
         rodada: Mutex::new(None),
+        uso_cpu: AtomicU32::new(ajustes.uso_cpu.unwrap_or(100)),
+        ms_tentativa: Mutex::new(0.0),
+        watts_nucleo: AtomicU32::new(ajustes.watts_nucleo.unwrap_or(WATTS_NUCLEO_PADRAO)),
+        centavos_kwh: AtomicU32::new(ajustes.centavos_kwh.unwrap_or(CENTAVOS_KWH_PADRAO)),
+        na_rede: AtomicBool::new(ajustes.na_rede.unwrap_or(na_rede)),
+        cena: Mutex::new(ajustes.cena.clone().unwrap_or_else(|| "auto".to_string())),
     });
     painel.registrar("no", format!("nó no ar na rede {}", o.rede.nome));
     if app && endereco.is_none() {
         painel.registrar("carteira", "nenhuma carteira ainda: crie ou importe uma para minerar".into());
     }
 
-    let ip = if na_rede { IpAddr::V4(Ipv4Addr::UNSPECIFIED) } else { IpAddr::V4(Ipv4Addr::LOCALHOST) };
+    // No programa com janela a porta sempre abre para a rede, e quem decide se
+    // responde a outro aparelho é o ajuste "ver no celular": assim o usuário
+    // liga e desliga na hora, sem reiniciar o programa. Com o ajuste desligado,
+    // qualquer pedido de fora leva 403.
+    let ip = if na_rede || app { IpAddr::V4(Ipv4Addr::UNSPECIFIED) } else { IpAddr::V4(Ipv4Addr::LOCALHOST) };
     let ouvinte = TcpListener::bind(SocketAddr::new(ip, porta_painel))
         .map_err(|e| format!("não consegui abrir o painel na porta {porta_painel}: {e}"))?;
     let o = Arc::new(o);
@@ -475,12 +588,17 @@ fn uma_rodada(painel: &Arc<Painel>, rede: &Arc<Rede>, o: &Opcoes, endereco: [u8;
         *r = Some((inicio, altura));
     }
     painel.interromper.store(false, Ordering::Relaxed);
+    let linhas = painel.linhas.load(Ordering::Relaxed).max(1);
+    // A pausa entre tentativas é o limitador de CPU: sem ela a mineração come a
+    // máquina inteira, que foi a reclamação de quem testou.
+    let pausa = if o.pausa_ms > 0 { Duration::from_millis(o.pausa_ms) } else { painel.pausa_do_limite() };
     let config = ConfigMineracao {
-        linhas: painel.linhas.load(Ordering::Relaxed).max(1),
+        linhas,
         nonce_inicial: agora_unix().wrapping_mul(0x9E37_79B9),
         limite: None,
-        pausa: Duration::from_millis(o.pausa_ms),
+        pausa,
     };
+    let tentativas_antes = painel.tentativas.load(Ordering::Relaxed);
     // Um vigia liga a interrupção quando o painel manda parar.
     let fim = AtomicBool::new(false);
     let resultado = std::thread::scope(|s| {
@@ -504,6 +622,11 @@ fn uma_rodada(painel: &Arc<Painel>, rede: &Arc<Rede>, o: &Opcoes, endereco: [u8;
     })
     .map_err(|e| e.to_string())?;
 
+    painel.medir_tentativa(
+        painel.tentativas.load(Ordering::Relaxed).saturating_sub(tentativas_antes),
+        inicio.elapsed(),
+        linhas,
+    );
     let Some(achado) = resultado.achado else {
         return Ok(()); // interrompida: bloco novo chegou ou mandaram parar
     };
@@ -606,6 +729,77 @@ fn trocar_sementes(painel: &Painel, rede: &Arc<Rede>, campos: &[(String, String)
         }
     }
     Ok(novas)
+}
+
+/// Perfis prontos: quanto da máquina a mineração pode tomar.
+///
+/// "Leve" deixa o computador livre para trabalhar; "equilibrado" usa metade;
+/// "turbo" usa tudo e o computador fica lento. Os números saem dos núcleos que
+/// a máquina tem, então o mesmo perfil vale num Atom e num PC de jogo.
+fn perfil_para(nucleos: u32, perfil: &str) -> Option<(u32, u32)> {
+    let n = nucleos.max(1);
+    match perfil {
+        "leve" => Some(((n / 4).max(1), 35)),
+        "equilibrado" => Some(((n / 2).max(1), 70)),
+        "turbo" => Some((n, 100)),
+        _ => None,
+    }
+}
+
+fn trocar_ajustes(painel: &Painel, campos: &[(String, String)]) -> Result<(), String> {
+    let mut mudou_mineracao = false;
+    for (nome, valor) in campos {
+        match nome.as_str() {
+            "perfil" => {
+                let (linhas, uso) = perfil_para(painel.nucleos, valor).ok_or("perfil desconhecido")?;
+                painel.linhas.store(linhas, Ordering::Relaxed);
+                painel.uso_cpu.store(uso, Ordering::Relaxed);
+                mudou_mineracao = true;
+                painel.registrar("minerador", format!("perfil {valor}: {linhas} núcleo(s), até {uso}% da CPU"));
+            }
+            "uso_cpu" => {
+                let n: u32 = valor.parse().map_err(|_| "uso da CPU inválido")?;
+                painel.uso_cpu.store(n.clamp(10, 100), Ordering::Relaxed);
+                mudou_mineracao = true;
+            }
+            "linhas" => {
+                let n: u32 = valor.parse().map_err(|_| "número de núcleos inválido")?;
+                painel.linhas.store(n.clamp(1, painel.nucleos.max(1)), Ordering::Relaxed);
+                mudou_mineracao = true;
+            }
+            "watts_nucleo" => {
+                let n: u32 = valor.parse().map_err(|_| "watts por núcleo inválido")?;
+                painel.watts_nucleo.store(n.clamp(1, 200), Ordering::Relaxed);
+            }
+            "centavos_kwh" => {
+                let n: u32 = valor.parse().map_err(|_| "preço do kWh inválido")?;
+                painel.centavos_kwh.store(n.clamp(1, 99_999), Ordering::Relaxed);
+            }
+            "na_rede" => {
+                let ligado = valor == "1";
+                painel.na_rede.store(ligado, Ordering::Relaxed);
+                painel.registrar(
+                    "painel",
+                    if ligado { "painel visível na rede local (só leitura)".into() } else { "painel só neste computador".to_string() },
+                );
+            }
+            "cena" => {
+                if !CENAS.contains(&valor.as_str()) {
+                    return Err("qualidade da cena desconhecida".into());
+                }
+                if let Ok(mut c) = painel.cena.lock() {
+                    valor.clone_into(&mut c);
+                }
+            }
+            _ => {}
+        }
+    }
+    if mudou_mineracao {
+        // Vale na próxima rodada: interrompe esta para o limite valer já.
+        painel.interromper.store(true, Ordering::Relaxed);
+    }
+    painel.gravar_ajustes();
+    Ok(())
 }
 
 fn abrir_pasta(painel: &Painel) -> Result<(), String> {
@@ -748,6 +942,11 @@ fn atender(mut s: TcpStream, porta: u16, painel: &Painel, rede: &Arc<Rede>, o: &
     let hosts_locais = [format!("127.0.0.1:{porta}"), format!("localhost:{porta}")];
     let host_local = hosts_locais.contains(&p.host);
     let rota = p.caminho.split('?').next().unwrap_or("");
+    // Pedido de outro aparelho só passa com "ver no celular" ligado, e mesmo
+    // assim é só leitura: comando continua exigindo ser deste computador.
+    if !local && !painel.na_rede.load(Ordering::Relaxed) {
+        return responder(&mut s, "403 Forbidden", "text/plain", b"ligue 'ver no celular' nos ajustes");
+    }
     if p.metodo == "GET" {
         return match rota {
             "/" => responder(&mut s, "200 OK", "text/html; charset=utf-8", INDEX.as_bytes()),
@@ -755,8 +954,9 @@ fn atender(mut s: TcpStream, porta: u16, painel: &Painel, rede: &Arc<Rede>, o: &
             "/painel.js" => responder(&mut s, "200 OK", "text/javascript; charset=utf-8", JS.as_bytes()),
             "/estacao.js" => responder(&mut s, "200 OK", "text/javascript; charset=utf-8", ESTACAO.as_bytes()),
             "/three.module.min.js" => responder(&mut s, "200 OK", "text/javascript; charset=utf-8", THREE.as_bytes()),
+            "/qrcode.min.js" => responder(&mut s, "200 OK", "text/javascript; charset=utf-8", QRCODE.as_bytes()),
             "/api/estado" => {
-                let json = estado_json(painel, rede, o, local && host_local);
+                let json = estado_json(painel, rede, o, local && host_local, porta);
                 responder(&mut s, "200 OK", "application/json; charset=utf-8", json.as_bytes())
             }
             _ => responder(&mut s, "404 Not Found", "text/plain", b"nao existe"),
@@ -814,6 +1014,10 @@ fn atender(mut s: TcpStream, porta: u16, painel: &Painel, rede: &Arc<Rede>, o: &
             });
             responder_json(&mut s, r)
         }
+        "/api/ajustes" if app => {
+            let r = trocar_ajustes(painel, &campos).map(|()| "{\"ok\":true}".to_string());
+            responder_json(&mut s, r)
+        }
         "/api/abrir-pasta" if app => match abrir_pasta(painel) {
             Ok(()) => responder(&mut s, "204 No Content", "text/plain", b""),
             Err(e) => responder_json(&mut s, Err(e)),
@@ -843,7 +1047,7 @@ fn texto_json(s: &str) -> String {
     j
 }
 
-fn estado_json(painel: &Painel, rede: &Rede, o: &Opcoes, pode_mandar: bool) -> String {
+fn estado_json(painel: &Painel, rede: &Rede, o: &Opcoes, pode_mandar: bool, porta: u16) -> String {
     let mut j = String::with_capacity(8 * 1024);
     let endereco = painel.endereco();
     let Ok(no) = rede.no.lock() else {
@@ -858,6 +1062,20 @@ fn estado_json(painel: &Painel, rede: &Rede, o: &Opcoes, pode_mandar: bool) -> S
     };
     // Blocos meus na cadeia inteira, não só nesta sessão.
     let meus_na_cadeia = c.entries.iter().filter(|e| e_meu(&e.block)).count();
+    // O trabalho útil do último bloco: o lado das matrizes que a rede está pedindo.
+    let trabalho_n = c
+        .tip()
+        .and_then(|b| b.useful_proof.as_ref().map(|p| p.n))
+        .unwrap_or(o.rede.uteis.useful_size_base);
+    let (watts, custo_centavos) = painel.energia();
+    let centavos = custo_centavos as u64;
+    let custo_reais = format!("{}.{:02}", centavos / 100, centavos % 100);
+    // Endereço para abrir o painel no celular, só quando o dono ligou isso.
+    let url_celular = if painel.na_rede.load(Ordering::Relaxed) {
+        ip_local().map(|ip| format!("http://{ip}:{porta}/")).unwrap_or_default()
+    } else {
+        String::new()
+    };
     let sementes: Vec<String> = painel.sementes.lock().map(|s| s.iter().map(|x| texto_json(x)).collect()).unwrap_or_default();
     let _ = write!(
         j,
@@ -866,7 +1084,10 @@ fn estado_json(painel: &Painel, rede: &Rede, o: &Opcoes, pode_mandar: bool) -> S
          \"recompensa\":\"{}\",\"maturidade\":{},\"minerando\":{},\"linhas\":{},\"nucleos\":{},\
          \"memoria_mib\":{},\"tentativas\":{},\"ritmo\":{:.3},\"meus\":{},\"meus_cadeia\":{meus_na_cadeia},\"perdidos\":{},\
          \"ligado_s\":{},\"rodada_s\":{},\"rodada_altura\":{},\"pode_mandar\":{pode_mandar},\"agora\":{},\
-         \"app\":{},\"versao\":\"{VERSAO}\",\"carteira\":{},\"pode_minerar\":{},\"dados\":{},\"sementes\":[{}],\"porta_p2p\":{},",
+         \"app\":{},\"versao\":\"{VERSAO}\",\"carteira\":{},\"pode_minerar\":{},\"dados\":{},\"sementes\":[{}],\"porta_p2p\":{},\
+         \"uso_cpu\":{},\"ms_tentativa\":{:.1},\"watts\":{:.1},\"watts_nucleo\":{},\"centavos_kwh\":{},\"custo_mes\":\"{}\",\
+         \"memoria_total_mib\":{},\"na_rede\":{},\"cena\":{},\"url_celular\":{},\
+         \"trabalho_util\":{{\"familia\":\"matrizes\",\"n\":{},\"rodadas\":{},\"lado_min\":{},\"lado_base\":{},\"lado_max\":{},\"bytes\":{}}},",
         texto_json(o.rede.nome),
         hex(&c.tip_hash()),
         c.total_work().to_decimal(),
@@ -897,6 +1118,23 @@ fn estado_json(painel: &Painel, rede: &Rede, o: &Opcoes, pode_mandar: bool) -> S
         texto_json(&if pode_mandar { painel.ambiente.dados.display().to_string() } else { String::new() }),
         sementes.join(","),
         painel.ambiente.porta_p2p,
+        painel.uso_cpu.load(Ordering::Relaxed),
+        painel.ms_tentativa.lock().map(|m| *m).unwrap_or(0.0),
+        watts,
+        painel.watts_nucleo.load(Ordering::Relaxed),
+        painel.centavos_kwh.load(Ordering::Relaxed),
+        // Custo do mês em reais, com duas casas: centavos são inteiros até aqui.
+        custo_reais,
+        u64::from(o.rede.pow.memoria_kib / 1024) * u64::from(painel.linhas.load(Ordering::Relaxed)),
+        painel.na_rede.load(Ordering::Relaxed),
+        texto_json(&painel.cena.lock().map(|c| c.clone()).unwrap_or_default()),
+        texto_json(&url_celular),
+        trabalho_n,
+        o.rede.uteis.useful_rounds,
+        o.rede.uteis.useful_size_min,
+        o.rede.uteis.useful_size_base,
+        o.rede.uteis.useful_size_max,
+        u64::from(trabalho_n) * u64::from(trabalho_n) * 4,
     );
     j.push_str("\"blocos\":[");
     let mut anterior: Option<u64> = None;

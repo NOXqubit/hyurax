@@ -43,7 +43,7 @@ e abra `http://localhost:8767`.
 ## Download do minerador
 
 A seção `#baixar` aponta o botão principal para
-`https://github.com/NOXqubit/hyurax/releases/latest/download/hyurax-minerador-windows-x86_64.zip`.
+`https://github.com/NOXqubit/hyurax/releases/latest/download/hyurax-windows-x86_64.zip`.
 Esse endereço só funciona se a Release mais recente (que não seja pré-lançamento
 nem rascunho) trouxer um arquivo com **exatamente** esse nome; se o nome mudar,
 mude o `href` em `index.html` junto. O link secundário leva à página de todas as

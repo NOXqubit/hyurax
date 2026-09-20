@@ -3,13 +3,14 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Hyurax · Minerador</title>
+<title>Hyurax</title>
 <meta name="color-scheme" content="dark">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14'/%3E%3Cg stroke='%23fff' stroke-width='3.6' stroke-linecap='round' opacity='.6'%3E%3Cline x1='18' y1='14' x2='18' y2='50'/%3E%3Cline x1='46' y1='14' x2='46' y2='50'/%3E%3Cline x1='18' y1='32' x2='46' y2='32'/%3E%3C/g%3E%3Cg fill='%23fff'%3E%3Ccircle cx='18' cy='14' r='5'/%3E%3Ccircle cx='18' cy='50' r='5'/%3E%3Ccircle cx='46' cy='14' r='5'/%3E%3Ccircle cx='46' cy='50' r='5'/%3E%3Ccircle cx='18' cy='32' r='5.6'/%3E%3Ccircle cx='46' cy='32' r='5.6'/%3E%3C/g%3E%3C/svg%3E">
 <!-- Preto desde o primeiro quadro: sem isso a janela pisca branca enquanto o
      motor do navegador carrega a folha de estilo. -->
 <style>html, body { background: #030303; color: #f3f3f1; }</style>
 <link rel="stylesheet" href="/painel.css">
+<script src="/qrcode.min.js" defer></script>
 <script type="module" src="/painel.js"></script>
 </head>
 <body>
@@ -17,7 +18,7 @@
   <div class="marca">
     <svg viewBox="0 0 64 64" aria-hidden="true"><g stroke="currentColor" stroke-width="3.6" stroke-linecap="round" opacity=".55"><line x1="18" y1="14" x2="18" y2="50"/><line x1="46" y1="14" x2="46" y2="50"/><line x1="18" y1="32" x2="46" y2="32"/></g><g fill="currentColor"><circle cx="18" cy="14" r="5"/><circle cx="18" cy="50" r="5"/><circle cx="46" cy="14" r="5"/><circle cx="46" cy="50" r="5"/><circle cx="18" cy="32" r="5.6"/><circle cx="46" cy="32" r="5.6"/></g></svg>
     <span class="palavra">HYURAX</span>
-    <span class="sub">MINERADOR</span>
+    <span class="sub" id="marca-rede">rede de teste</span>
   </div>
   <dl class="leituras">
     <div><dt>Rede</dt><dd id="l-rede">—</dd></div>
@@ -42,13 +43,15 @@
 
 <main class="grade">
   <section class="bloco estacao" aria-label="Estação de mineração">
-    <header class="rotulo"><span>Estação · PC-01</span><span id="estado-rodada">parado</span></header>
+    <header class="rotulo"><span>Estação · PC-01</span><span class="rotulo-fim"><button type="button" id="abrir-trabalho" class="link" aria-haspopup="dialog">ver o trabalho</button><span id="estado-rodada">parado</span></span></header>
     <canvas id="cena" aria-hidden="true"></canvas>
     <div class="estacao-pe">
       <div><small>Tentativas</small><b id="e-tentativas" class="num">0</b></div>
       <div><small>Rodada atual</small><b id="e-rodada" class="num">—</b></div>
       <div><small>Meus blocos</small><b id="e-meus" class="num">0</b></div>
       <div><small>Perdidos na corrida</small><b id="e-perdidos" class="num">0</b></div>
+      <div><small>Energia estimada</small><b id="e-energia" class="num">0 W</b></div>
+      <div><small>Limite de CPU</small><b id="e-limite" class="num">100%</b></div>
     </div>
   </section>
 
@@ -195,6 +198,65 @@
       <p class="erro" id="sementes-erro" role="alert"></p>
     </form>
 
+    <section class="grupo pilha" aria-labelledby="a-desempenho-titulo">
+      <h3 class="rotulo-campo" id="a-desempenho-titulo">Desempenho</h3>
+      <p class="nota">Quanto da máquina a mineração pode tomar. O limite é medido nesta máquina, então vale igual em computador fraco e em computador forte.</p>
+      <div class="segmentos" role="group" aria-label="Perfil de desempenho">
+        <label for="p-leve"><input type="radio" name="perfil" id="p-leve" value="leve" autocomplete="off"><span>Leve</span></label>
+        <label for="p-equilibrado"><input type="radio" name="perfil" id="p-equilibrado" value="equilibrado" autocomplete="off"><span>Equilibrado</span></label>
+        <label for="p-turbo"><input type="radio" name="perfil" id="p-turbo" value="turbo" autocomplete="off"><span>Turbo</span></label>
+        <label for="p-manual"><input type="radio" name="perfil" id="p-manual" value="manual" autocomplete="off"><span>Manual</span></label>
+      </div>
+      <div class="campo">
+        <label for="a-uso">Limite de CPU: <b id="a-uso-valor" class="num">100%</b></label>
+        <input type="range" id="a-uso" min="10" max="100" step="5" value="100" autocomplete="off">
+      </div>
+      <div class="campo">
+        <label for="a-linhas">Núcleos minerando: <b id="a-linhas-valor" class="num">1</b> de <span id="a-nucleos" class="num">1</span></label>
+        <input type="range" id="a-linhas" min="1" max="8" step="1" value="1" autocomplete="off">
+      </div>
+      <p class="nota" id="a-memoria">Memória usada: —</p>
+    </section>
+
+    <section class="grupo pilha" aria-labelledby="a-energia-titulo">
+      <h3 class="rotulo-campo" id="a-energia-titulo">Energia</h3>
+      <p class="nota">Estimativa, não medição: o programa não lê o consumo real da máquina. Ajuste os dois números para a sua realidade.</p>
+      <div class="dois">
+        <div class="campo">
+          <label for="a-watts">Watts por núcleo</label>
+          <input type="number" id="a-watts" min="1" max="200" step="1" value="12" inputmode="numeric" autocomplete="off">
+        </div>
+        <div class="campo">
+          <label for="a-kwh">Preço do kWh (centavos)</label>
+          <input type="number" id="a-kwh" min="1" max="99999" step="1" value="90" inputmode="numeric" autocomplete="off">
+        </div>
+      </div>
+      <p class="nota" id="a-custo">—</p>
+    </section>
+
+    <section class="grupo pilha" aria-labelledby="a-celular-titulo">
+      <h3 class="rotulo-campo" id="a-celular-titulo">Ver no celular</h3>
+      <p class="nota">Ligando isto, qualquer aparelho no mesmo Wi-Fi abre este painel só para olhar. Ninguém de fora manda nada: os comandos continuam só neste computador.</p>
+      <label class="chave-liga" for="a-na-rede"><input type="checkbox" id="a-na-rede" autocomplete="off"><span>Mostrar o painel na rede local</span></label>
+      <div id="a-qr-caixa" hidden>
+        <div id="a-qr" class="qr" aria-hidden="true"></div>
+        <p class="caminho" id="a-url">—</p>
+        <p class="nota">Aponte a câmera do celular para o código, ou digite o endereço no navegador dele.</p>
+      </div>
+    </section>
+
+    <section class="grupo pilha" aria-labelledby="a-cena-titulo">
+      <h3 class="rotulo-campo" id="a-cena-titulo">Estação 3D</h3>
+      <p class="nota">O desenho da mesa também gasta máquina. Em computador fraco, deixe em baixa ou desligue: a mineração não muda.</p>
+      <div class="segmentos" role="group" aria-label="Qualidade da cena 3D">
+        <label for="c-auto"><input type="radio" name="cena" id="c-auto" value="auto" autocomplete="off"><span>Automática</span></label>
+        <label for="c-alta"><input type="radio" name="cena" id="c-alta" value="alta" autocomplete="off"><span>Alta</span></label>
+        <label for="c-media"><input type="radio" name="cena" id="c-media" value="media" autocomplete="off"><span>Média</span></label>
+        <label for="c-baixa"><input type="radio" name="cena" id="c-baixa" value="baixa" autocomplete="off"><span>Baixa</span></label>
+        <label for="c-desligada"><input type="radio" name="cena" id="c-desligada" value="desligada" autocomplete="off"><span>Desligada</span></label>
+      </div>
+    </section>
+
     <section class="grupo pilha" aria-labelledby="a-sobre-titulo">
       <h3 class="rotulo-campo" id="a-sobre-titulo">Sobre</h3>
       <dl class="pares">
@@ -205,6 +267,28 @@
     </section>
 
     <div class="acoes"><button type="button" id="ajustes-fechar" class="secundario">Fechar</button></div>
+  </div>
+</dialog>
+
+<!-- O trabalho que a máquina está fazendo de verdade, sem enfeite. -->
+<dialog id="trabalho" class="dialogo largo" aria-labelledby="trabalho-titulo">
+  <header class="rotulo"><h2 id="trabalho-titulo">O trabalho desta máquina</h2><span id="t-estado">parado</span></header>
+  <div class="dialogo-corpo pilha">
+    <p class="texto">Minerar no Hyurax não é só embaralhar números: cada bloco carrega uma conta grande que a rede inteira confere. Hoje essa conta é <b>multiplicação de matrizes</b>, o cálculo que está por baixo de simulação, engenharia e treino de inteligência artificial.</p>
+    <div class="trabalho-grade">
+      <canvas id="t-matriz" width="420" height="220" aria-label="Desenho das matrizes sendo multiplicadas" role="img"></canvas>
+      <dl class="pares">
+        <div><dt>Tipo</dt><dd>Matrizes A×B = C</dd></div>
+        <div><dt>Tamanho agora</dt><dd><span id="t-n" class="num">—</span> × <span id="t-n2" class="num">—</span></dd></div>
+        <div><dt>Contas por bloco</dt><dd><span id="t-contas" class="num">—</span></dd></div>
+        <div><dt>Conferências (Freivalds)</dt><dd><span id="t-rodadas" class="num">—</span></dd></div>
+        <div><dt>Resultado guardado</dt><dd><span id="t-bytes" class="num">—</span></dd></div>
+        <div><dt>Faixa da rede</dt><dd><span id="t-faixa">—</span></dd></div>
+      </dl>
+    </div>
+    <p class="nota">Quem confere não refaz a conta: três sorteios bastam para pegar qualquer resultado errado, e custam quase nada. É por isso que a rede aceita trabalho pesado sem cada nó repetir o trabalho.</p>
+    <p class="aviso-teste"><b>O que ainda não é.</b> As contas de hoje são geradas pelo próprio bloco, não vêm de ninguém de fora. O próximo passo do projeto é abrir a fila para trabalho de verdade — genética, clima, engenharia — com quem precisa pagando pela conta. Enquanto isso não existe, o programa não vai dizer que existe.</p>
+    <div class="acoes"><button type="button" id="trabalho-fechar" class="secundario">Fechar</button></div>
   </div>
 </dialog>
 </body>

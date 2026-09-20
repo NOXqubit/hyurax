@@ -12,9 +12,28 @@ const BRANCO = 0xf3f3f1;
 const NA_CORRENTE = 12;
 const LADO = 0.26;
 
-export function criarEstacao(canvas, { calmo = false } = {}) {
-  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: "low-power" });
-  renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 1.5));
+// Cada qualidade é um acordo entre desenho bonito e máquina livre. "auto"
+// decide pelo que o navegador informa: pouca memória ou poucos núcleos caem
+// para baixa. O que muda é só o desenho; a mineração não muda em nada.
+const QUALIDADES = {
+  alta: { dpr: 1.5, quadro: 33, suave: true, girar: true },
+  media: { dpr: 1.0, quadro: 50, suave: true, girar: true },
+  baixa: { dpr: 0.75, quadro: 100, suave: false, girar: false },
+};
+
+function decidirQualidade(pedida) {
+  if (pedida && pedida !== "auto") return QUALIDADES[pedida] || QUALIDADES.media;
+  const nucleos = navigator.hardwareConcurrency || 2;
+  const memoria = navigator.deviceMemory || 4;
+  if (nucleos <= 2 || memoria <= 2) return QUALIDADES.baixa;
+  if (nucleos <= 4 || memoria <= 4) return QUALIDADES.media;
+  return QUALIDADES.alta;
+}
+
+export function criarEstacao(canvas, { calmo = false, qualidade = "auto" } = {}) {
+  const q = decidirQualidade(qualidade);
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: q.suave, powerPreference: "low-power" });
+  renderer.setPixelRatio(Math.min(devicePixelRatio || 1, q.dpr));
   renderer.setClearColor(0x0a0a0a, 1);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
 
@@ -323,7 +342,7 @@ export function criarEstacao(canvas, { calmo = false } = {}) {
   let anterior = performance.now(), ultimoQuadro = 0, ultimaTela = 0, girar = 0;
   function quadro(agora) {
     requestAnimationFrame(quadro);
-    if (document.hidden || agora - ultimoQuadro < 33) return; // ~30 quadros por segundo basta
+    if (document.hidden || agora - ultimoQuadro < q.quadro) return; // o suficiente, sem torrar CPU
     ultimoQuadro = agora;
     const dt = Math.min(0.1, (agora - anterior) / 1000);
     anterior = agora;
@@ -357,7 +376,7 @@ export function criarEstacao(canvas, { calmo = false } = {}) {
         if (c.t >= 1) c.de = null;
       } else {
         c.grupo.position.lerp(c.lugar, 0.1);
-        if (!calmo) c.grupo.rotation.y += dt * (c.meu ? 0.35 : 0.15);
+        if (!calmo && q.girar) c.grupo.rotation.y += dt * (c.meu ? 0.35 : 0.15);
       }
     }
     // Elos entre blocos vizinhos.

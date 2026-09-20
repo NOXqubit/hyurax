@@ -11,10 +11,23 @@ let estacao = null;
 let enviando = false;
 const vistos = new Set();
 
-// A estação 3D é opcional: sem WebGL, o resto do painel funciona igual.
-import("./estacao.js")
-  .then((m) => { estacao = m.criarEstacao($("cena"), { calmo }); if (ultimo) estacao.atualizar(ultimo); })
-  .catch((e) => console.warn("estação 3D indisponível:", e));
+// A estação 3D é opcional: sem WebGL, com a cena desligada nos ajustes, ou em
+// máquina fraca, o resto do painel funciona igual. Ela só nasce depois da
+// primeira leitura, porque é o estado que diz a qualidade escolhida.
+let criandoEstacao = false;
+function garantirEstacao(e) {
+  const qualidade = e.cena || "auto";
+  if (qualidade === "desligada") {
+    $("cena").hidden = true;
+    return;
+  }
+  $("cena").hidden = false;
+  if (estacao || criandoEstacao) return;
+  criandoEstacao = true;
+  import("./estacao.js")
+    .then((m) => { estacao = m.criarEstacao($("cena"), { calmo, qualidade }); if (ultimo) estacao.atualizar(ultimo); })
+    .catch((erro) => console.warn("estação 3D indisponível:", erro));
+}
 
 function duracao(s) {
   s = Math.max(0, Math.floor(s));
@@ -31,6 +44,8 @@ function intervalo(s) {
 }
 const hora = (unix) => new Date(unix * 1000).toLocaleTimeString("pt-BR", { hour12: false });
 const curto = (h) => `${h.slice(0, 8)}…${h.slice(-6)}`;
+// O nó manda o dinheiro com ponto; em português se escreve com vírgula.
+const reais = (v) => String(v || "0.00").replace(".", ",");
 
 function texto(id, v) {
   const el = $(id);
@@ -62,7 +77,7 @@ function erroDe(res, padrao) {
   if (res.status === 403) return "Esse comando só vale no computador que roda o programa.";
   // O nó de terminal (app: false) não tem as rotas de carteira, sementes e pasta.
   if (res.status === 404) return ultimo?.app === false
-    ? "Isso só funciona no programa com janela, o Hyurax Minerador."
+    ? "Isso só funciona no programa com janela do Hyurax."
     : "Esta versão do programa ainda não faz isso.";
   return padrao;
 }
@@ -115,6 +130,7 @@ function desenharBarra(e) {
     : e.minerando ? "Clique para parar" : "Clique para começar a minerar";
   $("controles").hidden = !e.pode_mandar;
   $("so-ver").hidden = e.pode_mandar;
+  texto("marca-rede", e.rede && e.rede.includes("mainnet") ? "rede principal" : "rede de teste");
 }
 
 function desenharEstacao(e) {
@@ -122,6 +138,9 @@ function desenharEstacao(e) {
   texto("e-rodada", e.minerando && e.rodada_altura ? `bloco ${fmt.format(e.rodada_altura)} · ${duracao(e.rodada_s)}` : "—");
   texto("e-meus", `${fmt.format(e.meus_cadeia)}${e.meus ? ` · +${fmt.format(e.meus)} agora` : ""}`);
   texto("e-perdidos", fmt.format(e.perdidos));
+  const w = typeof e.watts === "number" ? e.watts : 0;
+  texto("e-energia", e.minerando ? `${fmt1.format(w)} W · R$ ${reais(e.custo_mes)}/mês` : "0 W");
+  texto("e-limite", typeof e.uso_cpu === "number" ? `${e.uso_cpu}%` : "—");
   texto("estado-rodada", e.minerando ? `minerando o bloco ${fmt.format(e.rodada_altura || e.altura + 1)}` : "parado");
 }
 
@@ -201,7 +220,34 @@ function desenharFita(e) {
   }
 }
 
-// ---------- gráfico de ritmo ----------
+// ---------- gráfico de ritmo, em barras ----------
+// No estilo das telas de bolsa: cada barra é uma janela de 6 segundos. O corpo
+// vai da primeira à última leitura da janela, e o risco fino mostra o mínimo e
+// o máximo. Barra cheia = o ritmo subiu na janela; vazada = caiu.
+const SEGUNDOS_POR_BARRA = 6;
+const JANELA_S = 120;
+
+function barrasDoRitmo(amostras) {
+  const taxas = [];
+  for (let i = 1; i < amostras.length; i++) {
+    const dt = amostras[i][0] - amostras[i - 1][0];
+    if (dt > 0) taxas.push([amostras[i][0], (amostras[i][1] - amostras[i - 1][1]) / dt]);
+  }
+  const barras = [];
+  for (const [t, v] of taxas) {
+    const cesto = Math.floor(t / SEGUNDOS_POR_BARRA);
+    const ultima = barras[barras.length - 1];
+    if (ultima && ultima.cesto === cesto) {
+      ultima.fecha = v;
+      ultima.alta = Math.max(ultima.alta, v);
+      ultima.baixa = Math.min(ultima.baixa, v);
+    } else {
+      barras.push({ cesto, abre: v, fecha: v, alta: v, baixa: v });
+    }
+  }
+  return barras;
+}
+
 function desenharGrafico(e) {
   const cv = $("grafico");
   const dpr = Math.min(devicePixelRatio || 1, 2);
@@ -214,29 +260,25 @@ function desenharGrafico(e) {
   const g = cv.getContext("2d");
   g.setTransform(dpr, 0, 0, dpr, 0, 0);
   g.clearRect(0, 0, w, h);
-  const a = e.amostras;
-  // Tentativas por segundo, suavizadas em janela de 5 amostras.
-  const serie = [];
-  for (let i = 5; i < a.length; i++) {
-    const dt = a[i][0] - a[i - 5][0];
-    serie.push([a[i][0], dt > 0 ? (a[i][1] - a[i - 5][1]) / dt : 0]);
-  }
-  const m = { e: 44, d: 12, c: 12, b: 22 };
+
+  const m = { e: 46, d: 12, c: 12, b: 22 };
   const lw = w - m.e - m.d, lh = h - m.c - m.b;
-  const maxV = Math.max(1, ...serie.map((p) => p[1])) * 1.15;
-  const t1 = a.length ? a[a.length - 1][0] : 0, t0 = t1 - 120;
-  const X = (t) => m.e + ((t - t0) / 120) * lw;
+  const t1 = e.amostras.length ? e.amostras[e.amostras.length - 1][0] : 0;
+  const t0 = t1 - JANELA_S;
+  const barras = barrasDoRitmo(e.amostras).filter((b) => b.cesto * SEGUNDOS_POR_BARRA >= t0 - SEGUNDOS_POR_BARRA);
+  const maxV = Math.max(1, ...barras.map((b) => b.alta)) * 1.15;
+  const X = (t) => m.e + ((t - t0) / JANELA_S) * lw;
   const Y = (v) => m.c + lh - (v / maxV) * lh;
+  const largura = Math.max(3, lw / (JANELA_S / SEGUNDOS_POR_BARRA) - 3);
 
   g.font = "10px " + getComputedStyle(document.body).fontFamily;
-  g.fillStyle = "rgba(243,243,241,0.38)";
-  g.strokeStyle = "rgba(243,243,241,0.08)";
   g.lineWidth = 1;
-  // Grade horizontal com 3 marcas no valor real.
   for (let k = 0; k <= 3; k++) {
     const v = (maxV / 1.15) * (k / 3);
     const y = Math.round(Y(v)) + 0.5;
+    g.strokeStyle = "rgba(243,243,241,0.08)";
     g.beginPath(); g.moveTo(m.e, y); g.lineTo(w - m.d, y); g.stroke();
+    g.fillStyle = "rgba(243,243,241,0.38)";
     g.textAlign = "right"; g.textBaseline = "middle";
     g.fillText(fmt1.format(v), m.e - 6, y);
   }
@@ -245,28 +287,38 @@ function desenharGrafico(e) {
   g.textAlign = "right";
   g.fillText("agora", w - m.d, h - 6);
 
-  // Blocos que chegaram na janela: marca vertical, sólida se for meu.
-  const inicio = e.agora - e.ligado_s;
+  // Blocos achados na janela: risco vertical, cheio se foi meu.
+  const nasceu = e.agora - e.ligado_s;
   for (const b of e.blocos) {
-    const t = b.horario - inicio;
+    const t = b.horario - nasceu;
     if (t < t0 || t > t1) continue;
     const x = Math.round(X(t)) + 0.5;
-    g.strokeStyle = b.meu ? "rgba(243,243,241,0.9)" : "rgba(243,243,241,0.35)";
+    g.strokeStyle = b.meu ? "rgba(243,243,241,0.75)" : "rgba(243,243,241,0.3)";
     g.setLineDash(b.meu ? [] : [3, 3]);
     g.beginPath(); g.moveTo(x, m.c); g.lineTo(x, m.c + lh); g.stroke();
   }
   g.setLineDash([]);
-  if (serie.length > 1) {
+
+  for (const barra of barras) {
+    const x = X(barra.cesto * SEGUNDOS_POR_BARRA + SEGUNDOS_POR_BARRA / 2);
+    if (x < m.e - largura || x > w - m.d + largura) continue;
+    const subiu = barra.fecha >= barra.abre;
+    const topo = Y(Math.max(barra.abre, barra.fecha));
+    const base = Y(Math.min(barra.abre, barra.fecha));
+    g.strokeStyle = "rgba(243,243,241,0.55)";
     g.beginPath();
-    serie.forEach(([t, v], i) => (i ? g.lineTo(X(t), Y(v)) : g.moveTo(X(t), Y(v))));
-    g.strokeStyle = "#f3f3f1";
-    g.lineWidth = 1.5;
+    g.moveTo(Math.round(x) + 0.5, Y(barra.alta));
+    g.lineTo(Math.round(x) + 0.5, Y(barra.baixa));
     g.stroke();
-    g.lineTo(X(serie[serie.length - 1][0]), m.c + lh);
-    g.lineTo(X(serie[0][0]), m.c + lh);
-    g.closePath();
-    g.fillStyle = "rgba(243,243,241,0.06)";
-    g.fill();
+    const alturaCorpo = Math.max(1.5, base - topo);
+    const esq = Math.round(x - largura / 2) + 0.5;
+    if (subiu) {
+      g.fillStyle = "#f3f3f1";
+      g.fillRect(esq, topo, largura, alturaCorpo);
+    } else {
+      g.strokeStyle = "#f3f3f1";
+      g.strokeRect(esq, topo, largura, alturaCorpo);
+    }
   }
   texto("g-atual", fmt1.format(e.ritmo));
 }
@@ -460,7 +512,58 @@ $("comecar").addEventListener("click", () => comBotao($("comecar"), async () => 
 // ---------- ajustes ----------
 const ajustes = $("ajustes");
 
+let qrDesenhado = "";
+
+// Marca o perfil que bate com o que está valendo, ou "manual".
+function perfilAtual(e) {
+  const n = Math.max(1, e.nucleos || 1);
+  const combina = { leve: [Math.max(1, Math.floor(n / 4)), 35], equilibrado: [Math.max(1, Math.floor(n / 2)), 70], turbo: [n, 100] };
+  for (const [nome, [linhas, uso]] of Object.entries(combina)) {
+    if (e.linhas === linhas && e.uso_cpu === uso) return nome;
+  }
+  return "manual";
+}
+
+function desenharQr(url) {
+  const caixa = $("a-qr");
+  if (qrDesenhado === url) return;
+  qrDesenhado = url;
+  caixa.replaceChildren();
+  if (!url || typeof globalThis.qrcode !== "function") return;
+  const q = globalThis.qrcode(0, "M");
+  q.addData(url);
+  q.make();
+  // createSvgTag devolve SVG puro montado pela biblioteca, sem dado externo.
+  caixa.innerHTML = q.createSvgTag({ cellSize: 4, margin: 1, scalable: true });
+}
+
 function desenharAjustes(e) {
+  const perfil = perfilAtual(e);
+  for (const nome of ["leve", "equilibrado", "turbo", "manual"]) {
+    const alvo = $(`p-${nome}`);
+    if (alvo) alvo.checked = nome === perfil;
+  }
+  const uso = typeof e.uso_cpu === "number" ? e.uso_cpu : 100;
+  if (document.activeElement !== $("a-uso")) $("a-uso").value = String(uso);
+  texto("a-uso-valor", `${uso}%`);
+  $("a-linhas").max = String(Math.max(1, e.nucleos || 1));
+  if (document.activeElement !== $("a-linhas")) $("a-linhas").value = String(e.linhas || 1);
+  texto("a-linhas-valor", String(e.linhas || 1));
+  texto("a-nucleos", String(e.nucleos || 1));
+  texto("a-memoria", `Memória usada pela mineração: ${fmt.format(e.memoria_total_mib || 0)} MiB`);
+  if (document.activeElement !== $("a-watts")) $("a-watts").value = String(e.watts_nucleo || 12);
+  if (document.activeElement !== $("a-kwh")) $("a-kwh").value = String(e.centavos_kwh || 90);
+  texto("a-custo", e.minerando
+    ? `Agora: cerca de ${fmt1.format(e.watts || 0)} W, ou R$ ${reais(e.custo_mes)} por mês se ficar ligado o tempo todo.`
+    : "Ligue a mineração para ver o consumo estimado.");
+  $("a-na-rede").checked = e.na_rede === true;
+  $("a-qr-caixa").hidden = !e.na_rede;
+  texto("a-url", e.url_celular || "—");
+  if (e.na_rede) desenharQr(e.url_celular || "");
+  for (const nome of ["auto", "alta", "media", "baixa", "desligada"]) {
+    const alvo = $(`c-${nome}`);
+    if (alvo) alvo.checked = (e.cena || "auto") === nome;
+  }
   texto("a-dados", typeof e.dados === "string" && e.dados ? e.dados : "—");
   texto("a-versao", typeof e.versao === "string" && e.versao ? e.versao : "—");
   texto("a-rede", e.rede || "—");
@@ -495,6 +598,32 @@ $("f-sementes").addEventListener("submit", (ev) => {
     texto("sementes-ok", "Salvo.");
   });
 });
+// Desempenho, energia, celular e cena: cada controle manda o seu campo.
+async function salvarAjuste(campos) {
+  const res = await postar("/api/ajustes", campos);
+  if (!res.ok) texto("a-abrir-erro", erroDe(res, "Não deu para salvar o ajuste."));
+  await ler();
+  return res.ok;
+}
+for (const nome of ["leve", "equilibrado", "turbo"]) {
+  $(`p-${nome}`).addEventListener("change", () => salvarAjuste({ perfil: nome }));
+}
+$("p-manual").addEventListener("change", () => {});
+$("a-uso").addEventListener("input", () => texto("a-uso-valor", `${$("a-uso").value}%`));
+$("a-uso").addEventListener("change", () => salvarAjuste({ uso_cpu: $("a-uso").value }));
+$("a-linhas").addEventListener("input", () => texto("a-linhas-valor", $("a-linhas").value));
+$("a-linhas").addEventListener("change", () => salvarAjuste({ linhas: $("a-linhas").value }));
+for (const id of ["a-watts", "a-kwh"]) {
+  $(id).addEventListener("change", () => salvarAjuste({ watts_nucleo: $("a-watts").value, centavos_kwh: $("a-kwh").value }));
+}
+$("a-na-rede").addEventListener("change", () => salvarAjuste({ na_rede: $("a-na-rede").checked ? "1" : "0" }));
+for (const nome of ["auto", "alta", "media", "baixa", "desligada"]) {
+  $(`c-${nome}`).addEventListener("change", async () => {
+    // A qualidade da cena muda o desenho inteiro: recarrega a página para valer já.
+    if (await salvarAjuste({ cena: nome })) location.reload();
+  });
+}
+
 // Esc fecha (o navegador já faz; isto garante também em webview que não faça).
 ajustes.addEventListener("keydown", (ev) => {
   if (ev.key !== "Escape") return;
@@ -507,6 +636,98 @@ trocarCaminho();
 conferirSenha();
 conferirImportar();
 
+// ---------- o trabalho desta máquina ----------
+// Mostra a conta de verdade que o bloco carrega: A × B = C, com o tamanho que a
+// rede está pedindo agora. Nada aqui é ilustração: os números vêm do nó.
+const trabalho = $("trabalho");
+let animando = null;
+
+function numeroGrande(n) {
+  if (n >= 1e9) return `${fmt1.format(n / 1e9)} bilhões`;
+  if (n >= 1e6) return `${fmt1.format(n / 1e6)} milhões`;
+  if (n >= 1e3) return `${fmt1.format(n / 1e3)} mil`;
+  return fmt.format(n);
+}
+
+function bytesLegiveis(b) {
+  if (b >= 1024 * 1024) return `${fmt1.format(b / 1024 / 1024)} MiB`;
+  if (b >= 1024) return `${fmt1.format(b / 1024)} KiB`;
+  return `${fmt.format(b)} bytes`;
+}
+
+function desenharTrabalho(e) {
+  if (!trabalho.open) return;
+  const w = e.trabalho_util || {};
+  const n = w.n || 0;
+  texto("t-estado", e.minerando ? "calculando" : "parado");
+  texto("t-n", fmt.format(n));
+  texto("t-n2", fmt.format(n));
+  texto("t-contas", `${numeroGrande(n * n * n)} multiplicações`);
+  texto("t-rodadas", `${w.rodadas || 0} por bloco`);
+  texto("t-bytes", bytesLegiveis(w.bytes || 0));
+  texto("t-faixa", `de ${w.lado_min || 0}×${w.lado_min || 0} a ${w.lado_max || 0}×${w.lado_max || 0}`);
+}
+
+// O desenho: duas matrizes, a conta andando célula a célula, e o resultado.
+function animarMatriz(agora) {
+  if (!trabalho.open) { animando = null; return; }
+  animando = requestAnimationFrame(animarMatriz);
+  const cv = $("t-matriz");
+  const g = cv.getContext("2d");
+  const lado = 8, celulas = 9, tam = lado * celulas;
+  const y0 = 40;
+  const xs = [30, 150, 290];
+  g.clearRect(0, 0, cv.width, cv.height);
+  g.font = "13px " + getComputedStyle(document.body).fontFamily;
+  g.fillStyle = "rgba(243,243,241,0.45)";
+  g.textAlign = "center";
+  g.fillText("A", xs[0] + tam / 2, y0 - 12);
+  g.fillText("B", xs[1] + tam / 2, y0 - 12);
+  g.fillText("C", xs[2] + tam / 2, y0 - 12);
+  g.fillText("×", xs[0] + tam + 20, y0 + tam / 2);
+  g.fillText("=", xs[1] + tam + 20, y0 + tam / 2);
+  const passo = Math.floor(agora / 260) % (celulas * celulas);
+  const linha = Math.floor(passo / celulas), coluna = passo % celulas;
+  for (let m = 0; m < 3; m++) {
+    for (let i = 0; i < celulas; i++) {
+      for (let j = 0; j < celulas; j++) {
+        const x = xs[m] + j * lado, y = y0 + i * lado;
+        const ativa = (m === 0 && i === linha) || (m === 1 && j === coluna) || (m === 2 && i === linha && j === coluna);
+        const feita = m === 2 && (i * celulas + j) < passo;
+        if (ativa) {
+          g.fillStyle = "#f3f3f1";
+          g.fillRect(x, y, lado - 1.5, lado - 1.5);
+        } else {
+          g.fillStyle = feita ? "rgba(243,243,241,0.45)" : "rgba(243,243,241,0.14)";
+          g.fillRect(x, y, lado - 1.5, lado - 1.5);
+        }
+      }
+    }
+  }
+  g.fillStyle = "rgba(243,243,241,0.45)";
+  g.textAlign = "left";
+  g.fillText(`linha ${linha + 1} × coluna ${coluna + 1}`, 30, y0 + tam + 28);
+  g.fillText("o desenho é um resumo: a conta real tem o tamanho da tabela ao lado", 30, y0 + tam + 46);
+}
+
+$("abrir-trabalho").addEventListener("click", () => {
+  if (trabalho.open) return;
+  trabalho.showModal();
+  if (ultimo) desenharTrabalho(ultimo);
+  if (!animando) animando = requestAnimationFrame(animarMatriz);
+  $("trabalho-fechar").focus();
+});
+$("trabalho-fechar").addEventListener("click", () => trabalho.close());
+trabalho.addEventListener("close", () => {
+  if (animando) cancelAnimationFrame(animando);
+  animando = null;
+});
+trabalho.addEventListener("keydown", (ev) => {
+  if (ev.key !== "Escape") return;
+  ev.preventDefault();
+  trabalho.close();
+});
+
 // ---------- ciclo ----------
 async function ler() {
   try {
@@ -516,6 +737,7 @@ async function ler() {
     $("desligado").hidden = true;
     desenharBoas(e);
     if (ajustes.open) desenharAjustes(e);
+    if (trabalho.open) desenharTrabalho(e);
     desenharBarra(e);
     desenharEstacao(e);
     desenharLateral(e);
@@ -523,6 +745,7 @@ async function ler() {
     desenharFluxo(e);
     desenharFita(e);
     desenharGrafico(e);
+    garantirEstacao(e);
     estacao?.atualizar(e);
   } catch {
     $("desligado").hidden = false;

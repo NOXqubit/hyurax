@@ -110,18 +110,18 @@ jobs:
           targets: x86_64-pc-windows-msvc
       - name: compilar
         shell: bash
-        run: cargo build --release --locked --target x86_64-pc-windows-msvc -p hyurax-no --features janela --bin hyurax-minerador
+        run: cargo build --release --locked --target x86_64-pc-windows-msvc -p hyurax-no --features janela --bin hyurax
       - name: empacotar
         shell: bash
         run: |
           set -euo pipefail
           # Nome sem versão de propósito: o site aponta para
-          # releases/latest/download/hyurax-minerador-windows-x86_64.zip, e
+          # releases/latest/download/hyurax-windows-x86_64.zip, e
           # esse link só continua valendo se o nome nunca mudar.
-          arquivo="hyurax-minerador-windows-x86_64.zip"
-          pasta="Hyurax Minerador"
+          arquivo="hyurax-windows-x86_64.zip"
+          pasta="Hyurax"
           mkdir -p "$pasta"
-          cp ".target/x86_64-pc-windows-msvc/release/hyurax-minerador.exe" "$pasta/Hyurax Minerador.exe"
+          cp ".target/x86_64-pc-windows-msvc/release/hyurax.exe" "$pasta/Hyurax.exe"
           # O programa liga no WebView2 por esta DLL pequena da Microsoft
           # (redistribuível, vem dentro do pacote webview2-com-sys). Sem ela ao
           # lado do .exe, o Windows nem abre o programa.
@@ -134,14 +134,14 @@ jobs:
           {
             printf '\xEF\xBB\xBF'
             sed 's/$/\r/' <<'FIM'
-          HYURAX MINERADOR
+          HYURAX
           ================
 
           O que é
           -------
           O programa com janela do Hyurax (HYUR): cria a carteira, minera e
           mostra o saldo, sem precisar de terminal. É só abrir o
-          "Hyurax Minerador.exe".
+          "Hyurax.exe".
 
           Rede de TESTE
           -------------
@@ -179,7 +179,7 @@ jobs:
           echo "ARQUIVO=$arquivo" >> "$GITHUB_ENV"
       - uses: actions/upload-artifact@v4
         with:
-          name: minerador-windows-x86_64
+          name: programa-windows-x86_64
           path: |
             ${{ env.ARQUIVO }}
             ${{ env.ARQUIVO }}.sha256
@@ -211,7 +211,7 @@ jobs:
 
             | Pacote | Para |
             |---|---|
-            | `hyurax-minerador-windows-x86_64.zip` | Minerador com janela, para Windows 10 e 11 |
+            | `hyurax-windows-x86_64.zip` | Programa com janela, para Windows 10 e 11 |
             | `linux-x86_64` | PC com Linux |
             | `linux-arm64-e-celular` | Linux em ARM e celular Android pelo Termux |
             | `windows-x86_64` | Windows 10 ou 11 |

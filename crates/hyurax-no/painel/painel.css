@@ -513,3 +513,44 @@ tbody tr:not(.meu) td { color: var(--tinta-2); }
 
 /* Aviso que só aparece enquanto a carteira está sendo criada. */
 .dica { color: var(--tinta-3); border-left: 1px solid var(--fio-forte); padding-left: 10px; }
+
+/* ---------- controles novos: desempenho, energia, celular e trabalho ---------- */
+.rotulo-fim { display: flex; align-items: center; gap: 12px; }
+.dois { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+input[type="range"] {
+  width: 100%;
+  accent-color: var(--tinta);
+  background: transparent;
+}
+input[type="number"] {
+  background: var(--painel-2);
+  border: 1px solid var(--fio-forte);
+  border-radius: var(--r);
+  color: var(--tinta);
+  font: inherit;
+  padding: 7px 9px;
+  width: 100%;
+}
+.chave-liga { display: flex; align-items: center; gap: 10px; cursor: pointer; }
+.chave-liga input { accent-color: var(--tinta); width: 16px; height: 16px; }
+.qr {
+  width: 172px;
+  padding: 8px;
+  background: var(--tinta);
+  border-radius: var(--r);
+}
+.qr svg { display: block; width: 100%; height: auto; }
+#a-qr-caixa { display: grid; gap: 8px; justify-items: start; }
+
+.dialogo.largo { max-width: 760px; }
+.trabalho-grade {
+  display: grid;
+  grid-template-columns: minmax(0, 420px) minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+}
+#t-matriz { width: 100%; height: auto; border: 1px solid var(--fio); border-radius: var(--r); }
+@media (max-width: 680px) {
+  .trabalho-grade { grid-template-columns: 1fr; }
+  .dois { grid-template-columns: 1fr; }
+}
