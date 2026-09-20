@@ -583,3 +583,327 @@ input[type="number"] {
 }
 /* Planejado não é conquista: fica vazado, como tudo o que ainda não existe. */
 .marca-estado.planejado { background: transparent; color: var(--tinta-3); border: 1px dashed var(--fio-forte); }
+
+/* ---------- a etiqueta de cada painel ---------- */
+/* Vale para os blocos e para o alto dos diálogos: uma faixa baixa, em
+   maiúsculas pequenas, com o nome à esquerda e o estado à direita. */
+.rotulo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 34px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--fio);
+  font-size: 9.5px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--tinta-3);
+}
+.rotulo > span:first-child { color: var(--tinta-2); }
+.dialogo .rotulo { font-size: 10.5px; padding: 11px 20px; }
+.rotulo > h2 { font-size: 11px; }
+
+/* Botão que é texto: some no painel e só aparece quando a pessoa passa o rato. */
+.link {
+  background: none;
+  border: 0;
+  border-bottom: 1px solid var(--fio-forte);
+  padding: 0 0 1px;
+  cursor: pointer;
+  color: var(--tinta-2);
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+}
+.link:hover { color: var(--tinta); border-color: var(--tinta); }
+
+/* ---------- carteira: ações e movimentos ---------- */
+.carteira-acoes {
+  display: flex;
+  gap: 8px;
+  margin: 14px 12px 0;
+  flex-wrap: wrap;
+}
+.acao {
+  flex: 1 1 auto;
+  background: transparent;
+  border: 1px solid var(--fio-forte);
+  border-radius: var(--r);
+  color: var(--tinta);
+  cursor: pointer;
+  padding: 9px 10px;
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+.acao:hover { border-color: var(--tinta); background: var(--painel-2); }
+.acao:disabled { color: var(--tinta-3); border-style: dashed; cursor: not-allowed; }
+.rotulo-secao {
+  margin: 16px 12px 0;
+  font-size: 9.5px;
+  font-weight: 400;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--tinta-3);
+  border-top: 1px solid var(--fio);
+  padding-top: 10px;
+}
+.movimentos { list-style: none; margin: 0; padding: 2px 0; max-height: 190px; }
+.movimentos li {
+  display: grid;
+  grid-template-columns: 14px 1fr auto;
+  gap: 10px;
+  padding: 5px 12px;
+  align-items: baseline;
+  border-bottom: 1px solid rgba(243, 243, 241, 0.04);
+}
+/* Entrada e saída se leem pelo sinal, não por cor. */
+.movimentos .sinal { color: var(--tinta); }
+.movimentos .quem { color: var(--tinta-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.movimentos .quanto { color: var(--tinta); font-variant-numeric: tabular-nums; }
+.movimentos li.saida .quanto { color: var(--tinta-2); }
+.movimentos li.esperando { border-left: 1px dashed var(--fio-forte); }
+
+/* ---------- minhas máquinas ---------- */
+.somas {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  border-bottom: 1px solid var(--fio);
+}
+.somas div { padding: 8px 12px; display: grid; }
+.somas div + div { border-left: 1px solid var(--fio); }
+.somas small { font-size: 9.5px; letter-spacing: 0.18em; text-transform: uppercase; }
+.somas b { font-size: 16px; font-weight: 500; }
+.maquinas td:first-child { color: var(--tinta); }
+.maquinas .caiu { color: var(--tinta-3); }
+
+/* ---------- código de 6 dígitos ---------- */
+.dialogo input.codigo,
+.boot input.codigo {
+  font: 600 22px/1 var(--mono);
+  letter-spacing: 0.42em;
+  text-align: center;
+  max-width: 11ch;
+  padding: 12px 10px;
+}
+
+/* ---------- força da senha ---------- */
+.forca { display: grid; gap: 6px; }
+.forca-trilho { height: 3px; background: var(--fio); border-radius: var(--r); overflow: hidden; }
+.forca-trilho i { display: block; height: 100%; width: 0; background: var(--tinta); transition: width 0.25s linear; }
+.forca-texto { margin: 0; font-size: 11.5px; color: var(--tinta-2); }
+
+/* ---------- conferência do envio e o par endereço + QR ---------- */
+.conferencia dd { font-size: 14px; }
+.quebra { word-break: break-all; white-space: normal; text-align: right; }
+.pronto-grade {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 20px;
+  align-items: start;
+}
+.pronto-qr { display: grid; gap: 8px; justify-items: center; max-width: 190px; }
+
+/* ---------- a abertura do programa ---------- */
+/* Tela inteira, sem diálogo: na primeira vez o programa não é um painel com um
+   aviso em cima, é uma abertura. O lado esquerdo diz onde você está; o palco,
+   à direita, faz uma coisa por vez. */
+.boot {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  grid-template-columns: minmax(230px, 290px) minmax(0, 1fr);
+  background: var(--fundo);
+}
+.boot-lado {
+  display: flex;
+  flex-direction: column;
+  gap: 26px;
+  padding: 26px 22px;
+  background: #060606;
+  border-right: 1px solid var(--fio);
+}
+.boot-marca { display: flex; align-items: center; gap: 12px; }
+.boot-marca svg { width: 30px; height: 30px; flex: none; }
+.boot-marca p { margin: 0; }
+.boot-palavra { font: 700 20px/1 var(--display); font-stretch: condensed; letter-spacing: 0.08em; }
+.boot-sub { font-size: 9.5px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--tinta-3); }
+
+/* Os passos: risco vertical, marcador vazado, e o de agora em branco cheio. */
+.boot-passos { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.boot-passos li {
+  display: grid;
+  grid-template-columns: 24px 1fr;
+  gap: 10px;
+  align-items: center;
+  padding: 9px 0 9px 12px;
+  margin-left: 2px;
+  color: var(--tinta-3);
+  border-left: 1px solid var(--fio);
+}
+.boot-passos b { font-weight: 400; display: block; }
+.boot-passos small { font-size: 10px; letter-spacing: 0.04em; }
+.boot-numero {
+  width: 22px;
+  height: 22px;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 10.5px;
+}
+.boot-passos li.agora { color: var(--tinta); border-left-color: var(--tinta); }
+.boot-passos li.agora .boot-numero { background: var(--tinta); color: var(--fundo); border-color: var(--tinta); }
+.boot-passos li.feito { color: var(--tinta-2); }
+.boot-passos li.feito .boot-numero { font-size: 0; }
+.boot-passos li.feito .boot-numero::after { content: "✓"; font-size: 11px; }
+
+/* O registro da partida: cada linha acende quando aquela parte respondeu. */
+.boot-registro { list-style: none; margin: 0; padding: 0; display: grid; gap: 5px; font-size: 11.5px; color: var(--tinta-3); }
+.boot-registro li { display: flex; align-items: center; gap: 9px; }
+.boot-registro li::before { content: ""; flex: none; width: 7px; height: 7px; border: 1px solid currentColor; }
+.boot-registro li.pronta { color: var(--tinta-2); }
+.boot-registro li.pronta::before { background: currentColor; }
+.boot-pe { margin: auto 0 0; font-size: 10.5px; color: var(--tinta-3); line-height: 1.5; }
+
+.boot-palco { overflow: auto; display: grid; grid-template-rows: 2px 1fr; align-content: start; }
+.boot-trilho { background: var(--fio); }
+.boot-trilho i { display: block; height: 100%; width: 0; background: var(--tinta); transition: width 0.45s ease; }
+.boot-cena {
+  padding: 46px 48px 52px;
+  width: 100%;
+  max-width: 760px;
+  display: grid;
+  gap: 15px;
+  align-content: start;
+}
+.boot-cena > * { margin: 0; }
+.boot-etiqueta { font-size: 10px; letter-spacing: 0.3em; text-transform: uppercase; color: var(--tinta-3); }
+.boot-titulo {
+  font: 700 clamp(27px, 3.3vw, 38px)/1.04 var(--display);
+  font-stretch: condensed;
+  letter-spacing: 0.01em;
+  text-wrap: balance;
+  margin: 2px 0 4px;
+}
+.boot-titulo:focus { outline: none; }
+.boot-texto { color: var(--tinta-2); max-width: 62ch; }
+.boot-nota { color: var(--tinta-3); font-size: 11.5px; border-left: 1px solid var(--fio-forte); padding-left: 10px; max-width: 62ch; }
+/* Os três fatos do passo 1: tabela sem tabela, só riscos finos. */
+.fatos { display: grid; gap: 0; margin: 6px 0; max-width: 64ch; }
+.fatos div { display: grid; grid-template-columns: minmax(0, 170px) minmax(0, 1fr); gap: 16px; padding: 11px 0; border-top: 1px solid var(--fio); }
+.fatos dt { font-size: 9.5px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--tinta-3); }
+.fatos dd { margin: 0; color: var(--tinta-2); }
+
+/* Dentro da abertura valem as mesmas peças dos diálogos. */
+.boot .campo { display: grid; gap: 6px; min-width: 0; }
+.boot .campo label,
+.boot .rotulo-campo {
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--tinta-2);
+}
+.boot input[type="password"],
+.boot input[type="text"],
+.boot textarea {
+  width: 100%;
+  min-width: 0;
+  font: 14px/1.4 var(--mono);
+  color: var(--tinta);
+  background: var(--painel);
+  border: 1px solid var(--fio-forte);
+  border-radius: var(--r);
+  padding: 10px 11px;
+}
+.boot textarea { resize: vertical; min-height: 7em; font-size: 12px; word-break: break-all; }
+.boot input:focus-visible,
+.boot textarea:focus-visible { outline: 1px solid var(--tinta); outline-offset: 1px; border-color: var(--tinta); }
+.boot input[type="file"] { max-width: 100%; font-size: 12px; color: var(--tinta-2); }
+.boot input[type="file"]::file-selector-button {
+  font: inherit;
+  color: var(--tinta);
+  background: transparent;
+  border: 1px solid var(--fio-forte);
+  border-radius: var(--r);
+  padding: 7px 12px;
+  margin-right: 10px;
+  cursor: pointer;
+}
+.boot .nota { color: var(--tinta-2); font-size: 11.5px; overflow-wrap: anywhere; }
+.boot .texto { color: var(--tinta-2); }
+.boot .aviso-teste { border: 1px dashed var(--fio-forte); border-radius: var(--r); padding: 9px 11px; color: var(--tinta-2); }
+.boot .aviso-teste b { color: var(--tinta); letter-spacing: 0.12em; }
+.boot .aviso-forte { background: var(--tinta); color: var(--fundo); font-weight: 700; padding: 12px 14px; border-radius: var(--r); }
+.boot .erro {
+  border: 1px dashed var(--tinta);
+  border-radius: var(--r);
+  padding: 8px 10px;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+.boot .erro:empty { display: none; }
+.boot .acoes { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; margin-top: 6px; }
+.boot .acoes.esquerda { justify-content: flex-start; }
+.boot .principal,
+.boot .secundario {
+  border-radius: var(--r);
+  cursor: pointer;
+  font: 700 12px/1 var(--mono);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  padding: 12px 18px;
+}
+.boot .principal { background: var(--tinta); color: var(--fundo); border: 1px solid var(--tinta); }
+.boot .principal:hover { background: #fff; border-color: #fff; }
+.boot .secundario { background: transparent; color: var(--tinta); border: 1px solid var(--fio-forte); font-weight: 400; }
+.boot .secundario:hover { background: var(--painel-2); border-color: var(--tinta); }
+.boot .principal:disabled,
+.boot .secundario:disabled { background: transparent; color: var(--tinta-3); border: 1px dashed var(--fio-forte); cursor: not-allowed; }
+.boot [aria-disabled="true"] { opacity: 0.55; cursor: progress; }
+.boot .endereco-grande {
+  font-family: var(--mono);
+  font-size: 15px;
+  line-height: 1.6;
+  word-break: break-all;
+  user-select: all;
+  background: var(--painel);
+  border: 1px solid var(--fio-forte);
+  border-radius: var(--r);
+  padding: 11px 13px;
+}
+.boot .regras { list-style: none; padding: 0; display: grid; gap: 4px; font-size: 12px; color: var(--tinta-2); }
+.boot .regras li { display: flex; align-items: center; gap: 8px; }
+.boot .regras li::before { content: ""; flex: none; width: 8px; height: 8px; border: 1px solid currentColor; }
+.boot .regras li.cumprida { color: var(--tinta); }
+.boot .regras li.cumprida::before { background: currentColor; }
+.boot .caminhos { border: 0; padding: 0; margin-inline: 0; min-width: 0; }
+.boot .caminhos legend { padding: 0 0 8px; }
+.boot .pilha > * { margin-block: 0; }
+.boot .pilha > * + * { margin-top: 14px; }
+.boot .chave-liga { color: var(--tinta-2); }
+
+@media (max-width: 860px) {
+  .boot { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
+  .boot-lado { border-right: 0; border-bottom: 1px solid var(--fio); flex-direction: row; flex-wrap: wrap; align-items: center; gap: 16px; padding: 14px 16px; }
+  .boot-passos { display: flex; gap: 10px; }
+  .boot-passos li { border-left: 0; padding: 0; margin: 0; }
+  .boot-passos li small { display: none; }
+  .boot-registro { display: none; }
+  .boot-pe { margin: 0; flex: 1 1 100%; }
+  .boot-cena { padding: 26px 18px 34px; }
+  .pronto-grade { grid-template-columns: 1fr; }
+  .pronto-qr { max-width: 100%; justify-items: start; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .boot-trilho i,
+  .forca-trilho i { transition: none; }
+}
+
+/* A carteira é o painel mais cheio da grade: quando o que ela tem não couber
+   na altura da vez, ela rola por dentro, em vez de cortar o fim em silêncio. */
+.carteira { overflow-y: auto; }
+.movimentos { min-height: 0; max-height: none; }

@@ -139,9 +139,17 @@ jobs:
 
           O que é
           -------
-          O programa com janela do Hyurax (HYUR): cria a carteira, minera e
-          mostra o saldo, sem precisar de terminal. É só abrir o
+          O programa com janela do Hyurax (HYUR): cria a carteira, minera,
+          mostra o saldo e envia HYUR, sem precisar de terminal. É só abrir o
           "Hyurax.exe".
+
+          Segundo fator (opcional)
+          ------------------------
+          Em Carteira > Segurança dá para ligar o código de 6 dígitos do
+          Google Authenticator (ou Aegis, 2FAS, Authy). Ele passa a ser pedido
+          para enviar HYUR e, se você quiser, para abrir o programa.
+          O segredo fica em "seguranca.txt", na pasta de dados: apagar esse
+          arquivo desliga o código e volta a valer só a senha da carteira.
 
           Rede de TESTE
           -------------

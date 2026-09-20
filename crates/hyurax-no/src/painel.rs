@@ -37,7 +37,8 @@ use hyurax_net::Rede;
 use hyurax_pow::ConfigMineracao;
 use hyurax_tx::{HYUR, Tx};
 
-use crate::{Opcoes, carteira, hex, hyur, salvar, subir_rede};
+use crate::seguranca::Seguranca;
+use crate::{Opcoes, carteira, envio, hex, hyur, maquinas, salvar, subir_rede, totp};
 
 const INDEX: &str = include_str!("../painel/index.html");
 const CSS: &str = include_str!("../painel/painel.css");
@@ -63,8 +64,13 @@ const CENAS: [&str; 5] = ["auto", "alta", "media", "baixa", "desligada"];
 /// Quanto um núcleo minerando gasta, em watts, e o preço do kWh em centavos.
 /// São estimativas honestas, e o usuário ajusta as duas nos Ajustes.
 /// Painéis que existem, na ordem de fábrica. Um "-" na frente quer dizer fechado.
-const PAINEIS_PADRAO: &str = "estacao,carteira,rede,livro,ritmo,fluxo,-mercado";
-const PAINEIS_CONHECIDOS: [&str; 7] = ["estacao", "carteira", "rede", "livro", "ritmo", "fluxo", "mercado"];
+const PAINEIS_PADRAO: &str = "estacao,carteira,rede,livro,ritmo,fluxo,-mercado,-maquinas";
+const PAINEIS_CONHECIDOS: [&str; 8] =
+    ["estacao", "carteira", "rede", "livro", "ritmo", "fluxo", "mercado", "maquinas"];
+/// Quantos movimentos da carteira o painel mostra.
+const HISTORICO_MAX: usize = 30;
+/// De quanto em quanto tempo as outras máquinas são perguntadas.
+const MAQUINAS_INTERVALO: Duration = Duration::from_secs(6);
 /// De quanto em quanto tempo o mercado é consultado, e as moedas seguidas.
 const MERCADO_INTERVALO: Duration = Duration::from_secs(120);
 const MERCADO_MOEDAS: [(&str, &str); 5] = [
@@ -125,6 +131,15 @@ struct Painel {
     mercado: Mutex<Option<(u64, String)>>,
     /// Quais painéis o dono deixou abertos, e em que ordem.
     paineis: Mutex<String>,
+    /// Segundo fator: segredo do código de 6 dígitos e o que ele protege.
+    seguranca: Mutex<Seguranca>,
+    /// Segredo novo, ainda esperando o primeiro código certo para valer.
+    totp_pendente: Mutex<Option<Vec<u8>>>,
+    /// Já destrancou nesta abertura do programa.
+    destravado: AtomicBool,
+    /// As outras máquinas do dono, por `IP:PORTA`, e a última olhada em cada uma.
+    maquinas: Mutex<Vec<String>>,
+    maquinas_vistas: Mutex<Vec<maquinas::Vista>>,
 }
 
 struct Evento {
@@ -169,6 +184,20 @@ impl Painel {
 
     fn endereco(&self) -> Option<[u8; ADDRESS_LEN]> {
         self.endereco.lock().ok().and_then(|e| *e)
+    }
+
+    /// O programa está trancado agora? (cadeado ligado e ainda sem o código).
+    fn trancado(&self) -> bool {
+        if self.destravado.load(Ordering::Relaxed) {
+            return false;
+        }
+        self.seguranca.lock().is_ok_and(|s| s.ligado() && s.trava)
+    }
+
+    /// O texto da carteira gravada, para assinar um envio.
+    fn texto_da_carteira(&self) -> Result<String, String> {
+        let arquivo = self.ambiente.arquivo_carteira.as_ref().ok_or("este painel não guarda carteira")?;
+        crate::ler_arquivo(arquivo)
     }
 
     /// Pausa entre tentativas para a mineração ocupar só a fatia escolhida da
@@ -251,6 +280,11 @@ impl Painel {
                 let _ = writeln!(texto, "semente={semente}");
             }
         }
+        if let Ok(m) = self.maquinas.lock() {
+            for maquina in m.iter() {
+                let _ = writeln!(texto, "maquina={maquina}");
+            }
+        }
         let arquivo = self.ambiente.dados.join("ajustes.txt");
         let temporario = arquivo.with_extension("tmp");
         if std::fs::write(&temporario, texto).is_ok() {
@@ -265,6 +299,7 @@ struct Ajustes {
     minerar: bool,
     linhas: Option<u32>,
     sementes: Vec<String>,
+    maquinas: Vec<String>,
     uso_cpu: Option<u32>,
     mercado: Option<bool>,
     paineis: Option<String>,
@@ -290,6 +325,9 @@ fn ler_ajustes(dados: &Path) -> Ajustes {
             Some(("cena", v)) if CENAS.contains(&v.trim()) => a.cena = Some(v.trim().to_string()),
             Some(("semente", v)) if semente_valida(v.trim()) && a.sementes.len() < SEMENTES_MAX => {
                 a.sementes.push(v.trim().to_string());
+            }
+            Some(("maquina", v)) if semente_valida(v.trim()) && a.maquinas.len() < maquinas::MAXIMO => {
+                a.maquinas.push(v.trim().to_string());
             }
             _ => {}
         }
@@ -497,6 +535,8 @@ fn ligar(o: Opcoes, rede: Arc<Rede>, partida: Partida, ajustes: &Ajustes) -> Res
     let Partida { ambiente, endereco, sementes, porta_painel, na_rede } = partida;
     let nucleos = u32::try_from(std::thread::available_parallelism().map_or(1, |n| n.get())).unwrap_or(1);
     let app = ambiente.app;
+    let seguranca = Seguranca::ler(&ambiente.dados);
+    let trava = seguranca.ligado() && seguranca.trava;
     let painel = Arc::new(Painel {
         ambiente,
         endereco: Mutex::new(endereco),
@@ -521,6 +561,12 @@ fn ligar(o: Opcoes, rede: Arc<Rede>, partida: Partida, ajustes: &Ajustes) -> Res
         mercado_ligado: AtomicBool::new(ajustes.mercado.unwrap_or(false)),
         mercado: Mutex::new(None),
         paineis: Mutex::new(ajustes.paineis.clone().unwrap_or_else(|| PAINEIS_PADRAO.to_string())),
+        seguranca: Mutex::new(seguranca),
+        totp_pendente: Mutex::new(None),
+        // Trancado começa fechado; sem cadeado, já nasce aberto.
+        destravado: AtomicBool::new(!trava),
+        maquinas: Mutex::new(ajustes.maquinas.clone()),
+        maquinas_vistas: Mutex::new(Vec::new()),
     });
     painel.registrar("no", format!("nó no ar na rede {}", o.rede.nome));
     if app && endereco.is_none() {
@@ -546,6 +592,10 @@ fn ligar(o: Opcoes, rede: Arc<Rede>, partida: Partida, ajustes: &Ajustes) -> Res
     {
         let painel = Arc::clone(&painel);
         std::thread::spawn(move || vigia_do_mercado(&painel));
+    }
+    {
+        let painel = Arc::clone(&painel);
+        std::thread::spawn(move || vigia_das_maquinas(&painel));
     }
     Ok(Pronto { porta: porta_painel, painel, rede, o })
 }
@@ -880,6 +930,204 @@ fn abrir_pasta(painel: &Painel) -> Result<(), String> {
 
 
 // ---------------------------------------------------------------------------
+// Enviar HYUR pela janela
+// ---------------------------------------------------------------------------
+
+/// Assina e manda uma transferência pedida pelo painel.
+///
+/// A ordem das conferências é de propósito: o que é de graça primeiro (formato,
+/// segundo fator), o que custa depois (abrir a carteira, falar com a rede).
+fn enviar_do_painel(painel: &Painel, rede: &Arc<Rede>, o: &Opcoes, campos: &[(String, String)]) -> Result<String, String> {
+    let de = painel.endereco().ok_or("ainda não há carteira neste computador")?;
+    let pedido = envio::conferir(
+        &de,
+        &campo(campos, "para").unwrap_or_default(),
+        &campo(campos, "valor").unwrap_or_default(),
+        &campo(campos, "taxa").unwrap_or_default(),
+    )?;
+    let senha = campo(campos, "senha").unwrap_or_default();
+    if senha.is_empty() {
+        return Err("digite a senha da carteira para assinar o envio.".into());
+    }
+    let exige = painel.seguranca.lock().is_ok_and(|s| s.ligado() && s.exige_envio);
+    if exige {
+        let codigo = campo(campos, "codigo").unwrap_or_default();
+        let vale = painel.seguranca.lock().is_ok_and(|s| s.confere(agora_unix(), &codigo));
+        if !vale {
+            return Err("código de 6 dígitos errado ou vencido. Olhe o aplicativo de novo.".into());
+        }
+    }
+    let texto = painel.texto_da_carteira()?;
+    let feita = envio::enviar(rede, &o.rede.magic, o.rede.coinbase_maturity, &texto, &senha, &pedido)?;
+    painel.registrar(
+        "enviado",
+        format!(
+            "enviados {} HYUR para {} (taxa {}, nonce {}, {} par(es))",
+            hyur(u128::from(pedido.valor)),
+            hex(&pedido.para),
+            hyur(u128::from(pedido.taxa)),
+            feita.nonce,
+            feita.pares
+        ),
+    );
+    Ok(format!(
+        "{{\"txid\":\"{}\",\"valor\":\"{}\",\"taxa\":\"{}\",\"para\":\"{}\",\"nonce\":{},\"pares\":{}}}",
+        hex(&feita.txid),
+        hyur(u128::from(pedido.valor)),
+        hyur(u128::from(pedido.taxa)),
+        hex(&pedido.para),
+        feita.nonce,
+        feita.pares
+    ))
+}
+
+// ---------------------------------------------------------------------------
+// Segundo fator (código de 6 dígitos)
+// ---------------------------------------------------------------------------
+
+/// Começa a ligar o segundo fator: sorteia um segredo e mostra o QR Code.
+///
+/// Só vale depois que o dono digitar um código certo: enquanto isso o segredo
+/// fica na memória, e nada é gravado. Assim ninguém fica trancado para fora por
+/// ter fechado a janela no meio.
+fn seguranca_comecar(painel: &Painel) -> Result<String, String> {
+    if painel.seguranca.lock().is_ok_and(|s| s.ligado()) {
+        return Err("o segundo fator já está ligado neste computador".into());
+    }
+    // Pelo gerador do nó, e não lendo o sistema de novo: no Windows aquela
+    // leitura sobe um PowerShell e demora segundos. O gerador já nasceu da
+    // entropia do sistema, uma vez, quando o programa abriu.
+    let mut segredo = vec![0u8; totp::SEGREDO_LEN];
+    hyurax_net::entropia::preencher(&mut segredo)?;
+    let conta = painel.endereco().map(|e| hex(&e).chars().take(10).collect::<String>()).unwrap_or_default();
+    let resposta = format!(
+        "{{\"segredo\":\"{}\",\"uri\":{}}}",
+        totp::base32(&segredo),
+        texto_json(&totp::uri(&segredo, &conta))
+    );
+    if let Ok(mut p) = painel.totp_pendente.lock() {
+        *p = Some(segredo);
+    }
+    Ok(resposta)
+}
+
+/// Confirma o segredo com o primeiro código certo e grava o arquivo.
+fn seguranca_confirmar(painel: &Painel, campos: &[(String, String)]) -> Result<String, String> {
+    let segredo = painel
+        .totp_pendente
+        .lock()
+        .ok()
+        .and_then(|p| p.clone())
+        .ok_or("comece de novo: o segredo desta tela já não vale")?;
+    let digitado = campo(campos, "codigo").unwrap_or_default();
+    if !totp::confere(&segredo, agora_unix(), &digitado) {
+        return Err("código errado. Confira a hora do celular e digite o código que está na tela agora.".into());
+    }
+    let nova = Seguranca { segredo: Some(segredo), exige_envio: true, trava: campo(campos, "trava").as_deref() == Some("1") };
+    nova.gravar(&painel.ambiente.dados)?;
+    if let Ok(mut s) = painel.seguranca.lock() {
+        *s = nova;
+    }
+    if let Ok(mut p) = painel.totp_pendente.lock() {
+        *p = None;
+    }
+    painel.destravado.store(true, Ordering::Relaxed);
+    painel.registrar("seguranca", "segundo fator ligado: enviar HYUR agora pede o código de 6 dígitos".into());
+    Ok("{\"ok\":true}".to_string())
+}
+
+/// Muda o que o segundo fator protege, ou desliga tudo. Sempre com um código
+/// certo na mão: quem não tem o celular não mexe no cadeado.
+fn seguranca_mudar(painel: &Painel, campos: &[(String, String)]) -> Result<String, String> {
+    let digitado = campo(campos, "codigo").unwrap_or_default();
+    let mut guarda = painel.seguranca.lock().map_err(|_| "segurança travada".to_string())?;
+    if !guarda.ligado() {
+        return Err("o segundo fator não está ligado".into());
+    }
+    if !guarda.confere(agora_unix(), &digitado) {
+        return Err("código de 6 dígitos errado ou vencido.".into());
+    }
+    let nova = if campo(campos, "desligar").as_deref() == Some("1") {
+        Seguranca::default()
+    } else {
+        Seguranca {
+            segredo: guarda.segredo.clone(),
+            exige_envio: campo(campos, "exige_envio").as_deref().unwrap_or("1") == "1",
+            trava: campo(campos, "trava").as_deref() == Some("1"),
+        }
+    };
+    nova.gravar(&painel.ambiente.dados)?;
+    let desligou = !nova.ligado();
+    *guarda = nova;
+    drop(guarda);
+    painel.destravado.store(true, Ordering::Relaxed);
+    painel.registrar(
+        "seguranca",
+        if desligou { "segundo fator desligado".into() } else { "segundo fator ajustado".to_string() },
+    );
+    Ok("{\"ok\":true}".to_string())
+}
+
+/// Destranca o programa nesta abertura.
+fn destravar(painel: &Painel, campos: &[(String, String)]) -> Result<String, String> {
+    let digitado = campo(campos, "codigo").unwrap_or_default();
+    if !painel.seguranca.lock().is_ok_and(|s| s.confere(agora_unix(), &digitado)) {
+        return Err("código errado. O código muda a cada 30 segundos.".into());
+    }
+    painel.destravado.store(true, Ordering::Relaxed);
+    painel.registrar("seguranca", "programa destrancado".into());
+    Ok("{\"ok\":true}".to_string())
+}
+
+// ---------------------------------------------------------------------------
+// As outras máquinas do dono
+// ---------------------------------------------------------------------------
+
+fn trocar_maquinas(painel: &Painel, campos: &[(String, String)]) -> Result<Vec<String>, String> {
+    let lista = campo(campos, "lista").unwrap_or_default();
+    let novas: Vec<String> = lista
+        .split([',', '\n', ' ', ';'])
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+        .map(String::from)
+        .collect();
+    if novas.len() > maquinas::MAXIMO {
+        return Err(format!("no máximo {} máquinas", maquinas::MAXIMO));
+    }
+    if let Some(ruim) = novas.iter().find(|s| !semente_valida(s)) {
+        return Err(format!("\"{ruim}\" não é IP:PORTA (exemplo: 192.168.0.12:8800)"));
+    }
+    if let Ok(mut m) = painel.maquinas.lock() {
+        m.clone_from(&novas);
+    }
+    // A lista velha some na hora: nada de mostrar máquina que já foi tirada.
+    if let Ok(mut v) = painel.maquinas_vistas.lock() {
+        v.retain(|vista| novas.contains(&vista.alvo));
+    }
+    painel.gravar_ajustes();
+    Ok(novas)
+}
+
+/// Pergunta o estado das outras máquinas de tempo em tempo. Só lê.
+fn vigia_das_maquinas(painel: &Arc<Painel>) {
+    loop {
+        let alvos: Vec<String> = painel.maquinas.lock().map(|m| m.clone()).unwrap_or_default();
+        if alvos.is_empty() {
+            if let Ok(mut v) = painel.maquinas_vistas.lock() {
+                v.clear();
+            }
+            std::thread::sleep(MAQUINAS_INTERVALO);
+            continue;
+        }
+        let vistas: Vec<maquinas::Vista> = alvos.iter().map(|a| maquinas::olhar(a, agora_unix())).collect();
+        if let Ok(mut v) = painel.maquinas_vistas.lock() {
+            *v = vistas;
+        }
+        std::thread::sleep(MAQUINAS_INTERVALO);
+    }
+}
+
+// ---------------------------------------------------------------------------
 // Mercado das criptomoedas
 // ---------------------------------------------------------------------------
 
@@ -1126,6 +1374,10 @@ fn atender(mut s: TcpStream, porta: u16, painel: &Painel, rede: &Arc<Rede>, o: &
     if !(local && host_local && origem_ok) {
         return responder(&mut s, "403 Forbidden", "text/plain", b"comando so deste computador");
     }
+    // Trancado: o único comando que passa é o que destranca.
+    if painel.trancado() && rota != "/api/destravar" {
+        return responder(&mut s, "403 Forbidden", "text/plain", b"programa trancado");
+    }
     let campos = campos_do_formulario(&p.corpo);
     let app = painel.ambiente.app;
     match rota {
@@ -1158,6 +1410,18 @@ fn atender(mut s: TcpStream, porta: u16, painel: &Painel, rede: &Arc<Rede>, o: &
         }
         "/api/carteira/importar" if app => {
             let r = importar_carteira(painel, &campos).map(|e| format!("{{\"endereco\":\"{e}\"}}"));
+            responder_json(&mut s, r)
+        }
+        "/api/enviar" => responder_json(&mut s, enviar_do_painel(painel, rede, o, &campos)),
+        "/api/seguranca/comecar" => responder_json(&mut s, seguranca_comecar(painel)),
+        "/api/seguranca/confirmar" => responder_json(&mut s, seguranca_confirmar(painel, &campos)),
+        "/api/seguranca/mudar" => responder_json(&mut s, seguranca_mudar(painel, &campos)),
+        "/api/destravar" => responder_json(&mut s, destravar(painel, &campos)),
+        "/api/maquinas" => {
+            let r = trocar_maquinas(painel, &campos).map(|lista| {
+                let itens: Vec<String> = lista.iter().map(|x| texto_json(x)).collect();
+                format!("{{\"maquinas\":[{}]}}", itens.join(","))
+            });
             responder_json(&mut s, r)
         }
         "/api/sementes" if app => {
@@ -1201,6 +1465,16 @@ fn texto_json(s: &str) -> String {
 }
 
 fn estado_json(painel: &Painel, rede: &Rede, o: &Opcoes, pode_mandar: bool, porta: u16) -> String {
+    // Trancado: a página só recebe o suficiente para desenhar o cadeado. Nem
+    // saldo, nem endereço, nem o livro de blocos saem daqui antes do código.
+    if painel.trancado() {
+        return format!(
+            "{{\"trancado\":true,\"rede\":{},\"versao\":\"{VERSAO}\",\"app\":{},\"pode_mandar\":{pode_mandar},\"agora\":{}}}",
+            texto_json(o.rede.nome),
+            painel.ambiente.app,
+            agora_unix()
+        );
+    }
     let mut j = String::with_capacity(8 * 1024);
     let endereco = painel.endereco();
     let Ok(no) = rede.no.lock() else {
@@ -1299,7 +1573,69 @@ fn estado_json(painel: &Painel, rede: &Rede, o: &Opcoes, pode_mandar: bool, port
         o.rede.uteis.useful_size_max,
         u64::from(trabalho_n) * u64::from(trabalho_n) * 4,
     );
-    j.push_str("\"blocos\":[");
+    // Segundo fator, envio e histórico da carteira.
+    let (fator_ligado, exige_envio, trava) = painel
+        .seguranca
+        .lock()
+        .map(|s| (s.ligado(), s.exige_envio, s.trava))
+        .unwrap_or((false, false, false));
+    let _ = write!(
+        j,
+        "\"trancado\":false,\"seguranca\":{{\"ligado\":{fator_ligado},\"exige_envio\":{exige_envio},\"trava\":{trava}}},\
+         \"pode_enviar\":{},\"maximo_envio\":\"{}\",\"taxa_padrao\":\"{}\",",
+        endereco.is_some() && pode_mandar && saldo > 0,
+        hyur(u128::from(envio::maximo(saldo, envio::TAXA_PADRAO))),
+        hyur(u128::from(envio::TAXA_PADRAO)),
+    );
+    j.push_str("\"historico\":[");
+    if let Some(meu) = endereco {
+        let movimentos = envio::historico(c, &no.mempool_ordenado(), &meu, HISTORICO_MAX);
+        for (i, m) in movimentos.iter().enumerate() {
+            let _ = write!(
+                j,
+                "{}{{\"quando\":{},\"altura\":{},\"pendente\":{},\"entrada\":{},\"outro\":\"{}\",\
+                 \"valor\":\"{}\",\"taxa\":\"{}\",\"txid\":\"{}\",\"tipo\":\"{}\"}}",
+                if i > 0 { "," } else { "" },
+                m.quando,
+                m.altura,
+                m.pendente,
+                m.entrada,
+                m.outro,
+                hyur(u128::from(m.valor)),
+                hyur(u128::from(m.taxa)),
+                m.txid,
+                m.tipo,
+            );
+        }
+    }
+    j.push_str("],\"maquinas\":[");
+    if let Ok(vistas) = painel.maquinas_vistas.lock() {
+        for (i, v) in vistas.iter().enumerate() {
+            let _ = write!(
+                j,
+                "{}{{\"alvo\":{},\"ok\":{},\"erro\":{},\"quando\":{},\"minerando\":{},\"ritmo\":{:.3},\
+                 \"linhas\":{},\"nucleos\":{},\"altura\":{},\"watts\":{:.1},\"tentativas\":{},\
+                 \"versao\":{},\"endereco\":{},\"saldo\":{},\"rede\":{}}}",
+                if i > 0 { "," } else { "" },
+                texto_json(&v.alvo),
+                v.ok,
+                texto_json(&v.erro),
+                v.quando,
+                v.minerando,
+                v.ritmo,
+                v.linhas,
+                v.nucleos,
+                v.altura,
+                v.watts,
+                v.tentativas,
+                texto_json(&v.versao),
+                texto_json(&v.endereco),
+                texto_json(&v.saldo),
+                texto_json(&v.rede),
+            );
+        }
+    }
+    j.push_str("],\"blocos\":[");
     let mut anterior: Option<u64> = None;
     let recentes: Vec<_> = c.entries.iter().rev().take(BLOCOS_NO_LIVRO.saturating_add(1)).collect();
     for (i, e) in recentes.iter().rev().enumerate() {

@@ -1,4 +1,4 @@
-// Hyurax · Minerador — lê o estado do nó a cada segundo e desenha o painel.
+// Hyurax — lê o estado do nó a cada segundo e desenha o painel.
 // Tudo o que aparece aqui vem de /api/estado: nada é simulado.
 
 const $ = (id) => document.getElementById(id);
@@ -43,9 +43,18 @@ function intervalo(s) {
   return `${Math.round(s / 86400)}d`;
 }
 const hora = (unix) => new Date(unix * 1000).toLocaleTimeString("pt-BR", { hour12: false });
+const dia = (unix) => new Date(unix * 1000).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
 const curto = (h) => `${h.slice(0, 8)}…${h.slice(-6)}`;
 // O nó manda o dinheiro com ponto; em português se escreve com vírgula.
 const reais = (v) => String(v || "0.00").replace(".", ",");
+// HYUR sem os zeros que não dizem nada: 1.50000000 vira 1,5.
+function moeda(v) {
+  const t = String(v ?? "0");
+  if (!t.includes(".")) return t;
+  const [inteiro, casas] = t.split(".");
+  const enxuto = casas.replace(/0+$/, "");
+  return enxuto ? `${inteiro},${enxuto}` : inteiro;
+}
 
 function texto(id, v) {
   const el = $(id);
@@ -82,6 +91,18 @@ function erroDe(res, padrao) {
   return padrao;
 }
 
+// Enquanto o pedido anda, o botão ignora cliques sem perder o foco
+// (com disabled, o foco do teclado cairia fora do diálogo).
+async function comBotao(botao, tarefa) {
+  if (!botao || botao.getAttribute("aria-disabled") === "true") return;
+  botao.setAttribute("aria-disabled", "true");
+  try {
+    await tarefa();
+  } finally {
+    botao.removeAttribute("aria-disabled");
+  }
+}
+
 async function mandar(corpo) {
   if (enviando) return;
   enviando = true;
@@ -96,17 +117,21 @@ $("minerar").addEventListener("click", () => {
 });
 $("menos").addEventListener("click", () => ultimo && mandar(`linhas=${ultimo.linhas - 1}`));
 $("mais").addEventListener("click", () => ultimo && mandar(`linhas=${ultimo.linhas + 1}`));
-$("copiar").addEventListener("click", async () => {
-  if (!ultimo || !ultimo.endereco) return;
+
+// Copiar um texto sem depender da área de transferência: em webview ela pode
+// não existir, e aí a segunda melhor coisa é selecionar para a pessoa copiar.
+async function copiar(valor, alvo, botao, rotulo) {
+  if (!valor) return;
   try {
-    await navigator.clipboard.writeText(ultimo.endereco);
-    $("copiar").textContent = "copiado";
+    await navigator.clipboard.writeText(valor);
+    botao.textContent = "copiado";
   } catch {
-    getSelection().selectAllChildren($("endereco"));
-    $("copiar").textContent = "selecionado";
+    if (alvo) getSelection().selectAllChildren(alvo);
+    botao.textContent = "selecionado";
   }
-  setTimeout(() => ($("copiar").textContent = "copiar endereço"), 2000);
-});
+  setTimeout(() => (botao.textContent = rotulo), 2000);
+}
+$("copiar").addEventListener("click", () => copiar(ultimo?.endereco, $("endereco"), $("copiar"), "copiar endereço"));
 
 // ---------- desenho ----------
 function desenharBarra(e) {
@@ -157,6 +182,35 @@ function desenharLateral(e) {
   texto("r-trabalho", e.trabalho);
   texto("r-ponta", curto(e.ponta));
   $("r-ponta").title = e.ponta;
+  const podeEnviar = e.pode_enviar === true;
+  $("abrir-enviar").disabled = !podeEnviar;
+  $("abrir-enviar").title = podeEnviar
+    ? "Assinar e mandar HYUR para outro endereço"
+    : "Sem saldo gastável ainda. A recompensa de mineração libera depois da maturidade.";
+  $("abrir-receber").disabled = !e.endereco;
+  $("abrir-seguranca").disabled = e.pode_mandar !== true;
+  desenharMovimentos(e);
+}
+
+// Os movimentos da carteira: o que está esperando primeiro, com sinal + e −.
+function desenharMovimentos(e) {
+  const lista = Array.isArray(e.historico) ? e.historico : [];
+  $("sem-movimentos").hidden = lista.length > 0;
+  $("movimentos").replaceChildren(...lista.map((m) => {
+    const li = document.createElement("li");
+    li.className = `${m.entrada ? "entrada" : "saida"}${m.pendente ? " esperando" : ""}`;
+    const sinal = Object.assign(document.createElement("span"), { className: "sinal", textContent: m.entrada ? "+" : "−" });
+    const quem = document.createElement("span");
+    quem.className = "quem";
+    const quando = m.pendente ? "esperando entrar num bloco" : `${dia(m.quando)} ${hora(m.quando)}`;
+    quem.textContent = m.tipo === "recompensa"
+      ? `bloco ${fmt.format(m.altura)} minerado · ${quando}`
+      : `${m.entrada ? "de" : "para"} ${curto(m.outro || "")} · ${quando}`;
+    quem.title = m.txid ? `transação ${m.txid}` : "";
+    const quanto = Object.assign(document.createElement("span"), { className: "quanto", textContent: `${moeda(m.valor)} HYUR` });
+    li.append(sinal, quem, quanto);
+    return li;
+  }));
 }
 
 function desenharLivro(e) {
@@ -197,7 +251,7 @@ function desenharFluxo(e) {
       const t = Object.assign(document.createElement("time"), { textContent: hora(ev.quando) });
       const tipo = Object.assign(document.createElement("span"), {
         className: "tipo",
-        textContent: { "meu-bloco": "meu bloco", perdido: "perdido", minerador: "minerador", rede: "rede", no: "nó", erro: "erro" }[ev.tipo] || ev.tipo,
+        textContent: { "meu-bloco": "meu bloco", perdido: "perdido", minerador: "minerador", rede: "rede", no: "nó", erro: "erro", enviado: "enviado", seguranca: "segurança", carteira: "carteira", mercado: "mercado", painel: "painel" }[ev.tipo] || ev.tipo,
       });
       li.append(t, tipo, Object.assign(document.createElement("span"), { textContent: ev.texto }));
       return li;
@@ -323,43 +377,123 @@ function desenharGrafico(e) {
   texto("g-atual", fmt1.format(e.ritmo));
 }
 
-// ---------- primeira abertura: criar ou importar a carteira ----------
-// Sem carteira não há para onde mandar a recompensa: o diálogo é obrigatório e
-// só fecha depois que ela existe. Backend antigo, sem o campo "carteira", conta
-// como "já tem carteira" e o diálogo nunca abre.
+// ---------- QR Code ----------
+// A biblioteca é a mesma do site, servida pelo próprio programa. createSvgTag
+// devolve SVG montado por ela, sem nada de fora.
+function desenharQr(caixa, valor) {
+  if (!caixa) return;
+  if (caixa.dataset.valor === valor) return;
+  caixa.dataset.valor = valor;
+  caixa.replaceChildren();
+  if (!valor || typeof globalThis.qrcode !== "function") return;
+  try {
+    const q = globalThis.qrcode(0, "M");
+    q.addData(valor);
+    q.make();
+    caixa.innerHTML = q.createSvgTag({ cellSize: 4, margin: 1, scalable: true });
+  } catch (erro) {
+    console.warn("QR Code não desenhado:", erro);
+  }
+}
+
+// ---------- a abertura do programa ----------
+// Uma tela só, do primeiro quadro até o painel: a partida, o cadeado e, na
+// primeira vez, os três passos da carteira. Sem carteira não há para onde
+// mandar a recompensa, então essa parte não tem como ser pulada.
 const SENHA_MINIMA = 10;
 const PEDIDO_MAXIMO = 4000; // folga: o nó recusa corpo grande, e um carteira.txt tem menos de 1 KiB
-const boas = $("boas");
-let boasFase = "escolha"; // "escolha" → "pronto"
-let boasPodeFechar = false;
-let boasOcupado = false;
+const boot = $("boot");
+let bootCena = "partida"; // partida · trava · 1 · 2 · 3
+let bootOcupado = false;
 let carteiraFeita = false;
+let bootEncerrado = false;
 
-// Conta como o nó conta (caracteres, não bytes nem unidades UTF-16).
 const caracteres = (s) => [...s].length;
 
-function abrirBoas() {
-  if (boas.open) return;
-  boasPodeFechar = false;
-  boas.showModal();
-  if (boasFase === "pronto") $("pronto-titulo").focus();
-  else ($("c-importar").checked ? $("arquivo") : $("senha")).focus();
-}
-function fecharBoas() {
-  boasPodeFechar = true;
-  boas.close();
-}
-// Esc não fecha; e se o navegador fechar mesmo assim (Esc repetido), reabre.
-boas.addEventListener("cancel", (ev) => ev.preventDefault());
-boas.addEventListener("close", () => { if (!boasPodeFechar) abrirBoas(); });
-
-function desenharBoas(e) {
-  const precisa = e.pode_mandar === true && e.carteira === false && !carteiraFeita;
-  if (precisa) abrirBoas();
-  // Carteira criada por outra aba: some daqui, mas nunca no meio de um pedido.
-  else if (boas.open && boasFase === "escolha" && !boasOcupado) fecharBoas();
+function mostrarCena(nome) {
+  bootCena = nome;
+  for (const id of ["partida", "trava", "1", "2", "3"]) {
+    const cena = $(`cena-${id}`);
+    if (cena) cena.hidden = id !== nome;
+  }
+  const numero = Number(nome);
+  const passos = $("boot-passos");
+  passos.hidden = !numero;
+  passos.querySelectorAll("li").forEach((li) => {
+    const n = Number(li.dataset.passo);
+    li.classList.toggle("agora", n === numero);
+    li.classList.toggle("feito", numero > n);
+  });
+  $("boot-avanco").style.width = numero ? `${(numero / 3) * 100}%` : "0";
+  boot.hidden = false;
 }
 
+function fecharBoot() {
+  if (boot.hidden) return;
+  boot.hidden = true;
+  bootEncerrado = true;
+}
+
+function acenderRegistro(acesa) {
+  $("boot-registro").querySelectorAll("li").forEach((li) => li.classList.toggle("pronta", acesa));
+}
+
+function desenharBoot(e) {
+  // Numa janela destacada não se faz abertura: ela mostra um painel só, e quem
+  // cria carteira é a janela principal.
+  if (destacado && e.trancado !== true) {
+    fecharBoot();
+    return;
+  }
+  // O nó respondeu: a partida terminou, mesmo que a tela seja a do cadeado.
+  acenderRegistro(true);
+  if (e.trancado === true) {
+    if (bootCena !== "trava") {
+      mostrarCena("trava");
+      $("codigo-trava").focus();
+    }
+    return;
+  }
+  const precisaCarteira = e.pode_mandar === true && e.carteira === false && !carteiraFeita;
+  if (precisaCarteira) {
+    // Volta para a abertura mesmo que o painel já tenha sido mostrado: sem
+    // carteira, minerar não é possível.
+    if (bootCena === "partida" || bootCena === "trava") mostrarCena("1");
+    return;
+  }
+  // O passo 3 fica até a pessoa clicar: é ali que está o aviso de guardar a senha.
+  if (bootCena === "3") return;
+  if (bootCena === "2" && bootOcupado) return;
+  fecharBoot();
+}
+
+// Passo 1 → 2.
+$("boot-comecar").addEventListener("click", () => {
+  mostrarCena("2");
+  ($("c-importar").checked ? $("arquivo") : $("senha")).focus();
+});
+
+// Cadeado.
+$("codigo-trava").addEventListener("input", () => {
+  $("destravar").disabled = caracteres($("codigo-trava").value.replace(/\D/g, "")) !== 6;
+  texto("erro-trava", "");
+});
+$("f-destravar").addEventListener("submit", (ev) => {
+  ev.preventDefault();
+  comBotao($("destravar"), async () => {
+    texto("erro-trava", "");
+    const res = await postar("/api/destravar", { codigo: $("codigo-trava").value });
+    if (!res.ok) {
+      texto("erro-trava", erroDe(res, "Não deu para destrancar."));
+      return;
+    }
+    $("codigo-trava").value = "";
+    $("destravar").disabled = true;
+    await ler();
+  });
+});
+
+// Passo 2, caminho A: criar carteira.
 function trocarCaminho() {
   const importar = $("c-importar").checked;
   $("f-criar").hidden = importar;
@@ -368,18 +502,20 @@ function trocarCaminho() {
 $("c-criar").addEventListener("change", trocarCaminho);
 $("c-importar").addEventListener("change", trocarCaminho);
 
-// Pedido em curso: os botões ficam aria-disabled (não disabled, que tiraria o foco
-// do teclado) e o envio repetido é barrado por boasOcupado.
-function ocupar(sim, botao, rotulo) {
-  boasOcupado = sim;
-  $("caminhos").disabled = sim;
-  boas.setAttribute("aria-busy", String(sim));
-  botao.textContent = rotulo;
-  if (sim) botao.setAttribute("aria-disabled", "true");
-  else botao.removeAttribute("aria-disabled");
+// Força da senha, como estimativa honesta: conta o alfabeto usado e desconta a
+// repetição. Não é promessa de segurança, e a tela diz isso.
+const CLASSES = [[/[a-z]/, 26], [/[A-Z]/, 26], [/[0-9]/, 10], [/[^a-zA-Z0-9]/, 33]];
+function forcaDaSenha(s) {
+  const n = caracteres(s);
+  if (!n) return { pct: 0, frase: "" };
+  const alfabeto = CLASSES.reduce((a, [re, tam]) => a + (re.test(s) ? tam : 0), 0) || 26;
+  const distintos = new Set([...s]).size;
+  const efetivo = Math.min(n, distintos * 2); // "aaaaaaaaaa" não vale dez caracteres
+  const bits = Math.round(efetivo * Math.log2(alfabeto));
+  const palavras = bits < 40 ? "fácil de adivinhar" : bits < 56 ? "razoável" : bits < 76 ? "boa" : "muito boa";
+  return { pct: Math.max(4, Math.min(100, (bits / 90) * 100)), frase: `Cerca de ${bits} bits: ${palavras}. É uma estimativa, não uma garantia.` };
 }
 
-// Criar: senha com no mínimo 10 caracteres, repetida igual.
 function conferirSenha() {
   const a = $("senha").value, b = $("senha2").value;
   const n = caracteres(a);
@@ -389,6 +525,10 @@ function conferirSenha() {
   $("r-tamanho").classList.toggle("cumprida", tamanho);
   $("r-iguais").classList.toggle("cumprida", iguais);
   $("criar").disabled = !(tamanho && iguais);
+  const f = forcaDaSenha(a);
+  $("forca-caixa").hidden = !n;
+  $("forca-barra").style.width = `${f.pct}%`;
+  texto("forca-texto", f.frase);
 }
 $("senha").addEventListener("input", conferirSenha);
 $("senha2").addEventListener("input", conferirSenha);
@@ -398,10 +538,22 @@ $("ver-senha").addEventListener("click", () => {
   $("ver-senha").textContent = ver ? "ocultar" : "mostrar";
   $("ver-senha").setAttribute("aria-label", ver ? "Ocultar as senhas" : "Mostrar as senhas");
 });
+
+// Pedido em curso: os botões ficam aria-disabled (não disabled, que tiraria o
+// foco do teclado) e o envio repetido é barrado por bootOcupado.
+function ocupar(sim, botao, rotulo) {
+  bootOcupado = sim;
+  $("caminhos").disabled = sim;
+  boot.setAttribute("aria-busy", String(sim));
+  botao.textContent = rotulo;
+  if (sim) botao.setAttribute("aria-disabled", "true");
+  else botao.removeAttribute("aria-disabled");
+}
+
 $("f-criar").addEventListener("submit", async (ev) => {
   ev.preventDefault();
   const senha = $("senha").value, senha2 = $("senha2").value;
-  if (boasOcupado || caracteres(senha) < SENHA_MINIMA || senha !== senha2) return;
+  if (bootOcupado || caracteres(senha) < SENHA_MINIMA || senha !== senha2) return;
   texto("erro-criar", "");
   $("dica-criar").hidden = false;
   ocupar(true, $("criar"), "Criando, aguarde…");
@@ -419,7 +571,7 @@ $("f-criar").addEventListener("submit", async (ev) => {
   }
 });
 
-// Importar: o texto do carteira.txt, colado ou lido do arquivo.
+// Passo 2, caminho B: importar o carteira.txt.
 function conferirImportar() {
   $("importar").disabled = !$("conteudo").value.trim();
 }
@@ -443,7 +595,7 @@ $("arquivo").addEventListener("change", () => {
 $("f-importar").addEventListener("submit", async (ev) => {
   ev.preventDefault();
   const conteudo = $("conteudo").value;
-  if (boasOcupado || !conteudo.trim()) return;
+  if (bootOcupado || !conteudo.trim()) return;
   texto("erro-importar", "");
   if (new URLSearchParams({ conteudo }).toString().length > PEDIDO_MAXIMO) {
     texto("erro-importar", "Texto grande demais. Cole só o conteúdo do arquivo carteira.txt.");
@@ -463,32 +615,20 @@ $("f-importar").addEventListener("submit", async (ev) => {
   }
 });
 
-// Pronto: o endereço, o aviso honesto e o botão de começar.
+// Passo 3: o endereço, o QR de receber e o aviso que não pode passar batido.
 function mostrarPronto(endereco) {
   carteiraFeita = true;
-  boasFase = "pronto";
-  $("boas-escolha").hidden = true;
-  $("boas-pronto").hidden = false;
+  mostrarCena("3");
   texto("pronto-endereco", endereco);
+  desenharQr($("pronto-qr"), endereco);
   const dados = typeof ultimo?.dados === "string" ? ultimo.dados : "";
-  texto("pronto-pasta", dados ? `O arquivo carteira.txt fica na pasta ${dados}` : "");
-  boas.setAttribute("aria-labelledby", "pronto-titulo");
-  boas.setAttribute("aria-describedby", "pronto-aviso");
-  if (boas.open) $("pronto-titulo").focus();
-  else abrirBoas();
+  texto("pronto-pasta", dados ? `O arquivo carteira.txt fica em ${dados}` : "");
+  $("pronto-titulo").focus();
 }
-
-// Enquanto o pedido anda, o botão ignora cliques sem perder o foco
-// (com disabled, o foco do teclado cairia fora do diálogo).
-async function comBotao(botao, tarefa) {
-  if (botao.getAttribute("aria-disabled") === "true") return;
-  botao.setAttribute("aria-disabled", "true");
-  try {
-    await tarefa();
-  } finally {
-    botao.removeAttribute("aria-disabled");
-  }
-}
+$("pronto-copiar").addEventListener("click", () => copiar($("pronto-endereco").textContent, $("pronto-endereco"), $("pronto-copiar"), "Copiar endereço"));
+$("pronto-entendi").addEventListener("change", () => {
+  $("comecar").disabled = !$("pronto-entendi").checked;
+});
 
 function abrirPasta(botao, idErro) {
   return comBotao(botao, async () => {
@@ -498,6 +638,7 @@ function abrirPasta(botao, idErro) {
   });
 }
 $("abrir-pasta-carteira").addEventListener("click", () => abrirPasta($("abrir-pasta-carteira"), "erro-pronto"));
+$("so-olhar").addEventListener("click", () => { fecharBoot(); ler(); });
 $("comecar").addEventListener("click", () => comBotao($("comecar"), async () => {
   texto("erro-pronto", "");
   const res = await postar("/api/minerar", { ligar: "1" });
@@ -505,14 +646,301 @@ $("comecar").addEventListener("click", () => comBotao($("comecar"), async () => 
     texto("erro-pronto", erroDe(res, "Não deu para ligar a mineração. Tente de novo."));
     return;
   }
-  fecharBoas();
+  fecharBoot();
   ler();
 }));
 
+// ---------- enviar HYUR ----------
+// Três telas: escrever, conferir, comprovante. Enviar é definitivo, então a tela
+// do meio existe para a pessoa reler o endereço antes de assinar.
+const enviarDialogo = $("enviar");
+let enviarPedido = null;
+
+function faseEnviar(qual) {
+  $("f-enviar").hidden = qual !== "escrever";
+  $("enviar-conferir").hidden = qual !== "conferir";
+  $("enviar-pronto").hidden = qual !== "pronto";
+}
+
+function abrirEnviar() {
+  if (enviarDialogo.open || !ultimo || ultimo.pode_enviar !== true) return;
+  enviarPedido = null;
+  faseEnviar("escrever");
+  for (const id of ["erro-enviar", "erro-assinar"]) texto(id, "");
+  $("en-taxa").value = "";
+  $("en-taxa").placeholder = ultimo.taxa_padrao || "0.00000000";
+  texto("enviar-saldo", `${moeda(ultimo.saldo)} HYUR gastáveis`);
+  enviarDialogo.showModal();
+  $("en-para").focus();
+}
+$("abrir-enviar").addEventListener("click", abrirEnviar);
+$("enviar-fechar").addEventListener("click", () => enviarDialogo.close());
+$("en-terminar").addEventListener("click", () => enviarDialogo.close());
+$("en-voltar").addEventListener("click", () => { faseEnviar("escrever"); $("en-para").focus(); });
+$("en-tudo").addEventListener("click", () => {
+  if (!ultimo) return;
+  // O máximo vem do nó, já descontada a taxa padrão; com taxa digitada, desconta dela.
+  const taxa = Number(String($("en-taxa").value || ultimo.taxa_padrao || "0").replace(",", "."));
+  const saldo = Number(String(ultimo.saldo || "0"));
+  const sobra = Math.max(0, saldo - (Number.isFinite(taxa) ? taxa : 0));
+  $("en-valor").value = sobra.toFixed(8);
+});
+enviarDialogo.addEventListener("keydown", (ev) => {
+  if (ev.key !== "Escape") return;
+  ev.preventDefault();
+  enviarDialogo.close();
+});
+enviarDialogo.addEventListener("close", () => { enviarPedido = null; $("en-senha").value = ""; $("en-codigo").value = ""; });
+
+// A conferência é feita aqui só para mostrar: o nó confere tudo de novo antes de assinar.
+$("f-enviar").addEventListener("submit", (ev) => {
+  ev.preventDefault();
+  texto("erro-enviar", "");
+  const para = $("en-para").value.replace(/\s+/g, "");
+  const valor = $("en-valor").value.trim().replace(",", ".");
+  const taxa = $("en-taxa").value.trim().replace(",", ".");
+  if (!/^[0-9a-fA-F]{40}$/.test(para)) {
+    texto("erro-enviar", "O endereço de destino tem 40 dígitos hexadecimais (0-9 e a-f). Confira se não faltou nem sobrou nada.");
+    return;
+  }
+  if (para.toLowerCase() === String(ultimo?.endereco || "").toLowerCase()) {
+    texto("erro-enviar", "Esse é o seu próprio endereço.");
+    return;
+  }
+  if (!/^\d+(\.\d{1,8})?$/.test(valor) || Number(valor) <= 0) {
+    texto("erro-enviar", "Escreva o valor com ponto e até 8 casas, por exemplo 1.5. Precisa ser maior que zero.");
+    return;
+  }
+  if (taxa && !/^\d+(\.\d{1,8})?$/.test(taxa)) {
+    texto("erro-enviar", "A taxa também usa ponto e até 8 casas.");
+    return;
+  }
+  const taxaNum = Number(taxa || ultimo?.taxa_padrao || 0);
+  const total = Number(valor) + taxaNum;
+  const saldo = Number(ultimo?.saldo || 0);
+  if (total > saldo) {
+    texto("erro-enviar", `Não dá: valor mais taxa somam ${total.toFixed(8)} HYUR e você tem ${saldo.toFixed(8)} gastáveis.`);
+    return;
+  }
+  enviarPedido = { para, valor, taxa };
+  texto("cf-para", para);
+  texto("cf-valor", moeda(Number(valor).toFixed(8)));
+  texto("cf-taxa", moeda(taxaNum.toFixed(8)));
+  texto("cf-total", moeda(total.toFixed(8)));
+  texto("cf-sobra", moeda((saldo - total).toFixed(8)));
+  const exige = ultimo?.seguranca?.exige_envio === true;
+  $("en-codigo-caixa").hidden = !exige;
+  faseEnviar("conferir");
+  $("en-senha").focus();
+});
+
+$("en-assinar").addEventListener("click", () => comBotao($("en-assinar"), async () => {
+  if (!enviarPedido) return;
+  texto("erro-assinar", "");
+  const senha = $("en-senha").value;
+  if (!senha) {
+    texto("erro-assinar", "Digite a senha da carteira.");
+    return;
+  }
+  const corpo = { para: enviarPedido.para, valor: enviarPedido.valor, taxa: enviarPedido.taxa, senha };
+  if (ultimo?.seguranca?.exige_envio === true) corpo.codigo = $("en-codigo").value;
+  $("dica-enviar").hidden = false;
+  $("en-assinar").textContent = "Assinando…";
+  const res = await postar("/api/enviar", corpo);
+  $("dica-enviar").hidden = true;
+  $("en-assinar").textContent = "Assinar e enviar";
+  if (!res.ok || !res.dados?.txid) {
+    texto("erro-assinar", erroDe(res, "Não deu para enviar."));
+    return;
+  }
+  $("en-senha").value = "";
+  $("en-codigo").value = "";
+  const d = res.dados;
+  texto("en-resumo", `${moeda(d.valor)} HYUR para ${curto(d.para)}${Number(d.taxa) > 0 ? `, com taxa de ${moeda(d.taxa)}` : ""}. Espalhada para ${d.pares} par(es).`);
+  texto("en-txid", d.txid);
+  faseEnviar("pronto");
+  $("en-terminar").focus();
+  ler();
+}));
+
+// ---------- receber ----------
+const receber = $("receber");
+$("abrir-receber").addEventListener("click", () => {
+  if (receber.open || !ultimo?.endereco) return;
+  texto("rc-endereco", ultimo.endereco);
+  desenharQr($("rc-qr"), ultimo.endereco);
+  receber.showModal();
+  $("rc-fechar").focus();
+});
+$("rc-fechar").addEventListener("click", () => receber.close());
+$("rc-copiar").addEventListener("click", () => copiar(ultimo?.endereco, $("rc-endereco"), $("rc-copiar"), "Copiar endereço"));
+receber.addEventListener("keydown", (ev) => {
+  if (ev.key !== "Escape") return;
+  ev.preventDefault();
+  receber.close();
+});
+
+// ---------- segundo fator (código de 6 dígitos) ----------
+const seguranca = $("seguranca");
+
+function faseSeguranca(qual) {
+  $("seg-desligado").hidden = qual !== "desligado";
+  $("seg-ligando").hidden = qual !== "ligando";
+  $("seg-ligado").hidden = qual !== "ligado";
+}
+
+// As caixas de marcar só são sincronizadas ao abrir o diálogo: mexer nelas é o
+// começo de um pedido que ainda vai pedir o código, e a leitura de cada segundo
+// não pode desmarcar o que a pessoa acabou de marcar.
+function desenharSeguranca(e) {
+  const s = e.seguranca || {};
+  texto("seg-estado", s.ligado ? "ligado" : "desligado");
+  if (!seguranca.open) return;
+  if ($("seg-ligando").hidden === false) return; // no meio de ligar: não mexe
+  faseSeguranca(s.ligado ? "ligado" : "desligado");
+}
+
+function sincronizarSeguranca(e) {
+  const s = e.seguranca || {};
+  $("seg-exige").checked = s.exige_envio === true;
+  $("seg-trava").checked = s.trava === true;
+  $("seg-trava-nova").checked = false;
+}
+
+$("abrir-seguranca").addEventListener("click", () => {
+  if (seguranca.open || !ultimo) return;
+  for (const id of ["erro-seg", "erro-seg-confirmar", "erro-seg-mudar"]) texto(id, "");
+  faseSeguranca(ultimo.seguranca?.ligado ? "ligado" : "desligado");
+  sincronizarSeguranca(ultimo);
+  desenharSeguranca(ultimo);
+  seguranca.showModal();
+  $("seg-fechar").focus();
+});
+$("seg-fechar").addEventListener("click", () => seguranca.close());
+$("seg-cancelar").addEventListener("click", () => { faseSeguranca("desligado"); $("seg-codigo").value = ""; });
+seguranca.addEventListener("keydown", (ev) => {
+  if (ev.key !== "Escape") return;
+  ev.preventDefault();
+  seguranca.close();
+});
+
+$("seg-ligar").addEventListener("click", () => comBotao($("seg-ligar"), async () => {
+  texto("erro-seg", "");
+  const res = await postar("/api/seguranca/comecar");
+  if (!res.ok || !res.dados?.uri) {
+    texto("erro-seg", erroDe(res, "Não deu para começar."));
+    return;
+  }
+  desenharQr($("seg-qr"), res.dados.uri);
+  texto("seg-segredo", res.dados.segredo || "—");
+  $("seg-codigo").value = "";
+  $("seg-confirmar").disabled = true;
+  faseSeguranca("ligando");
+  $("seg-codigo").focus();
+}));
+
+$("seg-codigo").addEventListener("input", () => {
+  $("seg-confirmar").disabled = $("seg-codigo").value.replace(/\D/g, "").length !== 6;
+  texto("erro-seg-confirmar", "");
+});
+$("f-seg-confirmar").addEventListener("submit", (ev) => {
+  ev.preventDefault();
+  comBotao($("seg-confirmar"), async () => {
+    texto("erro-seg-confirmar", "");
+    const res = await postar("/api/seguranca/confirmar", {
+      codigo: $("seg-codigo").value,
+      trava: $("seg-trava-nova").checked ? "1" : "0",
+    });
+    if (!res.ok) {
+      texto("erro-seg-confirmar", erroDe(res, "Não deu para confirmar."));
+      return;
+    }
+    $("seg-codigo").value = "";
+    faseSeguranca("ligado");
+    await ler();
+  });
+});
+
+function mudarSeguranca(desligar) {
+  return comBotao(desligar ? $("seg-desligar") : $("seg-salvar"), async () => {
+    texto("erro-seg-mudar", "");
+    const codigo = $("seg-codigo-mudar").value;
+    if (codigo.replace(/\D/g, "").length !== 6) {
+      texto("erro-seg-mudar", "Digite o código de 6 dígitos que está no celular agora.");
+      return;
+    }
+    const campos = { codigo };
+    if (desligar) campos.desligar = "1";
+    else {
+      campos.exige_envio = $("seg-exige").checked ? "1" : "0";
+      campos.trava = $("seg-trava").checked ? "1" : "0";
+    }
+    const res = await postar("/api/seguranca/mudar", campos);
+    if (!res.ok) {
+      texto("erro-seg-mudar", erroDe(res, "Não deu para salvar."));
+      return;
+    }
+    $("seg-codigo-mudar").value = "";
+    await ler();
+    if (desligar) faseSeguranca("desligado");
+  });
+}
+$("f-seg-mudar").addEventListener("submit", (ev) => { ev.preventDefault(); mudarSeguranca(false); });
+$("seg-desligar").addEventListener("click", () => mudarSeguranca(true));
+
+// ---------- minhas máquinas ----------
+// Soma esta máquina com as outras da lista. Só leitura: cada uma é comandada
+// nela mesma.
+function desenharMaquinas(e) {
+  const lista = Array.isArray(e.maquinas) ? e.maquinas : [];
+  $("mq-aviso").hidden = lista.length > 0;
+  const responderam = lista.filter((m) => m.ok);
+  texto("mq-total", lista.length ? `${responderam.length} de ${lista.length} respondendo · e esta` : "só esta máquina");
+  const ritmo = (e.ritmo || 0) + responderam.reduce((a, m) => a + (m.ritmo || 0), 0);
+  const nucleos = (e.minerando ? e.linhas || 0 : 0) + responderam.reduce((a, m) => a + (m.minerando ? m.linhas || 0 : 0), 0);
+  const watts = (e.watts || 0) + responderam.reduce((a, m) => a + (m.watts || 0), 0);
+  texto("mq-ritmo", `${fmt1.format(ritmo)} tent/s`);
+  texto("mq-nucleos", fmt.format(nucleos));
+  texto("mq-watts", `${fmt1.format(watts)} W`);
+
+  const cel = (t, classe) => {
+    const td = document.createElement("td");
+    td.textContent = t;
+    if (classe) td.className = classe;
+    return td;
+  };
+  const aqui = document.createElement("tr");
+  aqui.append(
+    cel("este computador"),
+    cel(e.minerando ? "minerando" : "parado"),
+    cel(fmt1.format(e.ritmo || 0)),
+    cel(e.minerando ? `${e.linhas}/${e.nucleos}` : `0/${e.nucleos}`),
+    cel(fmt.format(e.altura || 0)),
+  );
+  const linhas = lista.map((m) => {
+    const tr = document.createElement("tr");
+    const alvo = cel(m.alvo);
+    if (!m.ok) alvo.className = "caiu";
+    const estado = cel(m.ok ? (m.minerando ? "minerando" : "parado") : "sem resposta");
+    if (!m.ok && m.erro) {
+      estado.title = m.erro;
+      estado.className = "caiu";
+    }
+    tr.append(
+      alvo,
+      estado,
+      cel(m.ok ? fmt1.format(m.ritmo || 0) : "—"),
+      cel(m.ok ? `${m.minerando ? m.linhas : 0}/${m.nucleos}` : "—"),
+      cel(m.ok ? fmt.format(m.altura || 0) : "—"),
+    );
+    if (m.ok && m.versao) tr.title = `Hyurax ${m.versao} · ${m.rede || ""}`;
+    return tr;
+  });
+  $("maquinas").replaceChildren(aqui, ...linhas);
+}
+
 // ---------- ajustes ----------
 const ajustes = $("ajustes");
-
-let qrDesenhado = "";
 
 // Marca o perfil que bate com o que está valendo, ou "manual".
 function perfilAtual(e) {
@@ -522,19 +950,6 @@ function perfilAtual(e) {
     if (e.linhas === linhas && e.uso_cpu === uso) return nome;
   }
   return "manual";
-}
-
-function desenharQr(url) {
-  const caixa = $("a-qr");
-  if (qrDesenhado === url) return;
-  qrDesenhado = url;
-  caixa.replaceChildren();
-  if (!url || typeof globalThis.qrcode !== "function") return;
-  const q = globalThis.qrcode(0, "M");
-  q.addData(url);
-  q.make();
-  // createSvgTag devolve SVG puro montado pela biblioteca, sem dado externo.
-  caixa.innerHTML = q.createSvgTag({ cellSize: 4, margin: 1, scalable: true });
 }
 
 function desenharAjustes(e) {
@@ -560,7 +975,7 @@ function desenharAjustes(e) {
   $("a-mercado").checked = e.mercado_ligado === true;
   $("a-qr-caixa").hidden = !e.na_rede;
   texto("a-url", e.url_celular || "—");
-  if (e.na_rede) desenharQr(e.url_celular || "");
+  if (e.na_rede) desenharQr($("a-qr"), e.url_celular || "");
   for (const nome of ["auto", "alta", "media", "baixa", "desligada"]) {
     const alvo = $(`c-${nome}`);
     if (alvo) alvo.checked = (e.cena || "auto") === nome;
@@ -575,7 +990,9 @@ $("abrir-ajustes").addEventListener("click", () => {
   if (!ultimo || ajustes.open) return;
   const lista = Array.isArray(ultimo.sementes) ? ultimo.sementes.filter((s) => typeof s === "string") : [];
   $("sementes").value = lista.join(", ");
-  for (const id of ["a-abrir-erro", "sementes-ok", "sementes-erro"]) texto(id, "");
+  const maquinas = Array.isArray(ultimo.maquinas) ? ultimo.maquinas.map((m) => m.alvo).filter(Boolean) : [];
+  $("maquinas-lista").value = maquinas.join(", ");
+  for (const id of ["a-abrir-erro", "sementes-ok", "sementes-erro", "maquinas-ok", "maquinas-erro"]) texto(id, "");
   desenharAjustes(ultimo);
   ajustes.showModal();
   $("sementes").focus();
@@ -597,6 +1014,24 @@ $("f-sementes").addEventListener("submit", (ev) => {
     const salvas = res.dados?.sementes;
     if (Array.isArray(salvas)) $("sementes").value = salvas.filter((s) => typeof s === "string").join(", ");
     texto("sementes-ok", "Salvo.");
+  });
+});
+$("maquinas-lista").addEventListener("input", () => texto("maquinas-ok", ""));
+$("f-maquinas").addEventListener("submit", (ev) => {
+  ev.preventDefault();
+  comBotao($("maquinas-salvar"), async () => {
+    const lista = $("maquinas-lista").value.split(",").map((s) => s.trim()).filter(Boolean).join(",");
+    texto("maquinas-ok", "");
+    texto("maquinas-erro", "");
+    const res = await postar("/api/maquinas", { lista });
+    if (!res.ok) {
+      texto("maquinas-erro", erroDe(res, "Não deu para salvar as máquinas."));
+      return;
+    }
+    const salvas = res.dados?.maquinas;
+    if (Array.isArray(salvas)) $("maquinas-lista").value = salvas.filter((s) => typeof s === "string").join(", ");
+    texto("maquinas-ok", salvas && salvas.length ? "Salvo. A primeira leitura leva alguns segundos." : "Salvo.");
+    await ler();
   });
 });
 // Desempenho, energia, celular e cena: cada controle manda o seu campo.
@@ -741,8 +1176,9 @@ const NOMES_PAINEIS = {
   ritmo: "Ritmo",
   fluxo: "Fluxo de eventos",
   mercado: "Mercado",
+  maquinas: "Minhas máquinas",
 };
-const PAINEIS_PADRAO = "estacao,carteira,rede,livro,ritmo,fluxo,-mercado";
+const PAINEIS_PADRAO = "estacao,carteira,rede,livro,ritmo,fluxo,-mercado,-maquinas";
 const destacado = new URLSearchParams(location.search).get("so");
 let listaPaineis = PAINEIS_PADRAO;
 
@@ -883,9 +1319,14 @@ async function ler() {
     const e = await r.json();
     ultimo = e;
     $("desligado").hidden = true;
-    desenharBoas(e);
+    texto("boot-versao", e.versao ? `Hyurax ${e.versao}` : "Hyurax");
+    desenharBoot(e);
+    // Trancado: o nó não manda saldo, blocos nem endereço, então não há painel
+    // para desenhar. A tela do cadeado é a única coisa na frente.
+    if (e.trancado === true) return;
     if (ajustes.open) desenharAjustes(e);
     if (trabalho.open) desenharTrabalho(e);
+    desenharSeguranca(e);
     desenharBarra(e);
     desenharEstacao(e);
     desenharLateral(e);
@@ -893,12 +1334,16 @@ async function ler() {
     desenharFluxo(e);
     if (typeof e.paineis === "string" && e.paineis !== listaPaineis) { aplicarPaineis(e.paineis); if ($("paineis").open) desenharListaPaineis(); }
     desenharMercado(e);
+    desenharMaquinas(e);
     desenharFita(e);
     desenharGrafico(e);
     garantirEstacao(e);
     estacao?.atualizar(e);
   } catch {
-    $("desligado").hidden = false;
+    $("desligado").hidden = !bootEncerrado;
+    if (!bootEncerrado && bootCena === "partida") {
+      texto("erro-partida", "O painel não respondeu. Se isto não sair em alguns segundos, feche e abra o programa de novo.");
+    }
   }
 }
 setInterval(() => { texto("relogio", new Date().toLocaleTimeString("pt-BR", { hour12: false })); }, 1000);

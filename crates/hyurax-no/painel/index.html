@@ -57,18 +57,26 @@
   </section>
 
     <section class="bloco carteira" id="painel-carteira" data-painel="carteira" aria-label="Carteira">
-      <header class="rotulo"><span>Carteira</span><button type="button" id="copiar" class="link">copiar endereço</button></header>
+      <header class="rotulo"><span>Carteira</span><span class="rotulo-fim"><button type="button" id="copiar" class="link">copiar endereço</button></span></header>
       <p class="endereco" id="endereco">—</p>
       <p class="saldo"><span id="saldo" class="num">0.00000000</span><small>HYUR</small></p>
       <p class="legenda">Gastável agora</p>
+      <div class="carteira-acoes">
+        <button type="button" id="abrir-enviar" class="acao" aria-haspopup="dialog">Enviar</button>
+        <button type="button" id="abrir-receber" class="acao" aria-haspopup="dialog">Receber</button>
+        <button type="button" id="abrir-seguranca" class="acao" aria-haspopup="dialog">Segurança</button>
+      </div>
       <dl class="pares">
         <div><dt>Esperando liberar</dt><dd><span id="imaturo" class="num">0</span> HYUR</dd></div>
         <div><dt>Recompensa do próximo bloco</dt><dd><span id="recompensa" class="num">0</span> HYUR</dd></div>
         <div><dt>Libera depois de</dt><dd><span id="maturidade" class="num">0</span> blocos</dd></div>
       </dl>
+      <h3 class="rotulo-secao">Últimos movimentos</h3>
+      <ol class="movimentos" id="movimentos"></ol>
+      <p class="nota nota-painel" id="sem-movimentos">Nada ainda. O primeiro movimento aparece quando você minerar um bloco ou receber HYUR.</p>
     </section>
     <section class="bloco rede" id="painel-rede" data-painel="rede" aria-label="Rede">
-      <header class="rotulo"><span>Rede</span><span id="r-nome">—</span></header>
+      <header class="rotulo"><span>Rede</span><span class="rotulo-fim"><span id="r-nome">—</span></span></header>
       <dl class="pares">
         <div><dt>Emitido</dt><dd><span id="r-emitido" class="num">0</span> HYUR</dd></div>
         <div><dt>Transações esperando</dt><dd id="r-mempool" class="num">0</dd></div>
@@ -78,7 +86,7 @@
     </section>
 
   <section class="bloco livro" id="painel-livro" data-painel="livro" aria-label="Livro de blocos">
-    <header class="rotulo"><span>Livro de blocos</span><span class="chave"><i class="q meu"></i>meu <i class="q"></i>outro nó</span></header>
+    <header class="rotulo"><span>Livro de blocos</span><span class="rotulo-fim"><span class="chave"><i class="q meu"></i>meu <i class="q"></i>outro nó</span></span></header>
     <div class="rolar">
       <table>
         <thead><tr><th>Altura</th><th>Hash</th><th>Intervalo</th><th>Trabalho útil</th><th>Tx</th></tr></thead>
@@ -88,16 +96,16 @@
   </section>
 
   <section class="bloco ritmo" id="painel-ritmo" data-painel="ritmo" aria-label="Ritmo da mineração">
-    <header class="rotulo"><span>Ritmo · 2 min</span><span><span id="g-atual" class="num">0</span> tent/s</span></header>
+    <header class="rotulo"><span>Ritmo · 2 min</span><span class="rotulo-fim"><span><span id="g-atual" class="num">0</span> tent/s</span></span></header>
     <canvas id="grafico" aria-label="Tentativas por segundo nos últimos dois minutos" role="img"></canvas>
   </section>
 
   <section class="bloco fluxo" id="painel-fluxo" data-painel="fluxo" aria-label="Fluxo de eventos">
-    <header class="rotulo"><span>Fluxo</span><span id="relogio" class="num">--:--:--</span></header>
+    <header class="rotulo"><span>Fluxo</span><span class="rotulo-fim"><span id="relogio" class="num">--:--:--</span></span></header>
     <ol id="fluxo" class="rolar"></ol>
   </section>
   <section class="bloco mercado" id="painel-mercado" data-painel="mercado" aria-label="Mercado das criptomoedas">
-    <header class="rotulo"><span>Mercado</span><span id="m-quando">desligado</span></header>
+    <header class="rotulo"><span>Mercado</span><span class="rotulo-fim"><span id="m-quando">desligado</span></span></header>
     <div class="rolar">
       <table>
         <thead><tr><th>Moeda</th><th>Preço (R$)</th><th>Dólar</th><th>24 h</th></tr></thead>
@@ -107,80 +115,325 @@
     <p class="nota nota-painel" id="m-aviso">Desligado. Ligue nos Ajustes: o programa passa a consultar a api.coingecko.com a cada 2 minutos.</p>
   </section>
 
+  <section class="bloco maquinas" id="painel-maquinas" data-painel="maquinas" aria-label="Minhas máquinas">
+    <header class="rotulo"><span>Minhas máquinas</span><span class="rotulo-fim"><span id="mq-total">—</span></span></header>
+    <div class="somas" id="mq-somas">
+      <div><small>Ritmo somado</small><b id="mq-ritmo" class="num">0</b></div>
+      <div><small>Núcleos minerando</small><b id="mq-nucleos" class="num">0</b></div>
+      <div><small>Energia somada</small><b id="mq-watts" class="num">0 W</b></div>
+    </div>
+    <div class="rolar">
+      <table>
+        <thead><tr><th>Máquina</th><th>Estado</th><th>Ritmo</th><th>Núcleos</th><th>Altura</th></tr></thead>
+        <tbody id="maquinas"></tbody>
+      </table>
+    </div>
+    <p class="nota nota-painel" id="mq-aviso">Some as suas outras máquinas aqui: em cada uma, ligue “ver no celular” nos Ajustes e anote o endereço dela. Depois escreva os endereços em Ajustes › Minhas máquinas. Este painel só lê; cada máquina continua sendo comandada nela mesma.</p>
+  </section>
+
 </main>
 
 <footer class="fita" aria-hidden="true"><div id="fita-trilho"></div></footer>
 <p id="desligado" class="desligado" hidden>Sem resposta do nó. O programa ainda está aberto?</p>
 
-<!-- Primeira abertura: sem carteira não há para onde mandar a recompensa.
-     Obrigatório: não fecha com Esc nem clicando fora. -->
-<dialog id="boas" class="dialogo" aria-labelledby="boas-titulo" aria-describedby="boas-texto boas-teste" closedby="none">
-  <header class="rotulo"><span>Primeira abertura</span><span>rede de teste</span></header>
-
-  <div class="dialogo-corpo pilha" id="boas-escolha">
-    <h2 class="titulo" id="boas-titulo">Boas-vindas ao Hyurax</h2>
-    <p class="texto" id="boas-texto">Este programa liga um nó do Hyurax neste computador e minera. Cada bloco que você achar paga uma recompensa, e ela cai na sua carteira.</p>
-    <p class="aviso-teste" id="boas-teste"><b>REDE DE TESTE.</b> O HYUR minerado aqui é de teste e não tem valor.</p>
-
-    <fieldset class="caminhos" id="caminhos">
-      <legend>Para receber a recompensa, você precisa de uma carteira.</legend>
-      <div class="segmentos">
-        <label for="c-criar"><input type="radio" name="caminho" id="c-criar" value="criar" checked><span>Criar carteira nova</span></label>
-        <label for="c-importar"><input type="radio" name="caminho" id="c-importar" value="importar"><span>Já tenho uma carteira</span></label>
+<!-- ------------------------------------------------------------------ -->
+<!-- A abertura do programa: a partida, o cadeado e a primeira carteira. -->
+<!-- Aparece desde o primeiro quadro, antes de qualquer resposta do nó.  -->
+<!-- ------------------------------------------------------------------ -->
+<section id="boot" class="boot" aria-label="Abertura do Hyurax">
+  <aside class="boot-lado">
+    <div class="boot-marca">
+      <svg viewBox="0 0 64 64" aria-hidden="true"><g stroke="currentColor" stroke-width="3.6" stroke-linecap="round" opacity=".55"><line x1="18" y1="14" x2="18" y2="50"/><line x1="46" y1="14" x2="46" y2="50"/><line x1="18" y1="32" x2="46" y2="32"/></g><g fill="currentColor"><circle cx="18" cy="14" r="5"/><circle cx="18" cy="50" r="5"/><circle cx="46" cy="14" r="5"/><circle cx="46" cy="50" r="5"/><circle cx="18" cy="32" r="5.6"/><circle cx="46" cy="32" r="5.6"/></g></svg>
+      <div>
+        <p class="boot-palavra">HYURAX</p>
+        <p class="boot-sub">nó · carteira · minerador</p>
       </div>
-    </fieldset>
+    </div>
 
-    <form id="f-criar" class="pilha">
+    <ol class="boot-passos" id="boot-passos" hidden>
+      <li data-passo="1"><span class="boot-numero">1</span><span><b>Boas-vindas</b><small>o que este programa faz</small></span></li>
+      <li data-passo="2"><span class="boot-numero">2</span><span><b>Carteira</b><small>onde a recompensa cai</small></span></li>
+      <li data-passo="3"><span class="boot-numero">3</span><span><b>Guardar</b><small>o que não pode se perder</small></span></li>
+    </ol>
+
+    <ul class="boot-registro" id="boot-registro" aria-live="polite">
+      <li data-linha="nó">ligando o nó</li>
+      <li data-linha="cadeia">lendo a cadeia gravada</li>
+      <li data-linha="painel">abrindo o painel</li>
+    </ul>
+
+    <p class="boot-pe"><span id="boot-versao">Hyurax</span> · rede de TESTE · o HYUR daqui não tem valor</p>
+  </aside>
+
+  <div class="boot-palco">
+    <div class="boot-trilho" aria-hidden="true"><i id="boot-avanco"></i></div>
+
+    <!-- Partida: o que aparece enquanto o primeiro estado não chega. -->
+    <div class="boot-cena" id="cena-partida">
+      <p class="boot-etiqueta">Abrindo</p>
+      <h1 class="boot-titulo">Ligando o seu nó</h1>
+      <p class="boot-texto">Carregando a cadeia gravada neste computador e entrando na rede de teste. Em computador antigo isso leva alguns segundos.</p>
+      <p class="boot-erro erro" id="erro-partida" role="alert"></p>
+    </div>
+
+    <!-- Cadeado: o programa pede o código de 6 dígitos antes de mostrar algo. -->
+    <div class="boot-cena" id="cena-trava" hidden>
+      <p class="boot-etiqueta">Trancado</p>
+      <h1 class="boot-titulo">Digite o código do seu celular</h1>
+      <p class="boot-texto">Este programa está trancado com o código de 6 dígitos do aplicativo de autenticação. Enquanto ele não vier, nada do saldo nem da carteira aparece nesta tela. O nó continua ligado e minerando atrás desta tela: o cadeado guarda o que se vê e o que se manda, não a máquina.</p>
+      <form id="f-destravar" class="pilha">
+        <div class="campo">
+          <label for="codigo-trava">Código de 6 dígitos</label>
+          <input type="text" id="codigo-trava" name="codigo" class="codigo" inputmode="numeric" autocomplete="one-time-code" maxlength="7" spellcheck="false" placeholder="000000">
+        </div>
+        <p class="erro" id="erro-trava" role="alert"></p>
+        <div class="acoes esquerda"><button type="submit" id="destravar" class="principal" disabled>Destrancar</button></div>
+      </form>
+      <p class="boot-nota">Perdeu o celular? O cadeado mora no arquivo <b>seguranca.txt</b>, dentro da pasta de dados do programa. Apagar esse arquivo desliga o código e volta a valer só a senha da carteira.</p>
+    </div>
+
+    <!-- Passo 1: o que é isto. -->
+    <div class="boot-cena" id="cena-1" hidden>
+      <p class="boot-etiqueta">Passo 1 de 3</p>
+      <h1 class="boot-titulo" id="boot-titulo">Este computador vira um nó do Hyurax</h1>
+      <p class="boot-texto">Nada de servidor, nada de conta em site. O programa guarda a cadeia aqui, conversa com os outros nós e usa a sua CPU para procurar blocos.</p>
+      <dl class="fatos">
+        <div><dt>O que a máquina faz</dt><dd>Resolve uma multiplicação de matrizes que a rede inteira confere. É o trabalho que prova o bloco.</dd></div>
+        <div><dt>O que você ganha</dt><dd>Cada bloco achado paga uma recompensa em HYUR, que cai direto na sua carteira.</dd></div>
+        <div><dt>Quanto custa</dt><dd>Energia. O programa estima os watts e o custo do mês, e você limita quanto da CPU ele pode tomar.</dd></div>
+      </dl>
+      <p class="aviso-teste"><b>REDE DE TESTE.</b> A rede pública ainda não existe e o HYUR minerado aqui não tem valor. Não há venda, pré-venda nem promessa de lucro.</p>
+      <div class="acoes"><button type="button" id="boot-comecar" class="principal">Continuar</button></div>
+    </div>
+
+    <!-- Passo 2: criar ou importar a carteira. -->
+    <div class="boot-cena" id="cena-2" hidden>
+      <p class="boot-etiqueta">Passo 2 de 3</p>
+      <h1 class="boot-titulo">Sua carteira</h1>
+      <p class="boot-texto">A recompensa precisa de um endereço para cair. Crie uma carteira nova neste computador, ou traga a que você já tem.</p>
+
+      <fieldset class="caminhos" id="caminhos">
+        <legend class="rotulo-campo">Como você quer começar</legend>
+        <div class="segmentos">
+          <label for="c-criar"><input type="radio" name="caminho" id="c-criar" value="criar" autocomplete="off" checked><span>Criar carteira nova</span></label>
+          <label for="c-importar"><input type="radio" name="caminho" id="c-importar" value="importar" autocomplete="off"><span>Já tenho uma carteira</span></label>
+        </div>
+      </fieldset>
+
+      <form id="f-criar" class="pilha">
+        <div class="campo">
+          <label for="senha">Senha da carteira</label>
+          <div class="com-botao">
+            <input type="password" id="senha" name="senha" autocomplete="new-password" spellcheck="false" aria-describedby="r-tamanho">
+            <button type="button" id="ver-senha" class="secundario" aria-label="Mostrar as senhas">mostrar</button>
+          </div>
+        </div>
+        <div class="forca" id="forca-caixa" hidden>
+          <div class="forca-trilho" aria-hidden="true"><i id="forca-barra"></i></div>
+          <p class="forca-texto" id="forca-texto">—</p>
+        </div>
+        <div class="campo">
+          <label for="senha2">Repita a senha</label>
+          <input type="password" id="senha2" name="senha2" autocomplete="new-password" spellcheck="false" aria-describedby="r-iguais">
+        </div>
+        <ul class="regras">
+          <li id="r-tamanho">0 de no mínimo 10 caracteres</li>
+          <li id="r-iguais">Repita a senha no segundo campo</li>
+        </ul>
+        <p class="nota">A senha não é pedida para minerar, só para enviar HYUR. Ela não vai para lugar nenhum: fica só neste computador, embaralhada dentro do arquivo da carteira.</p>
+        <p class="texto dica" id="dica-criar" hidden>A senha é embaralhada de propósito devagar, para ninguém adivinhar por tentativa. Em computador antigo isso leva até um minuto.</p>
+        <p class="erro" id="erro-criar" role="alert"></p>
+        <div class="acoes"><button type="submit" id="criar" class="principal" disabled>Criar carteira</button></div>
+      </form>
+
+      <form id="f-importar" class="pilha" hidden>
+        <div class="campo">
+          <label for="arquivo">Escolha o arquivo carteira.txt</label>
+          <input type="file" id="arquivo" accept=".txt,text/plain">
+        </div>
+        <div class="campo">
+          <label for="conteudo">Ou cole aqui o conteúdo do arquivo</label>
+          <textarea id="conteudo" name="conteudo" rows="6" spellcheck="false" autocomplete="off" autocapitalize="off" placeholder="formato=HYURAX-CARTEIRA-v2&#10;endereco=…"></textarea>
+        </div>
+        <p class="nota">Minerar só precisa do endereço. A senha continua sendo a mesma de quando a carteira foi criada, e só é pedida para enviar HYUR.</p>
+        <p class="erro" id="erro-importar" role="alert"></p>
+        <div class="acoes"><button type="submit" id="importar" class="principal" disabled>Importar</button></div>
+      </form>
+    </div>
+
+    <!-- Passo 3: o endereço, o aviso que não pode passar batido, e a largada. -->
+    <div class="boot-cena" id="cena-3" hidden>
+      <p class="boot-etiqueta">Passo 3 de 3</p>
+      <h1 class="boot-titulo" id="pronto-titulo" tabindex="-1">Carteira pronta</h1>
+      <div class="pronto-grade">
+        <div class="pilha">
+          <div class="campo">
+            <span class="rotulo-campo">Seu endereço</span>
+            <p class="endereco-grande" id="pronto-endereco"></p>
+          </div>
+          <div class="acoes esquerda">
+            <button type="button" id="pronto-copiar" class="secundario">Copiar endereço</button>
+            <button type="button" id="abrir-pasta-carteira" class="secundario">Abrir a pasta</button>
+          </div>
+          <p class="nota" id="pronto-pasta"></p>
+        </div>
+        <div class="pronto-qr">
+          <div id="pronto-qr" class="qr" aria-hidden="true"></div>
+          <p class="nota">Quem for te pagar aponta a câmera para este código.</p>
+        </div>
+      </div>
+      <p class="aviso-forte">Guarde a senha e uma cópia do arquivo <b>carteira.txt</b> fora deste computador. Sem os dois, o saldo se perde para sempre — nem o projeto consegue recuperar.</p>
+      <label class="chave-liga" for="pronto-entendi"><input type="checkbox" id="pronto-entendi" autocomplete="off"><span>Anotei a senha e guardei uma cópia do arquivo</span></label>
+      <p class="erro" id="erro-pronto" role="alert"></p>
+      <div class="acoes">
+        <button type="button" id="so-olhar" class="secundario">Entrar sem minerar</button>
+        <button type="button" id="comecar" class="principal" disabled>Começar a minerar</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Enviar HYUR: conferir, assinar, e o comprovante. -->
+<dialog id="enviar" class="dialogo" aria-labelledby="enviar-titulo">
+  <header class="rotulo"><h2 id="enviar-titulo">Enviar HYUR</h2><span class="rotulo-fim"><span id="enviar-saldo">—</span></span></header>
+
+  <form class="dialogo-corpo pilha" id="f-enviar">
+    <div class="campo">
+      <label for="en-para">Endereço de destino</label>
+      <textarea id="en-para" name="para" rows="2" spellcheck="false" autocomplete="off" autocapitalize="off" placeholder="40 dígitos hexadecimais"></textarea>
+    </div>
+    <div class="dois">
       <div class="campo">
-        <label for="senha">Senha</label>
+        <label for="en-valor">Valor (HYUR)</label>
         <div class="com-botao">
-          <input type="password" id="senha" name="senha" autocomplete="new-password" spellcheck="false" aria-describedby="r-tamanho">
-          <button type="button" id="ver-senha" class="secundario" aria-label="Mostrar as senhas">mostrar</button>
+          <input type="text" id="en-valor" name="valor" inputmode="decimal" autocomplete="off" spellcheck="false" placeholder="0.00000000">
+          <button type="button" id="en-tudo" class="secundario">tudo</button>
         </div>
       </div>
       <div class="campo">
-        <label for="senha2">Repita a senha</label>
-        <input type="password" id="senha2" name="senha2" autocomplete="new-password" spellcheck="false" aria-describedby="r-iguais">
+        <label for="en-taxa">Taxa (HYUR)</label>
+        <input type="text" id="en-taxa" name="taxa" inputmode="decimal" autocomplete="off" spellcheck="false" placeholder="0.00000000">
       </div>
-      <ul class="regras">
-        <li id="r-tamanho">0 de no mínimo 10 caracteres</li>
-        <li id="r-iguais">Repita a senha no segundo campo</li>
-      </ul>
-      <p class="nota">A senha não é pedida para minerar, só para enviar HYUR. Anote num lugar seguro: ninguém consegue recuperá-la.</p>
-      <p class="texto dica" id="dica-criar" hidden>A senha é embaralhada de propósito devagar, para ninguém adivinhar por tentativa. Em computador antigo isso leva até um minuto.</p>
-      <p class="erro" id="erro-criar" role="alert"></p>
-      <div class="acoes"><button type="submit" id="criar" class="principal" disabled>Criar carteira</button></div>
-    </form>
-
-    <form id="f-importar" class="pilha" hidden>
-      <div class="campo">
-        <label for="arquivo">Escolha o arquivo carteira.txt</label>
-        <input type="file" id="arquivo" accept=".txt,text/plain">
-      </div>
-      <div class="campo">
-        <label for="conteudo">Ou cole aqui o conteúdo do arquivo</label>
-        <textarea id="conteudo" name="conteudo" rows="6" spellcheck="false" autocomplete="off" autocapitalize="off" placeholder="formato=HYURAX-CARTEIRA-v2&#10;endereco=…"></textarea>
-      </div>
-      <p class="nota">Minerar só precisa do endereço. A senha continua sendo a mesma de quando a carteira foi criada e só é pedida para enviar HYUR.</p>
-      <p class="erro" id="erro-importar" role="alert"></p>
-      <div class="acoes"><button type="submit" id="importar" class="principal" disabled>Importar</button></div>
-    </form>
-  </div>
-
-  <div class="dialogo-corpo pilha" id="boas-pronto" hidden>
-    <h2 class="titulo" id="pronto-titulo" tabindex="-1">Carteira pronta</h2>
-    <div class="campo">
-      <span class="rotulo-campo">Seu endereço</span>
-      <p class="endereco-grande" id="pronto-endereco"></p>
     </div>
-    <p class="aviso-forte" id="pronto-aviso">Guarde a senha e uma cópia do arquivo carteira.txt. Sem os dois, o saldo se perde para sempre. Ninguém consegue recuperar.</p>
-    <p class="nota" id="pronto-pasta"></p>
-    <p class="erro" id="erro-pronto" role="alert"></p>
+    <p class="nota">Enviar é definitivo: não existe desfazer nem estornar. Confira o endereço com calma — HYUR mandado para o endereço errado fica com quem o recebeu.</p>
+    <p class="erro" id="erro-enviar" role="alert"></p>
     <div class="acoes">
-      <button type="button" id="abrir-pasta-carteira" class="secundario">Abrir a pasta da carteira</button>
-      <button type="button" id="comecar" class="principal">Começar a minerar</button>
+      <button type="button" id="enviar-fechar" class="secundario">Cancelar</button>
+      <button type="submit" id="en-conferir" class="principal">Conferir</button>
+    </div>
+  </form>
+
+  <div class="dialogo-corpo pilha" id="enviar-conferir" hidden>
+    <h3 class="rotulo-campo">Confira antes de assinar</h3>
+    <dl class="pares conferencia">
+      <div><dt>Vai para</dt><dd id="cf-para" class="num quebra">—</dd></div>
+      <div><dt>Valor</dt><dd><span id="cf-valor" class="num">—</span> HYUR</dd></div>
+      <div><dt>Taxa</dt><dd><span id="cf-taxa" class="num">—</span> HYUR</dd></div>
+      <div><dt>Sai da carteira</dt><dd><span id="cf-total" class="num">—</span> HYUR</dd></div>
+      <div><dt>Sobra depois</dt><dd><span id="cf-sobra" class="num">—</span> HYUR</dd></div>
+    </dl>
+    <div class="campo">
+      <label for="en-senha">Senha da carteira</label>
+      <input type="password" id="en-senha" name="senha" autocomplete="current-password" spellcheck="false">
+    </div>
+    <div class="campo" id="en-codigo-caixa" hidden>
+      <label for="en-codigo">Código de 6 dígitos</label>
+      <input type="text" id="en-codigo" name="codigo" class="codigo" inputmode="numeric" autocomplete="one-time-code" maxlength="7" spellcheck="false" placeholder="000000">
+    </div>
+    <p class="texto dica" id="dica-enviar" hidden>Abrindo a carteira. A senha é embaralhada devagar de propósito; em computador antigo isso leva até um minuto.</p>
+    <p class="erro" id="erro-assinar" role="alert"></p>
+    <div class="acoes">
+      <button type="button" id="en-voltar" class="secundario">Voltar</button>
+      <button type="button" id="en-assinar" class="principal">Assinar e enviar</button>
     </div>
   </div>
+
+  <div class="dialogo-corpo pilha" id="enviar-pronto" hidden>
+    <h3 class="rotulo-campo">Enviado</h3>
+    <p class="texto" id="en-resumo">—</p>
+    <div class="campo">
+      <span class="rotulo-campo">Identificador da transação</span>
+      <p class="endereco-grande" id="en-txid"></p>
+    </div>
+    <p class="nota">Ela está esperando num bloco. Assim que algum minerador a incluir, o saldo dos dois lados muda. Até lá, ela aparece como <b>esperando</b> na lista de movimentos.</p>
+    <div class="acoes"><button type="button" id="en-terminar" class="principal">Fechar</button></div>
+  </div>
+</dialog>
+
+<!-- Receber: o endereço em letra grande e o QR Code. -->
+<dialog id="receber" class="dialogo" aria-labelledby="receber-titulo">
+  <header class="rotulo"><h2 id="receber-titulo">Receber HYUR</h2><span class="rotulo-fim"><span>rede de teste</span></span></header>
+  <div class="dialogo-corpo pilha">
+    <p class="texto">Este é o seu endereço. Ele pode ser mostrado para qualquer pessoa: serve só para receber.</p>
+    <div class="pronto-grade">
+      <div class="pilha">
+        <p class="endereco-grande" id="rc-endereco">—</p>
+        <div class="acoes esquerda"><button type="button" id="rc-copiar" class="secundario">Copiar endereço</button></div>
+      </div>
+      <div class="pronto-qr"><div id="rc-qr" class="qr" aria-hidden="true"></div></div>
+    </div>
+    <p class="nota">Nunca mostre a senha nem o arquivo carteira.txt. O endereço sozinho não deixa ninguém gastar nada.</p>
+    <div class="acoes"><button type="button" id="rc-fechar" class="secundario">Fechar</button></div>
+  </div>
+</dialog>
+
+<!-- Segundo fator: o código de 6 dígitos do aplicativo de autenticação. -->
+<dialog id="seguranca" class="dialogo" aria-labelledby="seg-titulo">
+  <header class="rotulo"><h2 id="seg-titulo">Segurança</h2><span class="rotulo-fim"><span id="seg-estado">—</span></span></header>
+
+  <div class="dialogo-corpo pilha" id="seg-desligado">
+    <p class="texto">Ligando o segundo fator, enviar HYUR passa a pedir um código de 6 dígitos que só existe no seu celular. Funciona com <b>Google Authenticator</b>, Aegis, 2FAS, Authy — qualquer um que leia um QR Code.</p>
+    <dl class="fatos">
+      <div><dt>Protege contra</dt><dd>quem usa este computador e descobre (ou vê você digitar) a sua senha</dd></div>
+      <div><dt>Não protege contra</dt><dd>quem copia a pasta de dados: o segredo vai junto no arquivo</dd></div>
+      <div><dt>Onde fica</dt><dd>seguranca.txt, ao lado da carteira. Apagar esse arquivo desliga o código</dd></div>
+    </dl>
+    <p class="erro" id="erro-seg" role="alert"></p>
+    <div class="acoes"><button type="button" id="seg-ligar" class="principal">Ligar o segundo fator</button></div>
+  </div>
+
+  <div class="dialogo-corpo pilha" id="seg-ligando" hidden>
+    <h3 class="rotulo-campo">1 · Leia o código no aplicativo</h3>
+    <div class="pronto-grade">
+      <div class="pronto-qr"><div id="seg-qr" class="qr" aria-hidden="true"></div></div>
+      <div class="pilha">
+        <p class="nota">Não consegue ler o QR? Digite esta chave no aplicativo, do jeito que está:</p>
+        <p class="caminho" id="seg-segredo">—</p>
+        <p class="nota">Tipo: baseado em tempo · 6 dígitos · 30 segundos.</p>
+      </div>
+    </div>
+    <h3 class="rotulo-campo">2 · Confirme com o código que apareceu</h3>
+    <form id="f-seg-confirmar" class="pilha">
+      <div class="campo">
+        <label for="seg-codigo">Código de 6 dígitos</label>
+        <input type="text" id="seg-codigo" name="codigo" class="codigo" inputmode="numeric" autocomplete="one-time-code" maxlength="7" spellcheck="false" placeholder="000000">
+      </div>
+      <label class="chave-liga" for="seg-trava-nova"><input type="checkbox" id="seg-trava-nova" autocomplete="off"><span>Pedir também o código ao abrir o programa</span></label>
+      <p class="erro" id="erro-seg-confirmar" role="alert"></p>
+      <div class="acoes">
+        <button type="button" id="seg-cancelar" class="secundario">Cancelar</button>
+        <button type="submit" id="seg-confirmar" class="principal" disabled>Confirmar</button>
+      </div>
+    </form>
+    <p class="aviso-teste">Guarde a chave acima num lugar seguro. Trocando de celular sem ela, o jeito de voltar é apagar o arquivo seguranca.txt neste computador.</p>
+  </div>
+
+  <div class="dialogo-corpo pilha" id="seg-ligado" hidden>
+    <p class="texto">O segundo fator está ligado. Para mudar qualquer coisa aqui, digite o código do celular — é assim que ele protege.</p>
+    <form id="f-seg-mudar" class="pilha">
+      <label class="chave-liga" for="seg-exige"><input type="checkbox" id="seg-exige" autocomplete="off" checked><span>Pedir o código para enviar HYUR</span></label>
+      <label class="chave-liga" for="seg-trava"><input type="checkbox" id="seg-trava" autocomplete="off"><span>Pedir o código ao abrir o programa</span></label>
+      <div class="campo">
+        <label for="seg-codigo-mudar">Código de 6 dígitos</label>
+        <input type="text" id="seg-codigo-mudar" name="codigo" class="codigo" inputmode="numeric" autocomplete="one-time-code" maxlength="7" spellcheck="false" placeholder="000000">
+      </div>
+      <p class="erro" id="erro-seg-mudar" role="alert"></p>
+      <div class="acoes esquerda"><button type="button" id="seg-desligar" class="secundario">Desligar o segundo fator</button></div>
+      <div class="acoes"><button type="submit" id="seg-salvar" class="principal">Salvar</button></div>
+    </form>
+  </div>
+
+  <div class="dialogo-corpo"><div class="acoes"><button type="button" id="seg-fechar" class="secundario">Fechar</button></div></div>
 </dialog>
 
 <!-- Ajustes: fecha com Esc e com o botão Fechar. -->
@@ -206,6 +459,19 @@
       <p class="nota" id="sementes-dica">Os nós que este programa procura para entrar na rede. Separe por vírgula, no formato IP:PORTA.</p>
       <p class="salvo" id="sementes-ok" role="status"></p>
       <p class="erro" id="sementes-erro" role="alert"></p>
+    </form>
+
+    <form class="grupo pilha" id="f-maquinas">
+      <div class="campo">
+        <label for="maquinas-lista">Minhas máquinas</label>
+        <div class="com-botao">
+          <input type="text" id="maquinas-lista" name="lista" autocomplete="off" spellcheck="false" autocapitalize="off" placeholder="192.168.0.12:8800, 192.168.0.30:8800" aria-describedby="maquinas-dica">
+          <button type="submit" id="maquinas-salvar" class="secundario">Salvar</button>
+        </div>
+      </div>
+      <p class="nota" id="maquinas-dica">Os outros computadores seus que rodam o Hyurax. O painel soma o ritmo, os núcleos e a energia de todos. Em cada máquina, ligue “ver no celular” para ela responder — o endereço aparece lá.</p>
+      <p class="salvo" id="maquinas-ok" role="status"></p>
+      <p class="erro" id="maquinas-erro" role="alert"></p>
     </form>
 
     <section class="grupo pilha" aria-labelledby="a-desempenho-titulo">
@@ -246,7 +512,7 @@
 
     <section class="grupo pilha" aria-labelledby="a-celular-titulo">
       <h3 class="rotulo-campo" id="a-celular-titulo">Ver no celular</h3>
-      <p class="nota">Ligando isto, qualquer aparelho no mesmo Wi-Fi abre este painel só para olhar. Ninguém de fora manda nada: os comandos continuam só neste computador.</p>
+      <p class="nota">Ligando isto, qualquer aparelho no mesmo Wi-Fi abre este painel só para olhar. Ninguém de fora manda nada: os comandos continuam só neste computador. É também assim que as suas outras máquinas aparecem no painel “Minhas máquinas”.</p>
       <label class="chave-liga" for="a-na-rede"><input type="checkbox" id="a-na-rede" autocomplete="off"><span>Mostrar o painel na rede local</span></label>
       <div id="a-qr-caixa" hidden>
         <div id="a-qr" class="qr" aria-hidden="true"></div>
@@ -288,7 +554,7 @@
 
 <!-- O trabalho que a máquina está fazendo de verdade, sem enfeite. -->
 <dialog id="trabalho" class="dialogo largo" aria-labelledby="trabalho-titulo">
-  <header class="rotulo"><h2 id="trabalho-titulo">O trabalho desta máquina</h2><span id="t-estado">parado</span></header>
+  <header class="rotulo"><h2 id="trabalho-titulo">O trabalho desta máquina</h2><span class="rotulo-fim"><span id="t-estado">parado</span></span></header>
   <div class="dialogo-corpo pilha">
     <p class="texto">Minerar no Hyurax não é só embaralhar números: cada bloco carrega uma conta grande que a rede inteira confere. Hoje essa conta é <b>multiplicação de matrizes</b>, o cálculo que está por baixo de simulação, engenharia e treino de inteligência artificial.</p>
     <div class="trabalho-grade">
@@ -318,7 +584,7 @@
 
 <!-- Quais painéis ficam abertos, em que ordem, e quais viram janela à parte. -->
 <dialog id="paineis" class="dialogo" aria-labelledby="paineis-titulo">
-  <header class="rotulo"><h2 id="paineis-titulo">Painéis</h2><span>a janela é sua</span></header>
+  <header class="rotulo"><h2 id="paineis-titulo">Painéis</h2><span class="rotulo-fim"><span>a janela é sua</span></span></header>
   <div class="dialogo-corpo pilha">
     <p class="nota">Marque o que quer ver, use as setas para mudar a ordem, e o botão de destacar para abrir um painel numa janela separada.</p>
     <ul class="lista-paineis" id="lista-paineis"></ul>

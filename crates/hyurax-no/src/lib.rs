@@ -18,8 +18,12 @@
 //! o nó guarda a própria identidade em `PASTA/no.chave`.
 
 pub mod carteira;
+mod envio;
+mod maquinas;
 pub mod painel;
+mod seguranca;
 mod senha;
+pub mod totp;
 
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
