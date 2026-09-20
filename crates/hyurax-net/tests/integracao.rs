@@ -289,6 +289,118 @@ fn gasto_duplo_no_mempool_nao_passa() {
     assert_eq!(no.mempool_len(), 1, "o mempool tem mais de uma versão do mesmo gasto");
 }
 
+/// Uma conta com saldo maduro, e uma fábrica de transferências assinadas por ela.
+fn conta_com_saldo() -> (No, [u8; 20], u64, impl Fn(u64, u64) -> hyurax_tx::Transfer) {
+    let p = ParametrosRede::REGTEST;
+    let segredo = [0x21u8; 32];
+    let dono = hyurax_crypto::address_from_ed25519_pubkey(&hyurax_crypto::ed25519_public_key(&segredo));
+    let no = No::novo(regtest_com(p.coinbase_maturity + 1, dono));
+    let saldo = no.chain.state.balance(&dono, &HYUR);
+    assert!(saldo > 0, "a conta precisa de saldo maduro");
+    let assinar = move |nonce: u64, valor: u64| {
+        let saida = Output { recipient: [0x31u8; 20], asset_id: HYUR, amount: valor };
+        sign_transfer_outputs(&segredo, &p.magic, dono, vec![saida], 0, nonce).unwrap()
+    };
+    (no, dono, saldo, assinar)
+}
+
+#[test]
+fn nonce_com_buraco_nao_entra_no_mempool() {
+    // Lógica pura, sem socket. O mempool é o que o minerador põe no bloco sem
+    // conferir de novo: um nonce fora de sequência viraria bloco recusado, e a
+    // rodada inteira de mineração iria fora.
+    let (mut no, _dono, _saldo, assinar) = conta_com_saldo();
+    assert_eq!(no.adicionar_tx(assinar(0, 1_000)), Ok(true), "o nonce 0 devia entrar");
+    assert_eq!(no.adicionar_tx(assinar(2, 1_000)), Ok(false), "o nonce 2 pulou o 1 e entrou");
+    assert_eq!(no.adicionar_tx(assinar(9, 1_000)), Ok(false), "um nonce distante entrou");
+    assert_eq!(no.mempool_len(), 1, "o mempool guardou transferência que não dá para minerar");
+    // Fechado o buraco, a fila anda.
+    assert_eq!(no.adicionar_tx(assinar(1, 1_000)), Ok(true), "o nonce 1 devia entrar");
+    assert_eq!(no.adicionar_tx(assinar(2, 1_000)), Ok(true), "agora o 2 é o seguinte");
+    assert_eq!(no.mempool_len(), 3);
+}
+
+#[test]
+fn saldo_e_contado_somando_a_fila_inteira() {
+    let (mut no, _dono, saldo, assinar) = conta_com_saldo();
+    // Duas que, sozinhas, cabem; juntas, não.
+    let metade_e_pouco = saldo / 2 + 10;
+    assert_eq!(no.adicionar_tx(assinar(0, metade_e_pouco)), Ok(true), "a primeira devia entrar");
+    assert_eq!(
+        no.adicionar_tx(assinar(1, metade_e_pouco)),
+        Ok(false),
+        "duas que somadas passam do saldo entraram juntas no mempool"
+    );
+    assert_eq!(no.mempool_len(), 1);
+    // O que cabe no que sobrou entra.
+    let sobra = saldo - metade_e_pouco;
+    assert_eq!(no.adicionar_tx(assinar(1, sobra)), Ok(true), "o que cabia na sobra foi recusado");
+    assert_eq!(no.mempool_len(), 2);
+    // E agora não cabe mais nada, nem um.
+    assert_eq!(no.adicionar_tx(assinar(2, 1)), Ok(false), "entrou gasto sem saldo nenhum sobrando");
+}
+
+#[test]
+fn a_fila_do_mempool_sempre_vira_um_bloco_valido() {
+    // A promessa que o mempool faz: dá para minerar tudo o que está nele, na
+    // ordem em que está. Este teste cobra a promessa de ponta a ponta.
+    let (mut no, _dono, saldo, assinar) = conta_com_saldo();
+    let pedaco = saldo / 4;
+    for nonce in 0..3 {
+        assert_eq!(no.adicionar_tx(assinar(nonce, pedaco)), Ok(true), "nonce {nonce}");
+    }
+    // Lixo que não pode encostar na fila: buraco e gasto acima do que sobrou.
+    assert_eq!(no.adicionar_tx(assinar(7, 1)), Ok(false));
+    assert_eq!(no.adicionar_tx(assinar(3, saldo)), Ok(false));
+
+    let p = ParametrosRede::REGTEST;
+    let ts = no.chain.tip().unwrap().header.timestamp + p.target_spacing;
+    let bloco = no.chain.mine(MINERADOR, no.mempool_ordenado(), Some(ts), 2).unwrap();
+    assert_eq!(bloco.transactions.len(), 4, "coinbase mais as três da fila");
+    assert_eq!(no.aceitar_bloco(bloco), Ok(true), "o bloco montado com o mempool foi recusado");
+    assert_eq!(no.mempool_len(), 0, "o que entrou no bloco continua no mempool");
+}
+
+#[test]
+fn bloco_que_derruba_o_comeco_da_fila_leva_o_rabo_junto() {
+    let p = ParametrosRede::REGTEST;
+    let segredo = [0x21u8; 32];
+    let dono = hyurax_crypto::address_from_ed25519_pubkey(&hyurax_crypto::ed25519_public_key(&segredo));
+    // Só o primeiro bloco paga o dono: assim o saldo dele é exatamente uma
+    // recompensa, e nenhuma outra amadurece no meio do teste para confundir a
+    // conta.
+    let mut chain = Chain::nova(p).unwrap();
+    for i in 0..=p.coinbase_maturity {
+        let ts = chain.tip().unwrap().header.timestamp + p.target_spacing;
+        let quem = if i == 0 { dono } else { MINERADOR };
+        let bloco = chain.mine(quem, vec![], Some(ts), 2).unwrap();
+        chain.accept_block(bloco, Some(ts + 10)).unwrap();
+    }
+    let mut no = No::novo(chain);
+    let saldo = no.chain.state.balance(&dono, &HYUR);
+    assert!(saldo > 0, "a conta precisa de saldo maduro");
+    let assinar = |nonce: u64, valor: u64, destino: [u8; 20]| {
+        let saida = Output { recipient: destino, asset_id: HYUR, amount: valor };
+        sign_transfer_outputs(&segredo, &p.magic, dono, vec![saida], 0, nonce).unwrap()
+    };
+    assert_eq!(no.adicionar_tx(assinar(0, saldo / 4, [0x31u8; 20])), Ok(true));
+    assert_eq!(no.adicionar_tx(assinar(1, saldo / 4, [0x31u8; 20])), Ok(true));
+    assert_eq!(no.mempool_len(), 2);
+
+    // Outro nó minerou uma transferência diferente com o mesmo nonce 0, e ela
+    // gasta o saldo inteiro: a do nonce 0 daqui fica obsoleta, e a do nonce 1
+    // deixa de ter com que pagar.
+    let espelho = no.chain.clone();
+    let ts = espelho.tip().unwrap().header.timestamp + p.target_spacing;
+    let bloco = espelho.mine(MINERADOR, vec![assinar(0, saldo, [0x99u8; 20])], Some(ts), 2).unwrap();
+    assert_eq!(no.aceitar_bloco(bloco), Ok(true));
+
+    assert_eq!(no.chain.state.balance(&dono, &HYUR), 0, "o bloco devia ter gasto o saldo todo");
+    assert_eq!(no.mempool_len(), 0, "sobrou no mempool transferência que já não dá para pagar");
+    // E o nó continua sabendo dizer qual é o próximo nonce livre.
+    assert_eq!(no.proximo_nonce(&dono), 1);
+}
+
 // =============================================================== REANIMAÇÃO
 
 #[test]

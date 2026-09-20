@@ -11,7 +11,7 @@ use std::collections::BTreeMap;
 use hyurax_block::Block;
 use hyurax_chain::Chain;
 use hyurax_consensus::{U512, alvo_de_bits, target_to_work};
-use hyurax_tx::{Endereco, Transfer, Tx};
+use hyurax_tx::{ASSET_ID_LEN, Endereco, Transfer, Tx};
 use hyurax_wire::{Hash, MAX_GET_BLOCKS, MAX_HEADERS, Message};
 
 /// Teto de blocos guardados que ainda não encaixam na cadeia.
@@ -74,12 +74,11 @@ impl No {
 
     /// O próximo nonce livre de uma conta: o da cadeia, ou depois do último que
     /// já espera no mempool.
+    ///
+    /// É o mesmo número que a entrada do mempool exige, de propósito: quem
+    /// assina uma transferência com este nonce entra sem buraco.
     pub fn proximo_nonce(&self, endereco: &hyurax_tx::Endereco) -> u64 {
-        let da_cadeia = self.chain.state.next_nonce(endereco);
-        self.mempool
-            .range((*endereco, 0)..=(*endereco, u64::MAX))
-            .next_back()
-            .map_or(da_cadeia, |((_, n), _)| da_cadeia.max(n.saturating_add(1)))
+        self.compromisso(endereco).0
     }
 
     /// Quantas transações há no mempool.
@@ -87,39 +86,73 @@ impl No {
         self.mempool.len()
     }
 
-    /// Tenta pôr uma transferência no mempool.
+    /// O que a fila de um remetente já compromete: o próximo nonce livre e
+    /// quanto de cada ativo as transferências guardadas já prometem gastar.
     ///
-    /// - `Ok(true)`: nova e aceita (vale difundir).
-    /// - `Ok(false)`: já conhecida, ou o lugar `(remetente, nonce)` já está
-    ///   tomado — não é nova, não difunde. É aqui que o gasto duplo no mempool
-    ///   para: a segunda transferência com o mesmo `(remetente, nonce)` não
-    ///   desaloja a primeira.
-    /// - `Err`: inválida de verdade (assinatura, ativo, saldo) — o par que
-    ///   mandou se comportou mal.
-    pub fn adicionar_tx(&mut self, tx: Transfer) -> Result<bool, Malicia> {
-        tx.check_signature(&self.magic()).map_err(Malicia)?;
-        let chave = (tx.sender, tx.nonce);
-
-        // Precisa poder entrar sobre o estado confirmado: nonce em sequência e
-        // saldo que cobre. Sem isso, o mempool viraria depósito de lixo.
-        let esperado = self.chain.state.next_nonce(&tx.sender);
-        if tx.nonce < esperado {
-            return Ok(false); // já passou; nem é gasto duplo, é obsoleta
-        }
-        let custos = tx.costs().map_err(|e| Malicia(e.to_string()))?;
-        for (ativo, custo) in &custos {
-            if self.chain.state.balance(&tx.sender, ativo) < *custo {
-                return Err(Malicia("saldo insuficiente para o mempool".into()));
+    /// A fila é lida em ordem e **para no primeiro buraco**. Com a regra de
+    /// entrada abaixo ela nunca tem buraco; parar aqui é a garantia de que uma
+    /// fila estragada não vira um bloco inválido.
+    fn compromisso(&self, remetente: &Endereco) -> (u64, BTreeMap<[u8; ASSET_ID_LEN], u64>) {
+        let mut proximo = self.chain.state.next_nonce(remetente);
+        let mut prometido: BTreeMap<[u8; ASSET_ID_LEN], u64> = BTreeMap::new();
+        for ((_, nonce), tx) in self.mempool.range((*remetente, 0)..=(*remetente, u64::MAX)) {
+            if *nonce != proximo {
+                break;
+            }
+            proximo = nonce.saturating_add(1);
+            let Ok(custos) = tx.costs() else { break };
+            for (ativo, custo) in custos {
+                let atual = prometido.get(&ativo).copied().unwrap_or(0);
+                prometido.insert(ativo, atual.saturating_add(custo));
             }
         }
+        (proximo, prometido)
+    }
 
-        if self.mempool.contains_key(&chave) {
-            // O lugar (remetente, nonce) já está tomado. Seja a mesma
-            // transação de novo ou um gasto duplo, não é novidade e não
-            // desaloja a que chegou primeiro: devolve "não é nova".
+    /// Tenta pôr uma transferência no mempool.
+    ///
+    /// O mempool não é uma sala de espera qualquer: o que está nele é o que o
+    /// minerador vai pôr no bloco, em ordem, sem conferir de novo. Então tudo
+    /// aqui dentro precisa **poder ser aplicado em sequência**, e a entrada
+    /// cobra as duas coisas que o estado cobraria depois:
+    ///
+    /// - **nonce sem buraco.** Só entra o nonce exatamente seguinte ao que já
+    ///   está comprometido (cadeia + fila). Aceitar o nonce 5 com a conta no 0
+    ///   daria um bloco que o consenso recusa, e a rodada de mineração inteira
+    ///   iria fora.
+    /// - **saldo somado, não saldo por transferência.** Duas transferências que
+    ///   gastam o saldo inteiro passam uma a uma e não cabem juntas. O custo é
+    ///   somado com o que a fila do mesmo remetente já prometeu.
+    ///
+    /// - `Ok(true)`: nova e aceita (vale difundir).
+    /// - `Ok(false)`: não entra agora — obsoleta, lugar `(remetente, nonce)`
+    ///   tomado, buraco na fila, ou não cabe junto com o que já espera. Nada
+    ///   disso prova má-fé: o par pode ter visto uma transferência que ainda
+    ///   não chegou aqui. Não difunde e não pune.
+    /// - `Err`: inválida de verdade (assinatura, ativo, ou valor que nem
+    ///   sozinho caberia no saldo) — o par que mandou se comportou mal.
+    pub fn adicionar_tx(&mut self, tx: Transfer) -> Result<bool, Malicia> {
+        tx.check_signature(&self.magic()).map_err(Malicia)?;
+        let custos = tx.costs().map_err(|e| Malicia(e.to_string()))?;
+        let (proximo, prometido) = self.compromisso(&tx.sender);
+        // Antes do lugar livre é obsoleta; depois dele é buraco. O lugar tomado
+        // cai no primeiro caso, então o gasto duplo continua parando aqui: a
+        // segunda transferência com o mesmo (remetente, nonce) não desaloja a
+        // primeira.
+        if tx.nonce != proximo {
             return Ok(false);
         }
-        self.mempool.insert(chave, tx);
+        for (ativo, custo) in &custos {
+            let saldo = self.chain.state.balance(&tx.sender, ativo);
+            if saldo < *custo {
+                return Err(Malicia("saldo insuficiente para o mempool".into()));
+            }
+            let livre = saldo.saturating_sub(prometido.get(ativo).copied().unwrap_or(0));
+            if livre < *custo {
+                return Ok(false); // cabe sozinha, não cabe com a fila
+            }
+        }
+        self.mempool.insert((tx.sender, tx.nonce), tx);
         Ok(true)
     }
 
@@ -135,18 +168,23 @@ impl No {
         Ok(avancou)
     }
 
-    /// Tira do mempool o que o estado confirmado já tornou obsoleto (nonce
-    /// consumido) ou impagável (saldo).
+    /// Refaz a fila sobre o estado confirmado novo.
+    ///
+    /// Um bloco pode ter consumido o nonce de uma transferência que estava aqui
+    /// (ou gasto o saldo dela), e aí o resto da fila daquele remetente deixa de
+    /// caber. Em vez de conferir cada uma sozinha, a fila é reconstruída pela
+    /// mesma porta de entrada, em ordem de `(remetente, nonce)`: o que ainda
+    /// encaixa fica, e o rabo que não encaixa mais cai fora. Assim o mempool
+    /// volta a valer a promessa de que dá para minerar tudo o que está nele, na
+    /// ordem em que está.
     fn limpar_mempool(&mut self) {
-        let state = &self.chain.state;
-        self.mempool.retain(|(sender, nonce), tx| {
-            if *nonce < state.next_nonce(sender) {
-                return false;
-            }
-            tx.costs().is_ok_and(|custos| {
-                custos.iter().all(|(ativo, custo)| state.balance(sender, ativo) >= *custo)
-            })
-        });
+        // `BTreeMap` já entrega em ordem de chave, que é `(remetente, nonce)`.
+        let antigas: Vec<Transfer> = std::mem::take(&mut self.mempool).into_values().collect();
+        for tx in antigas {
+            // Recusa aqui é o objetivo: o que não entra de novo é o que o bloco
+            // novo tornou impossível.
+            let _ = self.adicionar_tx(tx);
+        }
     }
 
     /// Guarda um bloco que ainda não encaixa, respeitando o teto.
