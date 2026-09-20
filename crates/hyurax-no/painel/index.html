@@ -136,6 +136,18 @@
 <footer class="fita" aria-hidden="true"><div id="fita-trilho"></div></footer>
 <p id="desligado" class="desligado" hidden>Sem resposta do nó. O programa ainda está aberto?</p>
 
+<!-- Achou um bloco: o aviso que vale a pena interromper alguém. -->
+<div id="aviso-bloco" class="aviso-bloco" role="status" aria-live="polite" hidden>
+  <div class="aviso-marca" aria-hidden="true">
+    <svg viewBox="0 0 64 64"><g stroke="currentColor" stroke-width="3.6" stroke-linecap="round" opacity=".55"><line x1="18" y1="14" x2="18" y2="50"/><line x1="46" y1="14" x2="46" y2="50"/><line x1="18" y1="32" x2="46" y2="32"/></g><g fill="currentColor"><circle cx="18" cy="14" r="5"/><circle cx="18" cy="50" r="5"/><circle cx="46" cy="14" r="5"/><circle cx="46" cy="50" r="5"/><circle cx="18" cy="32" r="5.6"/><circle cx="46" cy="32" r="5.6"/></g></svg>
+  </div>
+  <div>
+    <p class="aviso-titulo">O bloco é seu</p>
+    <p class="aviso-texto" id="aviso-bloco-texto">—</p>
+  </div>
+  <button type="button" id="aviso-fechar" class="aviso-fechar" aria-label="Fechar o aviso">×</button>
+</div>
+
 <!-- ------------------------------------------------------------------ -->
 <!-- A abertura do programa: a partida, o cadeado e a primeira carteira. -->
 <!-- Aparece desde o primeiro quadro, antes de qualquer resposta do nó.  -->
@@ -537,6 +549,46 @@
         <label for="c-baixa"><input type="radio" name="cena" id="c-baixa" value="baixa" autocomplete="off"><span>Baixa</span></label>
         <label for="c-desligada"><input type="radio" name="cena" id="c-desligada" value="desligada" autocomplete="off"><span>Desligada</span></label>
       </div>
+    </section>
+
+    <section class="grupo pilha" aria-labelledby="a-decorar-titulo">
+      <h3 class="rotulo-campo" id="a-decorar-titulo">Decorar a estação</h3>
+      <p class="nota">A mesa é sua. Nada aqui muda a mineração nem o consumo do nó — muda só o que você vê.</p>
+      <ul class="enfeites" id="enfeites"></ul>
+      <div class="campo">
+        <span class="rotulo-campo">Monitores</span>
+        <div class="segmentos" role="group" aria-label="Quantos monitores na mesa">
+          <label for="mon-1"><input type="radio" name="monitores" id="mon-1" value="1" autocomplete="off"><span>Um</span></label>
+          <label for="mon-2"><input type="radio" name="monitores" id="mon-2" value="2" autocomplete="off"><span>Dois</span></label>
+        </div>
+      </div>
+      <div class="campo">
+        <span class="rotulo-campo">Luz da torre</span>
+        <div class="segmentos cinco" role="group" aria-label="Cor da luz da torre">
+          <label for="led-branco"><input type="radio" name="led" id="led-branco" value="branco" autocomplete="off"><span>Branca</span></label>
+          <label for="led-ambar"><input type="radio" name="led" id="led-ambar" value="ambar" autocomplete="off"><span>Âmbar</span></label>
+          <label for="led-azul"><input type="radio" name="led" id="led-azul" value="azul" autocomplete="off"><span>Azul</span></label>
+          <label for="led-verde"><input type="radio" name="led" id="led-verde" value="verde" autocomplete="off"><span>Verde</span></label>
+          <label for="led-vermelho"><input type="radio" name="led" id="led-vermelho" value="vermelho" autocomplete="off"><span>Vermelha</span></label>
+        </div>
+      </div>
+      <div class="campo">
+        <span class="rotulo-campo">Mesa</span>
+        <div class="segmentos" role="group" aria-label="Acabamento da mesa">
+          <label for="mesa-escura"><input type="radio" name="mesa" id="mesa-escura" value="escura" autocomplete="off"><span>Escura</span></label>
+          <label for="mesa-clara"><input type="radio" name="mesa" id="mesa-clara" value="clara" autocomplete="off"><span>Clara</span></label>
+          <label for="mesa-madeira"><input type="radio" name="mesa" id="mesa-madeira" value="madeira" autocomplete="off"><span>Madeira</span></label>
+        </div>
+      </div>
+      <p class="nota">As suas outras máquinas (Ajustes › Minhas máquinas) aparecem como mesas ao lado, com o ritmo de cada uma.</p>
+    </section>
+
+    <section class="grupo pilha" aria-labelledby="a-avisos-titulo">
+      <h3 class="rotulo-campo" id="a-avisos-titulo">Avisos</h3>
+      <p class="nota">Achar um bloco é raro e leva tempo. O programa pode chamar você quando acontecer.</p>
+      <label class="chave-liga" for="a-avisar"><input type="checkbox" id="a-avisar" autocomplete="off"><span>Avisar na tela quando o bloco for meu</span></label>
+      <label class="chave-liga" for="a-som"><input type="checkbox" id="a-som" autocomplete="off"><span>Tocar um som junto</span></label>
+      <p class="nota">O som é um tom curto feito pelo próprio programa, sem arquivo nem internet. Alguns navegadores só deixam tocar depois do primeiro clique na janela.</p>
     </section>
 
     <section class="grupo pilha" aria-labelledby="a-sobre-titulo">

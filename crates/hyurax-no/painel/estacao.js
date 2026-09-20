@@ -61,6 +61,13 @@ export function criarEstacao(canvas, { calmo = false, qualidade = "auto" } = {})
   const mClaro = fosco(0x8a8a88, 0.5, 0.5);
   const mLed = new THREE.MeshStandardMaterial({ color: 0x222222, emissive: BRANCO, emissiveIntensity: 0.1 });
 
+  // ---------- o que a decoração muda ----------
+  // Cor aqui é enfeite, e não informação: o estado da mineração continua se
+  // lendo pelo pulso da luz e pela velocidade das ventoinhas, que funcionam
+  // igual em qualquer cor. O resto do programa segue em preto e branco.
+  const CORES_LED = { branco: BRANCO, ambar: 0xffb04d, azul: 0x5aa9ff, verde: 0x64e08a, vermelho: 0xff6b6b };
+  const TONS_MESA = { escura: { cor: 0x151515, rugosidade: 0.7 }, clara: { cor: 0x6f6f6a, rugosidade: 0.6 }, madeira: { cor: 0x53412c, rugosidade: 0.9 } };
+
   const caixa = (l, a, p, m, x, y, z) => {
     const o = new THREE.Mesh(new THREE.BoxGeometry(l, a, p), m);
     o.position.set(x, y, z);
@@ -90,6 +97,69 @@ export function criarEstacao(canvas, { calmo = false, qualidade = "auto" } = {})
   tela.position.set(0, 1.36, -0.166);
   cena.add(tela);
 
+  // ---------- segundo monitor (opcional) ----------
+  // Fica de lado, virado para quem senta, e mostra as outras máquinas do dono.
+  // Nasce escondido: quem quiser dois monitores liga nos Ajustes.
+  const monitor2 = new THREE.Group();
+  const tela2Canvas = document.createElement("canvas");
+  tela2Canvas.width = 512;
+  tela2Canvas.height = 288;
+  const tela2Tex = new THREE.CanvasTexture(tela2Canvas);
+  tela2Tex.colorSpace = THREE.SRGBColorSpace;
+  {
+    const pe = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.02, 0.18), mCorpo);
+    pe.position.set(0, 0.795, -0.14);
+    const haste = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.3, 0.035), mCorpo);
+    haste.position.set(0, 0.95, -0.17);
+    const moldura = new THREE.Mesh(new THREE.BoxGeometry(0.92, 0.56, 0.04), mCorpo);
+    moldura.position.set(0, 1.24, -0.15);
+    const vidro2 = new THREE.Mesh(new THREE.PlaneGeometry(0.88, 0.5), new THREE.MeshBasicMaterial({ map: tela2Tex, toneMapped: false }));
+    vidro2.position.set(0, 1.24, -0.128);
+    monitor2.add(pe, haste, moldura, vidro2);
+  }
+  monitor2.position.set(-1.02, 0, 0.06);
+  monitor2.rotation.y = 0.42;
+  monitor2.visible = false;
+  cena.add(monitor2);
+
+  // A tela do segundo monitor: as outras máquinas, somadas.
+  function pintarTela2() {
+    const g = tela2Canvas.getContext("2d");
+    const W = tela2Canvas.width, H = tela2Canvas.height;
+    g.fillStyle = "#050505";
+    g.fillRect(0, 0, W, H);
+    g.fillStyle = "rgba(255,255,255,0.03)";
+    for (let y = 0; y < H; y += 4) g.fillRect(0, y, W, 1);
+    g.fillStyle = "rgba(243,243,241,0.5)";
+    g.font = "14px Consolas, monospace";
+    g.textBaseline = "top";
+    g.fillText("MINHAS MÁQUINAS", 22, 20);
+    const lista = (estado?.maquinas || []).filter((m) => m.ok);
+    const ritmo = (estado?.ritmo || 0) + lista.reduce((a, m) => a + (m.ritmo || 0), 0);
+    g.fillStyle = "#f3f3f1";
+    g.font = "700 52px Bahnschrift, 'Arial Narrow', sans-serif";
+    g.fillText(ritmo.toFixed(1), 22, 44);
+    g.font = "15px Consolas, monospace";
+    g.fillStyle = "rgba(243,243,241,0.5)";
+    g.fillText("tentativas por segundo, somadas", 22, 104);
+    g.font = "15px Consolas, monospace";
+    const linhas = [["este computador", estado?.ritmo || 0, estado?.minerando]];
+    for (const m of (estado?.maquinas || []).slice(0, 4)) linhas.push([m.alvo, m.ok ? m.ritmo : null, m.minerando]);
+    linhas.forEach(([nome, taxa, minerando], i) => {
+      const y = 140 + i * 26;
+      g.fillStyle = taxa === null ? "rgba(243,243,241,0.3)" : "#f3f3f1";
+      g.fillText(`${minerando ? "■" : "□"} ${String(nome).slice(0, 22)}`, 22, y);
+      g.textAlign = "right";
+      g.fillText(taxa === null ? "sem resposta" : `${taxa.toFixed(1)} t/s`, W - 22, y);
+      g.textAlign = "left";
+    });
+    if (linhas.length === 1) {
+      g.fillStyle = "rgba(243,243,241,0.38)";
+      g.fillText("some outras em Ajustes ›", 22, 172);
+      g.fillText("Minhas máquinas", 22, 196);
+    }
+  }
+
   // ---------- teclado, mouse, caneca ----------
   caixa(0.86, 0.025, 0.26, mCorpo, -0.05, 0.795, 0.22);
   const teclas = new THREE.InstancedMesh(new THREE.BoxGeometry(0.048, 0.012, 0.045), mClaro, 14 * 4);
@@ -111,6 +181,158 @@ export function criarEstacao(canvas, { calmo = false, qualidade = "auto" } = {})
   alca.rotation.z = -Math.PI / 2;
   alca.position.set(-0.79, 0.85, 0.12);
   cena.add(alca);
+
+  // ---------- enfeites ----------
+  // Cada um é um grupo montado uma vez e escondido; ligar e desligar é só
+  // `visible`, então a troca é instantânea e não cria lixo de memória.
+  const enfeites = {};
+  const luzLuminaria = new THREE.PointLight(0xffd9a0, 0, 1.6, 2);
+  luzLuminaria.position.set(-1.0, 1.12, -0.05);
+  cena.add(luzLuminaria);
+
+  function desenhoEmTextura(largura, altura, pintar) {
+    const c = document.createElement("canvas");
+    c.width = largura;
+    c.height = altura;
+    pintar(c.getContext("2d"), largura, altura);
+    const tex = new THREE.CanvasTexture(c);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    return tex;
+  }
+
+  // A marca do Hyurax desenhada: serve para o porta-retrato e para o pôster.
+  function marcaEm(g, x, y, escala, alfa = 1) {
+    g.strokeStyle = `rgba(243,243,241,${0.55 * alfa})`;
+    g.lineWidth = 3.6 * escala;
+    g.lineCap = "round";
+    for (const [a, b] of [[[18, 14], [18, 50]], [[46, 14], [46, 50]], [[18, 32], [46, 32]]]) {
+      g.beginPath();
+      g.moveTo(x + a[0] * escala, y + a[1] * escala);
+      g.lineTo(x + b[0] * escala, y + b[1] * escala);
+      g.stroke();
+    }
+    g.fillStyle = `rgba(243,243,241,${alfa})`;
+    for (const [cx, cy, r] of [[18, 14, 5], [18, 50, 5], [46, 14, 5], [46, 50, 5], [18, 32, 5.6], [46, 32, 5.6]]) {
+      g.beginPath();
+      g.arc(x + cx * escala, y + cy * escala, r * escala, 0, Math.PI * 2);
+      g.fill();
+    }
+  }
+
+  {
+    // Planta: vaso e folhas. Folha é plano de dois lados, barato e legível.
+    const planta = new THREE.Group();
+    const vaso = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.042, 0.1, 12), fosco(0x4a4a46, 0.9, 0));
+    vaso.position.y = 0.05;
+    planta.add(vaso);
+    const mFolha = fosco(0x2f6b3d, 0.85, 0);
+    mFolha.side = THREE.DoubleSide;
+    for (let i = 0; i < 7; i++) {
+      const folha = new THREE.Mesh(new THREE.PlaneGeometry(0.05, 0.19), mFolha);
+      const giro = (i / 7) * Math.PI * 2;
+      folha.position.set(Math.cos(giro) * 0.03, 0.17, Math.sin(giro) * 0.03);
+      folha.rotation.set(Math.cos(giro) * 0.5, giro, Math.sin(giro) * 0.5);
+      planta.add(folha);
+    }
+    planta.position.set(1.12, 0.79, -0.3);
+    enfeites.planta = planta;
+
+    // Luminária de mesa: base, braço, cúpula — e a luz de verdade.
+    const luminaria = new THREE.Group();
+    const base = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.08, 0.02, 16), mCorpo);
+    const braco = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.008, 0.34, 8), mCorpo);
+    braco.position.set(0, 0.17, 0);
+    braco.rotation.z = 0.22;
+    const cupula = new THREE.Mesh(new THREE.ConeGeometry(0.075, 0.1, 16, 1, true), mClaro);
+    cupula.material.side = THREE.DoubleSide;
+    cupula.position.set(-0.09, 0.33, 0);
+    cupula.rotation.z = -0.6;
+    luminaria.add(base, braco, cupula);
+    luminaria.position.set(-1.0, 0.79, -0.2);
+    enfeites.luminaria = luminaria;
+
+    // Porta-retrato: moldura com a marca dentro.
+    const retrato = new THREE.Group();
+    const molduraR = new THREE.Mesh(new THREE.BoxGeometry(0.17, 0.13, 0.012), mClaro);
+    const fotoTex = desenhoEmTextura(256, 192, (g, W, H) => {
+      g.fillStyle = "#0a0a0a";
+      g.fillRect(0, 0, W, H);
+      marcaEm(g, 96, 64, 1);
+    });
+    const foto = new THREE.Mesh(new THREE.PlaneGeometry(0.15, 0.112), new THREE.MeshBasicMaterial({ map: fotoTex, toneMapped: false }));
+    foto.position.z = 0.007;
+    const apoio = new THREE.Mesh(new THREE.BoxGeometry(0.01, 0.09, 0.01), mClaro);
+    apoio.position.set(0, -0.03, -0.04);
+    apoio.rotation.x = 0.5;
+    retrato.add(molduraR, foto, apoio);
+    retrato.position.set(0.86, 0.87, -0.28);
+    retrato.rotation.y = -0.35;
+    enfeites.retrato = retrato;
+
+    // Pilha de livros.
+    const livros = new THREE.Group();
+    const capas = [0x6b3a3a, 0x3a4f6b, 0x4f6b3a];
+    capas.forEach((cor, i) => {
+      const l = new THREE.Mesh(new THREE.BoxGeometry(0.2 - i * 0.012, 0.035, 0.14 - i * 0.008), fosco(cor, 0.95, 0));
+      l.position.set(0, 0.018 + i * 0.036, 0);
+      l.rotation.y = (i - 1) * 0.12;
+      livros.add(l);
+    });
+    livros.position.set(-0.62, 0.79, -0.3);
+    enfeites.livros = livros;
+
+    // Gato dormindo: corpo, cabeça, orelhas e rabo enrolado. O pelo é claro de
+    // propósito — no escuro da cena, um gato preto vira um borrão.
+    const gato = new THREE.Group();
+    const pelo = fosco(0x8d8781, 0.95, 0);
+    const corpo = new THREE.Mesh(new THREE.SphereGeometry(0.085, 14, 10), pelo);
+    corpo.scale.set(1.5, 0.75, 1);
+    const cabeca = new THREE.Mesh(new THREE.SphereGeometry(0.055, 14, 10), pelo);
+    cabeca.position.set(0.11, 0.02, 0.01);
+    for (const lado of [-1, 1]) {
+      const orelha = new THREE.Mesh(new THREE.ConeGeometry(0.022, 0.04, 8), pelo);
+      orelha.position.set(0.11, 0.06, 0.025 * lado);
+      gato.add(orelha);
+    }
+    const rabo = new THREE.Mesh(new THREE.TorusGeometry(0.06, 0.012, 8, 20, Math.PI * 1.3), pelo);
+    rabo.position.set(-0.1, -0.02, 0.03);
+    rabo.rotation.set(Math.PI / 2, 0, 0.4);
+    gato.add(corpo, cabeca, rabo);
+    gato.scale.setScalar(1.15);
+    gato.position.set(1.0, 0.85, 0.27);
+    gato.rotation.y = -2.1;
+    enfeites.gato = gato;
+
+    // Pôster: quadro atrás da mesa, com a marca e o lema.
+    const poster = new THREE.Group();
+    const posterTex = desenhoEmTextura(512, 640, (g, W, H) => {
+      g.fillStyle = "#0b0b0b";
+      g.fillRect(0, 0, W, H);
+      g.strokeStyle = "rgba(243,243,241,0.18)";
+      g.strokeRect(20.5, 20.5, W - 41, H - 41);
+      marcaEm(g, 170, 120, 2.6);
+      g.fillStyle = "#f3f3f1";
+      g.font = "700 62px Bahnschrift, 'Arial Narrow', sans-serif";
+      g.textAlign = "center";
+      g.fillText("HYURAX", W / 2, 420);
+      g.fillStyle = "rgba(243,243,241,0.6)";
+      g.font = "26px Consolas, monospace";
+      g.fillText("os nós são a rede", W / 2, 480);
+      g.fillStyle = "rgba(243,243,241,0.35)";
+      g.font = "20px Consolas, monospace";
+      g.fillText("rede de teste", W / 2, 545);
+    });
+    const folha = new THREE.Mesh(new THREE.PlaneGeometry(0.62, 0.78), new THREE.MeshBasicMaterial({ map: posterTex, toneMapped: false }));
+    const molduraP = new THREE.Mesh(new THREE.BoxGeometry(0.68, 0.84, 0.02), mCorpo);
+    molduraP.position.z = -0.015;
+    poster.add(folha, molduraP);
+    poster.position.set(-0.35, 1.85, -1.25);
+    enfeites.poster = poster;
+  }
+  for (const grupo of Object.values(enfeites)) {
+    grupo.visible = false;
+    cena.add(grupo);
+  }
 
   // ---------- torre (o PC que minera) ----------
   const TX = 1.62;
@@ -153,6 +375,99 @@ export function criarEstacao(canvas, { calmo = false, qualidade = "auto" } = {})
   );
   cena.add(cabo);
 
+  // ---------- as outras máquinas do dono ----------
+  // Cada máquina que responde vira uma mesa menor atrás, com monitor aceso e a
+  // luz da torre pulsando no ritmo dela. Quatro de cada vez: o desenho é
+  // enfeite, e não vale gastar a máquina de quem está minerando.
+  const MAQUINAS_NA_CENA = 4;
+  const maquinasGrupo = new THREE.Group();
+  cena.add(maquinasGrupo);
+  let maquinasDesenhadas = [];
+
+  function etiquetaTexto(texto, largura = 256) {
+    const tex = desenhoEmTextura(largura, 64, (g, W, H) => {
+      g.fillStyle = "#f3f3f1";
+      g.font = "500 30px Consolas, 'Cascadia Mono', monospace";
+      g.textAlign = "center";
+      g.textBaseline = "middle";
+      g.fillText(texto, W / 2, H / 2);
+    });
+    const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false }));
+    s.scale.set(0.62, 0.155, 1);
+    return s;
+  }
+
+  function trocarEtiqueta(sprite, texto) {
+    if (sprite.userData.texto === texto) return;
+    sprite.userData.texto = texto;
+    sprite.material.map?.dispose();
+    const tex = desenhoEmTextura(256, 64, (g, W, H) => {
+      g.fillStyle = "#f3f3f1";
+      g.font = "500 30px Consolas, 'Cascadia Mono', monospace";
+      g.textAlign = "center";
+      g.textBaseline = "middle";
+      g.fillText(texto, W / 2, H / 2);
+    });
+    sprite.material.map = tex;
+    sprite.material.needsUpdate = true;
+  }
+
+  function montarMaquina(alvo, i) {
+    const g = new THREE.Group();
+    const mLedDela = new THREE.MeshStandardMaterial({ color: 0x222222, emissive: BRANCO, emissiveIntensity: 0.1 });
+    const mesa = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.04, 0.6), mMesa);
+    mesa.position.y = 0.7;
+    const monitor = new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.38, 0.035), mCorpo);
+    monitor.position.set(0, 1.0, -0.12);
+    const brilho = new THREE.Mesh(
+      new THREE.PlaneGeometry(0.58, 0.34),
+      new THREE.MeshBasicMaterial({ color: BRANCO, transparent: true, opacity: 0.22, toneMapped: false }),
+    );
+    brilho.position.set(0, 1.0, -0.1);
+    const torre = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.6, 0.54), mCorpo);
+    torre.position.set(0.42, 0.3, 0);
+    const led = new THREE.Mesh(new THREE.BoxGeometry(0.01, 0.5, 0.016), mLedDela);
+    led.position.set(0.31, 0.3, 0.26);
+    const etiqueta = etiquetaTexto(alvo);
+    etiqueta.position.set(0, 1.38, -0.1);
+    g.add(mesa, monitor, brilho, torre, led, etiqueta);
+    // Espalhadas à esquerda, viradas para cá: lidas como o resto da sala, e não
+    // como uma fileira de armário. Os lugares são fixos para a mesma máquina
+    // cair sempre no mesmo canto.
+    const LUGARES = [[-2.25, -0.7, 0.5], [-3.5, -1.5, 0.66], [-2.1, -2.4, 0.2], [-4.2, -2.7, 0.8]];
+    const [x, z, giro] = LUGARES[i % LUGARES.length];
+    g.position.set(x, 0, z);
+    g.rotation.y = giro;
+    return { alvo, grupo: g, mLed: mLedDela, brilho, etiqueta };
+  }
+
+  function sincronizarMaquinas(lista) {
+    const alvos = (lista || []).slice(0, MAQUINAS_NA_CENA).map((m) => m.alvo);
+    const mesmos = alvos.length === maquinasDesenhadas.length && alvos.every((a, i) => maquinasDesenhadas[i].alvo === a);
+    if (!mesmos) {
+      for (const m of maquinasDesenhadas) {
+        maquinasGrupo.remove(m.grupo);
+        m.grupo.traverse((o) => {
+          if (o.isSprite) { o.material.map?.dispose(); o.material.dispose(); }
+        });
+      }
+      maquinasDesenhadas = alvos.map((alvo, i) => {
+        const m = montarMaquina(alvo, i);
+        maquinasGrupo.add(m.grupo);
+        return m;
+      });
+    }
+    // Estado de cada uma: monitor aceso, luz pulsando, etiqueta com o ritmo.
+    (lista || []).slice(0, MAQUINAS_NA_CENA).forEach((dados, i) => {
+      const m = maquinasDesenhadas[i];
+      if (!m) return;
+      m.dados = dados;
+      m.grupo.visible = true;
+      m.brilho.material.opacity = dados.ok ? 0.22 : 0.04;
+      trocarEtiqueta(m.etiqueta, dados.ok ? `${dados.alvo} · ${(dados.ritmo || 0).toFixed(1)} t/s` : `${dados.alvo} · sem resposta`);
+    });
+  }
+
   // ---------- a corrente de blocos ----------
   const mMeu = new THREE.MeshStandardMaterial({ color: BRANCO, roughness: 0.35, metalness: 0.2, emissive: BRANCO, emissiveIntensity: 0.08 });
   const mOutro = new THREE.MeshBasicMaterial({ color: BRANCO, wireframe: true, transparent: true, opacity: 0.55 });
@@ -160,6 +475,21 @@ export function criarEstacao(canvas, { calmo = false, qualidade = "auto" } = {})
   const corrente = []; // { hash, altura, meu, grupo, de: Vector3|null, t }
   const elos = new THREE.LineSegments(new THREE.BufferGeometry(), new THREE.LineBasicMaterial({ color: 0x777777 }));
   cena.add(elos);
+
+  // ---------- o estouro de quando o bloco é meu ----------
+  // Um anel que abre e some, e um clarão curto na torre. Dura pouco menos de
+  // um segundo: é festa, não é enfeite permanente.
+  const anel = new THREE.Mesh(
+    new THREE.RingGeometry(0.2, 0.235, 40),
+    new THREE.MeshBasicMaterial({ color: BRANCO, transparent: true, opacity: 0, side: THREE.DoubleSide, toneMapped: false }),
+  );
+  anel.position.set(TX, 1.05, 0);
+  anel.rotation.x = -Math.PI / 2;
+  cena.add(anel);
+  const clarao = new THREE.PointLight(0xffffff, 0, 5, 2);
+  clarao.position.set(TX, 1.1, 0);
+  cena.add(clarao);
+  let festa = 0; // 1 = agora, 0 = acabou
 
   // Posição do i-ésimo bloco (0 = mais antigo): um arco atrás da mesa, subindo para a direita.
   const lugar = (i) => {
@@ -219,6 +549,7 @@ export function criarEstacao(canvas, { calmo = false, qualidade = "auto" } = {})
       const grupo = novoCubo(b);
       // Meu bloco nasce na torre; o de outro nó chega de longe, pela direita.
       const de = primeiraVez || calmo ? null : b.meu ? new THREE.Vector3(TX, 1.05, 0) : new THREE.Vector3(6, 3.2, -4);
+      if (b.meu && !primeiraVez) festa = 1;
       corrente.push({ hash: b.hash, altura: b.altura, meu: b.meu, grupo, de, t: 0 });
     }
     corrente.sort((a, b) => a.altura - b.altura);
@@ -226,6 +557,31 @@ export function criarEstacao(canvas, { calmo = false, qualidade = "auto" } = {})
       c.lugar = lugar(i + (NA_CORRENTE - corrente.length));
       if (!c.de && !c.pos) c.grupo.position.copy(c.lugar);
     });
+  }
+
+  // ---------- decoração ----------
+  // Lê do próprio estado do nó: o que o dono marcou nos Ajustes chega aqui na
+  // leitura seguinte, sem recarregar a página.
+  let decorado = "";
+  function aplicarDecoracao(e) {
+    const chave = `${e.enfeites}|${e.monitores}|${e.led}|${e.mesa}`;
+    if (chave === decorado) return;
+    decorado = chave;
+    const ligados = new Set(
+      String(e.enfeites || "")
+        .split(",")
+        .map((s) => s.trim())
+        .filter((s) => s && !s.startsWith("-")),
+    );
+    for (const [nome, grupo] of Object.entries(enfeites)) grupo.visible = ligados.has(nome);
+    luzLuminaria.intensity = ligados.has("luminaria") ? 0.9 : 0;
+    monitor2.visible = (e.monitores || 1) >= 2;
+    const cor = CORES_LED[e.led] ?? BRANCO;
+    mLed.emissive.setHex(cor);
+    brilhoTorre.color.setHex(cor);
+    const tom = TONS_MESA[e.mesa] || TONS_MESA.escura;
+    mMesa.color.setHex(tom.cor);
+    mMesa.roughness = tom.rugosidade;
   }
 
   // ---------- tela do monitor ----------
@@ -384,9 +740,35 @@ export function criarEstacao(canvas, { calmo = false, qualidade = "auto" } = {})
     for (let i = 1; i < corrente.length; i++) pts.push(corrente[i - 1].grupo.position, corrente[i].grupo.position);
     elos.geometry.setFromPoints(pts);
 
+    // As outras máquinas: a luz de cada uma pulsa no ritmo dela.
+    for (const m of maquinasDesenhadas) {
+      const d = m.dados;
+      if (!d) continue;
+      m.mLed.emissive.setHex(mLed.emissive.getHex());
+      m.mLed.emissiveIntensity = d.ok && d.minerando
+        ? 0.5 + 0.45 * Math.abs(Math.sin(agora / (300 - Math.min(d.ritmo || 0, 40) * 4)))
+        : 0.06;
+    }
+
+    // O estouro do bloco meu: o anel abre e some, o clarão apaga junto.
+    if (festa > 0) {
+      festa = Math.max(0, festa - dt / 0.9);
+      const f = 1 - festa;
+      anel.scale.setScalar(1 + f * 5);
+      anel.material.opacity = festa * 0.75;
+      clarao.intensity = festa * 6;
+    } else if (clarao.intensity !== 0) {
+      clarao.intensity = 0;
+      anel.material.opacity = 0;
+    }
+
     if (agora - ultimaTela > 120) {
       pintarTela(agora);
       telaTex.needsUpdate = true;
+      if (monitor2.visible) {
+        pintarTela2();
+        tela2Tex.needsUpdate = true;
+      }
       ultimaTela = agora;
     }
     renderer.render(cena, camera);
@@ -397,6 +779,8 @@ export function criarEstacao(canvas, { calmo = false, qualidade = "auto" } = {})
   return {
     atualizar(e) {
       estado = e;
+      aplicarDecoracao(e);
+      sincronizarMaquinas(e.maquinas);
       sincronizarCorrente(e.blocos, primeira);
       primeira = false;
     },

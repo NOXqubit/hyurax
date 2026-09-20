@@ -69,6 +69,15 @@ const PAINEIS_CONHECIDOS: [&str; 8] =
     ["estacao", "carteira", "rede", "livro", "ritmo", "fluxo", "mercado", "maquinas"];
 /// Quantos movimentos da carteira o painel mostra.
 const HISTORICO_MAX: usize = 30;
+/// Enfeites que o dono pode pôr na estação, na ordem de fábrica. Um "-" na
+/// frente quer dizer guardado. Mudam só o desenho; a mineração não muda.
+const ENFEITES_PADRAO: &str = "planta,luminaria,-retrato,-livros,-gato,-poster";
+const ENFEITES_CONHECIDOS: [&str; 6] = ["planta", "luminaria", "retrato", "livros", "gato", "poster"];
+/// Cores da luz da torre. É enfeite, não informação: o estado da mineração
+/// continua se lendo pelo pulso e pela velocidade das ventoinhas.
+const LEDS: [&str; 5] = ["branco", "ambar", "azul", "verde", "vermelho"];
+/// Acabamento da mesa.
+const MESAS: [&str; 3] = ["escura", "clara", "madeira"];
 /// De quanto em quanto tempo as outras máquinas são perguntadas.
 const MAQUINAS_INTERVALO: Duration = Duration::from_secs(6);
 /// De quanto em quanto tempo o mercado é consultado, e as moedas seguidas.
@@ -131,6 +140,14 @@ struct Painel {
     mercado: Mutex<Option<(u64, String)>>,
     /// Quais painéis o dono deixou abertos, e em que ordem.
     paineis: Mutex<String>,
+    /// Como a estação 3D está decorada: enfeites, monitores, luz e mesa.
+    enfeites: Mutex<String>,
+    monitores: AtomicU32,
+    led: Mutex<String>,
+    mesa: Mutex<String>,
+    /// Avisar quando um bloco meu entrar: na tela, e com som se o dono quiser.
+    avisar_bloco: AtomicBool,
+    som_bloco: AtomicBool,
     /// Segundo fator: segredo do código de 6 dígitos e o que ele protege.
     seguranca: Mutex<Seguranca>,
     /// Segredo novo, ainda esperando o primeiro código certo para valer.
@@ -275,6 +292,18 @@ impl Painel {
         if let Ok(c) = self.cena.lock() {
             let _ = writeln!(texto, "cena={c}");
         }
+        if let Ok(e) = self.enfeites.lock() {
+            let _ = writeln!(texto, "enfeites={e}");
+        }
+        let _ = writeln!(texto, "monitores={}", self.monitores.load(Ordering::Relaxed));
+        if let Ok(l) = self.led.lock() {
+            let _ = writeln!(texto, "led={l}");
+        }
+        if let Ok(m) = self.mesa.lock() {
+            let _ = writeln!(texto, "mesa={m}");
+        }
+        let _ = writeln!(texto, "avisar_bloco={}", u8::from(self.avisar_bloco.load(Ordering::Relaxed)));
+        let _ = writeln!(texto, "som_bloco={}", u8::from(self.som_bloco.load(Ordering::Relaxed)));
         if let Ok(s) = self.sementes.lock() {
             for semente in s.iter() {
                 let _ = writeln!(texto, "semente={semente}");
@@ -307,6 +336,12 @@ struct Ajustes {
     centavos_kwh: Option<u32>,
     na_rede: Option<bool>,
     cena: Option<String>,
+    enfeites: Option<String>,
+    monitores: Option<u32>,
+    led: Option<String>,
+    mesa: Option<String>,
+    avisar_bloco: Option<bool>,
+    som_bloco: Option<bool>,
 }
 
 fn ler_ajustes(dados: &Path) -> Ajustes {
@@ -323,6 +358,12 @@ fn ler_ajustes(dados: &Path) -> Ajustes {
             Some(("mercado", v)) => a.mercado = Some(v.trim() == "1"),
             Some(("paineis", v)) if paineis_validos(v.trim()) => a.paineis = Some(completar_paineis(v.trim())),
             Some(("cena", v)) if CENAS.contains(&v.trim()) => a.cena = Some(v.trim().to_string()),
+            Some(("enfeites", v)) if enfeites_validos(v.trim()) => a.enfeites = Some(completar_enfeites(v.trim())),
+            Some(("monitores", v)) => a.monitores = v.trim().parse().ok().filter(|n| (1..=2).contains(n)),
+            Some(("led", v)) if LEDS.contains(&v.trim()) => a.led = Some(v.trim().to_string()),
+            Some(("mesa", v)) if MESAS.contains(&v.trim()) => a.mesa = Some(v.trim().to_string()),
+            Some(("avisar_bloco", v)) => a.avisar_bloco = Some(v.trim() == "1"),
+            Some(("som_bloco", v)) => a.som_bloco = Some(v.trim() == "1"),
             Some(("semente", v)) if semente_valida(v.trim()) && a.sementes.len() < SEMENTES_MAX => {
                 a.sementes.push(v.trim().to_string());
             }
@@ -335,30 +376,50 @@ fn ler_ajustes(dados: &Path) -> Ajustes {
     a
 }
 
-/// Completa a lista com os painéis que o programa aprendeu depois de ela ter
-/// sido salva. Painel novo nasce fechado, mas precisa **existir** na lista:
-/// senão ele não aparece nem no menu, e o dono não teria como abrir.
-fn completar_paineis(lista: &str) -> String {
+/// Lista de nomes separados por vírgula, com "-" na frente do que está
+/// desligado. É o jeito que o programa guarda tanto os painéis abertos quanto
+/// os enfeites da estação: a ordem é a que o dono escolheu.
+///
+/// Só aceita nomes conhecidos, sem repetição.
+fn lista_valida(lista: &str, conhecidos: &[&str]) -> bool {
+    let mut vistos: Vec<&str> = Vec::new();
+    for item in lista.split(',').map(str::trim).filter(|s| !s.is_empty()) {
+        let nome = item.strip_prefix('-').unwrap_or(item);
+        if !conhecidos.contains(&nome) || vistos.contains(&nome) {
+            return false;
+        }
+        vistos.push(nome);
+    }
+    !vistos.is_empty()
+}
+
+/// Completa a lista com o que o programa aprendeu depois de ela ter sido salva.
+/// O item novo nasce desligado, mas precisa **existir** na lista: senão ele não
+/// aparece no menu, e o dono não teria como ligar.
+fn completar(lista: &str, conhecidos: &[&str]) -> String {
     let mut saida: Vec<String> = lista.split(',').map(str::trim).filter(|s| !s.is_empty()).map(String::from).collect();
-    for nome in PAINEIS_CONHECIDOS {
-        if !saida.iter().any(|item| item.trim_start_matches('-') == nome) {
+    for nome in conhecidos {
+        if !saida.iter().any(|item| item.trim_start_matches('-') == *nome) {
             saida.push(format!("-{nome}"));
         }
     }
     saida.join(",")
 }
 
-/// A lista de painéis só aceita nomes conhecidos, sem repetição.
 fn paineis_validos(lista: &str) -> bool {
-    let mut vistos: Vec<&str> = Vec::new();
-    for item in lista.split(',').map(str::trim).filter(|s| !s.is_empty()) {
-        let nome = item.strip_prefix('-').unwrap_or(item);
-        if !PAINEIS_CONHECIDOS.contains(&nome) || vistos.contains(&nome) {
-            return false;
-        }
-        vistos.push(nome);
-    }
-    !vistos.is_empty()
+    lista_valida(lista, &PAINEIS_CONHECIDOS)
+}
+
+fn completar_paineis(lista: &str) -> String {
+    completar(lista, &PAINEIS_CONHECIDOS)
+}
+
+fn enfeites_validos(lista: &str) -> bool {
+    lista_valida(lista, &ENFEITES_CONHECIDOS)
+}
+
+fn completar_enfeites(lista: &str) -> String {
+    completar(lista, &ENFEITES_CONHECIDOS)
 }
 
 /// `host:porta`, com porta de 1 a 65535 e host sem espaço nem caractere estranho.
@@ -574,6 +635,12 @@ fn ligar(o: Opcoes, rede: Arc<Rede>, partida: Partida, ajustes: &Ajustes) -> Res
         mercado_ligado: AtomicBool::new(ajustes.mercado.unwrap_or(false)),
         mercado: Mutex::new(None),
         paineis: Mutex::new(ajustes.paineis.clone().unwrap_or_else(|| PAINEIS_PADRAO.to_string())),
+        enfeites: Mutex::new(ajustes.enfeites.clone().unwrap_or_else(|| ENFEITES_PADRAO.to_string())),
+        monitores: AtomicU32::new(ajustes.monitores.unwrap_or(1)),
+        led: Mutex::new(ajustes.led.clone().unwrap_or_else(|| "branco".to_string())),
+        mesa: Mutex::new(ajustes.mesa.clone().unwrap_or_else(|| "escura".to_string())),
+        avisar_bloco: AtomicBool::new(ajustes.avisar_bloco.unwrap_or(true)),
+        som_bloco: AtomicBool::new(ajustes.som_bloco.unwrap_or(false)),
         seguranca: Mutex::new(seguranca),
         totp_pendente: Mutex::new(None),
         // Trancado começa fechado; sem cadeado, já nasce aberto.
@@ -920,6 +987,36 @@ fn trocar_ajustes(painel: &Painel, campos: &[(String, String)]) -> Result<(), St
                     valor.clone_into(&mut c);
                 }
             }
+            "enfeites" => {
+                if !enfeites_validos(valor) {
+                    return Err("lista de enfeites inválida".into());
+                }
+                if let Ok(mut e) = painel.enfeites.lock() {
+                    *e = completar_enfeites(valor);
+                }
+            }
+            "monitores" => {
+                let n: u32 = valor.parse().map_err(|_| "número de monitores inválido")?;
+                painel.monitores.store(n.clamp(1, 2), Ordering::Relaxed);
+            }
+            "led" => {
+                if !LEDS.contains(&valor.as_str()) {
+                    return Err("cor de luz desconhecida".into());
+                }
+                if let Ok(mut l) = painel.led.lock() {
+                    valor.clone_into(&mut l);
+                }
+            }
+            "mesa" => {
+                if !MESAS.contains(&valor.as_str()) {
+                    return Err("acabamento de mesa desconhecido".into());
+                }
+                if let Ok(mut m) = painel.mesa.lock() {
+                    valor.clone_into(&mut m);
+                }
+            }
+            "avisar_bloco" => painel.avisar_bloco.store(valor == "1", Ordering::Relaxed),
+            "som_bloco" => painel.som_bloco.store(valor == "1", Ordering::Relaxed),
             _ => {}
         }
     }
@@ -1600,6 +1697,17 @@ fn estado_json(painel: &Painel, rede: &Rede, o: &Opcoes, pode_mandar: bool, port
         hyur(u128::from(envio::maximo(saldo, envio::TAXA_PADRAO))),
         hyur(u128::from(envio::TAXA_PADRAO)),
     );
+    // Decoração da estação e o aviso de bloco.
+    let _ = write!(
+        j,
+        "\"enfeites\":{},\"monitores\":{},\"led\":{},\"mesa\":{},\"avisar_bloco\":{},\"som_bloco\":{},",
+        texto_json(&painel.enfeites.lock().map(|e| e.clone()).unwrap_or_default()),
+        painel.monitores.load(Ordering::Relaxed),
+        texto_json(&painel.led.lock().map(|l| l.clone()).unwrap_or_default()),
+        texto_json(&painel.mesa.lock().map(|m| m.clone()).unwrap_or_default()),
+        painel.avisar_bloco.load(Ordering::Relaxed),
+        painel.som_bloco.load(Ordering::Relaxed),
+    );
     j.push_str("\"historico\":[");
     if let Some(meu) = endereco {
         let movimentos = envio::historico(c, &no.mempool_ordenado(), &meu, HISTORICO_MAX);
@@ -1736,6 +1844,23 @@ mod testes {
         // Completar de novo não duplica nada, e quem já estava aberto continua aberto.
         assert_eq!(completar_paineis(&nova), nova);
         assert!(completar_paineis("mercado,estacao").starts_with("mercado,estacao,"));
+    }
+
+    #[test]
+    fn enfeite_novo_tambem_entra_na_lista_salva_antes_dele() {
+        let velha = "planta,luminaria";
+        let nova = completar_enfeites(velha);
+        assert!(nova.starts_with(velha), "a ordem de quem já estava não muda: {nova}");
+        for nome in ENFEITES_CONHECIDOS {
+            assert!(nova.split(',').any(|i| i.trim_start_matches('-') == nome), "faltou {nome}");
+        }
+        assert!(enfeites_validos(&nova));
+        assert!(!enfeites_validos("planta,planta"), "repetido devia ser recusado");
+        assert!(!enfeites_validos("abajur"), "nome desconhecido devia ser recusado");
+        assert!(!enfeites_validos(""), "lista vazia devia ser recusada");
+        // As duas listas são a mesma ideia, mas não se misturam.
+        assert!(!enfeites_validos("carteira"));
+        assert!(!paineis_validos("planta"));
     }
 
     #[test]

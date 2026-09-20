@@ -939,8 +939,97 @@ function desenharMaquinas(e) {
   $("maquinas").replaceChildren(aqui, ...linhas);
 }
 
+// ---------- aviso de bloco achado ----------
+// Achar um bloco é raro: quando acontece, o programa chama. O gatilho é o
+// evento "meu-bloco" que o nó registra, não uma contagem — assim o aviso diz a
+// mesma coisa que o fluxo, e nunca aparece duas vezes pelo mesmo bloco.
+let ultimoMeuBloco = null;
+let somDoAviso = null;
+let sumirAviso = null;
+
+function tocarAviso() {
+  try {
+    const Contexto = globalThis.AudioContext || globalThis.webkitAudioContext;
+    if (!Contexto) return;
+    somDoAviso = somDoAviso || new Contexto();
+    if (somDoAviso.state === "suspended") somDoAviso.resume();
+    // Dois tons curtos, feitos aqui: nenhum arquivo, nenhuma internet.
+    const agora = somDoAviso.currentTime;
+    for (const [atraso, hz] of [[0, 880], [0.16, 1320]]) {
+      const osc = somDoAviso.createOscillator();
+      const vol = somDoAviso.createGain();
+      osc.type = "sine";
+      osc.frequency.value = hz;
+      vol.gain.setValueAtTime(0.0001, agora + atraso);
+      vol.gain.exponentialRampToValueAtTime(0.18, agora + atraso + 0.02);
+      vol.gain.exponentialRampToValueAtTime(0.0001, agora + atraso + 0.14);
+      osc.connect(vol).connect(somDoAviso.destination);
+      osc.start(agora + atraso);
+      osc.stop(agora + atraso + 0.16);
+    }
+  } catch (erro) {
+    console.warn("som do aviso indisponível:", erro);
+  }
+}
+
+function mostrarAviso(frase, comSom) {
+  texto("aviso-bloco-texto", frase);
+  $("aviso-bloco").hidden = false;
+  if (comSom) tocarAviso();
+  clearTimeout(sumirAviso);
+  sumirAviso = setTimeout(() => ($("aviso-bloco").hidden = true), 14000);
+}
+
+function desenharAvisoDeBloco(e) {
+  const meus = (e.eventos || []).filter((ev) => ev.tipo === "meu-bloco");
+  const ultimo = meus[0]; // o fluxo vem do mais novo para o mais velho
+  if (!ultimo) return;
+  const chave = `${ultimo.quando}|${ultimo.texto}`;
+  const primeiraLeitura = ultimoMeuBloco === null;
+  if (chave === ultimoMeuBloco) return;
+  ultimoMeuBloco = chave;
+  // Na primeira leitura o bloco pode ser de horas atrás: só guarda a marca.
+  if (primeiraLeitura || e.avisar_bloco === false) return;
+  mostrarAviso(ultimo.texto, e.som_bloco === true);
+}
+$("aviso-fechar").addEventListener("click", () => { $("aviso-bloco").hidden = true; clearTimeout(sumirAviso); });
+
 // ---------- ajustes ----------
 const ajustes = $("ajustes");
+
+// Enfeites da estação: a mesma ideia dos painéis (lista com "-" na frente do
+// que está guardado), então a ordem que o dono escolher fica de pé.
+const NOMES_ENFEITES = {
+  planta: "Planta",
+  luminaria: "Luminária",
+  retrato: "Porta-retrato",
+  livros: "Pilha de livros",
+  gato: "Gato dormindo",
+  poster: "Pôster na parede",
+};
+const ENFEITES_PADRAO = "planta,luminaria,-retrato,-livros,-gato,-poster";
+let listaEnfeites = ENFEITES_PADRAO;
+
+function desenharEnfeites(lista) {
+  if (typeof lista === "string" && lista) listaEnfeites = lista;
+  const partes = pecas(listaEnfeites);
+  $("enfeites").replaceChildren(...partes.map((parte, i) => {
+    const li = document.createElement("li");
+    const rotulo = document.createElement("label");
+    const caixa = document.createElement("input");
+    caixa.type = "checkbox";
+    caixa.checked = parte.aberto;
+    caixa.autocomplete = "off";
+    caixa.addEventListener("change", () => {
+      const novas = partes.map((p, j) => (j === i ? `${caixa.checked ? "" : "-"}${p.nome}` : `${p.aberto ? "" : "-"}${p.nome}`));
+      listaEnfeites = novas.join(",");
+      salvarAjuste({ enfeites: listaEnfeites });
+    });
+    rotulo.append(caixa, Object.assign(document.createElement("span"), { textContent: NOMES_ENFEITES[parte.nome] || parte.nome }));
+    li.append(rotulo);
+    return li;
+  }));
+}
 
 // Marca o perfil que bate com o que está valendo, ou "manual".
 function perfilAtual(e) {
@@ -980,6 +1069,19 @@ function desenharAjustes(e) {
     const alvo = $(`c-${nome}`);
     if (alvo) alvo.checked = (e.cena || "auto") === nome;
   }
+  // Decoração da estação.
+  if (typeof e.enfeites === "string" && e.enfeites && e.enfeites !== listaEnfeites) desenharEnfeites(e.enfeites);
+  for (const n of [1, 2]) $(`mon-${n}`).checked = (e.monitores || 1) === n;
+  for (const nome of ["branco", "ambar", "azul", "verde", "vermelho"]) {
+    const alvo = $(`led-${nome}`);
+    if (alvo) alvo.checked = (e.led || "branco") === nome;
+  }
+  for (const nome of ["escura", "clara", "madeira"]) {
+    const alvo = $(`mesa-${nome}`);
+    if (alvo) alvo.checked = (e.mesa || "escura") === nome;
+  }
+  $("a-avisar").checked = e.avisar_bloco !== false;
+  $("a-som").checked = e.som_bloco === true;
   texto("a-dados", typeof e.dados === "string" && e.dados ? e.dados : "—");
   texto("a-versao", typeof e.versao === "string" && e.versao ? e.versao : "—");
   texto("a-rede", e.rede || "—");
@@ -993,6 +1095,7 @@ $("abrir-ajustes").addEventListener("click", () => {
   const maquinas = Array.isArray(ultimo.maquinas) ? ultimo.maquinas.map((m) => m.alvo).filter(Boolean) : [];
   $("maquinas-lista").value = maquinas.join(", ");
   for (const id of ["a-abrir-erro", "sementes-ok", "sementes-erro", "maquinas-ok", "maquinas-erro"]) texto(id, "");
+  desenharEnfeites(ultimo.enfeites);
   desenharAjustes(ultimo);
   ajustes.showModal();
   $("sementes").focus();
@@ -1060,6 +1163,22 @@ for (const nome of ["auto", "alta", "media", "baixa", "desligada"]) {
     if (await salvarAjuste({ cena: nome })) location.reload();
   });
 }
+// Decoração: vale na hora, sem recarregar — a estação lê do próprio estado.
+for (const n of [1, 2]) $(`mon-${n}`).addEventListener("change", () => salvarAjuste({ monitores: String(n) }));
+for (const nome of ["branco", "ambar", "azul", "verde", "vermelho"]) {
+  $(`led-${nome}`).addEventListener("change", () => salvarAjuste({ led: nome }));
+}
+for (const nome of ["escura", "clara", "madeira"]) {
+  $(`mesa-${nome}`).addEventListener("change", () => salvarAjuste({ mesa: nome }));
+}
+$("a-avisar").addEventListener("change", () => salvarAjuste({ avisar_bloco: $("a-avisar").checked ? "1" : "0" }));
+$("a-som").addEventListener("change", () => {
+  const ligado = $("a-som").checked;
+  // Toca uma vez ao ligar: serve de prova de que o som funciona nesta janela,
+  // e é o clique que os navegadores exigem antes de deixar tocar.
+  if (ligado) tocarAviso();
+  salvarAjuste({ som_bloco: ligado ? "1" : "0" });
+});
 
 // Esc fecha (o navegador já faz; isto garante também em webview que não faça).
 ajustes.addEventListener("keydown", (ev) => {
@@ -1335,6 +1454,7 @@ async function ler() {
     if (typeof e.paineis === "string" && e.paineis !== listaPaineis) { aplicarPaineis(e.paineis); if ($("paineis").open) desenharListaPaineis(); }
     desenharMercado(e);
     desenharMaquinas(e);
+    desenharAvisoDeBloco(e);
     desenharFita(e);
     desenharGrafico(e);
     garantirEstacao(e);

@@ -908,3 +908,70 @@ input[type="number"] {
    na altura da vez, ela rola por dentro, em vez de cortar o fim em silêncio. */
 .carteira { overflow-y: auto; }
 .movimentos { min-height: 0; max-height: none; }
+
+/* ---------- decorar a estação ---------- */
+/* Os segmentos nascem com duas colunas; quando são mais, viram uma grade que
+   quebra sozinha em vez de espremer o texto. */
+.segmentos.cinco { grid-template-columns: repeat(auto-fit, minmax(84px, 1fr)); }
+.enfeites {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1px;
+  background: var(--fio);
+  border: 1px solid var(--fio);
+}
+.enfeites li { background: var(--painel); }
+.enfeites label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  cursor: pointer;
+  color: var(--tinta-2);
+}
+.enfeites label:hover { background: var(--painel-2); color: var(--tinta); }
+.enfeites input { accent-color: var(--tinta); width: 16px; height: 16px; flex: none; }
+
+/* ---------- o aviso de bloco achado ---------- */
+/* Invertido, como tudo o que não pode passar batido, e no canto de baixo para
+   não tapar o painel. Sai sozinho depois de um tempo, ou no ×. */
+.aviso-bloco {
+  position: fixed;
+  inset: auto 16px 52px auto;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  max-width: min(420px, calc(100vw - 32px));
+  padding: 14px 14px 14px 16px;
+  background: var(--tinta);
+  color: var(--fundo);
+  border-radius: var(--r);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.55);
+  animation: entrar-aviso 0.32s ease-out;
+}
+.aviso-marca svg { width: 34px; height: 34px; display: block; }
+.aviso-bloco p { margin: 0; }
+.aviso-titulo { font: 700 15px/1.2 var(--display); font-stretch: condensed; letter-spacing: 0.06em; text-transform: uppercase; }
+.aviso-texto { font-size: 12px; margin-top: 2px !important; opacity: 0.8; }
+.aviso-fechar {
+  align-self: flex-start;
+  background: none;
+  border: 0;
+  color: inherit;
+  font-size: 17px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 2px;
+  opacity: 0.6;
+}
+.aviso-fechar:hover { opacity: 1; }
+@keyframes entrar-aviso {
+  from { transform: translateY(14px); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .aviso-bloco { animation: none; }
+}
