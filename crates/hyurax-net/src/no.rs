@@ -129,8 +129,16 @@ impl No {
     ///   tomado, buraco na fila, ou não cabe junto com o que já espera. Nada
     ///   disso prova má-fé: o par pode ter visto uma transferência que ainda
     ///   não chegou aqui. Não difunde e não pune.
-    /// - `Err`: inválida de verdade (assinatura, ativo, ou valor que nem
-    ///   sozinho caberia no saldo) — o par que mandou se comportou mal.
+    /// - `Err`: inválida por si só (assinatura ou codificação) — isso é
+    ///   provável olhando só a transferência, então o par que mandou se
+    ///   comportou mal e a conexão cai.
+    ///
+    /// Saldo **não** entra na lista de malícia. Saldo é opinião da minha
+    /// cadeia: quem me manda uma transferência gastando dinheiro que chegou
+    /// numa outra que eu ainda não vi está sendo honesto, e derrubar esse par
+    /// partiria a rede em pedaços por desencontro de vista. Uma enxurrada de
+    /// transferências impagáveis custa uma conferência de assinatura cada, o
+    /// mesmo que qualquer lixo, e nada fica guardado.
     pub fn adicionar_tx(&mut self, tx: Transfer) -> Result<bool, Malicia> {
         tx.check_signature(&self.magic()).map_err(Malicia)?;
         let custos = tx.costs().map_err(|e| Malicia(e.to_string()))?;
@@ -144,12 +152,9 @@ impl No {
         }
         for (ativo, custo) in &custos {
             let saldo = self.chain.state.balance(&tx.sender, ativo);
-            if saldo < *custo {
-                return Err(Malicia("saldo insuficiente para o mempool".into()));
-            }
             let livre = saldo.saturating_sub(prometido.get(ativo).copied().unwrap_or(0));
             if livre < *custo {
-                return Ok(false); // cabe sozinha, não cabe com a fila
+                return Ok(false); // não cabe no que esta cadeia vê como saldo
             }
         }
         self.mempool.insert((tx.sender, tx.nonce), tx);

@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="pt-BR">
+<meta charset="utf-8">
+<title>Cartão de compartilhamento — Hyurax</title>
+<!--
+  Desenha o cartão que aparece quando alguém compartilha o link do site
+  (og:image). Abra este arquivo no navegador e clique em "Baixar o PNG";
+  salve como site/assets/og.png.
+
+  É um programa, e não uma imagem pronta, de propósito: o cartão é desenhado
+  com as mesmas formas e as mesmas fontes do site, então mudar a marca aqui
+  muda o cartão, sem editor de imagem no meio. 1200×630 é o tamanho que o
+  Facebook, o WhatsApp, o Twitter/X e o Telegram pedem.
+-->
+<style>
+  body { margin: 0; background: #111; color: #f3f3f1; font: 13px/1.5 Consolas, monospace; display: grid; place-items: center; min-height: 100vh; gap: 16px; padding: 24px; }
+  canvas { width: min(900px, 90vw); height: auto; border: 1px solid rgba(243,243,241,.2); }
+  .acoes { display: flex; gap: 10px; align-items: center; }
+  button { font: inherit; background: #f3f3f1; color: #111; border: 0; padding: 10px 16px; cursor: pointer; letter-spacing: .12em; text-transform: uppercase; }
+  p { max-width: 70ch; color: rgba(243,243,241,.64); margin: 0; }
+</style>
+<canvas id="c" width="1200" height="630"></canvas>
+<div class="acoes"><button id="baixar" type="button">Baixar o PNG</button></div>
+<p>Salve o arquivo como <b>site/assets/og.png</b>. Depois troque <b>SEU-DOMINIO</b> em <b>site/index.html</b> e em <b>site/sitemap.xml</b> pelo domínio de verdade: as redes sociais só leem o cartão por endereço absoluto.</p>
+<script>
+const g = document.getElementById("c").getContext("2d");
+const TINTA = "#f3f3f1";
+const MONO = '"Cascadia Mono","IBM Plex Mono",Consolas,monospace';
+const DISPLAY = 'Bahnschrift,"Archivo Narrow","Arial Narrow",sans-serif';
+
+// Fundo e moldura de fio, como os painéis do programa.
+g.fillStyle = "#030303";
+g.fillRect(0, 0, 1200, 630);
+g.strokeStyle = "rgba(243,243,241,0.12)";
+g.lineWidth = 1;
+g.strokeRect(40.5, 40.5, 1119, 549);
+
+// A marca: os seis nós e os três fios do "H".
+function marca(x, y, escala) {
+  const p = (px, py) => [x + px * escala, y + py * escala];
+  g.strokeStyle = "rgba(243,243,241,0.55)";
+  g.lineWidth = 3.6 * escala;
+  g.lineCap = "round";
+  for (const [a, b] of [[[18, 14], [18, 50]], [[46, 14], [46, 50]], [[18, 32], [46, 32]]]) {
+    g.beginPath();
+    g.moveTo(...p(a[0], a[1]));
+    g.lineTo(...p(b[0], b[1]));
+    g.stroke();
+  }
+  g.fillStyle = TINTA;
+  for (const [cx, cy, r] of [[18, 14, 5], [18, 50, 5], [46, 14, 5], [46, 50, 5], [18, 32, 5.6], [46, 32, 5.6]]) {
+    g.beginPath();
+    g.arc(...p(cx, cy), r * escala, 0, Math.PI * 2);
+    g.fill();
+  }
+}
+marca(96, 150, 2.1);
+
+// Palavra e lema. O espaço entre as letras é aberto na mão, como no site.
+g.fillStyle = TINTA;
+g.font = "700 104px " + DISPLAY;
+g.textBaseline = "alphabetic";
+let x = 96;
+for (const letra of "HYURAX") {
+  g.fillText(letra, x, 400);
+  x += g.measureText(letra).width + 9;
+}
+
+g.fillStyle = "rgba(243,243,241,0.64)";
+g.font = "34px " + MONO;
+g.fillText("Os nós são a rede.", 98, 462);
+
+// Rodapé: o que é, em letra de etiqueta.
+g.fillStyle = "rgba(243,243,241,0.38)";
+g.font = "20px " + MONO;
+let r = 98;
+for (const letra of "REDE DE TESTE · CÓDIGO ABERTO · SEM DONO") {
+  g.fillText(letra, r, 540);
+  r += g.measureText(letra).width + 4.5;
+}
+
+// Fita de blocos: cheios são os meus, vazados são os dos outros nós.
+const base = 700;
+for (let i = 0; i < 9; i++) {
+  const lado = 34, esp = 46;
+  const px = base + (i % 5) * esp + Math.floor(i / 5) * 23;
+  const py = 150 + Math.floor(i / 5) * esp;
+  if (i % 3 === 0) {
+    g.fillStyle = "rgba(243,243,241,0.75)";
+    g.fillRect(px, py, lado, lado);
+  } else {
+    g.strokeStyle = "rgba(243,243,241,0.3)";
+    g.lineWidth = 1.5;
+    g.strokeRect(px + 0.5, py + 0.5, lado, lado);
+  }
+}
+g.fillStyle = "rgba(243,243,241,0.38)";
+g.font = "18px " + MONO;
+g.fillText("cada quadrado é um bloco", base, 300);
+
+document.getElementById("baixar").addEventListener("click", () => {
+  const a = document.createElement("a");
+  a.download = "og.png";
+  a.href = document.getElementById("c").toDataURL("image/png");
+  a.click();
+});
+</script>
+</html>

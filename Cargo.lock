@@ -1080,7 +1080,7 @@ dependencies = [
 
 [[package]]
 name = "hyurax-block"
-version = "0.1.0"
+version = "0.2.0-teste.1"
 dependencies = [
  "hex",
  "hyurax-codec",
@@ -1094,7 +1094,7 @@ dependencies = [
 
 [[package]]
 name = "hyurax-chain"
-version = "0.1.0"
+version = "0.2.0-teste.1"
 dependencies = [
  "hex",
  "hyurax-block",
@@ -1111,7 +1111,7 @@ dependencies = [
 
 [[package]]
 name = "hyurax-codec"
-version = "0.1.0"
+version = "0.2.0-teste.1"
 dependencies = [
  "hex",
  "hyurax-crypto",
@@ -1121,7 +1121,7 @@ dependencies = [
 
 [[package]]
 name = "hyurax-consensus"
-version = "0.1.0"
+version = "0.2.0-teste.1"
 dependencies = [
  "hyurax-identidade",
  "hyurax-pow",
@@ -1132,7 +1132,7 @@ dependencies = [
 
 [[package]]
 name = "hyurax-crypto"
-version = "0.1.0"
+version = "0.2.0-teste.1"
 dependencies = [
  "ed25519-dalek",
  "hex",
@@ -1143,7 +1143,7 @@ dependencies = [
 
 [[package]]
 name = "hyurax-eter"
-version = "0.1.0"
+version = "0.2.0-teste.1"
 dependencies = [
  "hyurax-codec",
  "hyurax-crypto",
@@ -1151,11 +1151,11 @@ dependencies = [
 
 [[package]]
 name = "hyurax-identidade"
-version = "0.1.0"
+version = "0.2.0-teste.1"
 
 [[package]]
 name = "hyurax-net"
-version = "0.1.0"
+version = "0.2.0-teste.1"
 dependencies = [
  "hyurax-block",
  "hyurax-chain",
@@ -1169,7 +1169,7 @@ dependencies = [
 
 [[package]]
 name = "hyurax-no"
-version = "0.1.0"
+version = "0.2.0-teste.1"
 dependencies = [
  "argon2",
  "chacha20poly1305",
@@ -1188,7 +1188,7 @@ dependencies = [
 
 [[package]]
 name = "hyurax-pow"
-version = "0.1.0"
+version = "0.2.0-teste.1"
 dependencies = [
  "argon2",
  "hex",
@@ -1199,7 +1199,7 @@ dependencies = [
 
 [[package]]
 name = "hyurax-state"
-version = "0.1.0"
+version = "0.2.0-teste.1"
 dependencies = [
  "hex",
  "hyurax-consensus",
@@ -1212,7 +1212,7 @@ dependencies = [
 
 [[package]]
 name = "hyurax-store"
-version = "0.1.0"
+version = "0.2.0-teste.1"
 dependencies = [
  "hex",
  "hyurax-block",
@@ -1226,7 +1226,7 @@ dependencies = [
 
 [[package]]
 name = "hyurax-tx"
-version = "0.1.0"
+version = "0.2.0-teste.1"
 dependencies = [
  "hex",
  "hyurax-codec",
@@ -1238,7 +1238,7 @@ dependencies = [
 
 [[package]]
 name = "hyurax-types"
-version = "0.1.0"
+version = "0.2.0-teste.1"
 dependencies = [
  "hyurax-identidade",
  "serde_json",
@@ -1246,7 +1246,7 @@ dependencies = [
 
 [[package]]
 name = "hyurax-usefulpow"
-version = "0.1.0"
+version = "0.2.0-teste.1"
 dependencies = [
  "hex",
  "hyurax-codec",
@@ -1257,7 +1257,7 @@ dependencies = [
 
 [[package]]
 name = "hyurax-wire"
-version = "0.1.0"
+version = "0.2.0-teste.1"
 dependencies = [
  "hex",
  "hyurax-block",

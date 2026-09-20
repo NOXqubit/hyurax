@@ -613,3 +613,26 @@ fn orfao_forjado_derruba_quem_mandou() {
     alvo_continua_vivo(porta, 2);
     alvo.desligar();
 }
+
+#[test]
+fn transferencia_impagavel_nao_derruba_o_par() {
+    // Saldo é opinião da minha cadeia: um par que relaia uma transferência
+    // gastando dinheiro que chegou numa outra que eu ainda não vi está sendo
+    // honesto. Recusar, sim; derrubar a conexão, não — senão a rede se parte
+    // por desencontro de vista. (Qualquer Malicia aqui derruba o par: ver
+    // servidor.rs, "par malicioso".)
+    let (mut no, _dono, saldo, assinar) = conta_com_saldo();
+    let impagavel = assinar(0, saldo.saturating_add(1_000_000));
+    assert_eq!(no.adicionar_tx(impagavel), Ok(false), "gastar mais que o saldo derrubou o par");
+    assert_eq!(no.mempool_len(), 0, "o impagável ficou guardado");
+
+    // O que continua sendo malícia: coinbase solta na rede, que nenhuma vista
+    // de cadeia pode tornar válida.
+    let coinbase = hyurax_tx::Tx::Coinbase(hyurax_tx::Coinbase {
+        height: 1,
+        recipient: MINERADOR,
+        amount: 1,
+        extra_nonce: Vec::new(),
+    });
+    assert!(no.adicionar_qualquer_tx(coinbase).is_err(), "coinbase solta devia derrubar o par");
+}
