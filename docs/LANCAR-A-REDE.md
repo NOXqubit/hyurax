@@ -4,7 +4,7 @@ Este é o passo a passo para sair de "roda na minha máquina" para "roda na
 internet, com gente de fora". Cada passo tem o comando exato e diz quem pode
 fazer: **você** (tem conta, senha ou máquina) ou **qualquer um**.
 
-> O que se lança agora é a **rede de teste**. O HYUR dela não tem valor, não há
+> O que se lança agora é a **rede de teste**. O HYX dela não tem valor, não há
 > venda, pré-venda nem promessa de lucro. A rede principal tem critérios
 > próprios, no fim deste documento, e nenhum deles está cumprido ainda.
 
@@ -20,7 +20,7 @@ o que vai acontecer na internet, só que ali com IP de verdade:
 | Bloco minerado num nó aparece no outro | `altura 3 · 0 no mempool` |
 | Transferência assinada num terceiro processo | `Enviada para 1 par(es)` |
 | A transferência entra num bloco minerado por outra máquina | bloco 4 |
-| O destinatário aparece com o dinheiro no primeiro nó | `Saldo gastável: 12.50000000 HYUR` |
+| O destinatário aparece com o dinheiro no primeiro nó | `Saldo gastável: 12.50000000 HYX` |
 
 Falta o que só a internet dá: IP de fora, porta aberta e gente.
 
@@ -159,7 +159,7 @@ O que pedir a quem chegar:
 
 1. rodar um nó e dizer se sincronizou;
 2. minerar um bloco e dizer quanto tempo levou;
-3. mandar HYUR de teste para outra pessoa;
+3. mandar HYX de teste para outra pessoa;
 4. tentar quebrar, e contar como (`SECURITY.md`).
 
 ## Não lançar sem isto
@@ -168,7 +168,7 @@ O que pedir a quem chegar:
 - [ ] o programa baixado abre e mostra a versão da etiqueta;
 - [ ] a gênese da rede de teste bate com a deste documento;
 - [ ] pelo menos um nó respondeu de **fora** da sua rede;
-- [ ] a página e o LEIA-ME dizem, sem rodeio, que é rede de teste e que o HYUR
+- [ ] a página e o LEIA-ME dizem, sem rodeio, que é rede de teste e que o HYX
       não tem valor;
 - [ ] `SECURITY.md` diz para onde mandar falha encontrada.
 

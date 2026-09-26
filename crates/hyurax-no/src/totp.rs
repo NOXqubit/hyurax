@@ -6,7 +6,7 @@
 //! não fala com o Google nem com ninguém para conferir o código.
 //!
 //! O que isto protege, honestamente: quem senta neste computador e sabe (ou vê)
-//! a sua senha ainda não consegue enviar HYUR, porque falta o celular. O que
+//! a sua senha ainda não consegue enviar HYX, porque falta o celular. O que
 //! **não** protege: quem copia a pasta de dados leva o arquivo do segredo junto
 //! e pode gerar os mesmos códigos. Segundo fator num computador só é isso; o
 //! programa diz isso na tela em vez de prometer o que não cumpre.

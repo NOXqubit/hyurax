@@ -21,11 +21,11 @@ precisa reproduzir cada valor definido aqui, byte a byte, contra os vetores em
 
 ## 1. Unidades
 
-1 HYUR = 100 000 000 unidades internas (`HYUR_UNIT`, 8 casas).
+1 HYX = 100 000 000 unidades internas (`HYX_UNIT`, 8 casas).
 
 Dinheiro é **sempre** inteiro sem sinal. Todo valor serializado cabe em `u64`.
 
-`MAX_SUPPLY` = 21 000 000 HYUR = 2 100 000 000 000 000 unidades.
+`MAX_SUPPLY` = 21 000 000 HYX = 2 100 000 000 000 000 unidades.
 
 ### Regras do parser de valor
 
@@ -43,7 +43,7 @@ para que os dois recusem exatamente as mesmas entradas.
 3. **Só dígitos ASCII 0-9.** `str.isdigit()` do Python devolve verdadeiro para
    dígito de largura completa (`１`), algarismo indo-arábico oriental (`١`) e
    dezenas de outros, e `int()` converte todos. `str::parse::<u64>()` do Rust
-   só aceita ASCII. Sem esta regra, `１` valeria 1 HYUR num lado e erro no
+   só aceita ASCII. Sem esta regra, `１` valeria 1 HYX num lado e erro no
    outro. Também fecha uma porta de falsificação visual: `１.5` e `1.5` são
    idênticos na tela.
 4. **Mais de 8 casas decimais é recusado, não truncado.** Truncar é perder
@@ -58,7 +58,7 @@ para que os dois recusem exatamente as mesmas entradas.
    recusa converter), que não é o erro de valor que quem chama trata, e ainda
    gastava CPU à toa. Corrigido em 12/09/2026, na revisão de ataque.
 
-A formatação (`to_hyur_str`) aceita inteiro negativo de propósito, porque é
+A formatação (`to_hyx_str`) aceita inteiro negativo de propósito, porque é
 função de exibição e às vezes é preciso mostrar a diferença entre dois saldos.
 Isso não cria valor monetário negativo no protocolo.
 
@@ -222,7 +222,7 @@ u8   kind = 1
 u16  version = 2
 u8   sig_code                 (1 = SIG-ED25519-V1)
 [20] sender
-u64  fee                      (sempre em HYUR)
+u64  fee                      (sempre em HYX)
 u64  nonce                    (nonce de conta, sequencial)
 u32  quantidade de saídas     (de 1 a 16)
      cada saída:
@@ -246,9 +246,9 @@ domínio da assinatura mudou junto com o formato, de modo que uma assinatura
 feita para a versão 1 nunca vale como assinatura de uma transferência
 versão 2. A coinbase não mudou e continua na versão 1.
 
-**Ativos.** O `asset_id` tem 32 bytes. O HYUR, ativo nativo, é o identificador
+**Ativos.** O `asset_id` tem 32 bytes. O HYX, ativo nativo, é o identificador
 todo zero; ativos futuros vão ter um identificador derivado do hash da própria
-emissão. Até existir uma regra de emissão, o consenso aceita só o HYUR.
+emissão. Até existir uma regra de emissão, o consenso aceita só o HYX.
 
 O `network_magic` entra de propósito: sem ele, transação assinada na testnet
 vale na mainnet.
@@ -261,19 +261,19 @@ saldo, nesta ordem:
 1. De 1 a 16 saídas. O decodificador recusa a contagem antes de ler qualquer
    saída, então uma contagem absurda não custa leitura nenhuma.
 2. `fee` e cada `amount` dentro de `u64`, e cada `amount > 0`.
-3. Todo `asset_id` é de um ativo conhecido. Hoje, só o HYUR.
+3. Todo `asset_id` é de um ativo conhecido. Hoje, só o HYX.
 4. Nenhuma saída para o próprio `sender`.
 5. Saídas em ordem estritamente crescente de `(recipient, asset_id)`. Isso
    proíbe saída repetida e deixa um único jeito de escrever o mesmo
    pagamento, como pede a regra de unicidade da seção 3.
-6. Para cada ativo, a soma das saídas (mais a taxa, no HYUR) não estoura
+6. Para cada ativo, a soma das saídas (mais a taxa, no HYX) não estoura
    `u64`.
 7. `public_key` e `signature` com o tamanho do algoritmo declarado.
 8. `endereço(public_key) == sender`.
 9. Assinatura válida sobre o payload acima.
 
 A regra de saldo (seção 13) é conferida por ativo: o saldo do `sender` em cada
-ativo precisa cobrir a soma das saídas naquele ativo, mais a taxa no HYUR.
+ativo precisa cobrir a soma das saídas naquele ativo, mais a taxa no HYX.
 Todos os ativos são conferidos antes de qualquer débito.
 
 ## 6. Árvore de Merkle
@@ -569,11 +569,11 @@ block_reward(h) = initial_reward >> (h / halving_interval)      0 após 64 halvi
 
 Valores atuais, sujeitos ao documento oficial:
 
-- `initial_reward` = 50 HYUR
+- `initial_reward` = 50 HYX
 - `halving_interval` = 210 000 blocos
-- Emissão total: exatamente 21 000 000 HYUR, dentro de `MAX_SUPPLY`.
+- Emissão total: exatamente 21 000 000 HYX, dentro de `MAX_SUPPLY`.
 
-O protótipo pagava 50 HYUR para sempre, sem halving e sem teto.
+O protótipo pagava 50 HYX para sempre, sem halving e sem teto.
 
 A coinbase paga `amount`, com `0 <= amount <= block_reward(altura) + soma das
 taxas do bloco`. **Zero é válido:** o minerador pode abrir mão da recompensa, e

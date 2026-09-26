@@ -5,7 +5,7 @@ edition.workspace = true
 rust-version.workspace = true
 authors.workspace = true
 license.workspace = true
-description = "Hyurax — nó: carteira com senha, mineração, envio de HYUR de teste, saldo e rede cifrada"
+description = "Hyurax — nó: carteira com senha, mineração, envio de HYX de teste, saldo e rede cifrada"
 
 [lib]
 path = "src/lib.rs"

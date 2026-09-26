@@ -1,6 +1,6 @@
 # Rode um nó do Hyurax em 5 minutos
 
-> **Rede de TESTE.** A rede pública ainda não existe e o HYUR não tem valor.
+> **Rede de TESTE.** A rede pública ainda não existe e o HYX não tem valor.
 > Não há venda, pré-venda nem promessa de lucro. Rodar um nó hoje é testar,
 > medir e ajudar a achar falhas.
 
@@ -120,7 +120,7 @@ Nada disso precisa de internet: o painel vem dentro do programa.
 - A recompensa espera 20 blocos na testnet para poder ser gasta.
 - No celular: `--linhas 1` e `--pausa-ms 200` esquentam menos.
 
-## 5. Enviar HYUR de teste
+## 5. Enviar HYX de teste
 
 ```bash
 ./hyurax-no enviar --rede testnet --pasta dados --arquivo carteira.txt --para ENDERECO_DESTINO --valor 1.5 --semente IP:PORTA

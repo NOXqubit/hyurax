@@ -657,7 +657,7 @@ export function criarEstacao(canvas, { calmo = false, qualidade = "auto" } = {})
     g.font = "700 40px Bahnschrift, 'Arial Narrow', sans-serif";
     g.fillText(estado.saldo.split(".")[0], 780, 146);
     g.font = "18px Consolas, monospace";
-    g.fillText(`.${estado.saldo.split(".")[1] || "0"} HYUR`, 780, 194);
+    g.fillText(`.${estado.saldo.split(".")[1] || "0"} HYX`, 780, 194);
     g.fillStyle = "rgba(243,243,241,0.45)";
     g.font = "15px Consolas, monospace";
     g.fillText("PARES", 780, 240);

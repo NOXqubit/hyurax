@@ -18,8 +18,8 @@ from hyurax.block import Block, BlockHeader  # noqa: E402
 from hyurax.chain import Chain, ChainError, make_genesis  # noqa: E402
 from hyurax.consensus import REGTEST, block_reward, target_to_compact  # noqa: E402
 from hyurax.state import State, StateError  # noqa: E402
-from hyurax.tx import HYUR, Coinbase, decode_tx, sign_transfer  # noqa: E402
-from hyurax.units import HYUR_UNIT, to_units  # noqa: E402
+from hyurax.tx import HYX, Coinbase, decode_tx, sign_transfer  # noqa: E402
+from hyurax.units import HYX_UNIT, to_units  # noqa: E402
 
 P = REGTEST
 
@@ -94,7 +94,7 @@ def test_tampering_rejected():
     for label, bad in (
         ("valor", replace(tx, outputs=(replace(saida, amount=to_units("999")),))),
         ("destino", replace(tx, outputs=(replace(saida, recipient=mallory.address),))),
-        ("ativo", replace(tx, outputs=(replace(saida, asset_id=bytes([1]) + HYUR[1:]),))),
+        ("ativo", replace(tx, outputs=(replace(saida, asset_id=bytes([1]) + HYX[1:]),))),
         ("nonce", replace(tx, nonce=tx.nonce + 1)),
         ("taxa", replace(tx, fee=to_units("5"))),
     ):
@@ -140,7 +140,7 @@ def test_mine_and_spend_after_maturity():
     )
     # a taxa foi para o minerador, entao nao sumiu do sistema
     assert chain.state.immature_balance(alice.address) >= to_units("0.01")
-    print(f"PASS minerar, maturar e gastar (saldo alice {saldo / HYUR_UNIT:.2f} HYUR)")
+    print(f"PASS minerar, maturar e gastar (saldo alice {saldo / HYX_UNIT:.2f} HYX)")
 
 
 def test_coinbase_maturity_blocks_early_spend():

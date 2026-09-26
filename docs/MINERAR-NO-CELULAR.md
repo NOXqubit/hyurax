@@ -165,5 +165,5 @@ texto; proteja com `./target/release/hyurax-no carteira cifrar --arquivo carteir
 - **O Android pode fechar o Termux em segundo plano.** Deixe a tela do Termux
   aberta, ou use `termux-wake-lock`.
 
-**Lembrete do projeto:** a rede pública não existe e o HYUR não tem valor.
+**Lembrete do projeto:** a rede pública não existe e o HYX não tem valor.
 Minerar hoje é teste e medição, não ganho.

@@ -87,13 +87,13 @@ export class SimulationEngine {
     const de = this.int(this.contasSim.length);
     let para = this.int(this.contasSim.length - 1); if (para >= de) para++;
     const nonce = (this.nonces.get(de) || 0) + 1; this.nonces.set(de, nonce);
-    const valor = (1 + this.int(4000)) * 250000;          // unidades de 10^-8 HYUR
+    const valor = (1 + this.int(4000)) * 250000;          // unidades de 10^-8 HYX
     const taxa = (1 + this.int(20)) * 1000;
     const assinatura = this.bytes(64);
     const corpo = new Escritor().u16(2).u8(1).fixo(this.contasSim[de]).u64(nonce).u64(taxa)
       .u32(1).fixo(this.contasSim[para]).fixo(new Uint8Array(32)).u64(valor).variavel(assinatura).bytes();
     return {
-      simulation: true, ativo: "HYUR", valor, taxa, nonce,
+      simulation: true, ativo: "HYX", valor, taxa, nonce,
       remetente: hex(this.contasSim[de]), destinatario: hex(this.contasSim[para]),
       assinatura: hex(assinatura), bytes: corpo, id: null, bloco: null,
     };

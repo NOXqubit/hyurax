@@ -59,7 +59,7 @@ fn vetores_de_unidades_parse() {
         let entrada = caso["input"].as_str().expect("input precisa ser string");
         let deve_aceitar = caso["accepted"].as_bool().expect("accepted precisa ser bool");
 
-        match (Amount::from_hyur_str(entrada), deve_aceitar) {
+        match (Amount::from_hyx_str(entrada), deve_aceitar) {
             (Ok(valor), true) => {
                 aceitos += 1;
                 let esperado_units: u64 = caso["units"]
@@ -74,10 +74,10 @@ fn vetores_de_unidades_parse() {
                     ));
                 }
                 let esperado_texto = caso["formatted"].as_str().expect("formatted");
-                if valor.to_hyur_string() != esperado_texto {
+                if valor.to_hyx_string() != esperado_texto {
                     divergencias.push(format!(
                         "{entrada:?}: formatação Python {esperado_texto:?}, Rust {:?}",
-                        valor.to_hyur_string()
+                        valor.to_hyx_string()
                     ));
                 }
             }
@@ -125,7 +125,7 @@ fn vetores_de_unidades_formatacao() {
             .parse()
             .expect("units inteiro");
         let esperado = caso["formatted"].as_str().expect("formatted");
-        let obtido = Amount::from_units(unidades).to_hyur_string();
+        let obtido = Amount::from_units(unidades).to_hyx_string();
         assert_eq!(obtido, esperado, "formatação de {unidades} unidades");
     }
     println!("formatação: {} casos batem com o Python", casos.len());
@@ -141,8 +141,8 @@ fn ida_e_volta_preserva_o_valor() {
             continue;
         }
         let entrada = caso["input"].as_str().expect("input");
-        let valor = Amount::from_hyur_str(entrada).expect("caso aceito");
-        let voltou = Amount::from_hyur_str(&valor.to_hyur_string())
+        let valor = Amount::from_hyx_str(entrada).expect("caso aceito");
+        let voltou = Amount::from_hyx_str(&valor.to_hyx_string())
             .expect("a própria formatação precisa ser aceita de volta");
         assert_eq!(valor, voltou, "ida e volta mudou o valor de {entrada:?}");
     }
@@ -152,7 +152,7 @@ fn ida_e_volta_preserva_o_valor() {
 #[test]
 fn constantes_batem_com_a_especificacao() {
     assert_eq!(MAX_SUPPLY, 21_000_000 * 100_000_000);
-    assert_eq!(Amount::MAX_SUPPLY.to_hyur_string(), "21000000.00000000");
-    assert_eq!(hyurax_types::HYUR_UNIT, 100_000_000);
-    assert_eq!(hyurax_types::HYUR_DECIMALS, 8);
+    assert_eq!(Amount::MAX_SUPPLY.to_hyx_string(), "21000000.00000000");
+    assert_eq!(hyurax_types::HYX_UNIT, 100_000_000);
+    assert_eq!(hyurax_types::HYX_DECIMALS, 8);
 }

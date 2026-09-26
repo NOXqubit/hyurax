@@ -2,7 +2,7 @@
 //!
 //! Guarda o segredo do TOTP e as duas escolhas do dono:
 //!
-//! - **exigir o código para enviar HYUR** (ligado junto com o segundo fator);
+//! - **exigir o código para enviar HYX** (ligado junto com o segundo fator);
 //! - **trancar o programa ao abrir**, pedindo o código antes de mostrar o painel.
 //!
 //! Mora em `PASTA/seguranca.txt`, ao lado da carteira. Apagar esse arquivo
@@ -23,7 +23,7 @@ const ARQUIVO: &str = "seguranca.txt";
 pub(crate) struct Seguranca {
     /// Segredo do TOTP. `None`: segundo fator desligado.
     pub segredo: Option<Vec<u8>>,
-    /// Pedir o código para enviar HYUR.
+    /// Pedir o código para enviar HYX.
     pub exige_envio: bool,
     /// Pedir o código ao abrir o programa.
     pub trava: bool,

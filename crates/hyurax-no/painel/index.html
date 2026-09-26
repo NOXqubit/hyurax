@@ -59,7 +59,7 @@
     <section class="bloco carteira" id="painel-carteira" data-painel="carteira" aria-label="Carteira">
       <header class="rotulo"><span>Carteira</span><span class="rotulo-fim"><button type="button" id="copiar" class="link">copiar endereço</button></span></header>
       <p class="endereco" id="endereco">—</p>
-      <p class="saldo"><span id="saldo" class="num">0.00000000</span><small>HYUR</small></p>
+      <p class="saldo"><span id="saldo" class="num">0.00000000</span><small>HYX</small></p>
       <p class="legenda">Gastável agora</p>
       <div class="carteira-acoes">
         <button type="button" id="abrir-enviar" class="acao" aria-haspopup="dialog">Enviar</button>
@@ -67,18 +67,18 @@
         <button type="button" id="abrir-seguranca" class="acao" aria-haspopup="dialog">Segurança</button>
       </div>
       <dl class="pares">
-        <div><dt>Esperando liberar</dt><dd><span id="imaturo" class="num">0</span> HYUR</dd></div>
-        <div><dt>Recompensa do próximo bloco</dt><dd><span id="recompensa" class="num">0</span> HYUR</dd></div>
+        <div><dt>Esperando liberar</dt><dd><span id="imaturo" class="num">0</span> HYX</dd></div>
+        <div><dt>Recompensa do próximo bloco</dt><dd><span id="recompensa" class="num">0</span> HYX</dd></div>
         <div><dt>Libera depois de</dt><dd><span id="maturidade" class="num">0</span> blocos</dd></div>
       </dl>
       <h3 class="rotulo-secao">Últimos movimentos</h3>
       <ol class="movimentos" id="movimentos"></ol>
-      <p class="nota nota-painel" id="sem-movimentos">Nada ainda. O primeiro movimento aparece quando você minerar um bloco ou receber HYUR.</p>
+      <p class="nota nota-painel" id="sem-movimentos">Nada ainda. O primeiro movimento aparece quando você minerar um bloco ou receber HYX.</p>
     </section>
     <section class="bloco rede" id="painel-rede" data-painel="rede" aria-label="Rede">
       <header class="rotulo"><span>Rede</span><span class="rotulo-fim"><span id="r-nome">—</span></span></header>
       <dl class="pares">
-        <div><dt>Emitido</dt><dd><span id="r-emitido" class="num">0</span> HYUR</dd></div>
+        <div><dt>Emitido</dt><dd><span id="r-emitido" class="num">0</span> HYX</dd></div>
         <div><dt>Transações esperando</dt><dd id="r-mempool" class="num">0</dd></div>
         <div><dt>Trabalho acumulado</dt><dd id="r-trabalho" class="num curto">0</dd></div>
         <div><dt>Ponta da cadeia</dt><dd id="r-ponta" class="num curto">—</dd></div>
@@ -174,7 +174,7 @@
       <li data-linha="painel">abrindo o painel</li>
     </ul>
 
-    <p class="boot-pe"><span id="boot-versao">Hyurax</span> · rede de TESTE · o HYUR daqui não tem valor</p>
+    <p class="boot-pe"><span id="boot-versao">Hyurax</span> · rede de TESTE · o HYX daqui não tem valor</p>
   </aside>
 
   <div class="boot-palco">
@@ -211,10 +211,10 @@
       <p class="boot-texto">Nada de servidor, nada de conta em site. O programa guarda a cadeia aqui, conversa com os outros nós e usa a sua CPU para procurar blocos.</p>
       <dl class="fatos">
         <div><dt>O que a máquina faz</dt><dd>Resolve uma multiplicação de matrizes que a rede inteira confere. É o trabalho que prova o bloco.</dd></div>
-        <div><dt>O que você ganha</dt><dd>Cada bloco achado paga uma recompensa em HYUR, que cai direto na sua carteira.</dd></div>
+        <div><dt>O que você ganha</dt><dd>Cada bloco achado paga uma recompensa em HYX, que cai direto na sua carteira.</dd></div>
         <div><dt>Quanto custa</dt><dd>Energia. O programa estima os watts e o custo do mês, e você limita quanto da CPU ele pode tomar.</dd></div>
       </dl>
-      <p class="aviso-teste"><b>REDE DE TESTE.</b> A rede pública ainda não existe e o HYUR minerado aqui não tem valor. Não há venda, pré-venda nem promessa de lucro.</p>
+      <p class="aviso-teste"><b>REDE DE TESTE.</b> A rede pública ainda não existe e o HYX minerado aqui não tem valor. Não há venda, pré-venda nem promessa de lucro.</p>
       <div class="acoes"><button type="button" id="boot-comecar" class="principal">Continuar</button></div>
     </div>
 
@@ -252,7 +252,7 @@
           <li id="r-tamanho">0 de no mínimo 10 caracteres</li>
           <li id="r-iguais">Repita a senha no segundo campo</li>
         </ul>
-        <p class="nota">A senha não é pedida para minerar, só para enviar HYUR. Ela não vai para lugar nenhum: fica só neste computador, embaralhada dentro do arquivo da carteira.</p>
+        <p class="nota">A senha não é pedida para minerar, só para enviar HYX. Ela não vai para lugar nenhum: fica só neste computador, embaralhada dentro do arquivo da carteira.</p>
         <p class="texto dica" id="dica-criar" hidden>A senha é embaralhada de propósito devagar, para ninguém adivinhar por tentativa. Em computador antigo isso leva até um minuto.</p>
         <p class="erro" id="erro-criar" role="alert"></p>
         <div class="acoes"><button type="submit" id="criar" class="principal" disabled>Criar carteira</button></div>
@@ -267,7 +267,7 @@
           <label for="conteudo">Ou cole aqui o conteúdo do arquivo</label>
           <textarea id="conteudo" name="conteudo" rows="6" spellcheck="false" autocomplete="off" autocapitalize="off" placeholder="formato=HYURAX-CARTEIRA-v2&#10;endereco=…"></textarea>
         </div>
-        <p class="nota">Minerar só precisa do endereço. A senha continua sendo a mesma de quando a carteira foi criada, e só é pedida para enviar HYUR.</p>
+        <p class="nota">Minerar só precisa do endereço. A senha continua sendo a mesma de quando a carteira foi criada, e só é pedida para enviar HYX.</p>
         <p class="erro" id="erro-importar" role="alert"></p>
         <div class="acoes"><button type="submit" id="importar" class="principal" disabled>Importar</button></div>
       </form>
@@ -305,9 +305,9 @@
   </div>
 </section>
 
-<!-- Enviar HYUR: conferir, assinar, e o comprovante. -->
+<!-- Enviar HYX: conferir, assinar, e o comprovante. -->
 <dialog id="enviar" class="dialogo" aria-labelledby="enviar-titulo">
-  <header class="rotulo"><h2 id="enviar-titulo">Enviar HYUR</h2><span class="rotulo-fim"><span id="enviar-saldo">—</span></span></header>
+  <header class="rotulo"><h2 id="enviar-titulo">Enviar HYX</h2><span class="rotulo-fim"><span id="enviar-saldo">—</span></span></header>
 
   <form class="dialogo-corpo pilha" id="f-enviar">
     <div class="campo">
@@ -316,18 +316,18 @@
     </div>
     <div class="dois">
       <div class="campo">
-        <label for="en-valor">Valor (HYUR)</label>
+        <label for="en-valor">Valor (HYX)</label>
         <div class="com-botao">
           <input type="text" id="en-valor" name="valor" inputmode="decimal" autocomplete="off" spellcheck="false" placeholder="0.00000000">
           <button type="button" id="en-tudo" class="secundario">tudo</button>
         </div>
       </div>
       <div class="campo">
-        <label for="en-taxa">Taxa (HYUR)</label>
+        <label for="en-taxa">Taxa (HYX)</label>
         <input type="text" id="en-taxa" name="taxa" inputmode="decimal" autocomplete="off" spellcheck="false" placeholder="0.00000000">
       </div>
     </div>
-    <p class="nota">Enviar é definitivo: não existe desfazer nem estornar. Confira o endereço com calma — HYUR mandado para o endereço errado fica com quem o recebeu.</p>
+    <p class="nota">Enviar é definitivo: não existe desfazer nem estornar. Confira o endereço com calma — HYX mandado para o endereço errado fica com quem o recebeu.</p>
     <p class="erro" id="erro-enviar" role="alert"></p>
     <div class="acoes">
       <button type="button" id="enviar-fechar" class="secundario">Cancelar</button>
@@ -339,10 +339,10 @@
     <h3 class="rotulo-campo">Confira antes de assinar</h3>
     <dl class="pares conferencia">
       <div><dt>Vai para</dt><dd id="cf-para" class="num quebra">—</dd></div>
-      <div><dt>Valor</dt><dd><span id="cf-valor" class="num">—</span> HYUR</dd></div>
-      <div><dt>Taxa</dt><dd><span id="cf-taxa" class="num">—</span> HYUR</dd></div>
-      <div><dt>Sai da carteira</dt><dd><span id="cf-total" class="num">—</span> HYUR</dd></div>
-      <div><dt>Sobra depois</dt><dd><span id="cf-sobra" class="num">—</span> HYUR</dd></div>
+      <div><dt>Valor</dt><dd><span id="cf-valor" class="num">—</span> HYX</dd></div>
+      <div><dt>Taxa</dt><dd><span id="cf-taxa" class="num">—</span> HYX</dd></div>
+      <div><dt>Sai da carteira</dt><dd><span id="cf-total" class="num">—</span> HYX</dd></div>
+      <div><dt>Sobra depois</dt><dd><span id="cf-sobra" class="num">—</span> HYX</dd></div>
     </dl>
     <div class="campo">
       <label for="en-senha">Senha da carteira</label>
@@ -374,7 +374,7 @@
 
 <!-- Receber: o endereço em letra grande e o QR Code. -->
 <dialog id="receber" class="dialogo" aria-labelledby="receber-titulo">
-  <header class="rotulo"><h2 id="receber-titulo">Receber HYUR</h2><span class="rotulo-fim"><span>rede de teste</span></span></header>
+  <header class="rotulo"><h2 id="receber-titulo">Receber HYX</h2><span class="rotulo-fim"><span>rede de teste</span></span></header>
   <div class="dialogo-corpo pilha">
     <p class="texto">Este é o seu endereço. Ele pode ser mostrado para qualquer pessoa: serve só para receber.</p>
     <div class="pronto-grade">
@@ -394,7 +394,7 @@
   <header class="rotulo"><h2 id="seg-titulo">Segurança</h2><span class="rotulo-fim"><span id="seg-estado">—</span></span></header>
 
   <div class="dialogo-corpo pilha" id="seg-desligado">
-    <p class="texto">Ligando o segundo fator, enviar HYUR passa a pedir um código de 6 dígitos que só existe no seu celular. Funciona com <b>Google Authenticator</b>, Aegis, 2FAS, Authy — qualquer um que leia um QR Code.</p>
+    <p class="texto">Ligando o segundo fator, enviar HYX passa a pedir um código de 6 dígitos que só existe no seu celular. Funciona com <b>Google Authenticator</b>, Aegis, 2FAS, Authy — qualquer um que leia um QR Code.</p>
     <dl class="fatos">
       <div><dt>Protege contra</dt><dd>quem usa este computador e descobre (ou vê você digitar) a sua senha</dd></div>
       <div><dt>Não protege contra</dt><dd>quem copia a pasta de dados: o segredo vai junto no arquivo</dd></div>
@@ -433,7 +433,7 @@
   <div class="dialogo-corpo pilha" id="seg-ligado" hidden>
     <p class="texto">O segundo fator está ligado. Para mudar qualquer coisa aqui, digite o código do celular — é assim que ele protege.</p>
     <form id="f-seg-mudar" class="pilha">
-      <label class="chave-liga" for="seg-exige"><input type="checkbox" id="seg-exige" autocomplete="off" checked><span>Pedir o código para enviar HYUR</span></label>
+      <label class="chave-liga" for="seg-exige"><input type="checkbox" id="seg-exige" autocomplete="off" checked><span>Pedir o código para enviar HYX</span></label>
       <label class="chave-liga" for="seg-trava"><input type="checkbox" id="seg-trava" autocomplete="off"><span>Pedir o código ao abrir o programa</span></label>
       <div class="campo">
         <label for="seg-codigo-mudar">Código de 6 dígitos</label>

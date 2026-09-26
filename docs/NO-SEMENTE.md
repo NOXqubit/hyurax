@@ -4,7 +4,7 @@ Um **nó semente** é um nó sempre ligado, com endereço fixo, onde os nós nov
 batem primeiro para encontrar a rede. Depois eles descobrem os outros pares
 sozinhos.
 
-> Rede de **teste**: o HYUR não tem valor. Não há venda, pré-venda nem promessa
+> Rede de **teste**: o HYX não tem valor. Não há venda, pré-venda nem promessa
 > de lucro.
 
 ## Por que não dá para usar o GitHub

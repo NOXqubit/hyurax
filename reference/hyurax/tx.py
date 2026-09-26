@@ -27,8 +27,8 @@ Transferência versão 2: vários ativos e várias saídas.
   A arquitetura do projeto (docs/HYURAX-DIRECT-RESONANCE.md, §19) exige que a
   transação nasça preparada para mais de um ativo. Cada saída diz quanto de
   qual ativo vai para quem, e uma transferência tem de 1 a 16 saídas. Hoje o
-  consenso aceita só o HYUR; os outros ativos esperam uma regra de emissão.
-  A taxa é sempre em HYUR, e o nonce continua sendo por conta.
+  consenso aceita só o HYX; os outros ativos esperam uma regra de emissão.
+  A taxa é sempre em HYX, e o nonce continua sendo por conta.
 """
 
 from __future__ import annotations
@@ -54,11 +54,11 @@ SIG_CODES_REV = {v: k for k, v in SIG_CODES.items()}
 MAX_EXTRA_NONCE = 64
 
 ASSET_ID_LEN = 32
-# O HYUR, ativo nativo, é o identificador todo zero. Ativos futuros vão ter um
+# O HYX, ativo nativo, é o identificador todo zero. Ativos futuros vão ter um
 # identificador derivado do hash da própria emissão, que nunca dá zero.
-HYUR = bytes(ASSET_ID_LEN)
-# Ativos que o consenso aceita. Só o HYUR, até existir regra de emissão.
-KNOWN_ASSETS = frozenset({HYUR})
+HYX = bytes(ASSET_ID_LEN)
+# Ativos que o consenso aceita. Só o HYX, até existir regra de emissão.
+KNOWN_ASSETS = frozenset({HYX})
 
 MAX_OUTPUTS = 16
 
@@ -75,7 +75,7 @@ class TxError(Exception):
 class Coinbase:
     """Recompensa do bloco. Criada pela cadeia, nunca aceita de fora.
 
-    Paga sempre em HYUR: é o único ativo que tem emissão.
+    Paga sempre em HYX: é o único ativo que tem emissão.
     """
 
     height: int
@@ -238,13 +238,13 @@ class Transfer:
     # -- custo --
 
     def costs(self) -> dict:
-        """Quanto sai do remetente em cada ativo: as saídas, e a taxa no HYUR.
+        """Quanto sai do remetente em cada ativo: as saídas, e a taxa no HYX.
 
         Levanta TxError se o total de algum ativo estourar a faixa.
         """
         totals: dict = {}
         if self.fee:
-            totals[HYUR] = self.fee
+            totals[HYX] = self.fee
         for output in self.outputs:
             total = totals.get(output.asset_id, 0) + output.amount
             if total > MAX_AMOUNT:
@@ -335,7 +335,7 @@ def sign_transfer_outputs(secret: bytes, network_magic: bytes, *, sender: bytes,
 
 def sign_transfer(secret: bytes, network_magic: bytes, *, sender: bytes,
                   recipient: bytes, amount: int, fee: int, nonce: int,
-                  asset_id: bytes = HYUR) -> Transfer:
+                  asset_id: bytes = HYX) -> Transfer:
     """Atalho para a transferência mais comum: uma saída só."""
     return sign_transfer_outputs(
         secret, network_magic, sender=sender,

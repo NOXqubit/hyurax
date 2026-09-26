@@ -30,9 +30,9 @@ from hyurax import argon2, codec, consensus, crypto, identidade, usefulpow, utra
 from hyurax.block import BlockHeader  # noqa: E402
 from hyurax.chain import Chain, make_genesis  # noqa: E402
 from hyurax.consensus import MAINNET, REGTEST, TESTNET  # noqa: E402
-from hyurax.tx import HYUR, Coinbase, Output, sign_transfer, sign_transfer_outputs  # noqa: E402
+from hyurax.tx import HYX, Coinbase, Output, sign_transfer, sign_transfer_outputs  # noqa: E402
 from hyurax.units import MAX_SUPPLY as MAX_SUPPLY_UNITS  # noqa: E402
-from hyurax.units import to_hyur_str, to_units  # noqa: E402
+from hyurax.units import to_hyx_str, to_units  # noqa: E402
 
 # Segredos FIXOS, so para vetores. Nunca usar em rede de verdade.
 SEED_A = bytes.fromhex(
@@ -76,7 +76,7 @@ def vec_units() -> list[dict]:
     for text in aceitos:
         units = to_units(text)
         parse.append({"input": text, "accepted": True,
-                      "units": str(units), "formatted": to_hyur_str(units)})
+                      "units": str(units), "formatted": to_hyx_str(units)})
     for text in recusados:
         try:
             units = to_units(text)
@@ -88,7 +88,7 @@ def vec_units() -> list[dict]:
 
     # unidades -> texto. Sem sinal, que e o que o tipo Amount do Rust cobre.
     fmt = [
-        {"units": str(u), "formatted": to_hyur_str(u)}
+        {"units": str(u), "formatted": to_hyx_str(u)}
         for u in (0, 1, 10_000_000, 100_000_000, 150_000_000,
                   MAX_SUPPLY_UNITS, 2**64 - 1)
     ]
@@ -106,8 +106,8 @@ def vec_units() -> list[dict]:
                                 "error": type(exc).__name__,
                                 "note": "no Rust o tipo f64 nem compila aqui"})
     python_only.append({
-        "case": "to_hyur_str(-150000000)",
-        "formatted": to_hyur_str(-150_000_000),
+        "case": "to_hyx_str(-150000000)",
+        "formatted": to_hyx_str(-150_000_000),
         "note": "formatacao aceita negativo por ser exibicao de diferenca; "
                 "o tipo Amount do Rust e u64 e nao representa isto",
     })
@@ -312,8 +312,8 @@ def vec_transactions() -> dict:
     ]
     # Varias saidas, ja na ordem estrita que o consenso exige.
     saidas = sorted(
-        (Output(recipient=addr_b, asset_id=HYUR, amount=to_units("2")),
-         Output(recipient=addr_c, asset_id=HYUR, amount=to_units("0.5"))),
+        (Output(recipient=addr_b, asset_id=HYX, amount=to_units("2")),
+         Output(recipient=addr_c, asset_id=HYX, amount=to_units("0.5"))),
         key=lambda o: (o.recipient, o.asset_id),
     )
     casos.append(sign_transfer_outputs(SEED_A, p.magic, sender=addr_a, outputs=saidas,
@@ -367,7 +367,7 @@ def vec_transactions_edge() -> list[dict]:
         return sign_transfer_outputs(SEED_A, magic, sender=addr_a, outputs=outputs,
                                      fee=fee, nonce=nonce)
 
-    def saida(dest, valor, ativo=HYUR):
+    def saida(dest, valor, ativo=HYX):
         return Output(recipient=dest, asset_id=ativo, amount=valor)
 
     valida = assinada([saida(addr_b, to_units("1"))], fee=to_units("0.001"))
@@ -503,12 +503,12 @@ def vec_state() -> dict:
     aplicar("coinbase_0", 0, [cb(0)])
     aplicar("coinbase_1", 1, [cb(1)])
     aplicar("coinbase_2_amadurece_0", 2, [cb(2)])
-    t1 = envio([Output(recipient=b, asset_id=HYUR, amount=10 * um)], fee=um, nonce=0)
+    t1 = envio([Output(recipient=b, asset_id=HYX, amount=10 * um)], fee=um, nonce=0)
     aplicar("transferencia_com_taxa", 3, [cb(3, consensus.block_reward(3, p) + um), t1])
     aplicar("replay_recusado", 4, [cb(4), t1])
     aplicar("saldo_insuficiente", 4,
-            [cb(4), envio([Output(recipient=b, asset_id=HYUR, amount=500 * um)], fee=0, nonce=1)])
-    t2 = envio([Output(recipient=c, asset_id=HYUR, amount=um)], fee=0, nonce=1)
+            [cb(4), envio([Output(recipient=b, asset_id=HYX, amount=500 * um)], fee=0, nonce=1)])
+    t2 = envio([Output(recipient=c, asset_id=HYX, amount=um)], fee=0, nonce=1)
     aplicar("duplicada_no_bloco", 4, [cb(4), t2, t2])
     aplicar("coinbase_acima_do_permitido", 4, [cb(4, consensus.block_reward(4, p) + 1)])
     aplicar("coinbase_altura_errada", 4, [cb(5)])
@@ -519,12 +519,12 @@ def vec_state() -> dict:
                                public_key=t2.public_key,
                                signature=t2.signature[:-1] + bytes([t2.signature[-1] ^ 1]))
     aplicar("assinatura_invalida", 4, [cb(4), assinatura_ruim])
-    saidas = sorted([Output(recipient=b, asset_id=HYUR, amount=2 * um),
-                     Output(recipient=c, asset_id=HYUR, amount=3 * um)],
+    saidas = sorted([Output(recipient=b, asset_id=HYX, amount=2 * um),
+                     Output(recipient=c, asset_id=HYX, amount=3 * um)],
                     key=lambda o: (o.recipient, o.asset_id))
     aplicar("duas_saidas_e_coinbase_zero", 4, [cb(4, 0), envio(saidas, fee=5, nonce=1)])
     aplicar("b_gasta_o_que_recebeu", 5,
-            [cb(5, dest=c), envio([Output(recipient=a, asset_id=HYUR, amount=um)], fee=0,
+            [cb(5, dest=c), envio([Output(recipient=a, asset_id=HYX, amount=um)], fee=0,
                                   nonce=0, segredo=SEED_B, origem=b)])
     reverter("desfaz_5")
     reverter("desfaz_4")

@@ -23,11 +23,11 @@
 - **Decisão de 11/09/2026:** a transação nasce com vários ativos, como pede o
   §19. O gabarito em Python muda primeiro, e só depois a transação vai para
   o Rust:
-  - identificador de ativo de 32 bytes, com o HYUR reservado como tudo zero;
+  - identificador de ativo de 32 bytes, com o HYX reservado como tudo zero;
   - saldo guardado por conta e por ativo;
-  - taxa sempre em HYUR;
+  - taxa sempre em HYX;
   - nonce por conta;
-  - o consenso aceita só HYUR até existir uma regra de emissão de ativos.
+  - o consenso aceita só HYX até existir uma regra de emissão de ativos.
 - **O modelo continua sendo de contas**, porque o próprio documento descreve a
   carteira com `nonce`, `asset_balances` e `offline_budget`.
 - **Regras dos §58 a §60 que já estão no código e testadas:**
@@ -477,7 +477,7 @@ Hyurax deve permitir uma identidade de pagamento legível.
 Exemplo conceitual:
 
 ```text
-bob.hyur
+bob.hyx
 ```
 
 Resolver:
@@ -559,8 +559,8 @@ Alice ═════════════ Bob
 Estado inicial:
 
 ```text
-Alice: 100 HYUR
-Bob:     0 HYUR
+Alice: 100 HYX
+Bob:     0 HYX
 ```
 
 Atualizações off-chain:
@@ -595,19 +595,19 @@ asset_id
 amount
 ```
 
-em vez de assumir implicitamente apenas HYUR.
+em vez de assumir implicitamente apenas HYX.
 
 Exemplo:
 
 ```text
-asset_id = HYUR
+asset_id = HYX
 amount = 10.00000000
 ```
 
 Futuro:
 
 ```text
-asset_id = HYUR-BRL
+asset_id = HYX-BRL
 amount = ...
 ```
 
@@ -639,10 +639,10 @@ Carteira:
 
 ```text
 Total Balance:
-100 HYUR
+100 HYX
 
 Offline Budget:
-20 HYUR
+20 HYX
 ```
 
 Políticas:
@@ -657,8 +657,8 @@ offline_max_depth
 Exemplo:
 
 ```text
-offline_total_limit = 20 HYUR
-offline_single_tx = 5 HYUR
+offline_total_limit = 20 HYX
+offline_single_tx = 5 HYX
 offline_expiration = 24h
 ```
 
@@ -1246,8 +1246,8 @@ Settlement
 Exemplo:
 
 ```text
-maximum_per_transaction = 1 HYUR
-maximum_daily = 10 HYUR
+maximum_per_transaction = 1 HYX
+maximum_daily = 10 HYX
 approved_services = [...]
 ```
 
@@ -1269,7 +1269,7 @@ Policy
 Exemplo:
 
 ```text
-if amount <= 1 HYUR
+if amount <= 1 HYX
 and recipient in approved_list
 then automatic_authorization
 ```
@@ -1810,7 +1810,7 @@ AI payments
 O projeto não deve ser considerado pronto porque:
 
 ```text
-"conseguiu mandar 10 HYUR"
+"conseguiu mandar 10 HYX"
 ```
 
 O teste de sucesso é:

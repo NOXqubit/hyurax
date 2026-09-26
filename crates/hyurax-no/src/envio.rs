@@ -1,4 +1,4 @@
-//! Enviar HYUR pelo programa, e o histórico da carteira.
+//! Enviar HYX pelo programa, e o histórico da carteira.
 //!
 //! O terminal já fazia isto (`hyurax-no enviar`). Aqui é o mesmo caminho, com
 //! as mesmas conferências, feito pela janela:
@@ -20,9 +20,9 @@ use std::sync::Arc;
 use hyurax_chain::Chain;
 use hyurax_crypto::ADDRESS_LEN;
 use hyurax_net::Rede;
-use hyurax_tx::{HYUR, Output, Transfer, Tx, sign_transfer_outputs};
+use hyurax_tx::{HYX, Output, Transfer, Tx, sign_transfer_outputs};
 
-use crate::{carteira, de_hex, hex, hyur, unidades_de_hyur};
+use crate::{carteira, de_hex, hex, hyx, unidades_de_hyx};
 
 /// Taxa sugerida quando o dono não escreve nada: zero.
 ///
@@ -63,12 +63,12 @@ pub(crate) fn conferir(
     if para == *de {
         return Err("esse é o seu próprio endereço. Mandar para si mesmo só gastaria a taxa.".into());
     }
-    let valor = unidades_de_hyur(valor_texto)?;
+    let valor = unidades_de_hyx(valor_texto)?;
     if valor == 0 {
         return Err("o valor precisa ser maior que zero.".into());
     }
-    let taxa = if taxa_texto.trim().is_empty() { TAXA_PADRAO } else { unidades_de_hyur(taxa_texto)? };
-    valor.checked_add(taxa).ok_or("valor mais taxa passa do total que existe de HYUR.")?;
+    let taxa = if taxa_texto.trim().is_empty() { TAXA_PADRAO } else { unidades_de_hyx(taxa_texto)? };
+    valor.checked_add(taxa).ok_or("valor mais taxa passa do total que existe de HYX.")?;
     Ok(Pedido { para, valor, taxa })
 }
 
@@ -97,20 +97,20 @@ pub(crate) fn enviar(
     let total = pedido.valor.checked_add(pedido.taxa).ok_or("valor mais taxa estoura")?;
     let (nonce, saldo, altura) = {
         let no = rede.no.lock().map_err(|_| "nó travado".to_string())?;
-        (no.proximo_nonce(&de), no.chain.state.balance(&de, &HYUR), no.chain.height())
+        (no.proximo_nonce(&de), no.chain.state.balance(&de, &HYX), no.chain.height())
     };
     if total > saldo {
         return Err(format!(
-            "saldo gastável insuficiente na altura {altura}: você tem {} HYUR e precisa de {} HYUR. \
+            "saldo gastável insuficiente na altura {altura}: você tem {} HYX e precisa de {} HYX. \
              A recompensa de mineração só libera depois de {maturidade} blocos.",
-            hyur(u128::from(saldo)),
-            hyur(u128::from(total))
+            hyx(u128::from(saldo)),
+            hyx(u128::from(total))
         ));
     }
     // Só agora a senha é usada: abrir a carteira custa memória e tempo de
     // propósito, e não faz sentido pagar isso para depois descobrir saldo curto.
     let segredo = carteira::abrir(texto_da_carteira, senha)?;
-    let saida = Output { recipient: pedido.para, asset_id: HYUR, amount: pedido.valor };
+    let saida = Output { recipient: pedido.para, asset_id: HYX, amount: pedido.valor };
     let tx = sign_transfer_outputs(&segredo, magic, de, vec![saida], pedido.taxa, nonce).map_err(|e| e.to_string())?;
     let txid = tx.txid().map_err(|e| e.to_string())?;
     match rede.submeter_tx(tx) {
@@ -144,7 +144,7 @@ const BLOCOS_OLHADOS: usize = 20_000;
 fn soma_para(t: &Transfer, quem: &[u8; ADDRESS_LEN]) -> u64 {
     t.outputs
         .iter()
-        .filter(|s| s.recipient == *quem && s.asset_id == HYUR)
+        .filter(|s| s.recipient == *quem && s.asset_id == HYX)
         .fold(0u64, |a, s| a.saturating_add(s.amount))
 }
 

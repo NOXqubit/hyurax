@@ -117,7 +117,7 @@ fn cifrar_como(formato: &str, segredo: &[u8; SECRET_LEN], senha: &str, aleatorio
         "# Carteira Hyurax de TESTE, cifrada com senha.\n\
          # Sem a senha, este arquivo não gasta nada. Sem este arquivo E a senha,\n\
          # o saldo fica perdido: guarde uma cópia e não esqueça a senha.\n\
-         # A rede pública não existe e o HYUR não tem valor.\n\
+         # A rede pública não existe e o HYX não tem valor.\n\
          formato={formato}\n\
          endereco={}\n\
          kdf=argon2id\n\

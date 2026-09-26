@@ -224,7 +224,7 @@
         "note": "no Rust o tipo f64 nem compila aqui"
       },
       {
-        "case": "to_hyur_str(-150000000)",
+        "case": "to_hyx_str(-150000000)",
         "formatted": "-1.50000000",
         "note": "formatacao aceita negativo por ser exibicao de diferenca; o tipo Amount do Rust e u64 e nao representa isto"
       }

@@ -75,7 +75,7 @@ pub struct ParametrosRede {
     pub uteis: ParametrosUteis,
 }
 
-const HYUR_UNIT: u64 = hyurax_types::HYUR_UNIT;
+const HYX_UNIT: u64 = hyurax_types::HYX_UNIT;
 
 impl ParametrosRede {
     /// Rede principal.
@@ -86,7 +86,7 @@ impl ParametrosRede {
         max_target: ParametrosUteis::MAINNET.max_target,
         target_spacing: 120,
         lwma_window: 60,
-        initial_reward: 50 * HYUR_UNIT,
+        initial_reward: 50 * HYX_UNIT,
         halving_interval: 210_000,
         max_block_bytes: 1_000_000,
         max_future_drift: 120,

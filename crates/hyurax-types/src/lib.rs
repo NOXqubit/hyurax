@@ -27,19 +27,19 @@
 
 use core::fmt;
 
-/// Casas decimais de 1 HYUR.
-pub const HYUR_DECIMALS: u32 = 8;
+/// Casas decimais de 1 HYX.
+pub const HYX_DECIMALS: u32 = 8;
 
-/// Unidades internas em 1 HYUR. Igual ao satoshi do Bitcoin.
-pub const HYUR_UNIT: u64 = 100_000_000;
+/// Unidades internas em 1 HYX. Igual ao satoshi do Bitcoin.
+pub const HYX_UNIT: u64 = 100_000_000;
 
 /// Teto absoluto de emissão, em unidades internas.
-pub const MAX_SUPPLY: u64 = 21_000_000 * HYUR_UNIT;
+pub const MAX_SUPPLY: u64 = 21_000_000 * HYX_UNIT;
 
 /// Maior valor representável. Todo campo monetário é `u64` na codificação.
 pub const MAX_AMOUNT: u64 = u64::MAX;
 
-/// Tamanho máximo do texto aceito por [`Amount::from_hyur_str`].
+/// Tamanho máximo do texto aceito por [`Amount::from_hyx_str`].
 ///
 /// Vinte dígitos inteiros e oito decimais cobrem qualquer valor possível; 64
 /// dá folga para sinal, ponto e zeros à esquerda. Ver seção 1 da
@@ -126,7 +126,7 @@ impl Amount {
         self.0 == 0
     }
 
-    /// Converte texto em HYUR para unidades internas.
+    /// Converte texto em HYX para unidades internas.
     ///
     /// Espelha `to_units` da referência Python, incluindo o que ela recusa.
     /// As regras estão em `spec/HYURAX-SPEC-01.md`, seção 1.
@@ -135,7 +135,7 @@ impl Amount {
     ///
     /// Devolve [`AmountError`] para entrada não-ASCII, negativa, malformada,
     /// com mais de oito casas decimais, ou que não caiba em `u64`.
-    pub fn from_hyur_str(entrada: &str) -> Result<Self, AmountError> {
+    pub fn from_hyx_str(entrada: &str) -> Result<Self, AmountError> {
         // Só ASCII. O `strip()` do Python e o `trim()` do Rust removem
         // espaço em branco Unicode por tabelas que não são idênticas em toda
         // versão. Em vez de tentar casar duas tabelas Unicode, o protocolo
@@ -182,7 +182,7 @@ impl Amount {
         if inteira.is_empty() && fracionaria.is_empty() {
             return Err(AmountError::SemDigitos);
         }
-        if fracionaria.len() > HYUR_DECIMALS as usize {
+        if fracionaria.len() > HYX_DECIMALS as usize {
             return Err(AmountError::PrecisaoDemais);
         }
 
@@ -193,7 +193,7 @@ impl Amount {
         };
 
         // Completa a fração à direita até oito casas: "5" vira "50000000".
-        let mut casas = [b'0'; HYUR_DECIMALS as usize];
+        let mut casas = [b'0'; HYX_DECIMALS as usize];
         for (destino, origem) in casas.iter_mut().zip(fracionaria.bytes()) {
             *destino = origem;
         }
@@ -203,7 +203,7 @@ impl Amount {
             .map_err(|_| AmountError::ForaDaFaixa)?;
 
         inteiro
-            .checked_mul(HYUR_UNIT)
+            .checked_mul(HYX_UNIT)
             .and_then(|v| v.checked_add(fracao))
             .map(Self)
             .ok_or(AmountError::ForaDaFaixa)
@@ -211,10 +211,10 @@ impl Amount {
 
     /// Formata como decimal com oito casas, sem passar por ponto flutuante.
     #[must_use]
-    pub fn to_hyur_string(self) -> String {
-        let inteiro = self.0 / HYUR_UNIT;
-        let fracao = self.0 % HYUR_UNIT;
-        format!("{inteiro}.{fracao:0width$}", width = HYUR_DECIMALS as usize)
+    pub fn to_hyx_string(self) -> String {
+        let inteiro = self.0 / HYX_UNIT;
+        let fracao = self.0 % HYX_UNIT;
+        format!("{inteiro}.{fracao:0width$}", width = HYX_DECIMALS as usize)
     }
 
     /// Soma que devolve erro em vez de dar a volta.
@@ -244,7 +244,7 @@ impl Amount {
 
 impl fmt::Display for Amount {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(&self.to_hyur_string())
+        f.write_str(&self.to_hyx_string())
     }
 }
 
@@ -252,7 +252,7 @@ impl fmt::Display for Amount {
 ///
 /// `char::is_numeric` e `str::isdigit()` do Python aceitam dígito de largura
 /// completa (`１`), algarismo indo-arábico oriental (`١`) e dezenas de outros.
-/// Aceitar qualquer um deles faria `１` valer 1 HYUR num lado e erro no outro.
+/// Aceitar qualquer um deles faria `１` valer 1 HYX num lado e erro no outro.
 /// Também fecha uma porta de falsificação visual: `１.5` e `1.5` são idênticos
 /// na tela.
 fn so_digitos_ascii(texto: &str) -> bool {
@@ -267,18 +267,18 @@ mod testes {
     fn conversao_basica() {
         let casos = [
             ("0", 0_u64),
-            ("1", HYUR_UNIT),
+            ("1", HYX_UNIT),
             ("0.1", 10_000_000),
             ("0.00000001", 1),
             ("1.5", 150_000_000),
             ("21000000", MAX_SUPPLY),
-            ("+2", 2 * HYUR_UNIT),
+            ("+2", 2 * HYX_UNIT),
             (".5", 50_000_000),
-            ("7.", 7 * HYUR_UNIT),
+            ("7.", 7 * HYX_UNIT),
             ("  3.25  ", 325_000_000),
         ];
         for (texto, esperado) in casos {
-            let obtido = Amount::from_hyur_str(texto)
+            let obtido = Amount::from_hyx_str(texto)
                 .unwrap_or_else(|e| panic!("{texto:?} deveria ser aceito: {e}"));
             assert_eq!(obtido.units(), esperado, "entrada {texto:?}");
         }
@@ -308,14 +308,14 @@ mod testes {
         let zeros = format!("{}1", "0".repeat(70));
         for texto in [longo.as_str(), zeros.as_str()] {
             assert_eq!(
-                Amount::from_hyur_str(texto),
+                Amount::from_hyx_str(texto),
                 Err(AmountError::TextoLongoDemais),
                 "texto de {} caracteres deveria ser recusado pelo tamanho",
                 texto.len()
             );
         }
         for (texto, esperado) in casos {
-            match Amount::from_hyur_str(texto) {
+            match Amount::from_hyx_str(texto) {
                 Ok(v) => panic!("{texto:?} deveria falhar, devolveu {}", v.units()),
                 Err(e) => assert_eq!(e, esperado, "entrada {texto:?}"),
             }
@@ -324,12 +324,12 @@ mod testes {
 
     #[test]
     fn soma_de_centavos_nao_acumula_erro() {
-        let dez_centavos = Amount::from_hyur_str("0.1").expect("0.1 é válido");
+        let dez_centavos = Amount::from_hyx_str("0.1").expect("0.1 é válido");
         let mut acumulado = Amount::ZERO;
         for _ in 0..10 {
             acumulado = acumulado.checked_add(dez_centavos).expect("sem estouro");
         }
-        assert_eq!(acumulado, Amount::from_hyur_str("1").expect("1 é válido"));
+        assert_eq!(acumulado, Amount::from_hyx_str("1").expect("1 é válido"));
     }
 
     #[test]
@@ -346,9 +346,9 @@ mod testes {
 
     #[test]
     fn formatacao() {
-        assert_eq!(Amount::ZERO.to_hyur_string(), "0.00000000");
-        assert_eq!(Amount::from_units(1).to_hyur_string(), "0.00000001");
-        assert_eq!(Amount::from_units(HYUR_UNIT).to_hyur_string(), "1.00000000");
-        assert_eq!(Amount::MAX_SUPPLY.to_hyur_string(), "21000000.00000000");
+        assert_eq!(Amount::ZERO.to_hyx_string(), "0.00000000");
+        assert_eq!(Amount::from_units(1).to_hyx_string(), "0.00000001");
+        assert_eq!(Amount::from_units(HYX_UNIT).to_hyx_string(), "1.00000000");
+        assert_eq!(Amount::MAX_SUPPLY.to_hyx_string(), "21000000.00000000");
     }
 }

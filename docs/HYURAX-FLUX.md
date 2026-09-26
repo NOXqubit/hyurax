@@ -26,7 +26,7 @@ aqui de **F0 a F10**.
 
 ### Decisões
 
-- **HYUR-BRL com 8 casas decimais**, como o HYUR. O lado bom: reaproveita a
+- **HYX-BRL com 8 casas decimais**, como o HYX. O lado bom: reaproveita a
   regra de dinheiro que já existe e já está validada nos dois lados
   (`units.py` e `hyurax-types`, fixos em 8 casas). O custo: fração abaixo de um
   centavo não tem correspondente numa reserva em reais. Antes de qualquer
@@ -43,7 +43,7 @@ aqui de **F0 a F10**.
 
 Medido no código em 10/09/2026:
 
-- A transação só conhece o HYUR. Existem dois tipos, coinbase e transferência
+- A transação só conhece o HYX. Existem dois tipos, coinbase e transferência
   (`reference/hyurax/tx.py`), e o decodificador recusa qualquer outro.
 - A transferência não tem campo de ativo nem de memo. Hoje não dá nem para
   ancorar um pedido de pagamento dentro de uma transação.
@@ -76,7 +76,7 @@ as fontes no fim desta seção.
   e resgate.
 - A Resolução BCB 561/2026 proíbe usar stablecoin para liquidar pagamento
   internacional (eFX) a partir de 01/10/2026. Isso atinge direto o uso de
-  HYUR-USD e HYUR-EUR em remessa.
+  HYX-USD e HYX-EUR em remessa.
 - Quem só fornece software, sem nunca guardar dinheiro nem ativo do cliente,
   fica fora da regra de PSAV, segundo duas fontes independentes. Pode cair em
   outras regras se mexer com pagamento.
@@ -102,8 +102,8 @@ as fontes no fim desta seção.
 
 ### Conflito a resolver
 
-O §4.1 lista "investimento" e "possibilidade de valorização" para o HYUR, e o
-README diz que não existe token com valor. Oferecer HYUR com promessa de
+O §4.1 lista "investimento" e "possibilidade de valorização" para o HYX, e o
+README diz que não existe token com valor. Oferecer HYX com promessa de
 valorização pode configurar oferta de valor mobiliário. Enquanto não houver
 rede principal nem estrutura jurídica, nada de venda ou pré-venda.
 
@@ -270,9 +270,9 @@ Hyurax Blockchain
 
 O ecossistema deverá separar claramente três categorias.
 
-### 4.1 HYUR
+### 4.1 HYX
 
-HYUR é o ativo nativo do ecossistema Hyurax.
+HYX é o ativo nativo do ecossistema Hyurax.
 
 Características:
 
@@ -289,7 +289,7 @@ Características:
 - incentivos;
 - economia da rede.
 
-HYUR NÃO é uma stablecoin.
+HYX NÃO é uma stablecoin.
 
 ## 5. HYURAX STABLE
 
@@ -298,11 +298,11 @@ A segunda categoria será formada pelas stablecoins.
 Exemplos:
 
 ```text
-HYUR-BRL
-HYUR-USD
-HYUR-EUR
-HYUR-GBP
-HYUR-JPY
+HYX-BRL
+HYX-USD
+HYX-EUR
+HYX-GBP
+HYX-JPY
 ```
 
 Cada ativo possui uma referência monetária.
@@ -310,9 +310,9 @@ Cada ativo possui uma referência monetária.
 Exemplo:
 
 ```text
-1 HYUR-BRL ≈ R$1
-1 HYUR-USD ≈ US$1
-1 HYUR-EUR ≈ €1
+1 HYX-BRL ≈ R$1
+1 HYX-USD ≈ US$1
+1 HYX-EUR ≈ €1
 ```
 
 A paridade deve ser definida por um mecanismo econômico verificável.
@@ -358,7 +358,7 @@ As três categorias não devem competir.
        ┌───────────┼───────────┐
        │           │           │
        ▼           ▼           ▼
-      HYUR       HYUR-STABLE   FUSION
+      HYX       HYX-STABLE   FUSION
        │           │           │
        │           │           │
    economia     estabilidade   função
@@ -405,7 +405,7 @@ Exemplo:
 ```text
 R$1 reservado
      ↓
-1 HYUR-BRL emitido
+1 HYX-BRL emitido
 ```
 
 Esse modelo é conceitualmente semelhante ao modelo DePix.
@@ -434,7 +434,7 @@ Cripto colateralizada
        ↓
 protocolo
        ↓
-HYUR-BRL
+HYX-BRL
 ```
 
 Nesse modelo, a garantia pode existir on-chain.
@@ -597,7 +597,7 @@ CONFIRMAÇÃO
 MERCHANT
 ```
 
-## 17. PAGAMENTO COM HYUR
+## 17. PAGAMENTO COM HYX
 
 Exemplo:
 
@@ -605,12 +605,12 @@ Produto:
 
 R$100
 
-Cliente possui HYUR.
+Cliente possui HYX.
 
 O sistema pode:
 
 ```text
-HYUR
+HYX
  ↓
 cotação
  ↓
@@ -624,38 +624,38 @@ merchant
 O comerciante poderá escolher:
 
 ```text
-Receber HYUR
+Receber HYX
 ```
 
 ou:
 
 ```text
-Receber HYUR-BRL
+Receber HYX-BRL
 ```
 
 ou outro ativo permitido.
 
-## 18. PAGAMENTO COM HYUR-BRL
+## 18. PAGAMENTO COM HYX-BRL
 
 O comerciante define:
 
 ```text
-Preço = 100 HYUR-BRL
+Preço = 100 HYX-BRL
 ```
 
 O cliente paga:
 
 ```text
-100 HYUR-BRL
+100 HYX-BRL
 ```
 
 Como o ativo tem como objetivo acompanhar o BRL:
 
 ```text
-100 HYUR-BRL ≈ R$100
+100 HYX-BRL ≈ R$100
 ```
 
-O comerciante não precisa assumir diretamente a volatilidade do HYUR.
+O comerciante não precisa assumir diretamente a volatilidade do HYX.
 
 ## 19. CONVERSÃO AUTOMÁTICA
 
@@ -663,11 +663,11 @@ Futuramente:
 
 ```text
 Cliente
- possui HYUR
+ possui HYX
 
        ↓
 
-Merchant aceita HYUR-BRL
+Merchant aceita HYX-BRL
 
        ↓
 
@@ -675,7 +675,7 @@ Hyurax Flux
        ↓
 conversão
        ↓
-HYUR-BRL
+HYX-BRL
 
        ↓
 
@@ -769,7 +769,7 @@ Mint authorization
        ↓
 Mint
        ↓
-HYUR-BRL
+HYX-BRL
 ```
 
 Nunca:
@@ -787,7 +787,7 @@ sem mecanismo de autorização.
 O caminho inverso:
 
 ```text
-HYUR-BRL
+HYX-BRL
    ↓
 redeem request
    ↓
@@ -856,7 +856,7 @@ A reserva de uma stablecoin não deve ser misturada arbitrariamente com:
 - capital operacional;
 - tesouraria;
 - dinheiro do desenvolvedor;
-- fundos do HYUR;
+- fundos do HYX;
 - fundos do Fusion.
 
 Separar contabilmente e operacionalmente.
@@ -1334,13 +1334,13 @@ O sistema deve detectar a inconsistência.
 Simular:
 
 ```text
-HYUR-BRL = R$0,98
+HYX-BRL = R$0,98
 ```
 
 e:
 
 ```text
-HYUR-BRL = R$1,05
+HYX-BRL = R$1,05
 ```
 
 O sistema deverá:
@@ -1538,10 +1538,10 @@ sendo liquidado.
 Uma mesma carteira poderá visualizar:
 
 ```text
-HYUR
-HYUR-BRL
-HYUR-USD
-HYUR-EUR
+HYX
+HYX-BRL
+HYX-USD
+HYX-EUR
 FUSION
 BTC
 outros ativos autorizados
@@ -1941,7 +1941,7 @@ Um MCP comprometido não poderá automaticamente acessar todos os sistemas.
           ┌────────────┼────────────┐
           │            │            │
           ▼            ▼            ▼
-         HYUR       HYUR-STABLE     FUSION
+         HYX       HYX-STABLE     FUSION
                       │
              ┌────────┼────────┐
              ▼        ▼        ▼
@@ -1968,13 +1968,13 @@ Simular:
 ```text
 1 BRL
 ↓
-1 HYUR-BRL
+1 HYX-BRL
 ```
 
 Depois:
 
 ```text
-HYUR-BRL
+HYX-BRL
 ↓
 payment
 ↓
@@ -2090,7 +2090,7 @@ Hyurax Flux Observatory
 Exibir:
 
 ```text
-HYUR supply
+HYX supply
 Stable supply
 Mint
 Burn
@@ -2129,7 +2129,7 @@ jurídico.
 
 **FASE 1 — SIMULADOR.** Stablecoin fictícia. Mint. Burn. Reserve. Payments.
 
-**FASE 2 — TESTNET.** HYUR-BRL de teste. Wallet. QR. Payment API.
+**FASE 2 — TESTNET.** HYX-BRL de teste. Wallet. QR. Payment API.
 
 **FASE 3 — MARKET.** Products. Checkout. Merchant. Hyurax POS.
 
@@ -2139,7 +2139,7 @@ jurídico.
 
 **FASE 6 — MAINNET EXPERIMENTAL.** Somente após validação.
 
-**FASE 7 — MULTI-CURRENCY.** HYUR-USD. HYUR-EUR. HYUR-GBP. etc.
+**FASE 7 — MULTI-CURRENCY.** HYX-USD. HYX-EUR. HYX-GBP. etc.
 
 **FASE 8 — SMART ROUTING.** Conversão automática. Liquidity routing.
 Multi-rail.
@@ -2172,7 +2172,7 @@ sem testes.
 
 ## 89. PRINCÍPIO ECONÔMICO
 
-HYUR:
+HYX:
 
 ```text
 valor de mercado
@@ -2203,10 +2203,10 @@ INFRAESTRUTURA FINANCEIRA DIGITAL
 na qual:
 
 ```text
-HYUR
-HYUR-BRL
-HYUR-USD
-HYUR-EUR
+HYX
+HYX-BRL
+HYX-USD
+HYX-EUR
 FUSION
 ```
 
@@ -2251,7 +2251,7 @@ sem precisar compreender toda a infraestrutura existente por baixo.
              ┌─────────────┼─────────────┐
              │             │             │
              ▼             ▼             ▼
-            HYUR       HYURAX STABLE     FUSION
+            HYX       HYURAX STABLE     FUSION
                           │
               ┌───────────┼───────────┐
               │           │           │

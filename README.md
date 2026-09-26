@@ -11,6 +11,9 @@ Qualquer pessoa que disser o contrário está mentindo.
 > versões até `v0.1.0-teste.3` saíram com o nome antigo e falam uma rede
 > diferente (outra gênese): para testar, use a partir de `v0.2.0-teste.1`.
 
+> **O ticker mudou de HYUR para HYX em 26/09/2026.** Só o nome na tela: a
+> rede, a gênese e as carteiras continuam as mesmas.
+
 ## O que existe hoje
 
 | Parte | Estado |
@@ -20,10 +23,11 @@ Qualquer pessoa que disser o contrário está mentindo.
 | Vetores de validação cruzada | 18 arquivos |
 | Nó de produção (Rust) | núcleo migrado e igual ao gabarito: `hyurax-types`, `hyurax-crypto`, `hyurax-codec`, `hyurax-pow`, `hyurax-usefulpow`, `hyurax-tx`, `hyurax-block`, `hyurax-consensus`, `hyurax-state`, `hyurax-chain`, `hyurax-store`, `hyurax-wire`, `hyurax-net` (80 testes) |
 | Rede entre nós | conexão TCP, aperto de mão, sincronização, propagação de blocos e transações, mempool, descoberta de pares (um nó novo acha a rede a partir de uma semente) e retomada automática — tudo em `hyurax-net`, mais reorganização profunda entre pares (a cadeia com mais trabalho vence, mesmo bifurcando fundo). **Conexão cifrada** com Noise XX e identidade de nó (protocolo versão 2) |
-| Nó local e minerador no celular | `hyurax-no` (carteira **com senha**, envio de HYUR de teste, nó em rede com `--porta`/`--semente`, mineração de blocos inteiros, saldo) e `hyurax-minerar` (medição); rodam no Termux. Ver [`docs/MINERAR-NO-CELULAR.md`](docs/MINERAR-NO-CELULAR.md) |
+| Nó local e minerador no celular | `hyurax-no` (carteira **com senha**, envio de HYX de teste, nó em rede com `--porta`/`--semente`, mineração de blocos inteiros, saldo) e `hyurax-minerar` (medição); rodam no Termux. Ver [`docs/MINERAR-NO-CELULAR.md`](docs/MINERAR-NO-CELULAR.md) |
 | Programas prontos | Windows, Linux, celular (Termux) e Mac, montados pelo GitHub a cada versão; guia em [`docs/RODAR-UM-NO.md`](docs/RODAR-UM-NO.md) |
 | Testnet pública | ensaiada com três processos separados (bloco e transferência atravessando a rede); passo a passo do lançamento em [`docs/LANCAR-A-REDE.md`](docs/LANCAR-A-REDE.md); lista de sementes publicada em [`rede/sementes-testnet.txt`](rede/sementes-testnet.txt), que o nó busca sozinho; kit do nó semente em [`docs/NO-SEMENTE.md`](docs/NO-SEMENTE.md); **nenhum semente no ar ainda**; roteiro de 12 semanas em [`docs/ROTEIRO-LANCAMENTO.md`](docs/ROTEIRO-LANCAMENTO.md) |
 | Mainnet | não existe |
+| HYX Index (cesta de 7 referências: ouro, Bitcoin, prata, cobre, platina, paládio e petróleo) | medida informativa, fora do consenso, sem lastro e sem resgate; documento em [`docs/HYX-INDEX.md`](docs/HYX-INDEX.md); estado RED, nada calculado ainda |
 | Hyurax Flux (stablecoins e pagamentos) | arquitetura registrada em [`docs/HYURAX-FLUX.md`](docs/HYURAX-FLUX.md); estado RED, nada implementado |
 | Éter (transporte por qualquer meio) | núcleo pronto e testado em `hyurax-eter`: objeto fatiado em fragmentos que se provam sozinhos, espalhados por vários meios ao mesmo tempo; meios de hoje: pasta de arquivos e memória. Bluetooth, LoRa e rádio projetados, não implementados. Ver [`docs/HYURAX-ETER.md`](docs/HYURAX-ETER.md) |
 | Hyurax Direct, Resonance e Transport (pagamentos P2P, offline e mesh) | arquitetura registrada em [`docs/HYURAX-DIRECT-RESONANCE.md`](docs/HYURAX-DIRECT-RESONANCE.md); estado RED, nada implementado |
@@ -31,7 +35,7 @@ Qualquer pessoa que disser o contrário está mentindo.
 ## Rodar um nó
 
 Programas prontos e o passo a passo em [`docs/RODAR-UM-NO.md`](docs/RODAR-UM-NO.md):
-baixar, criar carteira com senha, colocar o nó no ar, minerar e enviar HYUR de
+baixar, criar carteira com senha, colocar o nó no ar, minerar e enviar HYX de
 teste.
 
 ## Como está organizado

@@ -16,7 +16,7 @@ nós configurados diferente se partiriam em duas redes.
 PROJETO = "Hyurax"
 REDE = "Hyurax Network"
 MOEDA = "Hyurax"
-TICKER = "HYUR"
+TICKER = "HYX"
 
 # --- protocolo ----------------------------------------------------------------
 RAIZ = "HYURAX"

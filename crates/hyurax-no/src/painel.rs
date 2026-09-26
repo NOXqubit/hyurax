@@ -35,10 +35,10 @@ use hyurax_consensus::block_reward;
 use hyurax_crypto::ADDRESS_LEN;
 use hyurax_net::Rede;
 use hyurax_pow::ConfigMineracao;
-use hyurax_tx::{HYUR, Tx};
+use hyurax_tx::{HYX, Tx};
 
 use crate::seguranca::Seguranca;
-use crate::{Opcoes, carteira, envio, hex, hyur, maquinas, salvar, subir_rede, totp};
+use crate::{Opcoes, carteira, envio, hex, hyx, maquinas, salvar, subir_rede, totp};
 
 const INDEX: &str = include_str!("../painel/index.html");
 const CSS: &str = include_str!("../painel/painel.css");
@@ -812,9 +812,9 @@ fn uma_rodada(painel: &Arc<Painel>, rede: &Arc<Rede>, o: &Opcoes, endereco: [u8;
             painel.registrar(
                 "meu-bloco",
                 format!(
-                    "bloco {altura} minerado em {:.1} s · trabalho útil {n}×{n} · +{} HYUR",
+                    "bloco {altura} minerado em {:.1} s · trabalho útil {n}×{n} · +{} HYX",
                     inicio.elapsed().as_secs_f64(),
-                    hyur(u128::from(block_reward(altura, &o.rede)))
+                    hyx(u128::from(block_reward(altura, &o.rede)))
                 ),
             );
         }
@@ -1037,7 +1037,7 @@ fn abrir_pasta(painel: &Painel) -> Result<(), String> {
 
 
 // ---------------------------------------------------------------------------
-// Enviar HYUR pela janela
+// Enviar HYX pela janela
 // ---------------------------------------------------------------------------
 
 /// Assina e manda uma transferência pedida pelo painel.
@@ -1069,10 +1069,10 @@ fn enviar_do_painel(painel: &Painel, rede: &Arc<Rede>, o: &Opcoes, campos: &[(St
     painel.registrar(
         "enviado",
         format!(
-            "enviados {} HYUR para {} (taxa {}, nonce {}, {} par(es))",
-            hyur(u128::from(pedido.valor)),
+            "enviados {} HYX para {} (taxa {}, nonce {}, {} par(es))",
+            hyx(u128::from(pedido.valor)),
             hex(&pedido.para),
-            hyur(u128::from(pedido.taxa)),
+            hyx(u128::from(pedido.taxa)),
             feita.nonce,
             feita.pares
         ),
@@ -1080,8 +1080,8 @@ fn enviar_do_painel(painel: &Painel, rede: &Arc<Rede>, o: &Opcoes, campos: &[(St
     Ok(format!(
         "{{\"txid\":\"{}\",\"valor\":\"{}\",\"taxa\":\"{}\",\"para\":\"{}\",\"nonce\":{},\"pares\":{}}}",
         hex(&feita.txid),
-        hyur(u128::from(pedido.valor)),
-        hyur(u128::from(pedido.taxa)),
+        hyx(u128::from(pedido.valor)),
+        hyx(u128::from(pedido.taxa)),
         hex(&pedido.para),
         feita.nonce,
         feita.pares
@@ -1139,7 +1139,7 @@ fn seguranca_confirmar(painel: &Painel, campos: &[(String, String)]) -> Result<S
         *p = None;
     }
     painel.destravado.store(true, Ordering::Relaxed);
-    painel.registrar("seguranca", "segundo fator ligado: enviar HYUR agora pede o código de 6 dígitos".into());
+    painel.registrar("seguranca", "segundo fator ligado: enviar HYX agora pede o código de 6 dígitos".into());
     Ok("{\"ok\":true}".to_string())
 }
 
@@ -1589,7 +1589,7 @@ fn estado_json(painel: &Painel, rede: &Rede, o: &Opcoes, pode_mandar: bool, port
     };
     let c = &no.chain;
     let altura = c.height();
-    let (saldo, imaturo) = endereco.map_or((0, 0), |e| (c.state.balance(&e, &HYUR), c.state.immature_balance(&e)));
+    let (saldo, imaturo) = endereco.map_or((0, 0), |e| (c.state.balance(&e, &HYX), c.state.immature_balance(&e)));
     let rodada = painel.rodada.lock().ok().and_then(|r| *r);
     let e_meu = |b: &Block| {
         endereco.is_some_and(|e| matches!(b.transactions.first(), Some(Tx::Coinbase(cb)) if cb.recipient == e))
@@ -1631,13 +1631,13 @@ fn estado_json(painel: &Painel, rede: &Rede, o: &Opcoes, pode_mandar: bool, port
         texto_json(o.rede.nome),
         hex(&c.tip_hash()),
         c.total_work().to_decimal(),
-        hyur(u128::from(c.state.total_emitted)),
+        hyx(u128::from(c.state.total_emitted)),
         rede.pares_conectados(),
         no.mempool_len(),
         endereco.map(|e| hex(&e)).unwrap_or_default(),
-        hyur(u128::from(saldo)),
-        hyur(imaturo),
-        hyur(u128::from(block_reward(altura.saturating_add(1), &o.rede))),
+        hyx(u128::from(saldo)),
+        hyx(imaturo),
+        hyx(u128::from(block_reward(altura.saturating_add(1), &o.rede))),
         o.rede.coinbase_maturity,
         painel.minerando.load(Ordering::Relaxed),
         painel.linhas.load(Ordering::Relaxed),
@@ -1691,8 +1691,8 @@ fn estado_json(painel: &Painel, rede: &Rede, o: &Opcoes, pode_mandar: bool, port
         "\"trancado\":false,\"seguranca\":{{\"ligado\":{fator_ligado},\"exige_envio\":{exige_envio},\"trava\":{trava}}},\
          \"pode_enviar\":{},\"maximo_envio\":\"{}\",\"taxa_padrao\":\"{}\",",
         endereco.is_some() && pode_mandar && saldo > 0,
-        hyur(u128::from(envio::maximo(saldo, envio::TAXA_PADRAO))),
-        hyur(u128::from(envio::TAXA_PADRAO)),
+        hyx(u128::from(envio::maximo(saldo, envio::TAXA_PADRAO))),
+        hyx(u128::from(envio::TAXA_PADRAO)),
     );
     // Decoração da estação e o aviso de bloco.
     let _ = write!(
@@ -1719,8 +1719,8 @@ fn estado_json(painel: &Painel, rede: &Rede, o: &Opcoes, pode_mandar: bool, port
                 m.pendente,
                 m.entrada,
                 m.outro,
-                hyur(u128::from(m.valor)),
-                hyur(u128::from(m.taxa)),
+                hyx(u128::from(m.valor)),
+                hyx(u128::from(m.taxa)),
                 m.txid,
                 m.tipo,
             );

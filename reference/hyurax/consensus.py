@@ -35,7 +35,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from . import argon2, identidade
-from .units import HYUR_UNIT, MAX_SUPPLY
+from .units import HYX_UNIT, MAX_SUPPLY
 
 # ---------------------------------------------------------------------------
 # Alvo em formato compacto (estilo nBits do Bitcoin)
@@ -217,7 +217,7 @@ MAINNET = ChainParams(
     max_target=_GENESIS_TARGET,
     target_spacing=120,
     lwma_window=60,
-    initial_reward=50 * HYUR_UNIT,     # PROVISÓRIO
+    initial_reward=50 * HYX_UNIT,     # PROVISÓRIO
     halving_interval=210_000,         # PROVISÓRIO
     max_block_bytes=1_000_000,
     max_future_drift=120,
@@ -234,7 +234,7 @@ TESTNET = ChainParams(
     max_target=(1 << 248) - 1,   # bem mais fácil, para a testnet andar
     target_spacing=120,
     lwma_window=60,
-    initial_reward=50 * HYUR_UNIT,
+    initial_reward=50 * HYX_UNIT,
     halving_interval=210_000,
     max_block_bytes=1_000_000,
     max_future_drift=120,
@@ -257,7 +257,7 @@ REGTEST = ChainParams(
     max_target=(1 << 254) - 1,
     target_spacing=120,
     lwma_window=30,
-    initial_reward=50 * HYUR_UNIT,
+    initial_reward=50 * HYX_UNIT,
     halving_interval=210_000,
     max_block_bytes=1_000_000,
     max_future_drift=120,
@@ -404,7 +404,7 @@ def median_time_past(timestamps: list[int], params: ChainParams) -> int:
 def block_reward(height: int, params: ChainParams) -> int:
     """Recompensa do bloco na altura dada, com halving e teto duro.
 
-    O protótipo pagava 50 HYUR para sempre, sem halving e sem limite. Emissão
+    O protótipo pagava 50 HYX para sempre, sem halving e sem limite. Emissão
     infinita.
     """
     if height < 0:

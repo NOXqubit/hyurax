@@ -17,7 +17,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::fmt;
 
 use hyurax_consensus::{ParametrosRede, block_reward};
-use hyurax_tx::{ASSET_ID_LEN, HYUR, Coinbase, Endereco, Transfer, Tx};
+use hyurax_tx::{ASSET_ID_LEN, HYX, Coinbase, Endereco, Transfer, Tx};
 use hyurax_types::MAX_SUPPLY;
 
 /// Identificador de ativo.
@@ -184,8 +184,8 @@ impl State {
         undo.matured_at = Some(alvo);
         undo.matured_entries = entradas.clone();
         for (endereco, valor) in entradas {
-            let novo = soma(self.balance(&endereco, &HYUR), valor)?;
-            self.set_balance(undo, endereco, HYUR, novo);
+            let novo = soma(self.balance(&endereco, &HYX), valor)?;
+            self.set_balance(undo, endereco, HYX, novo);
         }
         Ok(())
     }
@@ -300,7 +300,7 @@ impl State {
     /// Invariantes que precisam valer depois de qualquer bloco.
     pub fn check_invariants(&self) -> Result<(), StateError> {
         for (_, ativo) in self.balances.keys() {
-            if *ativo != HYUR {
+            if *ativo != HYX {
                 return Err(erro(format!(
                     "saldo em ativo sem regra de emissão: {}",
                     ativo.iter().map(|b| format!("{b:02x}")).collect::<String>()
@@ -313,7 +313,7 @@ impl State {
         let livres: u128 = self
             .balances
             .iter()
-            .filter(|((_, ativo), _)| *ativo == HYUR)
+            .filter(|((_, ativo), _)| *ativo == HYX)
             .map(|(_, v)| u128::from(*v))
             .sum();
         let retidos: u128 = self.pending_coinbase.values().flatten().map(|(_, v)| u128::from(*v)).sum();

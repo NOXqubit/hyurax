@@ -96,11 +96,11 @@ def test_rfc8032_vectors():
 def test_verify_rejects_tampering():
     sk = crypto.generate_secret()
     pk = crypto.public_key(sk)
-    msg = b"pagar 10 HYUR"
+    msg = b"pagar 10 HYX"
     sig = crypto.sign(sk, msg)
 
     assert crypto.verify(pk, msg, sig)
-    assert not crypto.verify(pk, b"pagar 11 HYUR", sig), "mensagem alterada passou"
+    assert not crypto.verify(pk, b"pagar 11 HYX", sig), "mensagem alterada passou"
 
     flipped = bytearray(sig)
     flipped[0] ^= 0x01

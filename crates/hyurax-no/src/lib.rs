@@ -1,5 +1,5 @@
 // ✝ Provérbios 13:11 — “A riqueza de procedência vã diminuirá, mas quem a ajunta com o próprio trabalho a aumentará.”
-//! Nó do Hyurax: carteira com senha, mineração, envio de HYUR de teste e saldo,
+//! Nó do Hyurax: carteira com senha, mineração, envio de HYX de teste e saldo,
 //! numa cadeia gravada no disco e sincronizada com a rede.
 //!
 //! ```text
@@ -7,7 +7,7 @@
 //! hyurax-no carteira ver     --arquivo carteira.txt
 //! hyurax-no carteira cifrar  --arquivo carteira.txt
 //! hyurax-no minerar          --rede testnet --pasta dados --endereco HEX [--blocos N] [--linhas L]
-//! hyurax-no enviar           --rede testnet --pasta dados --arquivo carteira.txt --para HEX --valor HYUR
+//! hyurax-no enviar           --rede testnet --pasta dados --arquivo carteira.txt --para HEX --valor HYX
 //! hyurax-no painel           --arquivo carteira.txt [--painel-porta 8800]
 //! hyurax-no no               --rede testnet --pasta dados --porta P
 //! hyurax-no estado           --rede testnet --pasta dados [--endereco HEX]
@@ -40,7 +40,7 @@ use hyurax_net::entropia::{entropia_do_sistema, preencher};
 use hyurax_net::{Identidade, No, Rede};
 use hyurax_pow::ConfigMineracao;
 use hyurax_store::{load_chain, save_chain};
-use hyurax_tx::{HYUR, Output, sign_transfer_outputs};
+use hyurax_tx::{HYX, Output, sign_transfer_outputs};
 
 const AJUDA: &str = "\
 hyurax-no — nó do Hyurax (rede de TESTE)
@@ -55,8 +55,8 @@ hyurax-no — nó do Hyurax (rede de TESTE)
   hyurax-no carteira cifrar --arquivo carteira.txt
       Converte uma carteira antiga, com o segredo em texto, para o formato com senha.
 
-  hyurax-no enviar --rede testnet --pasta dados --arquivo carteira.txt --para HEX --valor HYUR
-                  [--taxa HYUR] [--semente IP:PORTA,...] [--porta P]
+  hyurax-no enviar --rede testnet --pasta dados --arquivo carteira.txt --para HEX --valor HYX
+                  [--taxa HYX] [--semente IP:PORTA,...] [--porta P]
       Assina uma transferência com a carteira (pede a senha) e manda para a rede.
 
   hyurax-no minerar --rede testnet --pasta dados --endereco HEX [--blocos N] [--linhas L]
@@ -84,7 +84,7 @@ Dois aparelhos na mesma rede local, por exemplo:
 
 Redes: mainnet (difícil: 16 bits de trabalho por bloco), testnet (8 bits), regtest (quase nada).
 Senha em script: variável HYURAX_SENHA (conveniente, e menos segura que digitar).
-Lembrete: a rede pública não existe e o HYUR não tem valor. Isto é teste.
+Lembrete: a rede pública não existe e o HYX não tem valor. Isto é teste.
 ";
 
 struct Opcoes {
@@ -167,8 +167,8 @@ fn ler_opcoes(args: &[String]) -> Result<Opcoes, String> {
             }
             "--pausa-ms" => o.pausa_ms = valor.parse().map_err(|_| "--pausa-ms precisa ser número")?,
             "--para" => o.para = Some(de_hex(valor).ok_or("--para precisa de 40 dígitos hexadecimais")?),
-            "--valor" => o.valor = Some(unidades_de_hyur(valor)?),
-            "--taxa" => o.taxa = unidades_de_hyur(valor)?,
+            "--valor" => o.valor = Some(unidades_de_hyx(valor)?),
+            "--taxa" => o.taxa = unidades_de_hyx(valor)?,
             "--exportar" => o.exportar = Some(PathBuf::from(valor)),
             "--linhas" => {
                 o.linhas = valor
@@ -192,15 +192,15 @@ fn ler_opcoes(args: &[String]) -> Result<Opcoes, String> {
     Ok(o)
 }
 
-/// 1 HYUR = 100 000 000 unidades (seção 1 da especificação).
-const HYUR_UNIDADE: u128 = 100_000_000;
+/// 1 HYX = 100 000 000 unidades (seção 1 da especificação).
+const HYX_UNIDADE: u128 = 100_000_000;
 
-fn hyur(unidades: u128) -> String {
-    format!("{}.{:08}", unidades / HYUR_UNIDADE, unidades % HYUR_UNIDADE)
+fn hyx(unidades: u128) -> String {
+    format!("{}.{:08}", unidades / HYX_UNIDADE, unidades % HYX_UNIDADE)
 }
 
 /// "1.5" vira 150 000 000 unidades. No máximo 8 casas; nunca ponto flutuante.
-fn unidades_de_hyur(texto: &str) -> Result<u64, String> {
+fn unidades_de_hyx(texto: &str) -> Result<u64, String> {
     let erro = || format!("valor inválido: {texto} (use ponto, até 8 casas, por exemplo 1.5)");
     let (inteiro, fracao) = texto.trim().split_once('.').unwrap_or((texto.trim(), ""));
     if inteiro.is_empty() || fracao.len() > 8 || !inteiro.chars().chain(fracao.chars()).all(|c| c.is_ascii_digit()) {
@@ -458,9 +458,9 @@ fn minerar(args: &[String]) -> Result<(), String> {
                 salvar(&rede, &o)?;
                 feitos = feitos.saturating_add(1);
                 println!(
-                    "  bloco {altura} em {:.1} s · trabalho útil {n}×{n} · bits {bits:#010x} · recompensa {} HYUR (libera em {} blocos) · {} par(es)",
+                    "  bloco {altura} em {:.1} s · trabalho útil {n}×{n} · bits {bits:#010x} · recompensa {} HYX (libera em {} blocos) · {} par(es)",
                     inicio.elapsed().as_secs_f64(),
-                    hyur(u128::from(block_reward(altura, &o.rede))),
+                    hyx(u128::from(block_reward(altura, &o.rede))),
                     o.rede.coinbase_maturity,
                     rede.pares_conectados()
                 );
@@ -497,7 +497,7 @@ fn enviar(args: &[String]) -> Result<(), String> {
     let o = ler_opcoes(args)?;
     let arquivo = o.arquivo.clone().ok_or("falta --arquivo (a carteira que paga)")?;
     let para = o.para.ok_or("falta --para (endereço de destino, 40 dígitos hexadecimais)")?;
-    let valor = o.valor.filter(|&v| v > 0).ok_or("falta --valor maior que zero (em HYUR, por exemplo 1.5)")?;
+    let valor = o.valor.filter(|&v| v > 0).ok_or("falta --valor maior que zero (em HYX, por exemplo 1.5)")?;
     let texto = ler_arquivo(&arquivo)?;
     let origem = carteira::endereco(&texto)?;
     if origem == para {
@@ -515,21 +515,21 @@ fn enviar(args: &[String]) -> Result<(), String> {
     }
     let (nonce, saldo, altura) = {
         let no = rede.no.lock().map_err(|_| "nó travado".to_string())?;
-        (no.proximo_nonce(&origem), no.chain.state.balance(&origem, &HYUR), no.chain.height())
+        (no.proximo_nonce(&origem), no.chain.state.balance(&origem, &HYX), no.chain.height())
     };
     let total = valor.checked_add(o.taxa).ok_or("valor mais taxa estoura")?;
     if u128::from(total) > u128::from(saldo) {
         return Err(format!(
-            "saldo gastável insuficiente na altura {altura}: {} HYUR, precisa de {} HYUR (a recompensa de mineração só libera depois de {} blocos)",
-            hyur(u128::from(saldo)),
-            hyur(u128::from(total)),
+            "saldo gastável insuficiente na altura {altura}: {} HYX, precisa de {} HYX (a recompensa de mineração só libera depois de {} blocos)",
+            hyx(u128::from(saldo)),
+            hyx(u128::from(total)),
             o.rede.coinbase_maturity
         ));
     }
 
     let senha = if carteira::e_formato_antigo(&texto) { String::new() } else { senha::ler("Senha da carteira")? };
     let segredo = carteira::abrir(&texto, &senha)?;
-    let saida = Output { recipient: para, asset_id: HYUR, amount: valor };
+    let saida = Output { recipient: para, asset_id: HYX, amount: valor };
     let tx = sign_transfer_outputs(&segredo, &o.rede.magic, origem, vec![saida], o.taxa, nonce).map_err(|e| e.to_string())?;
     let id = tx.txid().map_err(|e| e.to_string())?;
     match rede.submeter_tx(tx) {
@@ -537,7 +537,7 @@ fn enviar(args: &[String]) -> Result<(), String> {
         Ok(false) => return Err("já existe uma transação com esse nonce esperando no mempool".into()),
         Err(e) => return Err(format!("a própria validação recusou: {}", e.0)),
     }
-    println!("Transação {} assinada: {} HYUR para {} (taxa {} HYUR, nonce {nonce}).", hex(&id), hyur(u128::from(valor)), hex(&para), hyur(u128::from(o.taxa)));
+    println!("Transação {} assinada: {} HYX para {} (taxa {} HYX, nonce {nonce}).", hex(&id), hyx(u128::from(valor)), hex(&para), hyx(u128::from(o.taxa)));
     if rede.pares_conectados() == 0 {
         println!("Aviso: nenhum par conectado. A transação só existe neste nó; use --semente para mandar à rede.");
         return Ok(());
@@ -593,7 +593,7 @@ fn exportar_estado(rede: &Arc<Rede>, o: &Opcoes, arquivo: &Path) -> Result<(), S
         c.height(),
         hex(&c.tip_hash()),
         c.total_work().to_decimal(),
-        hyur(u128::from(c.state.total_emitted)),
+        hyx(u128::from(c.state.total_emitted)),
         rede.pares_conectados(),
         no.mempool_len(),
         agora
@@ -629,10 +629,10 @@ fn estado(args: &[String]) -> Result<(), String> {
     println!("Altura:            {}", cadeia.height());
     println!("Ponta:             {}", hex(&cadeia.tip_hash()));
     println!("Trabalho total:    {}", cadeia.total_work().to_decimal());
-    println!("Emitido:           {} HYUR", hyur(u128::from(cadeia.state.total_emitted)));
+    println!("Emitido:           {} HYX", hyx(u128::from(cadeia.state.total_emitted)));
     if let Some(endereco) = o.endereco {
-        println!("Saldo gastável:    {} HYUR", hyur(u128::from(cadeia.state.balance(&endereco, &HYUR))));
-        println!("Esperando liberar: {} HYUR", hyur(cadeia.state.immature_balance(&endereco)));
+        println!("Saldo gastável:    {} HYX", hyx(u128::from(cadeia.state.balance(&endereco, &HYX))));
+        println!("Esperando liberar: {} HYX", hyx(cadeia.state.immature_balance(&endereco)));
     }
     Ok(())
 }

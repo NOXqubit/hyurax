@@ -47,7 +47,7 @@ const dia = (unix) => new Date(unix * 1000).toLocaleDateString("pt-BR", { day: "
 const curto = (h) => `${h.slice(0, 8)}…${h.slice(-6)}`;
 // O nó manda o dinheiro com ponto; em português se escreve com vírgula.
 const reais = (v) => String(v || "0.00").replace(".", ",");
-// HYUR sem os zeros que não dizem nada: 1.50000000 vira 1,5.
+// HYX sem os zeros que não dizem nada: 1.50000000 vira 1,5.
 function moeda(v) {
   const t = String(v ?? "0");
   if (!t.includes(".")) return t;
@@ -185,7 +185,7 @@ function desenharLateral(e) {
   const podeEnviar = e.pode_enviar === true;
   $("abrir-enviar").disabled = !podeEnviar;
   $("abrir-enviar").title = podeEnviar
-    ? "Assinar e mandar HYUR para outro endereço"
+    ? "Assinar e mandar HYX para outro endereço"
     : "Sem saldo gastável ainda. A recompensa de mineração libera depois da maturidade.";
   $("abrir-receber").disabled = !e.endereco;
   $("abrir-seguranca").disabled = e.pode_mandar !== true;
@@ -207,7 +207,7 @@ function desenharMovimentos(e) {
       ? `bloco ${fmt.format(m.altura)} minerado · ${quando}`
       : `${m.entrada ? "de" : "para"} ${curto(m.outro || "")} · ${quando}`;
     quem.title = m.txid ? `transação ${m.txid}` : "";
-    const quanto = Object.assign(document.createElement("span"), { className: "quanto", textContent: `${moeda(m.valor)} HYUR` });
+    const quanto = Object.assign(document.createElement("span"), { className: "quanto", textContent: `${moeda(m.valor)} HYX` });
     li.append(sinal, quem, quanto);
     return li;
   }));
@@ -650,7 +650,7 @@ $("comecar").addEventListener("click", () => comBotao($("comecar"), async () => 
   ler();
 }));
 
-// ---------- enviar HYUR ----------
+// ---------- enviar HYX ----------
 // Três telas: escrever, conferir, comprovante. Enviar é definitivo, então a tela
 // do meio existe para a pessoa reler o endereço antes de assinar.
 const enviarDialogo = $("enviar");
@@ -669,7 +669,7 @@ function abrirEnviar() {
   for (const id of ["erro-enviar", "erro-assinar"]) texto(id, "");
   $("en-taxa").value = "";
   $("en-taxa").placeholder = ultimo.taxa_padrao || "0.00000000";
-  texto("enviar-saldo", `${moeda(ultimo.saldo)} HYUR gastáveis`);
+  texto("enviar-saldo", `${moeda(ultimo.saldo)} HYX gastáveis`);
   enviarDialogo.showModal();
   $("en-para").focus();
 }
@@ -719,7 +719,7 @@ $("f-enviar").addEventListener("submit", (ev) => {
   const total = Number(valor) + taxaNum;
   const saldo = Number(ultimo?.saldo || 0);
   if (total > saldo) {
-    texto("erro-enviar", `Não dá: valor mais taxa somam ${total.toFixed(8)} HYUR e você tem ${saldo.toFixed(8)} gastáveis.`);
+    texto("erro-enviar", `Não dá: valor mais taxa somam ${total.toFixed(8)} HYX e você tem ${saldo.toFixed(8)} gastáveis.`);
     return;
   }
   enviarPedido = { para, valor, taxa };
@@ -756,7 +756,7 @@ $("en-assinar").addEventListener("click", () => comBotao($("en-assinar"), async 
   $("en-senha").value = "";
   $("en-codigo").value = "";
   const d = res.dados;
-  texto("en-resumo", `${moeda(d.valor)} HYUR para ${curto(d.para)}${Number(d.taxa) > 0 ? `, com taxa de ${moeda(d.taxa)}` : ""}. Espalhada para ${d.pares} par(es).`);
+  texto("en-resumo", `${moeda(d.valor)} HYX para ${curto(d.para)}${Number(d.taxa) > 0 ? `, com taxa de ${moeda(d.taxa)}` : ""}. Espalhada para ${d.pares} par(es).`);
   texto("en-txid", d.txid);
   faseEnviar("pronto");
   $("en-terminar").focus();

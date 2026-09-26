@@ -3,7 +3,7 @@
 
 Regra travada: dinheiro é SEMPRE inteiro. Nunca float, em lugar nenhum.
 
-1 HYUR = 100_000_000 unidades internas.
+1 HYX = 100_000_000 unidades internas.
 
 Esta é a única definição de dinheiro do protocolo. O `hyurax_core.py` e o
 `hyurax_reference.py` do protótipo antigo tinham cópias divergentes desta
@@ -12,11 +12,11 @@ lógica; as duas foram descartadas em favor deste módulo.
 
 from __future__ import annotations
 
-HYUR_DECIMALS = 8
-HYUR_UNIT = 10**HYUR_DECIMALS  # 100_000_000
+HYX_DECIMALS = 8
+HYX_UNIT = 10**HYX_DECIMALS  # 100_000_000
 
 # Teto absoluto de emissão. Nenhuma regra do protocolo pode ultrapassar isto.
-MAX_SUPPLY = 21_000_000 * HYUR_UNIT
+MAX_SUPPLY = 21_000_000 * HYX_UNIT
 
 # Limite de sanidade para qualquer valor serializado (cabe em u64).
 MAX_AMOUNT = 2**64 - 1
@@ -52,7 +52,7 @@ def _apenas_digitos_ascii(texto: str) -> bool:
     converte todos eles. O Rust não faz isso: `str::parse::<u64>()` só aceita
     ASCII.
 
-    Sem esta checagem, '１' viraria 1 HYUR no Python e erro no Rust. Duas
+    Sem esta checagem, '１' viraria 1 HYX no Python e erro no Rust. Duas
     implementações discordando sobre o que é um valor válido é exatamente o
     tipo de divergência que racha uma rede. Também fecha uma porta de
     falsificação visual: '１.5' e '1.5' são indistinguíveis na tela.
@@ -60,23 +60,23 @@ def _apenas_digitos_ascii(texto: str) -> bool:
     return all(c in _DIGITOS_ASCII for c in texto)
 
 
-def to_units(hyur: str | int) -> int:
-    """Converte '1.5' (HYUR) ou um inteiro (já em unidades) para unidades internas.
+def to_units(hyx: str | int) -> int:
+    """Converte '1.5' (HYX) ou um inteiro (já em unidades) para unidades internas.
 
     Diferente do protótipo, float é recusado explicitamente em vez de aceito
     silenciosamente. `to_units(0.1)` era aceito antes e é justamente o caminho
     pelo qual poeira de ponto flutuante entrava no dinheiro.
     """
-    if isinstance(hyur, bool):
+    if isinstance(hyx, bool):
         raise AmountError("bool não é valor monetário")
-    if isinstance(hyur, int):
-        return _checked(hyur)
-    if isinstance(hyur, float):
+    if isinstance(hyx, int):
+        return _checked(hyx)
+    if isinstance(hyx, float):
         raise AmountError(
             "float é proibido em valores monetários; passe string, ex: '0.1'"
         )
-    if not isinstance(hyur, str):
-        raise AmountError(f"tipo inválido para valor: {type(hyur).__name__}")
+    if not isinstance(hyx, str):
+        raise AmountError(f"tipo inválido para valor: {type(hyx).__name__}")
 
     # Toda a entrada precisa ser ASCII, e só espaço ASCII é aparado.
     #
@@ -84,15 +84,15 @@ def to_units(hyur: str | int) -> int:
     # espaço inseparável U+00A0. O `trim()` do Rust também, mas as duas listas
     # não são idênticas em toda versão. Em vez de tentar casar duas tabelas
     # Unicode, o protocolo simplesmente não aceita nada fora do ASCII.
-    if not hyur.isascii():
+    if not hyx.isascii():
         raise AmountError(
-            f"valor deve conter apenas caracteres ASCII: {hyur!r}"
+            f"valor deve conter apenas caracteres ASCII: {hyx!r}"
         )
-    if len(hyur) > MAX_AMOUNT_TEXT:
+    if len(hyx) > MAX_AMOUNT_TEXT:
         raise AmountError(
-            f"texto de valor tem {len(hyur)} caracteres, máximo é {MAX_AMOUNT_TEXT}"
+            f"texto de valor tem {len(hyx)} caracteres, máximo é {MAX_AMOUNT_TEXT}"
         )
-    s = hyur.strip(" \t\n\r\f\v")
+    s = hyx.strip(" \t\n\r\f\v")
     if not s:
         raise AmountError("valor vazio")
 
@@ -102,7 +102,7 @@ def to_units(hyur: str | int) -> int:
     # reproduzir. Rejeitar é o que mantém as duas implementações iguais.
     if s[0] == "-":
         raise AmountError(
-            f"valor monetário não pode ser negativo: {hyur!r} "
+            f"valor monetário não pode ser negativo: {hyx!r} "
             "(saldo, valor e taxa são sem sinal no protocolo)"
         )
     if s[0] == "+":
@@ -121,16 +121,16 @@ def to_units(hyur: str | int) -> int:
         raise AmountError(f"parte fracionária inválida: {frac!r}")
     if not whole and not frac:
         raise AmountError("valor sem dígitos")
-    if len(frac) > HYUR_DECIMALS:
+    if len(frac) > HYX_DECIMALS:
         raise AmountError(
-            f"mais de {HYUR_DECIMALS} casas decimais: {hyur!r} (truncar seria perder dinheiro)"
+            f"mais de {HYX_DECIMALS} casas decimais: {hyx!r} (truncar seria perder dinheiro)"
         )
 
-    frac = frac.ljust(HYUR_DECIMALS, "0")
-    return _checked(int(whole or "0") * HYUR_UNIT + int(frac))
+    frac = frac.ljust(HYX_DECIMALS, "0")
+    return _checked(int(whole or "0") * HYX_UNIT + int(frac))
 
 
-def to_hyur_str(units: int) -> str:
+def to_hyx_str(units: int) -> str:
     """Formata unidades internas como string decimal com 8 casas, sem float.
 
     Aceita inteiro negativo de propósito, porque isto é função de exibição e
@@ -141,8 +141,8 @@ def to_hyur_str(units: int) -> str:
     if isinstance(units, bool) or not isinstance(units, int):
         raise AmountError("unidades devem ser int")
     sign = "-" if units < 0 else ""
-    whole, frac = divmod(abs(units), HYUR_UNIT)
-    return f"{sign}{whole}.{frac:0{HYUR_DECIMALS}d}"
+    whole, frac = divmod(abs(units), HYX_UNIT)
+    return f"{sign}{whole}.{frac:0{HYX_DECIMALS}d}"
 
 
 def _checked(units: int) -> int:

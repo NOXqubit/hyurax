@@ -5,7 +5,7 @@ Corrige três coisas do protótipo.
 
 BUG 9 (parte) — emissão infinita.
   A coinbase podia pagar até `MAX_COINBASE_AMOUNT`, que era a recompensa fixa
-  de 50 HYUR, para sempre. Aqui a recompensa vem de `block_reward(height)`,
+  de 50 HYX, para sempre. Aqui a recompensa vem de `block_reward(height)`,
   com halving, e o total emitido é conferido contra o teto de 21 milhões a
   cada bloco.
 
@@ -21,7 +21,7 @@ Maturação de coinbase.
 
 Vários ativos.
   O saldo é guardado por conta e por ativo: a chave é o par (endereço,
-  identificador do ativo). O nonce continua por conta. Hoje só o HYUR existe,
+  identificador do ativo). O nonce continua por conta. Hoje só o HYX existe,
   e a invariante recusa qualquer outro ativo que apareça no estado.
 
 `apply_block` devolve um registro de desfazer. Sem ele não existe reorg
@@ -33,7 +33,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 from .consensus import ChainParams, ConsensusError, block_reward
-from .tx import HYUR, KNOWN_ASSETS, Coinbase, Transfer, TxError
+from .tx import HYX, KNOWN_ASSETS, Coinbase, Transfer, TxError
 from .units import MAX_SUPPLY, checked_add, checked_sub
 
 
@@ -60,13 +60,13 @@ class State:
     # (endereço, identificador do ativo) -> saldo
     balances: dict = field(default_factory=dict)
     nonces: dict = field(default_factory=dict)
-    # altura -> lista de (endereço, valor em HYUR) esperando maturar
+    # altura -> lista de (endereço, valor em HYX) esperando maturar
     pending_coinbase: dict = field(default_factory=dict)
     total_emitted: int = 0
 
     # -- leitura --
 
-    def balance(self, address: bytes, asset: bytes = HYUR) -> int:
+    def balance(self, address: bytes, asset: bytes = HYX) -> int:
         return self.balances.get((address, asset), 0)
 
     def next_nonce(self, address: bytes) -> int:
@@ -80,7 +80,7 @@ class State:
                     total += amount
         return total
 
-    def total_balance(self, asset: bytes = HYUR) -> int:
+    def total_balance(self, asset: bytes = HYX) -> int:
         return sum(v for (_, a), v in self.balances.items() if a == asset)
 
     # -- escrita interna, com registro de desfazer --
@@ -149,7 +149,7 @@ class State:
         undo.matured_at = target
         undo.matured_entries = list(entries)
         for address, amount in entries:
-            self._set_balance(undo, address, HYUR, checked_add(self.balance(address), amount))
+            self._set_balance(undo, address, HYX, checked_add(self.balance(address), amount))
 
     def _apply_transfers(self, undo: Undo, transfers: list,
                          network_magic: bytes) -> int:
@@ -273,7 +273,7 @@ class State:
                 raise StateError(f"saldo em ativo sem regra de emissão: {asset.hex()}")
         if self.total_emitted > MAX_SUPPLY:
             raise StateError("emissão total passou do teto")
-        circulating = self.total_balance(HYUR) + sum(
+        circulating = self.total_balance(HYX) + sum(
             amount for entries in self.pending_coinbase.values() for _, amount in entries
         )
         if circulating > MAX_SUPPLY:

@@ -47,7 +47,7 @@ pub mod exibicao {
     /// Nome da moeda.
     pub const MOEDA: &str = "Hyurax";
     /// Ticker da moeda.
-    pub const TICKER: &str = "HYUR";
+    pub const TICKER: &str = "HYX";
 }
 
 /// Rótulos de protocolo. Mudar qualquer um destes é criar uma rede nova.

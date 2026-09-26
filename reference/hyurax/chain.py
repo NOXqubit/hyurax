@@ -67,7 +67,7 @@ def make_genesis(params: ChainParams) -> Block:
     """Gênese determinística, uma só por rede.
 
     A recompensa da gênese vai para o endereço nulo e é inalcançável de
-    propósito: ninguém começa com dinheiro. Quem quiser HYUR minera.
+    propósito: ninguém começa com dinheiro. Quem quiser HYX minera.
     """
     coinbase = Coinbase(
         height=0,

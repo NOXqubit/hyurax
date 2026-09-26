@@ -1,6 +1,6 @@
 # Segurança
 
-O Hyurax está em **pré-testnet**. Não existe mainnet e nenhum HYUR tem valor.
+O Hyurax está em **pré-testnet**. Não existe mainnet e nenhum HYX tem valor.
 Mesmo assim, falha de segurança é tratada com seriedade: é agora que ela custa
 menos.
 

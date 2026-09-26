@@ -37,6 +37,7 @@ não é.
 
 | 20/09/2026 | Mempool que só aceita o que dá para minerar em sequência; saldo não derruba mais par honesto; versão alinhada com a etiqueta `v0.2.0-teste.1` |
 | 26/09/2026 | Semana 6, parte que não depende de servidor pago: lista de sementes publicada no repositório (`rede/sementes-testnet.txt`), que o nó busca sozinho; script para o PC do autor servir de semente; ensaio com três processos (bloco e transferência atravessando a rede); passo a passo em `docs/LANCAR-A-REDE.md` |
+| 26/09/2026 | Ticker HYUR vira HYX (só exibição); documento do HYX Index registrado em `docs/HYX-INDEX.md` |
 
 Próximo: **o primeiro nó respondendo de fora**. O PC do autor serve para começar (`scripts/no-sempre-ligado.ps1` + porta 8790 no roteador + teste pelo 4G do celular). Os passos 1, 2 e 3 de `docs/LANCAR-A-REDE.md` são do autor: renomear e publicar o repositório, criar a etiqueta, e deixar o nó ligado.
 
@@ -62,7 +63,7 @@ Próximo: **o primeiro nó respondendo de fora**. O PC do autor serve para come�
 - [ ] pelo menos 5 nós de pessoas diferentes rodaram a testnet;
 - [ ] Python e Rust concordando em todos os vetores;
 - [ ] spec congelada, com o hash do documento publicado;
-- [ ] aviso público de que HYUR não é investimento e não tem valor garantido.
+- [ ] aviso público de que HYX não é investimento e não tem valor garantido.
 
 ## Divulgação (TikTok, Instagram, Facebook e X)
 

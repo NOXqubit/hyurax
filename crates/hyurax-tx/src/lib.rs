@@ -10,7 +10,7 @@
 //! - **Coinbase** (`kind = 0`): a recompensa do bloco. Não tem remetente nem
 //!   assinatura, então não existe como forjar uma "de fora".
 //! - **Transferência** (`kind = 1`, versão 2): assinada por uma conta, com de 1
-//!   a 16 saídas, cada uma com destino, ativo e valor. Taxa sempre em HYUR.
+//!   a 16 saídas, cada uma com destino, ativo e valor. Taxa sempre em HYX.
 //!
 //! O que fica fora daqui: saldo e nonce em sequência são regras do estado.
 
@@ -40,8 +40,8 @@ pub const SIG_CODE_ED25519: u8 = 1;
 pub const MAX_EXTRA_NONCE: usize = 64;
 /// Tamanho do identificador de ativo.
 pub const ASSET_ID_LEN: usize = 32;
-/// O HYUR: identificador todo zero.
-pub const HYUR: [u8; ASSET_ID_LEN] = [0; ASSET_ID_LEN];
+/// O HYX: identificador todo zero.
+pub const HYX: [u8; ASSET_ID_LEN] = [0; ASSET_ID_LEN];
 /// Máximo de saídas numa transferência.
 pub const MAX_OUTPUTS: usize = 16;
 /// Domínio da mensagem assinada. Muda junto com o formato.
@@ -92,7 +92,7 @@ fn contagem_de_saidas(count: usize) -> Result<(), TxError> {
 // Coinbase
 // ---------------------------------------------------------------------------
 
-/// Recompensa do bloco. Paga sempre em HYUR.
+/// Recompensa do bloco. Paga sempre em HYX.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Coinbase {
     /// Altura do bloco.
@@ -179,7 +179,7 @@ pub struct Transfer {
     pub sender: Endereco,
     /// Saídas, em ordem estrita de `(destino, ativo)`.
     pub outputs: Vec<Output>,
-    /// Taxa, em unidades de HYUR.
+    /// Taxa, em unidades de HYX.
     pub fee: u64,
     /// Nonce da conta.
     pub nonce: u64,
@@ -261,11 +261,11 @@ impl Transfer {
         Ok(sha512(&self.encode()?))
     }
 
-    /// Quanto sai do remetente em cada ativo: as saídas, e a taxa no HYUR.
+    /// Quanto sai do remetente em cada ativo: as saídas, e a taxa no HYX.
     pub fn costs(&self) -> Result<BTreeMap<[u8; ASSET_ID_LEN], u64>, TxError> {
         let mut totais = BTreeMap::new();
         if self.fee != 0 {
-            totais.insert(HYUR, self.fee);
+            totais.insert(HYX, self.fee);
         }
         for saida in &self.outputs {
             let atual = totais.get(&saida.asset_id).copied().unwrap_or(0);
@@ -289,7 +289,7 @@ impl Transfer {
             if saida.amount == 0 {
                 return Err("valor deve ser positivo".into());
             }
-            if saida.asset_id != HYUR {
+            if saida.asset_id != HYX {
                 return Err(format!("ativo desconhecido: {}", hex(&saida.asset_id)));
             }
             if saida.recipient == self.sender {

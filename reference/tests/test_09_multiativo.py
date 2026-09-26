@@ -21,7 +21,7 @@ from hyurax.chain import Chain, ChainError  # noqa: E402
 from hyurax.consensus import REGTEST, block_reward  # noqa: E402
 from hyurax.state import State, StateError  # noqa: E402
 from hyurax.tx import (  # noqa: E402
-    HYUR, MAX_OUTPUTS, Output, Transfer, TxError, decode_tx, sign_transfer,
+    HYX, MAX_OUTPUTS, Output, Transfer, TxError, decode_tx, sign_transfer,
     sign_transfer_outputs,
 )
 from hyurax.units import MAX_AMOUNT, to_units  # noqa: E402
@@ -58,8 +58,8 @@ def test_multi_output_roundtrip_and_apply():
     alice, bob, carol = Account(), Account(), Account()
     chain = cadeia_com_saldo(alice)
     saidas = ordenadas(
-        Output(bob.address, HYUR, to_units("2")),
-        Output(carol.address, HYUR, to_units("0.5")),
+        Output(bob.address, HYX, to_units("2")),
+        Output(carol.address, HYX, to_units("0.5")),
     )
     tx = sign_transfer_outputs(
         alice.secret, P.magic, sender=alice.address, outputs=saidas,
@@ -68,7 +68,7 @@ def test_multi_output_roundtrip_and_apply():
     ok, msg = tx.check_signature(P.magic)
     assert ok, msg
     assert decode_tx(tx.encode()) == tx, "roundtrip com varias saidas falhou"
-    assert tx.costs() == {HYUR: to_units("2.51")}
+    assert tx.costs() == {HYX: to_units("2.51")}
 
     antes = chain.state.balance(alice.address)
     # Alice minera o bloco da propria transferencia, e ele faz amadurecer uma
@@ -90,7 +90,7 @@ def test_output_count_bounds():
                      public_key=alice.pub)
     for label, func in (("codificar zero saidas", vazia.encode),
                         ("codificar 17 saidas", replace(
-                            vazia, outputs=tuple(Output(bob.address, HYUR, 1)
+                            vazia, outputs=tuple(Output(bob.address, HYX, 1)
                                                  for _ in range(MAX_OUTPUTS + 1))).encode)):
         try:
             func()
@@ -113,7 +113,7 @@ def test_output_count_bounds():
 
 def test_outputs_must_be_sorted_and_unique():
     alice, bob, carol = Account(), Account(), Account()
-    certas = ordenadas(Output(bob.address, HYUR, 1), Output(carol.address, HYUR, 1))
+    certas = ordenadas(Output(bob.address, HYX, 1), Output(carol.address, HYX, 1))
     invertidas = (certas[1], certas[0])
     repetidas = (certas[0], certas[0])
     for label, saidas in (("fora de ordem", invertidas), ("repetidas", repetidas)):
@@ -144,12 +144,12 @@ def test_unknown_asset_rejected():
         raise AssertionError("ativo sem regra de emissao foi aceito")
     except ChainError as exc:
         assert "ativo desconhecido" in str(exc)
-    print("PASS so o HYUR e aceito ate existir regra de emissao")
+    print("PASS so o HYX e aceito ate existir regra de emissao")
 
 
 def test_output_to_self_rejected():
     alice, bob = Account(), Account()
-    saidas = ordenadas(Output(bob.address, HYUR, 1), Output(alice.address, HYUR, 1))
+    saidas = ordenadas(Output(bob.address, HYX, 1), Output(alice.address, HYX, 1))
     tx = sign_transfer_outputs(alice.secret, P.magic, sender=alice.address,
                                outputs=saidas, fee=0, nonce=0)
     ok, msg = tx.check_signature(P.magic)
@@ -159,13 +159,13 @@ def test_output_to_self_rejected():
 
 def test_sum_overflow_rejected():
     alice, bob, carol = Account(), Account(), Account()
-    saidas = ordenadas(Output(bob.address, HYUR, MAX_AMOUNT), Output(carol.address, HYUR, 1))
+    saidas = ordenadas(Output(bob.address, HYX, MAX_AMOUNT), Output(carol.address, HYX, 1))
     tx = sign_transfer_outputs(alice.secret, P.magic, sender=alice.address,
                                outputs=saidas, fee=0, nonce=0)
     ok, msg = tx.check_signature(P.magic)
     assert not ok and "estoura" in msg, msg
 
-    # A taxa entra na soma do HYUR.
+    # A taxa entra na soma do HYX.
     tx = sign_transfer(alice.secret, P.magic, sender=alice.address, recipient=bob.address,
                        amount=MAX_AMOUNT, fee=1, nonce=0)
     ok, msg = tx.check_signature(P.magic)
@@ -179,7 +179,7 @@ def test_balance_checked_against_the_sum():
     chain = cadeia_com_saldo(alice)
     saldo = chain.state.balance(alice.address) + chain.state.immature_balance(alice.address)
     metade = saldo // 2 + to_units("100")
-    saidas = ordenadas(Output(bob.address, HYUR, metade), Output(carol.address, HYUR, metade))
+    saidas = ordenadas(Output(bob.address, HYX, metade), Output(carol.address, HYX, metade))
     tx = sign_transfer_outputs(alice.secret, P.magic, sender=alice.address, outputs=saidas,
                                fee=0, nonce=chain.state.next_nonce(alice.address))
     antes = dict(chain.state.balances)
@@ -221,8 +221,8 @@ def test_rollback_multi_output():
     chain = cadeia_com_saldo(alice)
     antes_saldos = dict(chain.state.balances)
     antes_nonces = dict(chain.state.nonces)
-    saidas = ordenadas(Output(bob.address, HYUR, to_units("1")),
-                       Output(carol.address, HYUR, to_units("2")))
+    saidas = ordenadas(Output(bob.address, HYX, to_units("1")),
+                       Output(carol.address, HYX, to_units("2")))
     tx = sign_transfer_outputs(alice.secret, P.magic, sender=alice.address, outputs=saidas,
                                fee=to_units("0.01"),
                                nonce=chain.state.next_nonce(alice.address))

@@ -22,7 +22,7 @@ use std::time::{Duration, Instant};
 use hyurax_chain::Chain;
 use hyurax_consensus::ParametrosRede;
 use hyurax_net::{Conexao, Identidade, No, Papel, Rede};
-use hyurax_tx::{HYUR, Output, sign_transfer_outputs};
+use hyurax_tx::{HYX, Output, sign_transfer_outputs};
 use hyurax_wire::{MAX_FRAME_BODY, Message, PROTOCOL_VERSION, Ponta};
 
 const MINERADOR: [u8; 20] = [7u8; 20];
@@ -279,10 +279,10 @@ fn gasto_duplo_no_mempool_nao_passa() {
     let dono = hyurax_crypto::address_from_ed25519_pubkey(&hyurax_crypto::ed25519_public_key(&segredo));
     let chain = regtest_com(p.coinbase_maturity + 1, dono);
     let mut no = No::novo(chain);
-    assert!(no.chain.state.balance(&dono, &HYUR) > 0, "a conta precisa de saldo maduro");
+    assert!(no.chain.state.balance(&dono, &HYX) > 0, "a conta precisa de saldo maduro");
 
     let uma = |dest: [u8; 20]| {
-        sign_transfer_outputs(&segredo, &p.magic, dono, vec![Output { recipient: dest, asset_id: HYUR, amount: 1_000 }], 0, 0).unwrap()
+        sign_transfer_outputs(&segredo, &p.magic, dono, vec![Output { recipient: dest, asset_id: HYX, amount: 1_000 }], 0, 0).unwrap()
     };
     assert_eq!(no.adicionar_tx(uma([0x31u8; 20])), Ok(true), "a primeira devia entrar");
     assert_eq!(no.adicionar_tx(uma([0x32u8; 20])), Ok(false), "o gasto duplo entrou no mempool");
@@ -295,10 +295,10 @@ fn conta_com_saldo() -> (No, [u8; 20], u64, impl Fn(u64, u64) -> hyurax_tx::Tran
     let segredo = [0x21u8; 32];
     let dono = hyurax_crypto::address_from_ed25519_pubkey(&hyurax_crypto::ed25519_public_key(&segredo));
     let no = No::novo(regtest_com(p.coinbase_maturity + 1, dono));
-    let saldo = no.chain.state.balance(&dono, &HYUR);
+    let saldo = no.chain.state.balance(&dono, &HYX);
     assert!(saldo > 0, "a conta precisa de saldo maduro");
     let assinar = move |nonce: u64, valor: u64| {
-        let saida = Output { recipient: [0x31u8; 20], asset_id: HYUR, amount: valor };
+        let saida = Output { recipient: [0x31u8; 20], asset_id: HYX, amount: valor };
         sign_transfer_outputs(&segredo, &p.magic, dono, vec![saida], 0, nonce).unwrap()
     };
     (no, dono, saldo, assinar)
@@ -377,10 +377,10 @@ fn bloco_que_derruba_o_comeco_da_fila_leva_o_rabo_junto() {
         chain.accept_block(bloco, Some(ts + 10)).unwrap();
     }
     let mut no = No::novo(chain);
-    let saldo = no.chain.state.balance(&dono, &HYUR);
+    let saldo = no.chain.state.balance(&dono, &HYX);
     assert!(saldo > 0, "a conta precisa de saldo maduro");
     let assinar = |nonce: u64, valor: u64, destino: [u8; 20]| {
-        let saida = Output { recipient: destino, asset_id: HYUR, amount: valor };
+        let saida = Output { recipient: destino, asset_id: HYX, amount: valor };
         sign_transfer_outputs(&segredo, &p.magic, dono, vec![saida], 0, nonce).unwrap()
     };
     assert_eq!(no.adicionar_tx(assinar(0, saldo / 4, [0x31u8; 20])), Ok(true));
@@ -395,7 +395,7 @@ fn bloco_que_derruba_o_comeco_da_fila_leva_o_rabo_junto() {
     let bloco = espelho.mine(MINERADOR, vec![assinar(0, saldo, [0x99u8; 20])], Some(ts), 2).unwrap();
     assert_eq!(no.aceitar_bloco(bloco), Ok(true));
 
-    assert_eq!(no.chain.state.balance(&dono, &HYUR), 0, "o bloco devia ter gasto o saldo todo");
+    assert_eq!(no.chain.state.balance(&dono, &HYX), 0, "o bloco devia ter gasto o saldo todo");
     assert_eq!(no.mempool_len(), 0, "sobrou no mempool transferência que já não dá para pagar");
     // E o nó continua sabendo dizer qual é o próximo nonce livre.
     assert_eq!(no.proximo_nonce(&dono), 1);

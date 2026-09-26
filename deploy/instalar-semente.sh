@@ -12,7 +12,7 @@
 #      explorador de blocos estático (porta 8080, só leitura);
 #   4. abre as duas portas no firewall local (ufw ou firewalld, se existirem).
 #
-# Não mexe em SSH, não cria carteira e não minera. A rede é de teste: HYUR não
+# Não mexe em SSH, não cria carteira e não minera. A rede é de teste: HYX não
 # tem valor.
 set -euo pipefail
 

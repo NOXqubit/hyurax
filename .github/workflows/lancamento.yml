@@ -139,21 +139,21 @@ jobs:
 
           O que é
           -------
-          O programa com janela do Hyurax (HYUR): cria a carteira, minera,
-          mostra o saldo e envia HYUR, sem precisar de terminal. É só abrir o
+          O programa com janela do Hyurax (HYX): cria a carteira, minera,
+          mostra o saldo e envia HYX, sem precisar de terminal. É só abrir o
           "Hyurax.exe".
 
           Segundo fator (opcional)
           ------------------------
           Em Carteira > Segurança dá para ligar o código de 6 dígitos do
           Google Authenticator (ou Aegis, 2FAS, Authy). Ele passa a ser pedido
-          para enviar HYUR e, se você quiser, para abrir o programa.
+          para enviar HYX e, se você quiser, para abrir o programa.
           O segredo fica em "seguranca.txt", na pasta de dados: apagar esse
           arquivo desliga o código e volta a valer só a senha da carteira.
 
           Rede de TESTE
           -------------
-          A rede pública ainda não existe e o HYUR de teste não tem valor.
+          A rede pública ainda não existe e o HYX de teste não tem valor.
           Não há venda, pré-venda nem promessa de lucro.
 
           O Windows pode avisar
@@ -212,7 +212,7 @@ jobs:
           make_latest: true
           files: pacotes/*
           body: |
-            **Rede de TESTE.** A rede pública não existe e o HYUR não tem valor.
+            **Rede de TESTE.** A rede pública não existe e o HYX não tem valor.
             Não há venda, pré-venda nem promessa de lucro.
 
             Como usar: o minerador com janela traz um `LEIA-ME.txt`; os pacotes de terminal trazem o `LEIA-ME.md` (é o `docs/RODAR-UM-NO.md`).
