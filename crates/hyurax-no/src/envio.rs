@@ -22,7 +22,7 @@ use hyurax_crypto::ADDRESS_LEN;
 use hyurax_net::Rede;
 use hyurax_tx::{HYX, Output, Transfer, Tx, sign_transfer_outputs};
 
-use crate::{carteira, de_hex, hex, hyx, unidades_de_hyx};
+use crate::{carteira, endereco, hex, hyx, unidades_de_hyx};
 
 /// Taxa sugerida quando o dono não escreve nada: zero.
 ///
@@ -55,11 +55,13 @@ pub(crate) fn conferir(
     para_texto: &str,
     valor_texto: &str,
     taxa_texto: &str,
+    nome_da_rede: &str,
 ) -> Result<Pedido, String> {
     let limpo: String = para_texto.chars().filter(|c| !c.is_whitespace()).collect();
-    let para: [u8; ADDRESS_LEN] = de_hex(&limpo).ok_or(
-        "o endereço de destino tem 40 dígitos hexadecimais (0-9 e a-f). Confira se não faltou nem sobrou nada.",
-    )?;
+    if limpo.is_empty() {
+        return Err("falta o endereço de destino.".into());
+    }
+    let para: [u8; ADDRESS_LEN] = endereco::ler(&limpo, nome_da_rede)?;
     if para == *de {
         return Err("esse é o seu próprio endereço. Mandar para si mesmo só gastaria a taxa.".into());
     }
@@ -148,8 +150,8 @@ fn soma_para(t: &Transfer, quem: &[u8; ADDRESS_LEN]) -> u64 {
         .fold(0u64, |a, s| a.saturating_add(s.amount))
 }
 
-fn primeiro_destino(t: &Transfer) -> String {
-    t.outputs.first().map(|s| hex(&s.recipient)).unwrap_or_default()
+fn primeiro_destino(t: &Transfer, rede: &str) -> String {
+    t.outputs.first().map(|s| endereco::mostrar(&s.recipient, rede)).unwrap_or_default()
 }
 
 /// Monta o histórico: o que está esperando no mempool primeiro, depois o que já
@@ -168,7 +170,7 @@ pub(crate) fn historico(chain: &Chain, esperando: &[Transfer], meu: &[u8; ADDRES
             altura: 0,
             pendente: true,
             entrada: !meu_envio,
-            outro: if meu_envio { primeiro_destino(t) } else { hex(&t.sender) },
+            outro: if meu_envio { primeiro_destino(t, chain.params.nome) } else { endereco::mostrar(&t.sender, chain.params.nome) },
             valor: if meu_envio { t.outputs.iter().fold(0u64, |a, s| a.saturating_add(s.amount)) } else { recebido },
             taxa: if meu_envio { t.fee } else { 0 },
             txid,
@@ -208,7 +210,7 @@ pub(crate) fn historico(chain: &Chain, esperando: &[Transfer], meu: &[u8; ADDRES
                         altura,
                         pendente: false,
                         entrada: !meu_envio,
-                        outro: if meu_envio { primeiro_destino(t) } else { hex(&t.sender) },
+                        outro: if meu_envio { primeiro_destino(t, chain.params.nome) } else { endereco::mostrar(&t.sender, chain.params.nome) },
                         valor: if meu_envio { t.outputs.iter().fold(0u64, |a, s| a.saturating_add(s.amount)) } else { recebido },
                         taxa: if meu_envio { t.fee } else { 0 },
                         txid: tx.txid().map(|h| hex(&h)).unwrap_or_default(),
@@ -232,33 +234,45 @@ mod testes {
 
     #[test]
     fn conferir_recusa_o_que_nao_e_endereco() {
-        assert!(conferir(&MEU, "", "1", "").is_err());
-        assert!(conferir(&MEU, "22", "1", "").is_err());
-        assert!(conferir(&MEU, &hex(&OUTRO)[..38], "1", "").is_err());
-        assert!(conferir(&MEU, &format!("{}zz", &hex(&OUTRO)[..38]), "1", "").is_err());
+        assert!(conferir(&MEU, "", "1", "", "hyurax-testnet").is_err());
+        assert!(conferir(&MEU, "22", "1", "", "hyurax-testnet").is_err());
+        assert!(conferir(&MEU, &hex(&OUTRO)[..38], "1", "", "hyurax-testnet").is_err());
+        assert!(conferir(&MEU, &format!("{}zz", &hex(&OUTRO)[..38]), "1", "", "hyurax-testnet").is_err());
     }
 
     #[test]
     fn conferir_aceita_espaco_no_endereco_e_recusa_o_proprio() {
         let com_espaco = format!("{} {}", &hex(&OUTRO)[..20], &hex(&OUTRO)[20..]);
-        assert_eq!(conferir(&MEU, &com_espaco, "1.5", "").unwrap().valor, 150_000_000);
-        assert!(conferir(&MEU, &hex(&MEU), "1", "").unwrap_err().contains("seu próprio"));
+        assert_eq!(conferir(&MEU, &com_espaco, "1.5", "", "hyurax-testnet").unwrap().valor, 150_000_000);
+        assert!(conferir(&MEU, &hex(&MEU), "1", "", "hyurax-testnet").unwrap_err().contains("seu próprio"));
+    }
+
+    #[test]
+    fn conferir_aceita_o_formato_com_verificador_e_pega_digitacao() {
+        let certo = endereco::mostrar(&OUTRO, "hyurax-testnet");
+        assert_eq!(conferir(&MEU, &certo, "1", "", "hyurax-testnet").unwrap().para, OUTRO);
+        let mut errado: Vec<char> = certo.chars().collect();
+        errado[10] = if errado[10] == 'q' { 'p' } else { 'q' };
+        let errado: String = errado.into_iter().collect();
+        assert!(conferir(&MEU, &errado, "1", "", "hyurax-testnet").unwrap_err().contains("verificador"));
+        let principal = endereco::mostrar(&OUTRO, "hyurax-mainnet");
+        assert!(conferir(&MEU, &principal, "1", "", "hyurax-testnet").unwrap_err().contains("rede principal"));
     }
 
     #[test]
     fn conferir_recusa_valor_zero_e_valor_estranho() {
-        assert!(conferir(&MEU, &hex(&OUTRO), "0", "").is_err());
-        assert!(conferir(&MEU, &hex(&OUTRO), "0.000000001", "").is_err()); // 9 casas
-        assert!(conferir(&MEU, &hex(&OUTRO), "1,5", "").is_err()); // vírgula não é ponto
-        assert!(conferir(&MEU, &hex(&OUTRO), "-1", "").is_err());
-        assert!(conferir(&MEU, &hex(&OUTRO), "1", "abc").is_err());
+        assert!(conferir(&MEU, &hex(&OUTRO), "0", "", "hyurax-testnet").is_err());
+        assert!(conferir(&MEU, &hex(&OUTRO), "0.000000001", "", "hyurax-testnet").is_err()); // 9 casas
+        assert!(conferir(&MEU, &hex(&OUTRO), "1,5", "", "hyurax-testnet").is_err()); // vírgula não é ponto
+        assert!(conferir(&MEU, &hex(&OUTRO), "-1", "", "hyurax-testnet").is_err());
+        assert!(conferir(&MEU, &hex(&OUTRO), "1", "abc", "hyurax-testnet").is_err());
     }
 
     #[test]
     fn a_taxa_vazia_vira_a_padrao_e_a_escrita_vale() {
-        assert_eq!(conferir(&MEU, &hex(&OUTRO), "2", "").unwrap().taxa, TAXA_PADRAO);
-        assert_eq!(conferir(&MEU, &hex(&OUTRO), "2", "  ").unwrap().taxa, TAXA_PADRAO);
-        assert_eq!(conferir(&MEU, &hex(&OUTRO), "2", "0.001").unwrap().taxa, 100_000);
+        assert_eq!(conferir(&MEU, &hex(&OUTRO), "2", "", "hyurax-testnet").unwrap().taxa, TAXA_PADRAO);
+        assert_eq!(conferir(&MEU, &hex(&OUTRO), "2", "  ", "hyurax-testnet").unwrap().taxa, TAXA_PADRAO);
+        assert_eq!(conferir(&MEU, &hex(&OUTRO), "2", "0.001", "hyurax-testnet").unwrap().taxa, 100_000);
     }
 
     #[test]

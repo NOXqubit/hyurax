@@ -59,6 +59,13 @@ enquanto você digita, e mostra o seu **endereço**.
 
 Para ver o endereço de novo: `./hyurax-no carteira ver --arquivo carteira.txt`.
 
+O endereço da rede de teste começa com `thyx1` e tem um **dígito verificador**
+(formato Bech32m, o mesmo do Bitcoin moderno): um erro de digitação é
+recusado, em vez de mandar HYX para um endereço que ninguém controla. A rede
+principal, quando existir, usa `hyx1`, e um endereço de uma rede é recusado na
+outra. O formato antigo, com 40 dígitos hexadecimais, continua aceito, mas
+sem essa proteção.
+
 ## 3. Colocar o nó no ar
 
 ```bash

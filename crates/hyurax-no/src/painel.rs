@@ -1062,6 +1062,7 @@ fn enviar_do_painel(painel: &Painel, rede: &Arc<Rede>, o: &Opcoes, campos: &[(St
         &campo(campos, "para").unwrap_or_default(),
         &campo(campos, "valor").unwrap_or_default(),
         &campo(campos, "taxa").unwrap_or_default(),
+        o.rede.nome,
     )?;
     let senha = campo(campos, "senha").unwrap_or_default();
     if senha.is_empty() {
@@ -1082,7 +1083,7 @@ fn enviar_do_painel(painel: &Painel, rede: &Arc<Rede>, o: &Opcoes, campos: &[(St
         format!(
             "enviados {} HYX para {} (taxa {}, nonce {}, {} par(es))",
             hyx(u128::from(pedido.valor)),
-            hex(&pedido.para),
+            crate::endereco::mostrar(&pedido.para, o.rede.nome),
             hyx(u128::from(pedido.taxa)),
             feita.nonce,
             feita.pares
@@ -1093,7 +1094,7 @@ fn enviar_do_painel(painel: &Painel, rede: &Arc<Rede>, o: &Opcoes, campos: &[(St
         hex(&feita.txid),
         hyx(u128::from(pedido.valor)),
         hyx(u128::from(pedido.taxa)),
-        hex(&pedido.para),
+        crate::endereco::mostrar(&pedido.para, o.rede.nome),
         feita.nonce,
         feita.pares
     ))
@@ -1445,8 +1446,14 @@ fn responder(s: &mut TcpStream, status: &str, tipo: &str, corpo: &[u8]) -> std::
          Connection: close\r\n\r\n",
         corpo.len()
     );
-    s.write_all(cab.as_bytes())?;
-    s.write_all(corpo)?;
+    // Uma escrita só, e sem o algoritmo de Nagle: em duas escritas, o Windows
+    // segurava o corpo esperando o ACK atrasado do cabeçalho, e cada resposta
+    // do painel levava de 200 a 400 ms à toa.
+    let _ = s.set_nodelay(true);
+    let mut tudo = Vec::with_capacity(cab.len().saturating_add(corpo.len()));
+    tudo.extend_from_slice(cab.as_bytes());
+    tudo.extend_from_slice(corpo);
+    s.write_all(&tudo)?;
     s.flush()
 }
 
@@ -1709,7 +1716,7 @@ fn estado_json(painel: &Painel, rede: &Rede, o: &Opcoes, pode_mandar: bool, port
         hyx(u128::from(c.state.total_emitted)),
         rede.pares_conectados(),
         no.mempool_len(),
-        endereco.map(|e| hex(&e)).unwrap_or_default(),
+        endereco.map(|e| crate::endereco::mostrar(&e, o.rede.nome)).unwrap_or_default(),
         hyx(u128::from(saldo)),
         hyx(imaturo),
         hyx(u128::from(block_reward(altura.saturating_add(1), &o.rede))),

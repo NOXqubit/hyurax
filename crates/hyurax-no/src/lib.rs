@@ -20,6 +20,7 @@
 //! o nó guarda a própria identidade em `PASTA/no.chave`.
 
 pub mod carteira;
+pub mod endereco;
 mod envio;
 mod maquinas;
 pub mod painel;
@@ -42,7 +43,7 @@ use hyurax_crypto::{ADDRESS_LEN, SECRET_LEN};
 use hyurax_net::entropia::{entropia_do_sistema, preencher};
 use hyurax_net::{Identidade, No, Rede};
 use hyurax_pow::ConfigMineracao;
-use hyurax_store::{load_chain, save_chain};
+use hyurax_store::{encode_chain, gravar_codificada, load_chain};
 use hyurax_tx::{HYX, Output, sign_transfer_outputs};
 
 const AJUDA: &str = "\
@@ -158,6 +159,8 @@ fn ler_opcoes(args: &[String]) -> Result<Opcoes, String> {
         exportar: None,
         sem_sementes_padrao: false,
     };
+    // endereços se leem no fim, quando já se sabe a rede: o prefixo depende dela
+    let (mut endereco_texto, mut para_texto) = (None::<String>, None::<String>);
     let mut it = args.iter();
     while let Some(nome) = it.next() {
         if nome == "--sem-sementes-padrao" {
@@ -171,16 +174,14 @@ fn ler_opcoes(args: &[String]) -> Result<Opcoes, String> {
             }
             "--pasta" => o.pasta = PathBuf::from(valor),
             "--arquivo" => o.arquivo = Some(PathBuf::from(valor)),
-            "--endereco" => {
-                o.endereco = Some(de_hex(valor).ok_or("--endereco precisa de 40 dígitos hexadecimais")?);
-            }
+            "--endereco" => endereco_texto = Some(valor.clone()),
             "--blocos" => o.blocos = valor.parse().map_err(|_| "--blocos precisa ser número")?,
             "--porta" => o.porta = valor.parse().map_err(|_| "--porta precisa ser número")?,
             "--semente" => {
                 o.sementes.extend(valor.split(',').map(|s| s.trim().to_string()).filter(|s| !s.is_empty()));
             }
             "--pausa-ms" => o.pausa_ms = valor.parse().map_err(|_| "--pausa-ms precisa ser número")?,
-            "--para" => o.para = Some(de_hex(valor).ok_or("--para precisa de 40 dígitos hexadecimais")?),
+            "--para" => para_texto = Some(valor.clone()),
             "--valor" => o.valor = Some(unidades_de_hyx(valor)?),
             "--taxa" => o.taxa = unidades_de_hyx(valor)?,
             "--exportar" => o.exportar = Some(PathBuf::from(valor)),
@@ -193,6 +194,12 @@ fn ler_opcoes(args: &[String]) -> Result<Opcoes, String> {
             }
             _ => return Err(format!("opção desconhecida: {nome}")),
         }
+    }
+    if let Some(t) = endereco_texto {
+        o.endereco = Some(endereco::ler(&t, o.rede.nome).map_err(|e| format!("--endereco: {e}"))?);
+    }
+    if let Some(t) = para_texto {
+        o.para = Some(endereco::ler(&t, o.rede.nome).map_err(|e| format!("--para: {e}"))?);
     }
     // Sem `--semente`: primeiro o arquivo do dono da máquina, depois a lista
     // embutida no programa. A lista publicada na internet fica para depois de o
@@ -253,6 +260,13 @@ fn ler_arquivo(arquivo: &Path) -> Result<String, String> {
     std::fs::read_to_string(arquivo).map_err(|e| format!("não consegui ler {}: {e}", arquivo.display()))
 }
 
+/// O endereço da carteira: o formato com verificador da rede de teste (a que
+/// existe) e o hexadecimal, que continua aceito.
+fn mostrar_endereco(e: &[u8; ADDRESS_LEN]) {
+    println!("Endereço:          {}", endereco::mostrar(e, ParametrosRede::TESTNET.nome));
+    println!("  em hexadecimal:  {}  (sem dígito verificador; prefira o de cima)", hex(e));
+}
+
 fn comando_carteira(args: &[String]) -> Result<(), String> {
     let (acao, resto) = args.split_first().ok_or("use: carteira nova|ver|cifrar --arquivo ARQUIVO")?;
     let o = ler_opcoes(resto)?;
@@ -268,13 +282,13 @@ fn comando_carteira(args: &[String]) -> Result<(), String> {
             let conteudo = cifrar_segredo(&segredo, &senha)?;
             gravar_carteira(&arquivo, &conteudo)?;
             println!("Carteira criada em {}", arquivo.display());
-            println!("Endereço: {}", hex(&carteira::endereco(&conteudo)?));
+            mostrar_endereco(&carteira::endereco(&conteudo)?);
             println!("Guarde uma cópia do arquivo e NÃO esqueça a senha: sem os dois, o saldo fica perdido.");
             Ok(())
         }
         "ver" => {
             let texto = ler_arquivo(&arquivo)?;
-            println!("Endereço: {}", hex(&carteira::endereco(&texto)?));
+            mostrar_endereco(&carteira::endereco(&texto)?);
             if carteira::e_formato_antigo(&texto) {
                 println!("Aviso: esta carteira guarda o segredo em texto. Proteja com: hyurax-no carteira cifrar --arquivo {}", arquivo.display());
             }
@@ -405,10 +419,20 @@ fn procurar_a_rede(o: &Opcoes, rede: &Arc<Rede>) {
 }
 
 /// Grava a cadeia no disco.
+/// Grava a cadeia. Os bytes são montados com a trava do nó, que é rápido; o
+/// disco fica de fora dela. Com o disco dentro, o painel e a rede esperavam a
+/// gravação inteira a cada bloco (quase um segundo num HD externo).
 fn salvar(rede: &Arc<Rede>, o: &Opcoes) -> Result<(), String> {
-    let no = rede.no.lock().map_err(|_| "nó travado".to_string())?;
-    save_chain(&no.chain, &arquivo_da_cadeia(o)).map_err(|e| e.to_string())?;
-    Ok(())
+    // Uma gravação de cada vez, e a vez é pega ANTES de montar os bytes: senão
+    // a que montou a cadeia mais velha podia chegar ao disco por último.
+    // Ordem das travas: esta primeiro, a do nó depois, sempre.
+    static GRAVANDO: std::sync::Mutex<()> = std::sync::Mutex::new(());
+    let _vez = GRAVANDO.lock();
+    let dados = {
+        let no = rede.no.lock().map_err(|_| "nó travado".to_string())?;
+        encode_chain(&no.chain).map_err(|e| e.to_string())?
+    };
+    gravar_codificada(&dados, &arquivo_da_cadeia(o)).map_err(|e| e.to_string())
 }
 
 fn minerar(args: &[String]) -> Result<(), String> {
@@ -515,7 +539,7 @@ fn esperar_sincronizar(rede: &Arc<Rede>, o: &Opcoes) {
 fn enviar(args: &[String]) -> Result<(), String> {
     let o = ler_opcoes(args)?;
     let arquivo = o.arquivo.clone().ok_or("falta --arquivo (a carteira que paga)")?;
-    let para = o.para.ok_or("falta --para (endereço de destino, 40 dígitos hexadecimais)")?;
+    let para = o.para.ok_or("falta --para (endereço de destino, como thyx1…)")?;
     let valor = o.valor.filter(|&v| v > 0).ok_or("falta --valor maior que zero (em HYX, por exemplo 1.5)")?;
     let texto = ler_arquivo(&arquivo)?;
     let origem = carteira::endereco(&texto)?;

@@ -682,8 +682,9 @@ $("f-enviar").addEventListener("submit", (ev) => {
   const para = $("en-para").value.replace(/\s+/g, "");
   const valor = $("en-valor").value.trim().replace(",", ".");
   const taxa = $("en-taxa").value.trim().replace(",", ".");
-  if (!/^[0-9a-fA-F]{40}$/.test(para)) {
-    texto("erro-enviar", "O endereço de destino tem 40 dígitos hexadecimais (0-9 e a-f). Confira se não faltou nem sobrou nada.");
+  // o formato com verificador (thyx1…) ou o hexadecimal antigo; o nó confere o verificador
+  if (!/^[0-9a-fA-F]{40}$/.test(para) && !/^[a-z]{2,5}1[02-9ac-hj-np-z]{20,80}$/i.test(para)) {
+    texto("erro-enviar", "O endereço de destino começa com thyx1 (ou são 40 dígitos hexadecimais, no formato antigo). Confira se não faltou nem sobrou nada.");
     return;
   }
   if (para.toLowerCase() === String(ultimo?.endereco || "").toLowerCase()) {
