@@ -64,11 +64,19 @@ pub fn encode_chain(chain: &Chain) -> Result<Vec<u8>, StoreError> {
 /// Devolve quantos blocos foram escritos.
 pub fn save_chain(chain: &Chain, caminho: &Path) -> Result<u64, StoreError> {
     let dados = encode_chain(chain)?;
+    gravar_codificada(&dados, caminho)?;
+    Ok(chain.entries.len().saturating_sub(1) as u64)
+}
+
+/// Grava bytes que [`encode_chain`] já montou, pelo arquivo temporário e a
+/// troca de nome. Separado para quem segura uma trava: monta com a trava,
+/// solta, e só então vai ao disco, que pode ser lento.
+pub fn gravar_codificada(dados: &[u8], caminho: &Path) -> Result<(), StoreError> {
     let mut temporario = PathBuf::from(caminho);
     temporario.as_mut_os_string().push(".tmp");
-    std::fs::write(&temporario, &dados).map_err(|e| erro(format!("não consegui gravar: {e}")))?;
+    std::fs::write(&temporario, dados).map_err(|e| erro(format!("não consegui gravar: {e}")))?;
     std::fs::rename(&temporario, caminho).map_err(|e| erro(format!("não consegui gravar: {e}")))?;
-    Ok(chain.entries.len().saturating_sub(1) as u64)
+    Ok(())
 }
 
 /// Reconstrói a cadeia a partir dos bytes, revalidando cada bloco.
