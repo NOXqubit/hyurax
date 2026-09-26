@@ -21,7 +21,7 @@ trocá-los mudaria vetores e a instância do trabalho útil do consenso.
 | Minerador com limite de CPU | `hyurax-no/src/painel.rs` | Rust | Linhas, pausa proporcional, medição por tentativa |
 | Identidade de nó (X25519, a chave da cifra) | `hyurax-net`, `PASTA/no.chave` | Rust | O `WORKER_ID` é derivado dela (ver o registro de prova) |
 | Rede cifrada entre nós | `hyurax-net`, spec §21 | Rust | Transporte do modo TESTNET |
-| Painel com janela | `hyurax-no/painel/` | Rust + JS | Vira o painel do ULTRAX; a estação 3D sai |
+| Painel com janela | `hyurax-no/painel/` | Rust + JS | Vira o painel do ULTRAX; a estação 3D saiu na Etapa 3 |
 
 ### O achado que define o plano
 
@@ -218,7 +218,7 @@ começa com a anterior verde.
 | 0 | Este documento | O autor leu |
 | 1 | Crate `hyurax-ultrax`: tipos de trabalho (matriz, mochila, difusão), especificação e `TASK_ID`, ciclo de vida, registro de prova, verificação, validador por maioria, reputação, Work Score v1 | Os três trabalhos batem byte a byte com `vectors/utrax.json`; transição inválida recusada; resultado adulterado recusado; divergência 2×1 detectada sem punir quem não tem evidência contra si |
 | 2 | Worker LAB no `hyurax-no`: gerador de tarefas, fila, execução com limite de CPU e memória, prazo e cancelamento, tarefas-desafio, histórico em disco, telemetria com modo DEBUG, auditoria. **Pronta em 26/09/2026** | O programa executa e verifica tarefas sozinho, respeitando os limites, e o histórico sobrevive a reiniciar |
-| 3 | Painel ULTRAX no lugar da estação 3D: trabalho ativo, histórico, verificação, contribuição, nó e o selo do modo | Um usuário responde às 7 perguntas do critério de sucesso olhando a tela |
+| 3 | Painel ULTRAX no lugar da estação 3D: trabalho ativo, histórico, verificação, contribuição, nó e o selo do modo. **Pronta em 26/09/2026** | Um usuário responde às 7 perguntas do critério de sucesso olhando a tela |
 | 4 | Trabalho de IA: rede pequena em ponto fixo sobre a AqSolDB, com a molécula desenhada na tela | Inferência verificada por recomputação; a curva de erro na tela sai do cálculo real |
 | 5 | TESTNET: mensagens de tarefa e resultado entre nós, redundância com workers independentes, reputação por `WORKER_ID` | Três nós separados executam a mesma tarefa, e um resultado adulterado é detectado pela maioria |
 | 6 | GPU (depois de medir se compensa), sandbox para trabalho externo, estrutura de JOB/cliente | Só com hardware para testar e com decisão sobre o equilíbrio CPU × GPU |
@@ -240,6 +240,24 @@ começa com a anterior verde.
 - **A mochila é pequena de propósito.** O gabarito limita a 256 itens, porque a
   escolha cabe numa máscara de 32 bytes. Ela passa do limite só numa versão
   nova do formato.
+
+### A tela (Etapa 3), pergunta por pergunta
+
+| Pergunta | Onde a tela responde |
+|---|---|
+| O que meu computador está fazendo? | Cartão da tarefa ativa: categoria (MATHEMATICAL WORK, OPTIMIZATION WORK), trabalho e tamanho |
+| Qual tarefa recebeu? | Número da tarefa, `TASK_ID` e `INPUT_HASH` no cartão |
+| Quanto trabalho executou? | Progresso em unidades reais: linhas de C, itens da mochila, passos da difusão, rodadas de Freivalds; e as operações |
+| O resultado foi verificado? | Ciclo de vida no cartão (o estado atual invertido), método e quem confere; histórico com o estado final |
+| Como a contribuição foi medida? | Work Score com a regra escrita embaixo: 1 ponto = 1 milhão de operações verificadas |
+| Qual a reputação do nó? | Nota de 0 a 1000 com a fórmula, e o `WORKER_ID` |
+| Em qual ambiente estou? | Selo `LAB · TESTNET WORKLOAD` fixo no cabeçalho do painel |
+
+O progresso vem da contagem do worker, lida a cada segundo; nada anda
+sozinho na tela. GPU aparece como "não usada" e temperatura como "não
+medida", porque o programa não mede nenhuma das duas. A mineração ganhou
+painel próprio, e o botão ULTRAX fica ao lado do MINERAR: são duas coisas
+diferentes, e podem rodar juntas.
 
 ### Limites conhecidos, para resolver antes da Etapa 5
 

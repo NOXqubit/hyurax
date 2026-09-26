@@ -70,7 +70,7 @@ hyurax-no — nó do Hyurax (rede de TESTE)
   hyurax-no painel --arquivo carteira.txt [--rede testnet] [--pasta dados] [--porta P]
                   [--semente IP:PORTA,...] [--painel-porta 8800] [--painel-rede]
       O minerador com dashboard: abre http://127.0.0.1:8800 no navegador, com o botão
-      de minerar, os núcleos, a carteira, o livro de blocos e a estação 3D.
+      de minerar, os núcleos, a carteira, o livro de blocos e o ULTRAX (trabalho útil, modo LAB).
       --painel-rede deixa o celular no mesmo Wi-Fi ver o painel (sem poder mandar).
 
   hyurax-no no --rede testnet --pasta dados [--porta P] [--semente IP:PORTA,...] [--exportar estado.json]

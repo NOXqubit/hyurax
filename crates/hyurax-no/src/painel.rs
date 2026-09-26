@@ -44,8 +44,6 @@ use crate::{Opcoes, carteira, envio, hex, hyx, maquinas, salvar, subir_rede, tot
 const INDEX: &str = include_str!("../painel/index.html");
 const CSS: &str = include_str!("../painel/painel.css");
 const JS: &str = include_str!("../painel/painel.js");
-const ESTACAO: &str = include_str!("../painel/estacao.js");
-const THREE: &str = include_str!("../../../site/vendor/three.module.min.js");
 /// Gerador de QR Code, o mesmo do site: serve para abrir o painel no celular.
 const QRCODE: &str = include_str!("../../../site/vendor/qrcode.min.js");
 
@@ -60,25 +58,27 @@ const SEMENTES_MAX: usize = 16;
 /// Porta padrão do painel e do nó no programa com janela.
 const PORTA_PAINEL: u16 = 8800;
 const PORTA_P2P: u16 = 8790;
-/// Qualidades da cena 3D que o painel aceita.
-const CENAS: [&str; 5] = ["auto", "alta", "media", "baixa", "desligada"];
 /// Quanto um núcleo minerando gasta, em watts, e o preço do kWh em centavos.
 /// São estimativas honestas, e o usuário ajusta as duas nos Ajustes.
 /// Painéis que existem, na ordem de fábrica. Um "-" na frente quer dizer fechado.
-const PAINEIS_PADRAO: &str = "estacao,carteira,rede,livro,ritmo,fluxo,-mercado,-maquinas";
-const PAINEIS_CONHECIDOS: [&str; 8] =
-    ["estacao", "carteira", "rede", "livro", "ritmo", "fluxo", "mercado", "maquinas"];
+const PAINEIS_PADRAO: &str =
+    "ultrax,verificacao,carteira,mineracao,historico,telemetria,livro,fluxo,-rede,-ritmo,-mercado,-maquinas";
+const PAINEIS_CONHECIDOS: [&str; 12] = [
+    "ultrax",
+    "verificacao",
+    "carteira",
+    "mineracao",
+    "historico",
+    "telemetria",
+    "livro",
+    "fluxo",
+    "rede",
+    "ritmo",
+    "mercado",
+    "maquinas",
+];
 /// Quantos movimentos da carteira o painel mostra.
 const HISTORICO_MAX: usize = 30;
-/// Enfeites que o dono pode pôr na estação, na ordem de fábrica. Um "-" na
-/// frente quer dizer guardado. Mudam só o desenho; a mineração não muda.
-const ENFEITES_PADRAO: &str = "planta,luminaria,-retrato,-livros,-gato,-poster";
-const ENFEITES_CONHECIDOS: [&str; 6] = ["planta", "luminaria", "retrato", "livros", "gato", "poster"];
-/// Cores da luz da torre. É enfeite, não informação: o estado da mineração
-/// continua se lendo pelo pulso e pela velocidade das ventoinhas.
-const LEDS: [&str; 5] = ["branco", "ambar", "azul", "verde", "vermelho"];
-/// Acabamento da mesa.
-const MESAS: [&str; 3] = ["escura", "clara", "madeira"];
 /// De quanto em quanto tempo as outras máquinas são perguntadas.
 const MAQUINAS_INTERVALO: Duration = Duration::from_secs(6);
 /// De quanto em quanto tempo o mercado é consultado, e as moedas seguidas.
@@ -133,19 +133,12 @@ struct Painel {
     centavos_kwh: AtomicU32,
     /// O painel aceita ser visto por outros aparelhos da rede local.
     na_rede: AtomicBool,
-    /// Qualidade da cena 3D escolhida: auto, alta, media, baixa, desligada.
-    cena: Mutex<String>,
     /// Acompanhar o mercado das criptomoedas grandes (liga a internet).
     mercado_ligado: AtomicBool,
     /// Última leitura do mercado, e quando veio.
     mercado: Mutex<Option<(u64, String)>>,
     /// Quais painéis o dono deixou abertos, e em que ordem.
     paineis: Mutex<String>,
-    /// Como a estação 3D está decorada: enfeites, monitores, luz e mesa.
-    enfeites: Mutex<String>,
-    monitores: AtomicU32,
-    led: Mutex<String>,
-    mesa: Mutex<String>,
     /// Avisar quando um bloco meu entrar: na tela, e com som se o dono quiser.
     avisar_bloco: AtomicBool,
     som_bloco: AtomicBool,
@@ -294,19 +287,6 @@ impl Painel {
         if let Ok(p) = self.paineis.lock() {
             let _ = writeln!(texto, "paineis={p}");
         }
-        if let Ok(c) = self.cena.lock() {
-            let _ = writeln!(texto, "cena={c}");
-        }
-        if let Ok(e) = self.enfeites.lock() {
-            let _ = writeln!(texto, "enfeites={e}");
-        }
-        let _ = writeln!(texto, "monitores={}", self.monitores.load(Ordering::Relaxed));
-        if let Ok(l) = self.led.lock() {
-            let _ = writeln!(texto, "led={l}");
-        }
-        if let Ok(m) = self.mesa.lock() {
-            let _ = writeln!(texto, "mesa={m}");
-        }
         let _ = writeln!(texto, "avisar_bloco={}", u8::from(self.avisar_bloco.load(Ordering::Relaxed)));
         let _ = writeln!(texto, "som_bloco={}", u8::from(self.som_bloco.load(Ordering::Relaxed)));
         let u = &self.ultrax;
@@ -346,11 +326,6 @@ struct Ajustes {
     watts_nucleo: Option<u32>,
     centavos_kwh: Option<u32>,
     na_rede: Option<bool>,
-    cena: Option<String>,
-    enfeites: Option<String>,
-    monitores: Option<u32>,
-    led: Option<String>,
-    mesa: Option<String>,
     avisar_bloco: Option<bool>,
     som_bloco: Option<bool>,
     ultrax: bool,
@@ -372,12 +347,12 @@ fn ler_ajustes(dados: &Path) -> Ajustes {
             Some(("centavos_kwh", v)) => a.centavos_kwh = v.trim().parse().ok().filter(|n| (1..=99999).contains(n)),
             Some(("na_rede", v)) => a.na_rede = Some(v.trim() == "1"),
             Some(("mercado", v)) => a.mercado = Some(v.trim() == "1"),
-            Some(("paineis", v)) if paineis_validos(v.trim()) => a.paineis = Some(completar_paineis(v.trim())),
-            Some(("cena", v)) if CENAS.contains(&v.trim()) => a.cena = Some(v.trim().to_string()),
-            Some(("enfeites", v)) if enfeites_validos(v.trim()) => a.enfeites = Some(completar_enfeites(v.trim())),
-            Some(("monitores", v)) => a.monitores = v.trim().parse().ok().filter(|n| (1..=2).contains(n)),
-            Some(("led", v)) if LEDS.contains(&v.trim()) => a.led = Some(v.trim().to_string()),
-            Some(("mesa", v)) if MESAS.contains(&v.trim()) => a.mesa = Some(v.trim().to_string()),
+            Some(("paineis", v)) => {
+                let lista = migrar_paineis(v.trim());
+                if paineis_validos(&lista) {
+                    a.paineis = Some(completar_paineis(&lista));
+                }
+            }
             Some(("avisar_bloco", v)) => a.avisar_bloco = Some(v.trim() == "1"),
             Some(("som_bloco", v)) => a.som_bloco = Some(v.trim() == "1"),
             Some(("ultrax", v)) => a.ultrax = v.trim() == "1",
@@ -401,8 +376,8 @@ fn ler_ajustes(dados: &Path) -> Ajustes {
 }
 
 /// Lista de nomes separados por vírgula, com "-" na frente do que está
-/// desligado. É o jeito que o programa guarda tanto os painéis abertos quanto
-/// os enfeites da estação: a ordem é a que o dono escolheu.
+/// desligado. É o jeito que o programa guarda os painéis abertos: a ordem é a
+/// que o dono escolheu.
 ///
 /// Só aceita nomes conhecidos, sem repetição.
 fn lista_valida(lista: &str, conhecidos: &[&str]) -> bool {
@@ -438,12 +413,21 @@ fn completar_paineis(lista: &str) -> String {
     completar(lista, &PAINEIS_CONHECIDOS)
 }
 
-fn enfeites_validos(lista: &str) -> bool {
-    lista_valida(lista, &ENFEITES_CONHECIDOS)
-}
-
-fn completar_enfeites(lista: &str) -> String {
-    completar(lista, &ENFEITES_CONHECIDOS)
+/// A estação 3D saiu em 26/09/2026, e o ULTRAX entrou no lugar dela. Quem
+/// tinha a lista salva ganha os painéis novos onde a estação estava, abertos
+/// ou fechados como ela.
+fn migrar_paineis(lista: &str) -> String {
+    lista
+        .split(',')
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+        .map(|item| match item {
+            "estacao" => "ultrax,verificacao,mineracao,historico,telemetria".to_string(),
+            "-estacao" => "-ultrax,-verificacao,mineracao,-historico,-telemetria".to_string(),
+            outro => outro.to_string(),
+        })
+        .collect::<Vec<_>>()
+        .join(",")
 }
 
 /// `host:porta`: a mesma regra que o nó usa para a lista de sementes, para o
@@ -672,14 +656,9 @@ fn ligar(o: Opcoes, rede: Arc<Rede>, partida: Partida, ajustes: &Ajustes) -> Res
         watts_nucleo: AtomicU32::new(ajustes.watts_nucleo.unwrap_or(WATTS_NUCLEO_PADRAO)),
         centavos_kwh: AtomicU32::new(ajustes.centavos_kwh.unwrap_or(CENTAVOS_KWH_PADRAO)),
         na_rede: AtomicBool::new(ajustes.na_rede.unwrap_or(na_rede)),
-        cena: Mutex::new(ajustes.cena.clone().unwrap_or_else(|| "auto".to_string())),
         mercado_ligado: AtomicBool::new(ajustes.mercado.unwrap_or(false)),
         mercado: Mutex::new(None),
         paineis: Mutex::new(ajustes.paineis.clone().unwrap_or_else(|| PAINEIS_PADRAO.to_string())),
-        enfeites: Mutex::new(ajustes.enfeites.clone().unwrap_or_else(|| ENFEITES_PADRAO.to_string())),
-        monitores: AtomicU32::new(ajustes.monitores.unwrap_or(1)),
-        led: Mutex::new(ajustes.led.clone().unwrap_or_else(|| "branco".to_string())),
-        mesa: Mutex::new(ajustes.mesa.clone().unwrap_or_else(|| "escura".to_string())),
         avisar_bloco: AtomicBool::new(ajustes.avisar_bloco.unwrap_or(true)),
         som_bloco: AtomicBool::new(ajustes.som_bloco.unwrap_or(false)),
         seguranca: Mutex::new(seguranca),
@@ -1030,42 +1009,6 @@ fn trocar_ajustes(painel: &Painel, campos: &[(String, String)]) -> Result<(), St
                 }
                 if let Ok(mut p) = painel.paineis.lock() {
                     *p = completar_paineis(valor);
-                }
-            }
-            "cena" => {
-                if !CENAS.contains(&valor.as_str()) {
-                    return Err("qualidade da cena desconhecida".into());
-                }
-                if let Ok(mut c) = painel.cena.lock() {
-                    valor.clone_into(&mut c);
-                }
-            }
-            "enfeites" => {
-                if !enfeites_validos(valor) {
-                    return Err("lista de enfeites inválida".into());
-                }
-                if let Ok(mut e) = painel.enfeites.lock() {
-                    *e = completar_enfeites(valor);
-                }
-            }
-            "monitores" => {
-                let n: u32 = valor.parse().map_err(|_| "número de monitores inválido")?;
-                painel.monitores.store(n.clamp(1, 2), Ordering::Relaxed);
-            }
-            "led" => {
-                if !LEDS.contains(&valor.as_str()) {
-                    return Err("cor de luz desconhecida".into());
-                }
-                if let Ok(mut l) = painel.led.lock() {
-                    valor.clone_into(&mut l);
-                }
-            }
-            "mesa" => {
-                if !MESAS.contains(&valor.as_str()) {
-                    return Err("acabamento de mesa desconhecido".into());
-                }
-                if let Ok(mut m) = painel.mesa.lock() {
-                    valor.clone_into(&mut m);
                 }
             }
             "avisar_bloco" => painel.avisar_bloco.store(valor == "1", Ordering::Relaxed),
@@ -1516,8 +1459,6 @@ fn atender(mut s: TcpStream, porta: u16, painel: &Painel, rede: &Arc<Rede>, o: &
             "/" => responder(&mut s, "200 OK", "text/html; charset=utf-8", INDEX.as_bytes()),
             "/painel.css" => responder(&mut s, "200 OK", "text/css; charset=utf-8", CSS.as_bytes()),
             "/painel.js" => responder(&mut s, "200 OK", "text/javascript; charset=utf-8", JS.as_bytes()),
-            "/estacao.js" => responder(&mut s, "200 OK", "text/javascript; charset=utf-8", ESTACAO.as_bytes()),
-            "/three.module.min.js" => responder(&mut s, "200 OK", "text/javascript; charset=utf-8", THREE.as_bytes()),
             "/qrcode.min.js" => responder(&mut s, "200 OK", "text/javascript; charset=utf-8", QRCODE.as_bytes()),
             "/api/estado" => {
                 let json = estado_json(painel, rede, o, local && host_local, porta);
@@ -1692,7 +1633,7 @@ fn estado_json(painel: &Painel, rede: &Rede, o: &Opcoes, pode_mandar: bool, port
          \"ligado_s\":{},\"rodada_s\":{},\"rodada_altura\":{},\"pode_mandar\":{pode_mandar},\"agora\":{},\
          \"app\":{},\"versao\":\"{VERSAO}\",\"carteira\":{},\"pode_minerar\":{},\"dados\":{},\"sementes\":[{}],\"porta_p2p\":{},\
          \"uso_cpu\":{},\"ms_tentativa\":{:.1},\"watts\":{:.1},\"watts_nucleo\":{},\"centavos_kwh\":{},\"custo_mes\":\"{}\",\
-         \"memoria_total_mib\":{},\"na_rede\":{},\"cena\":{},\"url_celular\":{},\
+         \"memoria_total_mib\":{},\"na_rede\":{},\"url_celular\":{},\
          \"paineis\":{},\"mercado_ligado\":{},\"mercado_quando\":{},\"mercado\":{},         \"trabalho_util\":{{\"familia\":\"matrizes\",\"n\":{},\"rodadas\":{},\"lado_min\":{},\"lado_base\":{},\"lado_max\":{},\"bytes\":{}}},",
         texto_json(o.rede.nome),
         hex(&c.tip_hash()),
@@ -1733,7 +1674,6 @@ fn estado_json(painel: &Painel, rede: &Rede, o: &Opcoes, pode_mandar: bool, port
         custo_reais,
         u64::from(o.rede.pow.memoria_kib / 1024) * u64::from(painel.linhas.load(Ordering::Relaxed)),
         painel.na_rede.load(Ordering::Relaxed),
-        texto_json(&painel.cena.lock().map(|c| c.clone()).unwrap_or_default()),
         texto_json(&url_celular),
         texto_json(&painel.paineis.lock().map(|p| p.clone()).unwrap_or_default()),
         painel.mercado_ligado.load(Ordering::Relaxed),
@@ -1762,14 +1702,10 @@ fn estado_json(painel: &Painel, rede: &Rede, o: &Opcoes, pode_mandar: bool, port
         hyx(u128::from(envio::maximo(saldo, envio::TAXA_PADRAO))),
         hyx(u128::from(envio::TAXA_PADRAO)),
     );
-    // Decoração da estação e o aviso de bloco.
+    // O aviso de bloco achado.
     let _ = write!(
         j,
-        "\"enfeites\":{},\"monitores\":{},\"led\":{},\"mesa\":{},\"avisar_bloco\":{},\"som_bloco\":{},",
-        texto_json(&painel.enfeites.lock().map(|e| e.clone()).unwrap_or_default()),
-        painel.monitores.load(Ordering::Relaxed),
-        texto_json(&painel.led.lock().map(|l| l.clone()).unwrap_or_default()),
-        texto_json(&painel.mesa.lock().map(|m| m.clone()).unwrap_or_default()),
+        "\"avisar_bloco\":{},\"som_bloco\":{},",
         painel.avisar_bloco.load(Ordering::Relaxed),
         painel.som_bloco.load(Ordering::Relaxed),
     );
@@ -1898,7 +1834,7 @@ mod testes {
     #[test]
     fn painel_novo_entra_fechado_na_lista_salva_antes_dele() {
         // Lista salva por uma versão que ainda não tinha "mercado" nem "maquinas".
-        let velha = "estacao,carteira,rede,livro,ritmo,fluxo";
+        let velha = "ultrax,carteira,rede,livro,ritmo,fluxo";
         let nova = completar_paineis(velha);
         assert!(nova.starts_with(velha), "a ordem de quem já estava não muda: {nova}");
         for nome in PAINEIS_CONHECIDOS {
@@ -1908,24 +1844,24 @@ mod testes {
         assert!(paineis_validos(&nova));
         // Completar de novo não duplica nada, e quem já estava aberto continua aberto.
         assert_eq!(completar_paineis(&nova), nova);
-        assert!(completar_paineis("mercado,estacao").starts_with("mercado,estacao,"));
+        assert!(completar_paineis("mercado,ultrax").starts_with("mercado,ultrax,"));
     }
 
     #[test]
-    fn enfeite_novo_tambem_entra_na_lista_salva_antes_dele() {
-        let velha = "planta,luminaria";
-        let nova = completar_enfeites(velha);
-        assert!(nova.starts_with(velha), "a ordem de quem já estava não muda: {nova}");
-        for nome in ENFEITES_CONHECIDOS {
-            assert!(nova.split(',').any(|i| i.trim_start_matches('-') == nome), "faltou {nome}");
-        }
-        assert!(enfeites_validos(&nova));
-        assert!(!enfeites_validos("planta,planta"), "repetido devia ser recusado");
-        assert!(!enfeites_validos("abajur"), "nome desconhecido devia ser recusado");
-        assert!(!enfeites_validos(""), "lista vazia devia ser recusada");
-        // As duas listas são a mesma ideia, mas não se misturam.
-        assert!(!enfeites_validos("carteira"));
-        assert!(!paineis_validos("planta"));
+    fn lista_salva_com_a_estacao_ganha_o_ultrax_no_lugar() {
+        let velha = "carteira,estacao,rede,livro,ritmo,fluxo,-mercado,-maquinas";
+        let migrada = migrar_paineis(velha);
+        assert!(migrada.starts_with("carteira,ultrax,verificacao,mineracao,historico,telemetria,rede"), "{migrada}");
+        assert!(paineis_validos(&migrada), "{migrada}");
+        let completa = completar_paineis(&migrada);
+        assert_eq!(completa.split(',').count(), PAINEIS_CONHECIDOS.len(), "{completa}");
+        // estação fechada: o ULTRAX nasce fechado, mas a mineração, que estava dentro dela, fica à vista
+        let fechada = migrar_paineis("-estacao,carteira");
+        assert!(fechada.starts_with("-ultrax,-verificacao,mineracao,"), "{fechada}");
+        assert!(paineis_validos(&fechada));
+        // sem estação, nada muda
+        assert_eq!(migrar_paineis("carteira,-rede"), "carteira,-rede");
+        assert!(!paineis_validos("estacao"), "a estação não existe mais");
     }
 
     #[test]

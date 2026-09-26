@@ -1081,7 +1081,7 @@ impl Ultrax {
                 let _ = write!(
                     j,
                     "{{\"linha\":{},\"numero\":{},\"id\":\"{}\",\"categoria\":\"{}\",\"tipo\":\"{}\",\"descricao\":{},\
-                     \"resumo\":{},\"metodo\":{},\"desafio\":{},\"estado\":\"{}\",\"feitas\":{feitas},\"total\":{},\
+                     \"tamanho\":{},\"passos\":{},\"resumo\":{},\"metodo\":{},\"desafio\":{},\"estado\":\"{}\",\"feitas\":{feitas},\"total\":{},\
                      \"operacoes\":{},\"inicio\":{},\"memoria_mib\":{:.1},\"entrada\":\"{}\"}}",
                     x.linha,
                     x.numero,
@@ -1089,6 +1089,8 @@ impl Ultrax {
                     x.especificacao.tipo().categoria().nome(),
                     x.especificacao.tipo().nome(),
                     texto_json(x.especificacao.tipo().descricao()),
+                    x.especificacao.tamanho(),
+                    x.especificacao.passos(),
                     texto_json(&x.especificacao.resumo()),
                     texto_json(x.metodo.nome()),
                     x.desafio,

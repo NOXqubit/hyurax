@@ -7,27 +7,8 @@ const fmt1 = new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 1, maximumF
 const calmo = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 let ultimo = null;
-let estacao = null;
 let enviando = false;
 const vistos = new Set();
-
-// A estação 3D é opcional: sem WebGL, com a cena desligada nos ajustes, ou em
-// máquina fraca, o resto do painel funciona igual. Ela só nasce depois da
-// primeira leitura, porque é o estado que diz a qualidade escolhida.
-let criandoEstacao = false;
-function garantirEstacao(e) {
-  const qualidade = e.cena || "auto";
-  if (qualidade === "desligada") {
-    $("cena").hidden = true;
-    return;
-  }
-  $("cena").hidden = false;
-  if (estacao || criandoEstacao) return;
-  criandoEstacao = true;
-  import("./estacao.js")
-    .then((m) => { estacao = m.criarEstacao($("cena"), { calmo, qualidade }); if (ultimo) estacao.atualizar(ultimo); })
-    .catch((erro) => console.warn("estação 3D indisponível:", erro));
-}
 
 function duracao(s) {
   s = Math.max(0, Math.floor(s));
@@ -158,7 +139,7 @@ function desenharBarra(e) {
   texto("marca-rede", e.rede && e.rede.includes("mainnet") ? "rede principal" : "rede de teste");
 }
 
-function desenharEstacao(e) {
+function desenharMineracao(e) {
   texto("e-tentativas", fmt.format(e.tentativas));
   texto("e-rodada", e.minerando && e.rodada_altura ? `bloco ${fmt.format(e.rodada_altura)} · ${duracao(e.rodada_s)}` : "—");
   texto("e-meus", `${fmt.format(e.meus_cadeia)}${e.meus ? ` · +${fmt.format(e.meus)} agora` : ""}`);
@@ -997,40 +978,6 @@ $("aviso-fechar").addEventListener("click", () => { $("aviso-bloco").hidden = tr
 // ---------- ajustes ----------
 const ajustes = $("ajustes");
 
-// Enfeites da estação: a mesma ideia dos painéis (lista com "-" na frente do
-// que está guardado), então a ordem que o dono escolher fica de pé.
-const NOMES_ENFEITES = {
-  planta: "Planta",
-  luminaria: "Luminária",
-  retrato: "Porta-retrato",
-  livros: "Pilha de livros",
-  gato: "Gato dormindo",
-  poster: "Pôster na parede",
-};
-const ENFEITES_PADRAO = "planta,luminaria,-retrato,-livros,-gato,-poster";
-let listaEnfeites = ENFEITES_PADRAO;
-
-function desenharEnfeites(lista) {
-  if (typeof lista === "string" && lista) listaEnfeites = lista;
-  const partes = pecas(listaEnfeites);
-  $("enfeites").replaceChildren(...partes.map((parte, i) => {
-    const li = document.createElement("li");
-    const rotulo = document.createElement("label");
-    const caixa = document.createElement("input");
-    caixa.type = "checkbox";
-    caixa.checked = parte.aberto;
-    caixa.autocomplete = "off";
-    caixa.addEventListener("change", () => {
-      const novas = partes.map((p, j) => (j === i ? `${caixa.checked ? "" : "-"}${p.nome}` : `${p.aberto ? "" : "-"}${p.nome}`));
-      listaEnfeites = novas.join(",");
-      salvarAjuste({ enfeites: listaEnfeites });
-    });
-    rotulo.append(caixa, Object.assign(document.createElement("span"), { textContent: NOMES_ENFEITES[parte.nome] || parte.nome }));
-    li.append(rotulo);
-    return li;
-  }));
-}
-
 // Marca o perfil que bate com o que está valendo, ou "manual".
 function perfilAtual(e) {
   const n = Math.max(1, e.nucleos || 1);
@@ -1065,21 +1012,6 @@ function desenharAjustes(e) {
   $("a-qr-caixa").hidden = !e.na_rede;
   texto("a-url", e.url_celular || "—");
   if (e.na_rede) desenharQr($("a-qr"), e.url_celular || "");
-  for (const nome of ["auto", "alta", "media", "baixa", "desligada"]) {
-    const alvo = $(`c-${nome}`);
-    if (alvo) alvo.checked = (e.cena || "auto") === nome;
-  }
-  // Decoração da estação.
-  if (typeof e.enfeites === "string" && e.enfeites && e.enfeites !== listaEnfeites) desenharEnfeites(e.enfeites);
-  for (const n of [1, 2]) $(`mon-${n}`).checked = (e.monitores || 1) === n;
-  for (const nome of ["branco", "ambar", "azul", "verde", "vermelho"]) {
-    const alvo = $(`led-${nome}`);
-    if (alvo) alvo.checked = (e.led || "branco") === nome;
-  }
-  for (const nome of ["escura", "clara", "madeira"]) {
-    const alvo = $(`mesa-${nome}`);
-    if (alvo) alvo.checked = (e.mesa || "escura") === nome;
-  }
   $("a-avisar").checked = e.avisar_bloco !== false;
   $("a-som").checked = e.som_bloco === true;
   texto("a-dados", typeof e.dados === "string" && e.dados ? e.dados : "—");
@@ -1095,7 +1027,6 @@ $("abrir-ajustes").addEventListener("click", () => {
   const maquinas = Array.isArray(ultimo.maquinas) ? ultimo.maquinas.map((m) => m.alvo).filter(Boolean) : [];
   $("maquinas-lista").value = maquinas.join(", ");
   for (const id of ["a-abrir-erro", "sementes-ok", "sementes-erro", "maquinas-ok", "maquinas-erro"]) texto(id, "");
-  desenharEnfeites(ultimo.enfeites);
   desenharAjustes(ultimo);
   ajustes.showModal();
   $("sementes").focus();
@@ -1137,7 +1068,7 @@ $("f-maquinas").addEventListener("submit", (ev) => {
     await ler();
   });
 });
-// Desempenho, energia, celular e cena: cada controle manda o seu campo.
+// Desempenho, energia e celular: cada controle manda o seu campo.
 async function salvarAjuste(campos) {
   const res = await postar("/api/ajustes", campos);
   if (!res.ok) texto("a-abrir-erro", erroDe(res, "Não deu para salvar o ajuste."));
@@ -1157,20 +1088,6 @@ for (const id of ["a-watts", "a-kwh"]) {
 }
 $("a-na-rede").addEventListener("change", () => salvarAjuste({ na_rede: $("a-na-rede").checked ? "1" : "0" }));
 $("a-mercado").addEventListener("change", () => salvarAjuste({ mercado: $("a-mercado").checked ? "1" : "0" }));
-for (const nome of ["auto", "alta", "media", "baixa", "desligada"]) {
-  $(`c-${nome}`).addEventListener("change", async () => {
-    // A qualidade da cena muda o desenho inteiro: recarrega a página para valer já.
-    if (await salvarAjuste({ cena: nome })) location.reload();
-  });
-}
-// Decoração: vale na hora, sem recarregar — a estação lê do próprio estado.
-for (const n of [1, 2]) $(`mon-${n}`).addEventListener("change", () => salvarAjuste({ monitores: String(n) }));
-for (const nome of ["branco", "ambar", "azul", "verde", "vermelho"]) {
-  $(`led-${nome}`).addEventListener("change", () => salvarAjuste({ led: nome }));
-}
-for (const nome of ["escura", "clara", "madeira"]) {
-  $(`mesa-${nome}`).addEventListener("change", () => salvarAjuste({ mesa: nome }));
-}
 $("a-avisar").addEventListener("change", () => salvarAjuste({ avisar_bloco: $("a-avisar").checked ? "1" : "0" }));
 $("a-som").addEventListener("change", () => {
   const ligado = $("a-som").checked;
@@ -1288,7 +1205,11 @@ trabalho.addEventListener("keydown", (ev) => {
 // A janela é do dono: ele fecha o que não quer, muda a ordem e pode abrir um
 // painel sozinho numa janela à parte (endereço /?so=NOME).
 const NOMES_PAINEIS = {
-  estacao: "Estação 3D",
+  ultrax: "ULTRAX · trabalho ativo",
+  verificacao: "Verificação e contribuição",
+  mineracao: "Mineração",
+  historico: "Histórico de tarefas",
+  telemetria: "Telemetria do ULTRAX",
   carteira: "Carteira",
   rede: "Rede",
   livro: "Livro de blocos",
@@ -1297,7 +1218,7 @@ const NOMES_PAINEIS = {
   mercado: "Mercado",
   maquinas: "Minhas máquinas",
 };
-const PAINEIS_PADRAO = "estacao,carteira,rede,livro,ritmo,fluxo,-mercado,-maquinas";
+const PAINEIS_PADRAO = "ultrax,verificacao,carteira,mineracao,historico,telemetria,livro,fluxo,-rede,-ritmo,-mercado,-maquinas";
 const destacado = new URLSearchParams(location.search).get("so");
 let listaPaineis = PAINEIS_PADRAO;
 
@@ -1401,6 +1322,241 @@ $("paineis").addEventListener("keydown", (ev) => {
   $("paineis").close();
 });
 
+// ---------- ULTRAX ----------
+// Tudo aqui sai de /api/estado → ultrax. O progresso é o que o worker contou,
+// em unidades reais do trabalho: nada anda sozinho na tela.
+const CICLO = ["CREATED", "QUEUED", "ASSIGNED", "EXECUTING", "SUBMITTED", "VERIFYING", "VERIFIED", "SETTLED"];
+const TIPOS = { matrix: "Multiplicação de matrizes", knapsack: "Otimização da mochila", diffusion: "Difusão de calor" };
+const CELULAS_MAX = 64;
+let ultraxOcupado = false;
+
+async function mandarUltrax(campos) {
+  if (ultraxOcupado) return false;
+  ultraxOcupado = true;
+  const res = await postar("/api/ultrax", campos);
+  ultraxOcupado = false;
+  await ler();
+  return res.ok;
+}
+
+// Ligar mostra o trabalho na hora: se o painel estava fechado, ele abre.
+async function alternarUltrax() {
+  const u = ultimo?.ultrax;
+  if (!u) return;
+  const ligar = !u.ligado;
+  if (ligar && !pecas(listaPaineis).some((p) => p.nome === "ultrax" && p.aberto)) {
+    const novas = pecas(listaPaineis).map((p) => `${p.nome === "ultrax" || p.aberto ? "" : "-"}${p.nome}`);
+    await salvarPaineis(novas.join(","));
+  }
+  await mandarUltrax({ ligar: ligar ? "1" : "0" });
+}
+$("ultrax").addEventListener("click", alternarUltrax);
+$("u-ligar").addEventListener("click", alternarUltrax);
+$("u-menos").addEventListener("click", () => ultimo?.ultrax && mandarUltrax({ linhas: String(ultimo.ultrax.linhas - 1) }));
+$("u-mais").addEventListener("click", () => ultimo?.ultrax && mandarUltrax({ linhas: String(ultimo.ultrax.linhas + 1) }));
+for (const uso of [25, 50, 75, 100]) {
+  $(`u-cpu-${uso}`).addEventListener("change", () => mandarUltrax({ uso_cpu: String(uso) }));
+}
+$("u-memoria").addEventListener("change", () => mandarUltrax({ memoria_mib: $("u-memoria").value }));
+$("u-debug").addEventListener("change", () => mandarUltrax({ debug: $("u-debug").checked ? "1" : "0" }));
+$("v-worker").addEventListener("click", () => copiar(ultimo?.ultrax?.worker, $("v-worker"), $("v-worker"), curto(ultimo?.ultrax?.worker || "")));
+
+// "7377.75" do nó vira "7.377,75": milhar com ponto, decimal com vírgula.
+function virgula(t) {
+  const [inteiro, casas] = String(t ?? "0").split(".");
+  const n = Number(inteiro);
+  const texto = Number.isFinite(n) ? fmt.format(n) : inteiro;
+  return casas ? `${texto},${casas}` : texto;
+}
+const segundos = (ms) => `${fmt1.format((ms || 0) / 1000)} s`;
+function horaMs(ms) {
+  const d = new Date(ms);
+  return `${d.toLocaleTimeString("pt-BR", { hour12: false })}.${String(d.getMilliseconds()).padStart(3, "0")}`;
+}
+function el(tag, classe, conteudo) {
+  const x = document.createElement(tag);
+  if (classe) x.className = classe;
+  if (conteudo !== undefined) x.textContent = conteudo;
+  return x;
+}
+
+// As fatias do trabalho, pela fase: é o que dá para contar de verdade.
+function fatias(a) {
+  if (a.estado === "VERIFYING") {
+    if (a.desafio) return [1, "comparação com a resposta do gabarito"];
+    if (a.tipo === "matrix") return [4, "rodadas de Freivalds"];
+    if (a.tipo === "knapsack") return [a.tamanho, "itens recalculados"];
+    return [a.passos, "passos refeitos"];
+  }
+  if (a.tipo === "matrix") return [a.tamanho, "linhas de C calculadas"];
+  if (a.tipo === "knapsack") return [a.tamanho, "itens da programação dinâmica"];
+  return [a.passos, "passos da difusão"];
+}
+
+function cartaoDaTarefa(a, agora) {
+  const art = el("article", "u-tarefa");
+  const cab = el("header");
+  cab.append(el("span", "u-cat", `${a.categoria} · ${ultimo.ultrax.modo}`), el("span", "u-num num", `#${String(a.numero).padStart(8, "0")}`));
+  const titulo = el("h3", "u-titulo", TIPOS[a.tipo] || a.descricao);
+  titulo.append(el("b", "num", a.resumo));
+  if (a.desafio) titulo.append(el("span", "u-desafio", "DESAFIO"));
+  const ciclo = el("ol", "u-ciclo");
+  ciclo.setAttribute("aria-label", `Ciclo de vida: agora em ${a.estado}`);
+  const aqui = CICLO.indexOf(a.estado);
+  CICLO.forEach((nome, i) => ciclo.append(el("li", i < aqui ? "feito" : i === aqui ? "agora" : "", nome)));
+
+  const [total, nome] = fatias(a);
+  const fracao = a.total > 0 ? Math.min(1, a.feitas / a.total) : 0;
+  const feitas = Math.min(total, Math.floor(fracao * total));
+  const celulas = Math.max(1, Math.min(CELULAS_MAX, total));
+  const grade = el("div", "u-unidades");
+  grade.style.setProperty("--colunas", String(Math.min(celulas, 32)));
+  grade.setAttribute("role", "img");
+  grade.setAttribute("aria-label", `${fmt.format(feitas)} de ${fmt.format(total)} ${nome}`);
+  for (let i = 0; i < celulas; i++) {
+    const inicio = (i * total) / celulas, fim = ((i + 1) * total) / celulas;
+    const parte = (fracao * total - inicio) / (fim - inicio);
+    grade.append(el("i", parte >= 1 ? "cheia" : parte > 0 ? "meia" : ""));
+  }
+  const prog = el("div", "u-progresso");
+  const esq = el("span");
+  esq.append(el("b", "num", `${fmt.format(feitas)} de ${fmt.format(total)}`), document.createTextNode(` ${nome}`));
+  const operacoes = a.estado === "VERIFYING" ? a.operacoes : a.feitas;
+  prog.append(esq, el("span", "num", `${numeroGrande(operacoes)} operações · ${Math.round(fracao * 100)}%`));
+
+  const fatos = el("dl", "u-fatos");
+  const fato = (dt, dd, titulo) => {
+    const d = el("div");
+    const v = el("dd", "num", dd);
+    if (titulo) v.title = titulo;
+    d.append(el("dt", "", dt), v);
+    fatos.append(d);
+  };
+  fato("Verificação", a.metodo);
+  fato("Quem confere", ultimo.ultrax.verificador || "esta máquina");
+  fato("Recursos", `linha ${a.linha} · ${fmt1.format(a.memoria_mib)} MiB`);
+  fato("Começou há", duracao((agora - a.inicio) / 1000));
+  fato("INPUT_HASH", a.entrada ? curto(a.entrada) : "—", a.entrada);
+  fato("TASK_ID", curto(a.id), a.id);
+  art.append(cab, titulo, ciclo, grade, prog, fatos);
+  return art;
+}
+
+function desenharUltrax(e) {
+  const u = e.ultrax;
+  const botao = $("ultrax");
+  if (!u) {
+    botao.hidden = true;
+    return;
+  }
+  botao.hidden = false;
+  botao.setAttribute("aria-pressed", String(u.ligado));
+  botao.querySelector("span").textContent = u.ligado ? "TRABALHANDO" : "ULTRAX";
+  botao.title = u.ligado ? "ULTRAX ligado (modo LAB). Clique para parar." : "Ligar o ULTRAX: trabalho útil verificável, modo LAB";
+  texto("u-modo", `${u.modo} · ${u.selo}`);
+  const ativas = Array.isArray(u.ativas) ? u.ativas : [];
+  texto("u-estado", !u.ligado ? "desligado" : ativas.length ? `${ativas.length} tarefa${ativas.length > 1 ? "s" : ""} rodando` : "preparando a próxima tarefa");
+  $("u-controles").hidden = !e.pode_mandar;
+  $("u-ligar").hidden = !e.pode_mandar;
+  $("u-vazio").hidden = u.ligado;
+  texto("u-linhas", u.linhas);
+  texto("u-nucleos", u.nucleos);
+  $("u-menos").disabled = u.linhas <= 1;
+  $("u-mais").disabled = u.linhas >= u.nucleos;
+  for (const uso of [25, 50, 75, 100]) $(`u-cpu-${uso}`).checked = u.uso_cpu === uso;
+  const memoria = $("u-memoria");
+  if (document.activeElement !== memoria) {
+    if (![...memoria.options].some((o) => o.value === String(u.memoria_mib))) {
+      memoria.append(new Option(`até ${fmt.format(u.memoria_mib)} MiB`, String(u.memoria_mib)));
+    }
+    memoria.value = String(u.memoria_mib);
+  }
+  $("u-debug").checked = u.debug === true;
+
+  const agora = e.agora ? e.agora * 1000 : Date.now();
+  const cartoes = ativas.map((a) => cartaoDaTarefa(a, Math.max(agora, Date.now())));
+  if (u.ligado && cartoes.length === 0) {
+    cartoes.push(el("p", "u-espera", u.fila > 0
+      ? "Entre uma tarefa e outra: a próxima já está na fila."
+      : "Preparando a próxima tarefa: o gerador cria uma por segundo, com o tamanho medido para esta máquina."));
+  }
+  $("u-ativas").replaceChildren(...cartoes);
+  $("u-ativas").hidden = !u.ligado && ativas.length === 0;
+  texto("u-r-cpu", `${u.uso_cpu}% × ${u.linhas}`);
+  $("u-r-cpu").title = `até ${u.uso_cpu}% da CPU em cada uma das ${u.linhas} linha(s)`;
+  texto("u-r-mem", `${fmt1.format(u.reservada_mib)}/${fmt.format(u.memoria_mib)} MiB`);
+  $("u-r-mem").title = "memória reservada pelas tarefas em curso, do teto escolhido";
+  texto("u-r-fila", fmt.format(u.fila));
+  texto("u-r-gpu", u.gpu || "não usada");
+
+  desenharVerificacao(e, u);
+  desenharHistoricoUltrax(u);
+  desenharTelemetria(u);
+}
+
+function desenharVerificacao(e, u) {
+  const p = u.placar || {};
+  texto("v-desde", `${u.modo} · ${fmt.format(p.geradas || 0)} tarefas geradas`);
+  texto("v-score", virgula(p.work_score));
+  texto("v-nota", fmt.format(p.nota ?? 500));
+  $("v-nota-barra").style.width = `${Math.max(0, Math.min(100, (p.nota ?? 500) / 10))}%`;
+  texto("v-enviadas", fmt.format(p.enviadas || 0));
+  texto("v-verificadas", `${fmt.format(p.verificadas || 0)}${typeof p.taxa === "number" ? ` · ${fmt1.format(p.taxa / 10)}% de acerto` : ""}`);
+  texto("v-recusadas", fmt.format(p.recusadas || 0));
+  texto("v-disputa", `${fmt.format(p.disputadas || 0)} · ${fmt.format(p.divergentes || 0)}`);
+  texto("v-desafios", `${fmt.format(p.desafios_certos || 0)} · ${fmt.format(p.desafios_errados || 0)}`);
+  texto("v-paradas", `${fmt.format(p.canceladas || 0)} · ${fmt.format(p.expiradas || 0)} · ${fmt.format(p.abandonadas || 0)}`);
+  texto("v-operacoes", numeroGrande(p.operacoes_verificadas || 0));
+  texto("v-tempo", `${segundos(p.ms_calculo)} · ${segundos(p.ms_verificacao)}`);
+  texto("v-ligado", duracao(p.segundos_ligado || 0));
+  texto("v-verificador", u.verificador || "esta máquina");
+  texto("v-no-estado", `${e.pares > 0 ? "conectado" : "no ar, sem pares"} · ${e.versao || "—"}`);
+  texto("v-no-pares", `${fmt.format(e.pares || 0)} · latência não medida no LAB`);
+  const worker = $("v-worker");
+  if (worker.textContent === "—" || !["copiado", "selecionado"].includes(worker.textContent)) texto("v-worker", curto(u.worker || ""));
+  worker.title = `WORKER_ID ${u.worker || ""} — copiar`;
+}
+
+function desenharHistoricoUltrax(u) {
+  const h = Array.isArray(u.historico) ? u.historico : [];
+  $("u-historico-vazio").hidden = h.length > 0;
+  $("u-historico").replaceChildren(...h.map((x) => {
+    const tr = el("tr", x.estado === "SETTLED" ? "meu" : x.estado === "REJECTED" ? "recusada" : "");
+    const primeira = el("td", "num");
+    primeira.append(el("i", x.estado === "SETTLED" ? "q meu" : "q"), document.createTextNode(`#${String(x.numero).padStart(8, "0")}`));
+    const trabalho = el("td", "", `${TIPOS[x.tipo] || x.tipo} ${x.resumo}${x.desafio ? " · desafio" : ""}`);
+    const estado = el("td");
+    estado.append(el("span", "estado", x.estado));
+    if (x.nota) estado.title = x.nota;
+    tr.append(
+      primeira,
+      trabalho,
+      estado,
+      el("td", "num", x.operacoes ? numeroGrande(x.operacoes) : "—"),
+      el("td", "num", x.ms_calculo ? segundos(x.ms_calculo) : "—"),
+      el("td", "", x.estado === "SETTLED" || x.estado === "REJECTED" ? x.metodo : x.nota || "—"),
+    );
+    return tr;
+  }));
+}
+
+function desenharTelemetria(u) {
+  texto("u-debug-estado", u.debug ? "DEBUG ligado · também em PASTA/ultrax/telemetria.log" : "DEBUG desligado");
+  const t = Array.isArray(u.telemetria) ? u.telemetria : [];
+  $("u-telemetria").replaceChildren(...t.slice(0, 60).map((m) => {
+    const li = el("li");
+    const quando = el("time", "num", horaMs(m.ms));
+    quando.dateTime = new Date(m.ms).toISOString();
+    const bom = m.evento === "VERIFICATION PASSED" || m.evento === "SETTLEMENT COMPLETED";
+    const ruim = /FAILED|CANCELLED|EXPIRED|ABANDONED|ERROR/.test(m.evento);
+    const corpo = el("span");
+    corpo.append(el("span", `t-evento${bom ? " bom" : ruim ? " ruim" : ""}`, m.evento));
+    if (m.detalhe) corpo.append(el("span", "t-detalhe", m.detalhe));
+    li.append(quando, el("span", "t-num num", m.tarefa ? `#${String(m.tarefa).padStart(8, "0")}` : "—"), corpo);
+    return li;
+  }));
+}
+
 // ---------- mercado ----------
 function desenharMercado(e) {
   const ligado = e.mercado_ligado === true;
@@ -1447,7 +1603,8 @@ async function ler() {
     if (trabalho.open) desenharTrabalho(e);
     desenharSeguranca(e);
     desenharBarra(e);
-    desenharEstacao(e);
+    desenharMineracao(e);
+    desenharUltrax(e);
     desenharLateral(e);
     desenharLivro(e);
     desenharFluxo(e);
@@ -1457,8 +1614,6 @@ async function ler() {
     desenharAvisoDeBloco(e);
     desenharFita(e);
     desenharGrafico(e);
-    garantirEstacao(e);
-    estacao?.atualizar(e);
   } catch {
     $("desligado").hidden = !bootEncerrado;
     if (!bootEncerrado && bootCena === "partida") {

@@ -140,6 +140,8 @@ small { color: var(--tinta-3); font-size: 11px; }
   grid-auto-rows: minmax(230px, auto);
   min-height: 0;
   align-content: start;
+  /* com mais painéis do que cabem na tela, a grade rola; a barra fica */
+  overflow-y: auto;
 }
 .bloco {
   background: var(--painel);
@@ -149,14 +151,19 @@ small { color: var(--tinta-3); font-size: 11px; }
   min-height: 0;
   position: relative;
 }
-/* A estação é a peça grande: ocupa duas colunas e duas linhas quando cabe. */
-.bloco.estacao { grid-column: span 2; grid-row: span 2; }
+/* Na tela estreita a barra quebra em várias linhas; presa no topo, ela cobriria
+   metade do celular. Ali ela rola junto com a página. */
 @media (max-width: 760px) {
-  .bloco.estacao { grid-column: span 1; grid-row: span 1; min-height: 300px; }
+  .barra { position: static; }
+}
+/* O ULTRAX é a peça grande: ocupa duas colunas e duas linhas quando cabe. */
+.bloco.ultrax { grid-column: span 2; grid-row: span 2; }
+@media (max-width: 760px) {
+  .bloco.ultrax { grid-column: span 1; grid-row: span 1; min-height: 420px; }
 }
 /* Modo destacado: um painel só, ocupando a janela inteira. */
 body.destacado .grade { grid-template-columns: 1fr; }
-body.destacado .bloco.estacao { grid-column: span 1; grid-row: span 1; }
+body.destacado .bloco.ultrax { grid-column: span 1; grid-row: span 1; }
 body.destacado .fita, body.destacado .controles, body.destacado .leituras { display: none; }
 /* Na janela destacada o painel é o dono da tela: sem botão de fechar (a janela
    já fecha), sem borda dupla, e ocupando tudo. */
@@ -165,20 +172,10 @@ body.destacado .grade { grid-auto-rows: 1fr; }
 body.destacado .barra { padding: 6px 12px; gap: 12px; }
 body.destacado .bloco { border: 0; }
 
-/* ---------- estação 3D ---------- */
+/* ---------- mineração ---------- */
 
-.estacao canvas { flex: 1; width: 100%; min-height: 0; display: block; cursor: grab; }
-.estacao canvas:active { cursor: grabbing; }
 #estado-rodada { color: var(--tinta); }
-.estacao-pe {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  border-top: 1px solid var(--fio);
-}
-.estacao-pe div { padding: 8px 12px; display: grid; }
-.estacao-pe div + div { border-left: 1px solid var(--fio); }
-.estacao-pe small { font-size: 9.5px; letter-spacing: 0.18em; text-transform: uppercase; }
-.estacao-pe b { font-size: 16px; font-weight: 500; }
+.mineracao .nota-painel { color: var(--tinta-3); font-size: 11px; }
 
 /* ---------- lateral ---------- */
 
@@ -909,32 +906,6 @@ input[type="number"] {
 .carteira { overflow-y: auto; }
 .movimentos { min-height: 0; max-height: none; }
 
-/* ---------- decorar a estação ---------- */
-/* Os segmentos nascem com duas colunas; quando são mais, viram uma grade que
-   quebra sozinha em vez de espremer o texto. */
-.segmentos.cinco { grid-template-columns: repeat(auto-fit, minmax(84px, 1fr)); }
-.enfeites {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 1px;
-  background: var(--fio);
-  border: 1px solid var(--fio);
-}
-.enfeites li { background: var(--painel); }
-.enfeites label {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 9px 10px;
-  cursor: pointer;
-  color: var(--tinta-2);
-}
-.enfeites label:hover { background: var(--painel-2); color: var(--tinta); }
-.enfeites input { accent-color: var(--tinta); width: 16px; height: 16px; flex: none; }
-
 /* ---------- o aviso de bloco achado ---------- */
 /* Invertido, como tudo o que não pode passar batido, e no canto de baixo para
    não tapar o painel. Sai sozinho depois de um tempo, ou no ×. */
@@ -974,4 +945,139 @@ input[type="number"] {
 }
 @media (prefers-reduced-motion: reduce) {
   .aviso-bloco { animation: none; }
+}
+
+/* ---------- ULTRAX ---------- */
+/* O selo do modo nunca sai da tela: é a resposta à pergunta "isto é de
+   verdade?". Tracejado, como tudo o que ainda é teste. */
+.selo-modo {
+  border: 1px dashed var(--tinta-2);
+  color: var(--tinta);
+  padding: 1px 6px;
+  letter-spacing: 0.16em;
+  white-space: nowrap;
+}
+#u-estado { color: var(--tinta); }
+
+.ultrax-botao { min-width: 128px; }
+.ultrax-botao i { border-radius: 0; transform: rotate(45deg); }
+
+.u-controles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: stretch;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--fio);
+}
+.u-controles .nucleos { min-height: 32px; }
+.segmentos.compacto { display: flex; border: 1px solid var(--fio-forte); border-radius: var(--r); }
+.segmentos.compacto span { padding: 6px 10px; font-size: 11px; }
+.u-campo { display: flex; align-items: center; gap: 8px; border: 1px solid var(--fio-forte); border-radius: var(--r); padding: 0 8px; }
+.u-campo small { letter-spacing: 0.14em; text-transform: uppercase; font-size: 9.5px; }
+.u-campo select {
+  background: var(--painel);
+  color: var(--tinta);
+  border: 0;
+  font: inherit;
+  padding: 6px 2px;
+  cursor: pointer;
+}
+.u-debug { border: 1px solid var(--fio-forte); border-radius: var(--r); padding: 0 10px; font-size: 11px; letter-spacing: 0.14em; }
+
+.u-ativas { display: grid; align-content: start; }
+.u-tarefa + .u-tarefa { border-top: 1px solid var(--fio); }
+.u-tarefa { background: var(--painel); padding: 14px 14px 12px; display: grid; gap: 10px; }
+.u-tarefa header { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.u-cat { font-size: 9.5px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--tinta-2); }
+.u-num { color: var(--tinta-3); }
+.u-titulo { margin: 0; font: 600 clamp(18px, 2vw, 24px)/1.15 var(--display); font-stretch: condensed; letter-spacing: 0.02em; }
+.u-titulo b { font-weight: 600; color: var(--tinta-2); margin-left: 6px; }
+.u-desafio { margin-left: 8px; border: 1px solid var(--tinta); padding: 0 5px; font: 400 10px/1.6 var(--mono); letter-spacing: 0.14em; vertical-align: middle; }
+
+/* O ciclo de vida: feito é cheio, o atual é invertido, o que falta é vazado. */
+.u-ciclo { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 4px; }
+.u-ciclo li {
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  padding: 2px 6px;
+  border: 1px solid var(--fio-forte);
+  color: var(--tinta-3);
+}
+.u-ciclo li.feito { color: var(--tinta-2); border-color: var(--tinta-3); }
+.u-ciclo li.feito::before { content: "✓ "; }
+.u-ciclo li.agora { background: var(--tinta); color: var(--fundo); border-color: var(--tinta); font-weight: 700; }
+
+/* O progresso em unidades reais: linha da matriz, item da mochila, passo da
+   difusão, rodada de Freivalds. Cada célula é uma fatia do trabalho. */
+.u-unidades { display: grid; grid-template-columns: repeat(var(--colunas, 32), 1fr); gap: 2px; }
+.u-unidades i { height: 10px; border: 1px solid var(--fio-forte); }
+.u-unidades i.cheia { background: var(--tinta); border-color: var(--tinta); }
+.u-unidades i.meia { background: var(--tinta-3); }
+.u-progresso { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; color: var(--tinta-2); }
+.u-progresso b { color: var(--tinta); font-weight: 500; }
+.u-fatos { margin: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 6px 16px; }
+.u-fatos div { display: grid; gap: 1px; border-top: 1px dashed var(--fio); padding-top: 5px; min-width: 0; }
+.u-fatos dt { font-size: 9px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--tinta-3); }
+.u-fatos dd { margin: 0; overflow-wrap: anywhere; }
+
+.u-espera { margin: 0; padding: 18px 14px; color: var(--tinta-2); }
+.u-vazio { padding: 18px 14px; display: grid; gap: 10px; align-content: start; max-width: 62ch; }
+.u-vazio p { margin: 0; color: var(--tinta-2); }
+.u-vazio p b { color: var(--tinta); }
+.u-vazio .acao { justify-self: start; flex: none; padding-inline: 18px; }
+
+.u-recursos {
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  border-bottom: 1px solid var(--fio);
+}
+.u-recursos div { padding: 8px 12px; display: grid; min-width: 0; }
+.u-recursos div + div { border-left: 1px solid var(--fio); }
+.u-recursos dt { font-size: 9.5px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--tinta-3); }
+.u-recursos dd { margin: 0; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+@media (max-width: 760px) {
+  .u-recursos { grid-template-columns: repeat(2, 1fr); }
+  .u-recursos div + div { border-left: 0; }
+  .u-recursos div:nth-child(n + 3) { border-top: 1px solid var(--fio); }
+}
+
+/* ---------- verificação e contribuição ---------- */
+.verificacao { overflow-y: auto; padding-bottom: 12px; }
+.v-grade { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--fio); border-bottom: 1px solid var(--fio); }
+.v-grade > div { background: var(--painel); padding: 12px; display: grid; gap: 4px; align-content: start; }
+.v-grade small { font-size: 9.5px; letter-spacing: 0.2em; text-transform: uppercase; }
+.v-grade b { font: 600 clamp(24px, 2.6vw, 34px)/1 var(--display); letter-spacing: 0.01em; }
+.v-de { font-size: 0.5em; color: var(--tinta-3); margin-left: 2px; }
+.v-regra { margin: 4px 0 0; font-size: 10.5px; color: var(--tinta-3); }
+.v-regra em { font-style: normal; color: var(--tinta-2); text-decoration: underline; text-underline-offset: 2px; }
+.v-trilho { height: 4px; border: 1px solid var(--fio-forte); }
+.v-trilho i { display: block; height: 100%; background: var(--tinta); width: 50%; }
+.v-contas div, .v-no div { padding: 5px 0; }
+
+/* ---------- histórico e telemetria ---------- */
+#u-historico td { color: var(--tinta-2); }
+#u-historico tr.meu td { color: var(--tinta); }
+#u-historico .estado { font-size: 9.5px; letter-spacing: 0.12em; border: 1px solid var(--fio-forte); padding: 1px 5px; }
+#u-historico tr.meu .estado { background: var(--tinta); color: var(--fundo); border-color: var(--tinta); }
+#u-historico tr.recusada .estado { border-style: dashed; color: var(--tinta); }
+
+#u-telemetria { list-style: none; margin: 0; padding: 4px 0; }
+#u-telemetria li {
+  display: grid;
+  grid-template-columns: 84px 76px 1fr;
+  gap: 8px;
+  padding: 3px 12px;
+  align-items: baseline;
+  color: var(--tinta-2);
+}
+#u-telemetria time, #u-telemetria .t-num { color: var(--tinta-3); }
+#u-telemetria .t-evento { color: var(--tinta); letter-spacing: 0.06em; }
+#u-telemetria .t-evento.bom { font-weight: 700; }
+#u-telemetria .t-evento.ruim { text-decoration: underline dashed; text-underline-offset: 3px; }
+#u-telemetria .t-detalhe { display: block; color: var(--tinta-3); font-size: 11px; overflow-wrap: anywhere; }
+
+@media (prefers-reduced-motion: reduce) {
+  .u-unidades i { transition: none; }
 }

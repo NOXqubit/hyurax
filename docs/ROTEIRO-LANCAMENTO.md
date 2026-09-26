@@ -40,6 +40,7 @@ não é.
 | 26/09/2026 | Ticker HYUR vira HYX (só exibição); documento do HYX Index registrado em `docs/HYX-INDEX.md` |
 | 26/09/2026 | ULTRAX, etapas 0 e 1: arquitetura e plano de migração em `docs/ULTRAX.md`; crate `hyurax-ultrax` com matriz, mochila e difusão iguais ao gabarito byte a byte, ciclo de vida, registro de prova assinado, validador, reputação e Work Score |
 | 26/09/2026 | ULTRAX, etapa 2: worker LAB no programa (`hyurax-no ultrax lab` e `/api/ultrax`), com limite de CPU e memória, prazo, cancelamento, tarefas-desafio contra o gabarito, histórico assinado, telemetria e `hyurax-no ultrax auditar`; revisado por cinco lentes, com os achados corrigidos |
+| 26/09/2026 | ULTRAX, etapa 3: a tela do ULTRAX no lugar da estação 3D (trabalho ativo com o progresso real, ciclo de vida, verificação, Work Score, reputação, histórico, telemetria e o selo LAB fixo); mineração com painel próprio |
 
 Próximo: **o primeiro nó respondendo de fora**. O PC do autor serve para começar (`scripts/no-sempre-ligado.ps1` + porta 8790 no roteador + teste pelo 4G do celular). Os passos 1, 2 e 3 de `docs/LANCAR-A-REDE.md` são do autor: renomear e publicar o repositório, criar a etiqueta, e deixar o nó ligado.
 

@@ -33,6 +33,10 @@
       <span><b id="linhas" class="num">1</b><small>/<span id="nucleos">1</span> núcleos · <span id="memoria">0</span> MiB</small></span>
       <button type="button" id="mais" aria-label="Mais núcleos">+</button>
     </div>
+    <button type="button" id="ultrax" class="minerar ultrax-botao" aria-pressed="false" aria-controls="painel-ultrax"
+            title="ULTRAX: trabalho útil verificável, separado da mineração">
+      <i aria-hidden="true"></i><span>ULTRAX</span>
+    </button>
     <button type="button" id="minerar" class="minerar" aria-pressed="false">
       <i aria-hidden="true"></i><span>MINERAR</span>
     </button>
@@ -43,17 +47,98 @@
 </header>
 
 <main class="grade">
-  <section class="bloco estacao" id="painel-estacao" data-painel="estacao" aria-label="Estação de mineração">
-    <header class="rotulo"><span>Estação · PC-01</span><span class="rotulo-fim"><button type="button" id="abrir-trabalho" class="link" aria-haspopup="dialog">ver o trabalho</button><span id="estado-rodada">parado</span></span></header>
-    <canvas id="cena" aria-hidden="true"></canvas>
-    <div class="estacao-pe">
-      <div><small>Tentativas</small><b id="e-tentativas" class="num">0</b></div>
-      <div><small>Rodada atual</small><b id="e-rodada" class="num">—</b></div>
-      <div><small>Meus blocos</small><b id="e-meus" class="num">0</b></div>
-      <div><small>Perdidos na corrida</small><b id="e-perdidos" class="num">0</b></div>
-      <div><small>Energia estimada</small><b id="e-energia" class="num">0 W</b></div>
-      <div><small>Limite de CPU</small><b id="e-limite" class="num">100%</b></div>
+  <!-- ULTRAX: o que esta máquina está calculando agora, de verdade. -->
+  <section class="bloco ultrax" id="painel-ultrax" data-painel="ultrax" aria-label="ULTRAX, trabalho ativo">
+    <header class="rotulo">
+      <span>ULTRAX · Trabalho ativo</span>
+      <span class="rotulo-fim"><span class="selo-modo" id="u-modo" title="LAB: tarefas geradas e conferidas nesta máquina. Ninguém de fora encomendou este trabalho.">LAB · TESTNET WORKLOAD</span><span id="u-estado">desligado</span></span>
+    </header>
+    <div class="u-controles" id="u-controles">
+      <div class="nucleos" role="group" aria-label="Linhas do ULTRAX">
+        <button type="button" id="u-menos" aria-label="Menos linhas">−</button>
+        <span><b id="u-linhas" class="num">1</b><small>/<span id="u-nucleos">1</span> linhas</small></span>
+        <button type="button" id="u-mais" aria-label="Mais linhas">+</button>
+      </div>
+      <div class="segmentos compacto" role="group" aria-label="Limite de CPU do ULTRAX">
+        <label for="u-cpu-25"><input type="radio" name="u-cpu" id="u-cpu-25" value="25" autocomplete="off"><span>25%</span></label>
+        <label for="u-cpu-50"><input type="radio" name="u-cpu" id="u-cpu-50" value="50" autocomplete="off"><span>50%</span></label>
+        <label for="u-cpu-75"><input type="radio" name="u-cpu" id="u-cpu-75" value="75" autocomplete="off"><span>75%</span></label>
+        <label for="u-cpu-100"><input type="radio" name="u-cpu" id="u-cpu-100" value="100" autocomplete="off"><span>100%</span></label>
+      </div>
+      <label class="u-campo" for="u-memoria"><small>Memória</small>
+        <select id="u-memoria" autocomplete="off">
+          <option value="64">até 64 MiB</option>
+          <option value="128">até 128 MiB</option>
+          <option value="256">até 256 MiB</option>
+          <option value="512">até 512 MiB</option>
+          <option value="1024">até 1 GiB</option>
+        </select>
+      </label>
+      <label class="chave-liga u-debug" for="u-debug"><input type="checkbox" id="u-debug" autocomplete="off"><span>DEBUG</span></label>
     </div>
+    <dl class="u-recursos" aria-label="Recursos do ULTRAX">
+      <div><dt>CPU × linhas</dt><dd id="u-r-cpu" class="num">—</dd></div>
+      <div><dt>Memória</dt><dd id="u-r-mem" class="num">—</dd></div>
+      <div><dt>Na fila</dt><dd id="u-r-fila" class="num">—</dd></div>
+      <div><dt>GPU</dt><dd id="u-r-gpu">não usada</dd></div>
+      <div><dt>Temperatura</dt><dd title="O programa não lê sensor de temperatura; não inventa número.">não medida</dd></div>
+    </dl>
+    <div class="u-ativas" id="u-ativas" aria-live="polite"></div>
+    <div class="u-vazio" id="u-vazio">
+      <p><b>O ULTRAX está desligado.</b> Ligado, ele gera tarefas reais (multiplicação de matrizes, otimização da mochila, difusão de calor), executa, assina o resultado e confere, uma de cada vez por linha.</p>
+      <p><small>Modo LAB: o trabalho nasce nesta máquina e é conferido por ela mesma. É carga de teste, não serviço para alguém de fora, e não rende HYX. Separado da mineração: os dois podem rodar juntos, cada um com o seu limite.</small></p>
+      <button type="button" id="u-ligar" class="acao">Ligar o ULTRAX</button>
+    </div>
+  </section>
+
+  <!-- Verificação, contribuição, reputação e o nó: as respostas do ULTRAX. -->
+  <section class="bloco verificacao" id="painel-verificacao" data-painel="verificacao" aria-label="Verificação e contribuição">
+    <header class="rotulo"><span>Verificação · Contribuição</span><span class="rotulo-fim"><span id="v-desde">—</span></span></header>
+    <div class="v-grade">
+      <div class="v-score">
+        <small>Work Score</small>
+        <b id="v-score" class="num">0,00</b>
+        <p class="v-regra">1 ponto = 1 milhão de operações de tarefas <em>verificadas</em>. Medida de contribuição: não é dinheiro nem HYX.</p>
+      </div>
+      <div class="v-reputacao">
+        <small>Reputação local</small>
+        <b><span id="v-nota" class="num">500</span><span class="v-de">/1000</span></b>
+        <div class="v-trilho" aria-hidden="true"><i id="v-nota-barra"></i></div>
+        <p class="v-regra">(verificadas + 1) ÷ (verificadas + recusadas + 2). Só recusa com evidência baixa a nota. No LAB, não conta para a rede.</p>
+      </div>
+    </div>
+    <dl class="pares v-contas">
+      <div><dt>Entregues</dt><dd id="v-enviadas" class="num">0</dd></div>
+      <div><dt>Verificadas</dt><dd id="v-verificadas" class="num">0</dd></div>
+      <div><dt>Recusadas</dt><dd id="v-recusadas" class="num">0</dd></div>
+      <div><dt>Em disputa · divergentes</dt><dd id="v-disputa" class="num">0 · 0</dd></div>
+      <div><dt>Desafios certos · errados</dt><dd id="v-desafios" class="num">0 · 0</dd></div>
+      <div><dt>Canceladas · expiradas · abandonadas</dt><dd id="v-paradas" class="num">0 · 0 · 0</dd></div>
+      <div><dt>Operações verificadas</dt><dd id="v-operacoes" class="num">0</dd></div>
+      <div><dt>Tempo de cálculo · de conferência</dt><dd id="v-tempo" class="num">—</dd></div>
+      <div><dt>Ligado, no total</dt><dd id="v-ligado" class="num">—</dd></div>
+      <div><dt>Quem confere</dt><dd id="v-verificador">esta máquina (LAB)</dd></div>
+    </dl>
+    <h3 class="rotulo-secao">Nó</h3>
+    <dl class="pares v-no">
+      <div><dt>Estado · versão</dt><dd id="v-no-estado">—</dd></div>
+      <div><dt>Pares · latência</dt><dd id="v-no-pares">—</dd></div>
+      <div><dt>Worker</dt><dd><button type="button" id="v-worker" class="link num" title="Copiar a chave pública do worker">—</button></dd></div>
+    </dl>
+  </section>
+
+  <!-- A mineração continua: é ela que protege a cadeia e rende HYX. -->
+  <section class="bloco mineracao" id="painel-mineracao" data-painel="mineracao" aria-label="Mineração">
+    <header class="rotulo"><span>Mineração</span><span class="rotulo-fim"><button type="button" id="abrir-trabalho" class="link" aria-haspopup="dialog">ver o trabalho do bloco</button><span id="estado-rodada">parado</span></span></header>
+    <dl class="pares">
+      <div><dt>Tentativas</dt><dd id="e-tentativas" class="num">0</dd></div>
+      <div><dt>Rodada atual</dt><dd id="e-rodada" class="num">—</dd></div>
+      <div><dt>Meus blocos</dt><dd id="e-meus" class="num">0</dd></div>
+      <div><dt>Perdidos na corrida</dt><dd id="e-perdidos" class="num">0</dd></div>
+      <div><dt>Energia estimada</dt><dd id="e-energia" class="num">0 W</dd></div>
+      <div><dt>Limite de CPU</dt><dd id="e-limite" class="num">100%</dd></div>
+    </dl>
+    <p class="nota nota-painel">A mineração protege a cadeia (Argon2id) e cada bloco carrega uma multiplicação de matrizes que a rede confere. É ela que rende HYX. O ULTRAX é outra coisa: trabalho útil fora do bloco, medido em Work Score.</p>
   </section>
 
     <section class="bloco carteira" id="painel-carteira" data-painel="carteira" aria-label="Carteira">
@@ -84,6 +169,22 @@
         <div><dt>Ponta da cadeia</dt><dd id="r-ponta" class="num curto">—</dd></div>
       </dl>
     </section>
+
+  <section class="bloco historico" id="painel-historico" data-painel="historico" aria-label="Histórico de tarefas do ULTRAX">
+    <header class="rotulo"><span>Histórico de tarefas</span><span class="rotulo-fim"><span class="chave"><i class="q meu"></i>verificada <i class="q"></i>não</span></span></header>
+    <div class="rolar">
+      <table>
+        <thead><tr><th>Tarefa</th><th>Trabalho</th><th>Estado</th><th>Operações</th><th>Cálculo</th><th>Conferência</th></tr></thead>
+        <tbody id="u-historico"></tbody>
+      </table>
+    </div>
+    <p class="nota nota-painel" id="u-historico-vazio">Nenhuma tarefa ainda. Cada tarefa encerrada aparece aqui, e fica gravada em PASTA/ultrax/historico.txt, assinada pelo worker.</p>
+  </section>
+
+  <section class="bloco telemetria" id="painel-telemetria" data-painel="telemetria" aria-label="Telemetria do ULTRAX">
+    <header class="rotulo"><span>Telemetria</span><span class="rotulo-fim"><span id="u-debug-estado">DEBUG desligado</span></span></header>
+    <ol id="u-telemetria" class="rolar"></ol>
+  </section>
 
   <section class="bloco livro" id="painel-livro" data-painel="livro" aria-label="Livro de blocos">
     <header class="rotulo"><span>Livro de blocos</span><span class="rotulo-fim"><span class="chave"><i class="q meu"></i>meu <i class="q"></i>outro nó</span></span></header>
@@ -212,6 +313,7 @@
       <dl class="fatos">
         <div><dt>O que a máquina faz</dt><dd>Resolve uma multiplicação de matrizes que a rede inteira confere. É o trabalho que prova o bloco.</dd></div>
         <div><dt>O que você ganha</dt><dd>Cada bloco achado paga uma recompensa em HYX, que cai direto na sua carteira.</dd></div>
+        <div><dt>E o ULTRAX</dt><dd>Um motor de trabalho útil, separado da mineração: executa contas reais, confere e mede a contribuição. Hoje em modo de teste (LAB).</dd></div>
         <div><dt>Quanto custa</dt><dd>Energia. O programa estima os watts e o custo do mês, e você limita quanto da CPU ele pode tomar.</dd></div>
       </dl>
       <p class="aviso-teste"><b>REDE DE TESTE.</b> A rede pública ainda não existe e o HYX minerado aqui não tem valor. Não há venda, pré-venda nem promessa de lucro.</p>
@@ -539,50 +641,6 @@
       <label class="chave-liga" for="a-mercado"><input type="checkbox" id="a-mercado" autocomplete="off"><span>Acompanhar o mercado</span></label>
     </section>
 
-    <section class="grupo pilha" aria-labelledby="a-cena-titulo">
-      <h3 class="rotulo-campo" id="a-cena-titulo">Estação 3D</h3>
-      <p class="nota">O desenho da mesa também gasta máquina. Em computador fraco, deixe em baixa ou desligue: a mineração não muda.</p>
-      <div class="segmentos" role="group" aria-label="Qualidade da cena 3D">
-        <label for="c-auto"><input type="radio" name="cena" id="c-auto" value="auto" autocomplete="off"><span>Automática</span></label>
-        <label for="c-alta"><input type="radio" name="cena" id="c-alta" value="alta" autocomplete="off"><span>Alta</span></label>
-        <label for="c-media"><input type="radio" name="cena" id="c-media" value="media" autocomplete="off"><span>Média</span></label>
-        <label for="c-baixa"><input type="radio" name="cena" id="c-baixa" value="baixa" autocomplete="off"><span>Baixa</span></label>
-        <label for="c-desligada"><input type="radio" name="cena" id="c-desligada" value="desligada" autocomplete="off"><span>Desligada</span></label>
-      </div>
-    </section>
-
-    <section class="grupo pilha" aria-labelledby="a-decorar-titulo">
-      <h3 class="rotulo-campo" id="a-decorar-titulo">Decorar a estação</h3>
-      <p class="nota">A mesa é sua. Nada aqui muda a mineração nem o consumo do nó — muda só o que você vê.</p>
-      <ul class="enfeites" id="enfeites"></ul>
-      <div class="campo">
-        <span class="rotulo-campo">Monitores</span>
-        <div class="segmentos" role="group" aria-label="Quantos monitores na mesa">
-          <label for="mon-1"><input type="radio" name="monitores" id="mon-1" value="1" autocomplete="off"><span>Um</span></label>
-          <label for="mon-2"><input type="radio" name="monitores" id="mon-2" value="2" autocomplete="off"><span>Dois</span></label>
-        </div>
-      </div>
-      <div class="campo">
-        <span class="rotulo-campo">Luz da torre</span>
-        <div class="segmentos cinco" role="group" aria-label="Cor da luz da torre">
-          <label for="led-branco"><input type="radio" name="led" id="led-branco" value="branco" autocomplete="off"><span>Branca</span></label>
-          <label for="led-ambar"><input type="radio" name="led" id="led-ambar" value="ambar" autocomplete="off"><span>Âmbar</span></label>
-          <label for="led-azul"><input type="radio" name="led" id="led-azul" value="azul" autocomplete="off"><span>Azul</span></label>
-          <label for="led-verde"><input type="radio" name="led" id="led-verde" value="verde" autocomplete="off"><span>Verde</span></label>
-          <label for="led-vermelho"><input type="radio" name="led" id="led-vermelho" value="vermelho" autocomplete="off"><span>Vermelha</span></label>
-        </div>
-      </div>
-      <div class="campo">
-        <span class="rotulo-campo">Mesa</span>
-        <div class="segmentos" role="group" aria-label="Acabamento da mesa">
-          <label for="mesa-escura"><input type="radio" name="mesa" id="mesa-escura" value="escura" autocomplete="off"><span>Escura</span></label>
-          <label for="mesa-clara"><input type="radio" name="mesa" id="mesa-clara" value="clara" autocomplete="off"><span>Clara</span></label>
-          <label for="mesa-madeira"><input type="radio" name="mesa" id="mesa-madeira" value="madeira" autocomplete="off"><span>Madeira</span></label>
-        </div>
-      </div>
-      <p class="nota">As suas outras máquinas (Ajustes › Minhas máquinas) aparecem como mesas ao lado, com o ritmo de cada uma.</p>
-    </section>
-
     <section class="grupo pilha" aria-labelledby="a-avisos-titulo">
       <h3 class="rotulo-campo" id="a-avisos-titulo">Avisos</h3>
       <p class="nota">Achar um bloco é raro e leva tempo. O programa pode chamar você quando acontecer.</p>
@@ -624,11 +682,12 @@
       <h3 class="rotulo-campo">Tipos de trabalho</h3>
       <ul class="tipos">
         <li><b>Matrizes conferidas por Freivalds</b> — <span class="marca-estado">em uso agora</span><br><small>A conta que todo bloco carrega hoje. O tamanho sobe e desce com a dificuldade da rede.</small></li>
-        <li><b>Trabalho encomendado de fora</b> — <span class="marca-estado planejado">planejado</span><br><small>Genética, clima, engenharia: alguém manda a conta, paga por ela, e os mineradores resolvem. Exige uma fila de pedidos e pagamento na rede, que ainda não existem.</small></li>
+        <li><b>ULTRAX, fora do bloco</b> — <span class="marca-estado">em uso, modo LAB</span><br><small>Matrizes, mochila e difusão geradas nesta máquina, conferidas e medidas em Work Score. É carga de teste: ninguém de fora encomendou.</small></li>
+        <li><b>Trabalho encomendado de fora</b> — <span class="marca-estado planejado">planejado</span><br><small>Alguém manda a conta, paga por ela, e os workers resolvem. Exige clientes, uma fila de pedidos entre nós e pagamento na rede, que ainda não existem.</small></li>
         <li><b>Escolher o tipo</b> — <span class="marca-estado planejado">depende do de cima</span><br><small>Enquanto só existe uma família de trabalho, escolher seria enfeite: o consenso recusa bloco de qualquer outra família.</small></li>
       </ul>
     </section>
-    <p class="nota">Quem confere não refaz a conta: três sorteios bastam para pegar qualquer resultado errado, e custam quase nada. É por isso que a rede aceita trabalho pesado sem cada nó repetir o trabalho.</p>
+    <p class="nota">Quem confere não refaz a conta: quatro sorteios bastam para pegar qualquer resultado errado, e custam quase nada. É por isso que a rede aceita trabalho pesado sem cada nó repetir o trabalho.</p>
     <p class="aviso-teste"><b>O que ainda não é.</b> As contas de hoje são geradas pelo próprio bloco, não vêm de ninguém de fora. O próximo passo do projeto é abrir a fila para trabalho de verdade — genética, clima, engenharia — com quem precisa pagando pela conta. Enquanto isso não existe, o programa não vai dizer que existe.</p>
     <div class="acoes"><button type="button" id="trabalho-fechar" class="secundario">Fechar</button></div>
   </div>

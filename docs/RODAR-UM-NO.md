@@ -99,7 +99,9 @@ tem o botão **MINERAR**:
 - o livro de blocos, em que ■ é bloco seu e □ é de outro nó;
 - o ritmo de tentativas;
 - o fluxo de eventos;
-- a estação 3D, onde cada bloco minerado entra na corrente.
+- o ULTRAX, o motor de trabalho útil, separado da mineração: a tarefa que
+  está rodando, o progresso, a verificação, o Work Score e a reputação, com o
+  selo LAB (trabalho de teste gerado nesta máquina, sem valor em HYX).
 
 Nada disso precisa de internet: o painel vem dentro do programa.
 
