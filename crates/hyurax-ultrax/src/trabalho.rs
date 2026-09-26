@@ -509,7 +509,9 @@ fn executar_ia(esp: &Especificacao, semente: &[u8], continuar: &mut dyn FnMut(u6
 // Matriz
 // ---------------------------------------------------------------------------
 
-fn matrizes(n: u32, semente: &[u8]) -> Result<(Vec<u32>, Vec<u32>), ErroDeTrabalho> {
+/// As matrizes `A` e `B` de uma instância, linha a linha. É o que se entrega a
+/// quem vai fazer a conta fora do processo (a GPU da página).
+pub fn matrizes(n: u32, semente: &[u8]) -> Result<(Vec<u32>, Vec<u32>), ErroDeTrabalho> {
     generate_matrices(semente, n).map_err(|_| ErroDeTrabalho::Tamanho {
         tipo: TipoDeTrabalho::Matriz,
         valor: n,

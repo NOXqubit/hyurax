@@ -983,7 +983,9 @@ input[type="number"] {
   padding: 6px 2px;
   cursor: pointer;
 }
-.u-debug { border: 1px solid var(--fio-forte); border-radius: var(--r); padding: 0 10px; font-size: 11px; letter-spacing: 0.14em; }
+.u-debug { border: 1px solid var(--fio-forte); border-radius: var(--r); padding: 0 10px; font-size: 11px; letter-spacing: 0.14em; min-height: 32px; }
+.u-gpu { padding-top: 0; align-items: center; }
+.u-gpu-nome { flex: 1 1 220px; color: var(--tinta-3); overflow-wrap: anywhere; }
 
 .u-ativas { display: grid; align-content: start; }
 .u-tarefa + .u-tarefa { border-top: 1px solid var(--fio); }

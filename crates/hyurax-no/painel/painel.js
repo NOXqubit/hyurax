@@ -1367,6 +1367,32 @@ for (const uso of [25, 50, 75, 100]) {
 }
 $("u-memoria").addEventListener("change", () => mandarUltrax({ memoria_mib: $("u-memoria").value }));
 $("u-debug").addEventListener("change", () => mandarUltrax({ debug: $("u-debug").checked ? "1" : "0" }));
+$("u-gpu").addEventListener("change", () => mandarUltrax({ gpu: $("u-gpu").checked ? "1" : "0" }));
+for (const uso of [25, 50, 75, 100]) {
+  $(`u-gpu-${uso}`).addEventListener("change", () => mandarUltrax({ gpu_uso: String(uso) }));
+}
+
+// ---------- a GPU desta janela ----------
+// A conta na GPU roda numa thread à parte (gpu-trabalhador.js), que segue com
+// a janela minimizada. Aqui só vai o que o dono escolheu, e volta o nome da
+// GPU ou o erro. O nó confere cada resultado na CPU antes de creditar.
+let gpuErro = "";
+let trabalhadorGpu = null;
+function avisarGpu(e) {
+  const u = e.ultrax;
+  const ligada = !!(u && u.ligado && u.gpu?.ligada && e.pode_mandar);
+  if (ligada && !trabalhadorGpu && typeof Worker !== "undefined") {
+    try {
+      trabalhadorGpu = new Worker("/gpu-trabalhador.js", { type: "module" });
+      trabalhadorGpu.onmessage = (ev) => {
+        if (typeof ev.data?.erro === "string") gpuErro = ev.data.erro;
+      };
+    } catch (erro) {
+      gpuErro = `A GPU não pôde começar: ${erro.message || erro}`;
+    }
+  }
+  trabalhadorGpu?.postMessage({ ligada, uso: u?.gpu?.uso ?? 50 });
+}
 $("v-worker").addEventListener("click", () => copiar(ultimo?.ultrax?.worker, $("v-worker"), $("v-worker"), curto(ultimo?.ultrax?.worker || "")));
 
 // "7377.75" do nó vira "7.377,75": milhar com ponto, decimal com vírgula.
@@ -1406,7 +1432,8 @@ function fatias(a) {
 function cartaoDaTarefa(a, agora) {
   const art = el("article", "u-tarefa");
   const cab = el("header");
-  cab.append(el("span", "u-cat", `${a.categoria} · ${ultimo.ultrax.modo}`), el("span", "u-num num", `#${String(a.numero).padStart(8, "0")}`));
+  const naGpu = a.dispositivo === "GPU";
+  cab.append(el("span", "u-cat", `${a.categoria} · ${naGpu ? "GPU · " : ""}${ultimo.ultrax.modo}`), el("span", "u-num num", `#${String(a.numero).padStart(8, "0")}`));
   const titulo = el("h3", "u-titulo", TIPOS[a.tipo] || a.descricao);
   titulo.append(el("b", "num", a.resumo));
   if (a.desafio) titulo.append(el("span", "u-desafio", "DESAFIO"));
@@ -1444,7 +1471,7 @@ function cartaoDaTarefa(a, agora) {
   };
   fato("Verificação", a.metodo);
   fato("Quem confere", ultimo.ultrax.verificador || "esta máquina");
-  fato("Recursos", `linha ${a.linha} · ${fmt1.format(a.memoria_mib)} MiB`);
+  fato("Recursos", naGpu ? `GPU (WebGL2) · ${fmt1.format(a.memoria_mib)} MiB` : `linha ${a.linha} · ${fmt1.format(a.memoria_mib)} MiB`);
   fato("Começou há", duracao((agora - a.inicio) / 1000));
   fato("INPUT_HASH", a.entrada ? curto(a.entrada) : "—", a.entrada);
   fato("TASK_ID", curto(a.id), a.id);
@@ -1482,6 +1509,13 @@ function desenharUltrax(e) {
     memoria.value = String(u.memoria_mib);
   }
   $("u-debug").checked = u.debug === true;
+  const g = u.gpu || {};
+  $("u-gpu").checked = g.ligada === true;
+  for (const uso of [25, 50, 75, 100]) $(`u-gpu-${uso}`).checked = g.uso === uso;
+  $("u-gpu-controles").hidden = !e.pode_mandar;
+  texto("u-gpu-nome", gpuErro || (g.ligada
+    ? `${g.nome || "detectando a GPU…"} · trabalha enquanto esta janela estiver aberta; a CPU confere cada resultado`
+    : "Ligue para a GPU (integrada ou placa de vídeo) também trabalhar, pelo WebGL2 desta janela. A CPU confere cada resultado."));
 
   const agora = e.agora ? e.agora * 1000 : Date.now();
   const cartoes = ativas.map((a) => cartaoDaTarefa(a, Math.max(agora, Date.now())));
@@ -1497,7 +1531,8 @@ function desenharUltrax(e) {
   texto("u-r-mem", `${fmt1.format(u.reservada_mib)}/${fmt.format(u.memoria_mib)} MiB`);
   $("u-r-mem").title = "memória reservada pelas tarefas em curso, do teto escolhido";
   texto("u-r-fila", fmt.format(u.fila));
-  texto("u-r-gpu", u.gpu || "não usada");
+  texto("u-r-gpu", !g.ligada ? "desligada" : g.nome ? `${g.uso}% · ${g.nome}` : `${g.uso}%`);
+  $("u-r-gpu").title = g.nome || "";
 
   desenharVerificacao(e, u);
   desenharIa(u.ia);
@@ -1673,6 +1708,7 @@ async function ler() {
     desenharBarra(e);
     desenharMineracao(e);
     desenharUltrax(e);
+    avisarGpu(e);
     desenharLateral(e);
     desenharLivro(e);
     desenharFluxo(e);

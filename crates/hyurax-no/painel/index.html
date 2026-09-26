@@ -76,6 +76,16 @@
       </label>
       <label class="chave-liga u-debug" for="u-debug"><input type="checkbox" id="u-debug" autocomplete="off"><span>DEBUG</span></label>
     </div>
+    <div class="u-controles u-gpu" id="u-gpu-controles">
+      <label class="chave-liga u-debug" for="u-gpu"><input type="checkbox" id="u-gpu" autocomplete="off"><span>GPU</span></label>
+      <div class="segmentos compacto" role="group" aria-label="Limite de uso da GPU">
+        <label for="u-gpu-25"><input type="radio" name="u-gpu-uso" id="u-gpu-25" value="25" autocomplete="off"><span>25%</span></label>
+        <label for="u-gpu-50"><input type="radio" name="u-gpu-uso" id="u-gpu-50" value="50" autocomplete="off"><span>50%</span></label>
+        <label for="u-gpu-75"><input type="radio" name="u-gpu-uso" id="u-gpu-75" value="75" autocomplete="off"><span>75%</span></label>
+        <label for="u-gpu-100"><input type="radio" name="u-gpu-uso" id="u-gpu-100" value="100" autocomplete="off"><span>100%</span></label>
+      </div>
+      <small class="u-gpu-nome" id="u-gpu-nome">A GPU trabalha enquanto esta janela estiver aberta; a CPU confere cada resultado.</small>
+    </div>
     <dl class="u-recursos" aria-label="Recursos do ULTRAX">
       <div><dt>CPU × linhas</dt><dd id="u-r-cpu" class="num">—</dd></div>
       <div><dt>Memória</dt><dd id="u-r-mem" class="num">—</dd></div>

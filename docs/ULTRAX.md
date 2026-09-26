@@ -221,7 +221,7 @@ começa com a anterior verde.
 | 3 | Painel ULTRAX no lugar da estação 3D: trabalho ativo, histórico, verificação, contribuição, nó e o selo do modo. **Pronta em 26/09/2026** | Um usuário responde às 7 perguntas do critério de sucesso olhando a tela |
 | 4 | Trabalho de IA: rede pequena em ponto fixo sobre a AqSolDB, com a molécula desenhada na tela. **Pronta em 26/09/2026** | Inferência verificada por recomputação; a curva de erro na tela sai do cálculo real |
 | 5 | TESTNET: mensagens de tarefa e resultado entre nós, redundância com workers independentes, reputação por `WORKER_ID` | Três nós separados executam a mesma tarefa, e um resultado adulterado é detectado pela maioria |
-| 6 | GPU (depois de medir se compensa), sandbox para trabalho externo, estrutura de JOB/cliente | Só com hardware para testar e com decisão sobre o equilíbrio CPU × GPU |
+| 6 | Sandbox para trabalho externo, estrutura de JOB/cliente. (A GPU entrou antes, em 26/09/2026: ver abaixo.) | Só com cliente e com a sandbox testada |
 
 ### Medido na Etapa 2 (Atom x5-Z8350, uma linha, versão otimizada)
 
@@ -289,13 +289,34 @@ diferentes, e podem rodar juntas.
 - **O placar (`placar.txt`) não é assinado.** A auditoria o compara com o
   histórico enquanto o histórico está inteiro.
 
-### GPU, dito com todas as letras
+### GPU: integrada ou placa de vídeo
 
-A máquina de desenvolvimento tem uma Intel HD Graphics integrada (Atom
-x5-Z8350). Usar GPU em Rust puro exige uma biblioteca grande (`wgpu`), cara de
-compilar aqui e que talvez nem funcione nesse chip. Por isso a GPU fica para a
-Etapa 6. Até lá, o painel mostra a GPU como **"não usada"**, e não inventa um
-percentual.
+A GPU entra pelo WebGL2 da própria janela do programa, e por isso não
+precisa de biblioteca nova. Funciona em GPU integrada (Intel, AMD Ryzen) e em
+placa de vídeo.
+
+- **A conta:** multiplicação de matrizes em inteiros de 32 bits. Cada entrada
+  de `C` é um pixel de uma textura `R32UI`, e o shader soma os `n` produtos. O
+  resultado é exato, sem ponto flutuante.
+- **A conferência:** o resultado volta para o nó, e a CPU confere por
+  Freivalds, que é outro algoritmo, antes de creditar. Uma GPU com defeito ou
+  adulterada é recusada. Há teste com um resultado adulterado.
+- **O limitador:** a GPU calcula uma faixa de linhas de uns 60 ms e descansa
+  na proporção escolhida (25, 50, 75 ou 100%). A faixa curta também evita que
+  o Windows ache que a GPU travou.
+- **Janela minimizada:** a conta roda num *worker* com `OffscreenCanvas`, que
+  segue no ritmo com a janela minimizada. Com a janela fechada, a GPU para, e
+  a tarefa pendente vence pelo prazo.
+
+**Medido nesta máquina (Intel HD Graphics do Atom x5-Z8350, por Direct3D 11):**
+
+| Tarefa | Operações | Tempo | Ritmo |
+|---|---|---|---|
+| Matriz 1024 × 1024, GPU a 100% | 1,07 bilhão | 2,52 s, com a transferência | 426 M/s |
+| A mesma, GPU a 25% | 1,07 bilhão | 5,96 s | cerca de 4 vezes mais lenta na conta; a transferência (~1,4 s) não é limitada |
+
+Um núcleo da CPU faz cerca de 250 M/s. A GPU integrada soma, e não
+substitui: CPU e GPU trabalham juntas, cada uma com o seu limite.
 
 ## 6. Critério de sucesso
 

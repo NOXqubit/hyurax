@@ -81,6 +81,11 @@ pub const MEMORIA_MIN_MIB: u32 = 32;
 pub const MEMORIA_MAX_MIB: u32 = 16 * 1024;
 /// Ritmo inicial suposto, em operações por segundo, até medir o de verdade.
 const RITMO_INICIAL: f64 = 20.0e6;
+const RITMO_INICIAL_GPU: f64 = 50.0e6;
+/// Quantas tarefas a GPU pode ter pendentes ao mesmo tempo (uma por janela aberta).
+const GPU_TAREFAS_MAX: usize = 2;
+/// Maior corpo aceito no resultado da GPU: uma matriz 1024 × 1024 em u32.
+pub const GPU_RESULTADO_MAX: usize = 1024 * 1024 * 4;
 /// Menor prazo de uma tarefa. O prazo cobre execução e verificação com a CPU
 /// no menor limite permitido (10%), com folga de três vezes: baixar o limite
 /// depois de criar a tarefa não a faz vencer.
@@ -255,9 +260,39 @@ struct NaFila {
     origem: [u8; 32],
 }
 
+/// O que a execução deixa para a conferência.
+struct Conclusao {
+    linha: u32,
+    item: NaFila,
+    esp: Especificacao,
+    semente: [u8; HASH_LEN],
+    entrada: Option<[u8; HASH_LEN]>,
+    exec: trabalho::Execucao,
+    inicio_ms: u64,
+    ms_calculo: u64,
+    memoria: u64,
+    total: u64,
+    feitas: Arc<AtomicU64>,
+    /// O nome da GPU, quando a conta foi feita nela.
+    gpu: Option<String>,
+}
+
+/// Uma tarefa entregue à GPU da página, esperando o resultado.
+struct NaGpu {
+    item: NaFila,
+    semente: [u8; HASH_LEN],
+    entrada: Option<[u8; HASH_LEN]>,
+    memoria: u64,
+    inicio_ms: u64,
+    feitas: Arc<AtomicU64>,
+    nome: String,
+}
+
 /// Uma tarefa rodando agora, para o painel.
 struct Ativa {
     linha: u32,
+    /// `Some(nome)` quando a conta está na GPU.
+    gpu: Option<String>,
     numero: u32,
     id: [u8; HASH_LEN],
     especificacao: Especificacao,
@@ -420,6 +455,13 @@ pub struct Ultrax {
     pub memoria_mib: AtomicU32,
     /// Telemetria detalhada, também em arquivo.
     pub debug: AtomicBool,
+    /// A GPU da página (WebGL2) também trabalha.
+    pub gpu_ligada: AtomicBool,
+    /// Fatia de tempo da GPU, de 10 a 100 por cento.
+    pub gpu_uso: AtomicU32,
+    gpu: Mutex<Vec<NaGpu>>,
+    gpu_nome: Mutex<String>,
+    ritmo_gpu: Mutex<f64>,
     sequencia: AtomicU64,
     reservada: AtomicU64,
     /// Trechos de ciclo encerrados nesta abertura (para o terminal imprimir),
@@ -452,6 +494,10 @@ pub struct Partida {
     pub memoria_mib: u32,
     /// Telemetria em arquivo.
     pub debug: bool,
+    /// A GPU da página também trabalha.
+    pub gpu: bool,
+    /// Fatia de tempo da GPU.
+    pub gpu_uso: u32,
 }
 
 impl Ultrax {
@@ -472,6 +518,11 @@ impl Ultrax {
             uso_cpu: AtomicU32::new(partida.uso_cpu.clamp(10, 100)),
             memoria_mib: AtomicU32::new(partida.memoria_mib.clamp(MEMORIA_MIN_MIB, MEMORIA_MAX_MIB)),
             debug: AtomicBool::new(partida.debug),
+            gpu_ligada: AtomicBool::new(partida.gpu),
+            gpu_uso: AtomicU32::new(partida.gpu_uso.clamp(10, 100)),
+            gpu: Mutex::new(Vec::new()),
+            gpu_nome: Mutex::new(String::new()),
+            ritmo_gpu: Mutex::new(RITMO_INICIAL_GPU),
             sequencia: AtomicU64::new(placar.geradas),
             reservada: AtomicU64::new(0),
             encerrados: AtomicU64::new(0),
@@ -530,13 +581,34 @@ impl Ultrax {
             (self.aviso)("ultrax", format!("ULTRAX ligado (modo {MODO}, {SELO}): trabalho de teste gerado nesta máquina"));
         } else {
             self.descartar_fila("o ULTRAX foi desligado");
+            self.cancelar_gpu("o ULTRAX foi desligado");
             (self.aviso)("ultrax", "ULTRAX desligado".into());
         }
     }
 
-    /// Muda linhas, fatia da CPU, teto de memória e o modo DEBUG. Valores fora
-    /// da faixa são trazidos para dentro dela.
-    pub fn ajustar(&self, linhas: Option<u32>, uso_cpu: Option<u32>, memoria_mib: Option<u32>, debug: Option<bool>) {
+    /// Muda linhas, fatia da CPU, teto de memória, o modo DEBUG e a GPU (ligada
+    /// e fatia de tempo). Valores fora da faixa são trazidos para dentro dela.
+    pub fn ajustar_tudo(
+        &self,
+        linhas: Option<u32>,
+        uso_cpu: Option<u32>,
+        memoria_mib: Option<u32>,
+        debug: Option<bool>,
+        gpu: Option<bool>,
+        gpu_uso: Option<u32>,
+    ) {
+        if let Some(u) = gpu_uso {
+            self.gpu_uso.store(u.clamp(10, 100), Ordering::Relaxed);
+        }
+        if let Some(g) = gpu
+            && self.gpu_ligada.swap(g, Ordering::Relaxed) != g
+        {
+            if g {
+                (self.aviso)("ultrax", "GPU ligada no ULTRAX: a janela do programa manda contas para a GPU, e a CPU confere cada uma".into());
+            } else {
+                self.cancelar_gpu("a GPU foi desligada");
+            }
+        }
         if let Some(n) = linhas {
             let novo = n.clamp(1, self.nucleos);
             if self.linhas.swap(novo, Ordering::Relaxed) != novo {
@@ -573,6 +645,7 @@ impl Ultrax {
                     p.reputacao.segundos_ativo = p.reputacao.segundos_ativo.saturating_add(1);
                 }
                 self.expirar_na_fila();
+                self.expirar_na_gpu();
                 let quer = (self.linhas.load(Ordering::Relaxed) as usize).saturating_add(FILA_EXTRA);
                 while self.ligado.load(Ordering::Relaxed) && self.fila.lock().map_or(usize::MAX, |f| f.len()) < quer {
                     match self.gerar(agora_ms()) {
@@ -844,6 +917,7 @@ impl Ultrax {
         if let Ok(mut a) = self.ativas.lock() {
             a.push(Ativa {
                 linha,
+                gpu: None,
                 numero,
                 id: item.tarefa.id,
                 especificacao: esp,
@@ -876,20 +950,33 @@ impl Ultrax {
                 return;
             }
         };
+        self.concluir(Conclusao { linha, item, esp, semente, entrada, exec, inicio_ms, ms_calculo, memoria, total, feitas, gpu: None });
+    }
+
+    /// Depois da execução, na CPU ou na GPU: assinar, conferir e liquidar.
+    #[allow(clippy::too_many_lines)]
+    fn concluir(&self, c: Conclusao) {
+        let Conclusao { linha, mut item, esp, semente, entrada, exec, inicio_ms, ms_calculo, memoria, total, feitas, gpu } = c;
+        let numero = item.tarefa.numero();
         let fim_ms = agora_ms();
         if ms_calculo > 50 {
             let ops_s = exec.operacoes as f64 / (ms_calculo as f64 / 1000.0);
-            if let Ok(mut r) = self.ritmo.lock()
+            if gpu.is_some() {
+                if let Ok(mut r) = self.ritmo_gpu.lock() {
+                    *r = *r * 0.5 + ops_s * 0.5;
+                }
+            } else if let Ok(mut r) = self.ritmo.lock()
                 && let Some(v) = r.get_mut(indice(esp.tipo()))
             {
                 *v = *v * 0.5 + ops_s * 0.5;
             }
         }
+        let onde = gpu.as_deref().map_or_else(|| "de cálculo".to_string(), |nome| format!("na GPU ({nome}), no relógio"));
         self.marcar(
             numero,
             "WORK COMPLETED",
             format!(
-                "{} operações em {:.2} s de cálculo ({:.1} M/s) · {:.2} s no relógio",
+                "{} operações em {:.2} s {onde} ({:.1} M/s) · {:.2} s no relógio",
                 exec.operacoes,
                 ms_calculo as f64 / 1000.0,
                 exec.operacoes as f64 / (ms_calculo.max(1) as f64 * 1000.0),
@@ -925,10 +1012,15 @@ impl Ultrax {
         self.marcar(
             numero,
             "VERIFICATION STARTED",
-            format!("{} · autoconferência nesta máquina ({MODO})", item.tarefa.metodo.nome()),
+            format!(
+                "{} · autoconferência na CPU desta máquina ({MODO}){}",
+                item.tarefa.metodo.nome(),
+                if gpu.is_some() { " · o resultado veio da GPU" } else { "" }
+            ),
         );
         let comeco_verificacao = Instant::now();
-        controle.trabalhando = Duration::ZERO;
+        // a conferência é sempre na CPU, com outro algoritmo: é o que pega o erro da GPU
+        let mut controle = Controle::novo(self, linha, item.tarefa.prazo_ms, &feitas);
         let julgamento: Result<Parecer, ErroDeTrabalho> = if !assinatura.is_some_and(|a| registro.assinatura_confere(&a)) {
             Ok(Parecer::Recusado(Recusa("o registro de prova não tem assinatura válida deste worker".into())))
         } else if let Some(d) = item.desafio.and_then(|q| DESAFIOS.get(q)) {
@@ -1098,6 +1190,17 @@ impl Ultrax {
         j
     }
 
+    fn json_gpu(&self) -> String {
+        format!(
+            "{{\"ligada\":{},\"uso\":{},\"nome\":{},\"tarefas\":{},\"ritmo\":{:.0}}}",
+            self.gpu_ligada.load(Ordering::Relaxed),
+            self.gpu_uso.load(Ordering::Relaxed),
+            texto_json(&self.gpu_nome.lock().map(|g| g.clone()).unwrap_or_default()),
+            self.gpu.lock().map_or(0, |g| g.len()),
+            self.ritmo_gpu.lock().map_or(0.0, |r| *r),
+        )
+    }
+
     fn somar_tempo(&self, ms_calculo: u64, ms_verificacao: u64) {
         if let Ok(mut p) = self.placar.lock() {
             p.ms_calculo = p.ms_calculo.saturating_add(ms_calculo);
@@ -1179,6 +1282,191 @@ impl Ultrax {
     }
 
     // -----------------------------------------------------------------------
+    // GPU: a página faz a conta, a CPU confere
+    // -----------------------------------------------------------------------
+
+    /// Lado da matriz que cabe em [`SEGUNDOS_ALVO`] no ritmo medido da GPU.
+    fn dimensionar_gpu(&self) -> Result<Especificacao, String> {
+        let ritmo = self.ritmo_gpu.lock().map_or(RITMO_INICIAL_GPU, |r| *r);
+        let teto = u64::from(self.memoria_mib.load(Ordering::Relaxed)).saturating_mul(1024 * 1024);
+        let mut n = ((ritmo * SEGUNDOS_ALVO).cbrt() as u32).clamp(64, trabalho::MATRIZ_LADO_MAX);
+        loop {
+            let esp = Especificacao::nova(TipoDeTrabalho::Matriz, n, 0).map_err(|e| e.to_string())?;
+            if esp.memoria_bytes() <= teto || n <= 64 {
+                return Ok(esp);
+            }
+            n = n.saturating_mul(7) / 8;
+        }
+    }
+
+    /// A página pede uma tarefa para a GPU dela. Devolve `(número, lado)`.
+    pub fn gpu_pegar(&self, nome: &str) -> Result<(u32, u32), String> {
+        if !self.ligado.load(Ordering::Relaxed) || !self.gpu_ligada.load(Ordering::Relaxed) {
+            return Err("a GPU está desligada no ULTRAX".into());
+        }
+        let nome: String = nome.chars().filter(|c| !c.is_control()).take(120).collect();
+        let nome = if nome.trim().is_empty() { "GPU".to_string() } else { nome };
+        if let Ok(mut g) = self.gpu_nome.lock() {
+            g.clone_from(&nome);
+        }
+        if self.gpu.lock().map_or(usize::MAX, |g| g.len()) >= GPU_TAREFAS_MAX {
+            return Err("a GPU já tem tarefa em curso".into());
+        }
+        let esp = self.dimensionar_gpu()?;
+        let agora = agora_ms();
+        let mut origem = [0u8; 32];
+        hyurax_net::entropia::preencher(&mut origem)?;
+        let estimado = esp.operacoes_maximas() as f64 / self.ritmo_gpu.lock().map_or(RITMO_INICIAL_GPU, |r| *r).max(1.0);
+        let prazo = agora.saturating_add(PRAZO_MINIMO_MS.max((estimado / USO_MINIMO * PRAZO_FOLGA * 1000.0) as u64));
+        let mut tarefa = Tarefa::nova(esp, MetodoDeVerificacao::Freivalds, Instancia::PorWorker, &origem, 100, agora, prazo)
+            .map_err(|e| e.to_string())?;
+        let numero = tarefa.numero();
+        self.marcar(
+            numero,
+            "TASK CREATED",
+            format!("{} {} · {} · na GPU · verificação: {} na CPU · {SELO}", esp.tipo().descricao(), esp.resumo(), esp.tipo().categoria().nome(), tarefa.metodo.nome()),
+        );
+        let memoria = esp.memoria_bytes();
+        if !self.reservar(memoria) {
+            return Err("sem memória livre no teto do ULTRAX agora".into());
+        }
+        let _ = tarefa.avancar(Estado::NaFila, agora_ms(), "");
+        let _ = tarefa.avancar(Estado::Atribuida, agora_ms(), format!("GPU: {nome}"));
+        self.marcar(numero, "TASK ASSIGNED", format!("GPU: {nome} · worker {}", curto(&self.worker)));
+        self.marcar(
+            numero,
+            "RESOURCE ALLOCATED",
+            format!("{:.1} MiB reservados · GPU até {}% · WebGL2", mib(memoria), self.gpu_uso.load(Ordering::Relaxed)),
+        );
+        let _ = tarefa.avancar(Estado::Executando, agora_ms(), "");
+        self.marcar(numero, "WORK STARTED", format!("{} {} na GPU", esp.tipo().descricao(), esp.resumo()));
+        let semente = tarefa.semente_para(&self.worker);
+        let entrada = hash_da_entrada(&esp, &semente).ok();
+        let feitas = Arc::new(AtomicU64::new(0));
+        if let Ok(mut a) = self.ativas.lock() {
+            a.push(Ativa {
+                linha: 0,
+                gpu: Some(nome.clone()),
+                numero,
+                id: tarefa.id,
+                especificacao: esp,
+                metodo: tarefa.metodo,
+                desafio: false,
+                estado: Estado::Executando,
+                feitas: Arc::clone(&feitas),
+                total: esp.operacoes_maximas(),
+                operacoes: 0,
+                inicio_ms: agora_ms(),
+                memoria,
+                entrada,
+            });
+        }
+        let item = NaFila { tarefa, desafio: None, recusas: 0, origem };
+        if let Ok(mut g) = self.gpu.lock() {
+            g.push(NaGpu { item, semente, entrada, memoria, inicio_ms: agora_ms(), feitas, nome });
+        }
+        Ok((numero, esp.tamanho()))
+    }
+
+    /// As matrizes `A` e `B` de uma tarefa da GPU, em u32 little-endian, nessa ordem.
+    pub fn gpu_entrada(&self, numero: u32) -> Option<Vec<u8>> {
+        let (semente, n) = self
+            .gpu
+            .lock()
+            .ok()?
+            .iter()
+            .find(|g| g.item.tarefa.numero() == numero)
+            .map(|g| (g.semente, g.item.tarefa.especificacao.tamanho()))?;
+        let (a, b) = trabalho::matrizes(n, &semente).ok()?;
+        Some(a.iter().chain(&b).flat_map(|v| v.to_le_bytes()).collect())
+    }
+
+    /// Quantas linhas de `C` a GPU já calculou.
+    pub fn gpu_progresso(&self, numero: u32, linhas: u64) {
+        if let Ok(g) = self.gpu.lock()
+            && let Some(x) = g.iter().find(|g| g.item.tarefa.numero() == numero)
+        {
+            let n = u64::from(x.item.tarefa.especificacao.tamanho());
+            x.feitas.store(linhas.min(n).saturating_mul(n).saturating_mul(n), Ordering::Relaxed);
+        }
+    }
+
+    /// O resultado da GPU chega: `C` em u32 little-endian. A CPU confere por
+    /// Freivalds antes de creditar qualquer coisa.
+    pub fn gpu_resultado(&self, numero: u32, bytes: &[u8]) -> Result<(), String> {
+        let x = self
+            .gpu
+            .lock()
+            .ok()
+            .and_then(|mut g| g.iter().position(|x| x.item.tarefa.numero() == numero).map(|k| g.remove(k)))
+            .ok_or("tarefa de GPU desconhecida ou já encerrada")?;
+        let esp = x.item.tarefa.especificacao;
+        // u32 da GPU para o formato do resultado (i64 little-endian); tamanho
+        // errado segue assim mesmo, e a conferência recusa com o motivo
+        let resultado: Vec<u8> = bytes.as_chunks::<4>().0.iter().flat_map(|c| i64::from(u32::from_le_bytes(*c)).to_le_bytes()).collect();
+        let ms = agora_ms().saturating_sub(x.inicio_ms);
+        let exec = trabalho::Execucao { resultado, operacoes: esp.operacoes_fixas().unwrap_or(0), curva: Vec::new() };
+        let total = exec.operacoes;
+        self.concluir(Conclusao {
+            linha: 0,
+            item: x.item,
+            esp,
+            semente: x.semente,
+            entrada: x.entrada,
+            exec,
+            inicio_ms: x.inicio_ms,
+            ms_calculo: ms,
+            memoria: x.memoria,
+            total,
+            feitas: x.feitas,
+            gpu: Some(x.nome),
+        });
+        Ok(())
+    }
+
+    /// A página desistiu da tarefa (parou, fechou a aba, deu erro no WebGL).
+    pub fn gpu_cancelar(&self, numero: u32, motivo: &str) {
+        let achada = self
+            .gpu
+            .lock()
+            .ok()
+            .and_then(|mut g| g.iter().position(|x| x.item.tarefa.numero() == numero).map(|k| g.remove(k)));
+        if let Some(x) = achada {
+            self.fechar_gpu(x, Estado::Cancelada, motivo);
+        }
+    }
+
+    fn cancelar_gpu(&self, motivo: &str) {
+        let todas: Vec<NaGpu> = self.gpu.lock().map(|mut g| g.drain(..).collect()).unwrap_or_default();
+        for x in todas {
+            self.fechar_gpu(x, Estado::Cancelada, motivo);
+        }
+    }
+
+    fn expirar_na_gpu(&self) {
+        let agora = agora_ms();
+        let vencidas: Vec<NaGpu> = match self.gpu.lock() {
+            Ok(mut g) => {
+                let (vencidas, ficam): (Vec<_>, Vec<_>) = g.drain(..).partition(|x| x.item.tarefa.vencida(agora));
+                g.extend(ficam);
+                vencidas
+            }
+            Err(_) => return,
+        };
+        for x in vencidas {
+            self.fechar_gpu(x, Estado::Expirada, "prazo vencido: a janela parou de mandar o resultado da GPU");
+        }
+    }
+
+    fn fechar_gpu(&self, mut x: NaGpu, estado: Estado, motivo: &str) {
+        let numero = x.item.tarefa.numero();
+        let _ = x.item.tarefa.avancar(estado, agora_ms(), motivo);
+        self.sair(numero, x.memoria);
+        let ms = agora_ms().saturating_sub(x.inicio_ms);
+        self.encerrar(&x.item, None, ms, motivo);
+    }
+
+    // -----------------------------------------------------------------------
     // Disco e telemetria
     // -----------------------------------------------------------------------
 
@@ -1257,7 +1545,7 @@ impl Ultrax {
         let _ = write!(
             j,
             "{{\"modo\":\"{MODO}\",\"selo\":\"{SELO}\",\"ligado\":{},\"linhas\":{},\"nucleos\":{},\"uso_cpu\":{},\
-             \"memoria_mib\":{},\"reservada_mib\":{:.1},\"gpu\":\"não usada\",\"debug\":{},\"worker\":\"{}\",\"fila\":{fila},\
+             \"memoria_mib\":{},\"reservada_mib\":{:.1},\"gpu\":{},\"debug\":{},\"worker\":\"{}\",\"fila\":{fila},\
              \"desafio_a_cada\":{DESAFIO_A_CADA},\"verificador\":\"esta máquina (autoconferência LAB)\",",
             self.ligado.load(Ordering::Relaxed),
             self.linhas.load(Ordering::Relaxed),
@@ -1265,6 +1553,7 @@ impl Ultrax {
             self.uso_cpu.load(Ordering::Relaxed),
             self.memoria_mib.load(Ordering::Relaxed),
             mib(self.reservada.load(Ordering::Relaxed)),
+            self.json_gpu(),
             self.debug.load(Ordering::Relaxed),
             hex(&self.worker),
         );
@@ -1277,10 +1566,11 @@ impl Ultrax {
                 let feitas = x.feitas.load(Ordering::Relaxed).min(x.total);
                 let _ = write!(
                     j,
-                    "{{\"linha\":{},\"numero\":{},\"id\":\"{}\",\"categoria\":\"{}\",\"tipo\":\"{}\",\"descricao\":{},\
+                    "{{\"linha\":{},\"dispositivo\":{},\"numero\":{},\"id\":\"{}\",\"categoria\":\"{}\",\"tipo\":\"{}\",\"descricao\":{},\
                      \"tamanho\":{},\"passos\":{},\"resumo\":{},\"metodo\":{},\"desafio\":{},\"estado\":\"{}\",\"feitas\":{feitas},\"total\":{},\
                      \"operacoes\":{},\"inicio\":{},\"memoria_mib\":{:.1},\"entrada\":\"{}\"}}",
                     x.linha,
+                    texto_json(x.gpu.as_deref().map_or("CPU", |_| "GPU")),
                     x.numero,
                     hex(&x.id),
                     x.especificacao.tipo().categoria().nome(),
@@ -1818,7 +2108,7 @@ pub fn comando(args: &[String]) -> Result<(), String> {
     let mut tarefas: u64 = 0;
     let mut amostra: usize = 5;
     let nucleos = u32::try_from(std::thread::available_parallelism().map_or(1, |n| n.get())).unwrap_or(1);
-    let mut partida = Partida { ligado: true, linhas: 1, uso_cpu: 100, memoria_mib: MEMORIA_PADRAO_MIB, debug: false };
+    let mut partida = Partida { ligado: true, linhas: 1, uso_cpu: 100, memoria_mib: MEMORIA_PADRAO_MIB, debug: false, gpu: false, gpu_uso: 50 };
     let mut it = resto.iter();
     while let Some(nome) = it.next() {
         if nome == "--debug" {
@@ -1937,7 +2227,7 @@ mod testes {
     }
 
     fn partida() -> Partida {
-        Partida { ligado: true, linhas: 1, uso_cpu: 100, memoria_mib: MEMORIA_PADRAO_MIB, debug: false }
+        Partida { ligado: true, linhas: 1, uso_cpu: 100, memoria_mib: MEMORIA_PADRAO_MIB, debug: false, gpu: false, gpu_uso: 50 }
     }
 
     #[test]
@@ -2177,6 +2467,59 @@ mod testes {
         let reaberto = Ultrax::abrir(&p, &[9; 32], 2, &partida(), Box::new(|_, _| {}));
         assert!(reaberto.modelo.lock().unwrap().melhor.is_some());
         assert!(auditar(&p, 1).unwrap().problemas.is_empty());
+        let _ = std::fs::remove_dir_all(p);
+    }
+
+    /// A GPU de mentira: faz a conta na CPU e manda como a página mandaria.
+    fn fazer_na_gpu(u: &Ultrax, adulterar: bool) -> u32 {
+        let (numero, n) = u.gpu_pegar("GPU de teste").unwrap();
+        let entrada = u.gpu_entrada(numero).unwrap();
+        let v: Vec<u64> = entrada.as_chunks::<4>().0.iter().map(|c| u64::from(u32::from_le_bytes(*c))).collect();
+        let n = n as usize;
+        let (a, b) = v.split_at(n * n);
+        let mut c = vec![0u32; n * n];
+        for i in 0..n {
+            for k in 0..n {
+                for j in 0..n {
+                    c[i * n + j] += (a[i * n + k] * b[k * n + j]) as u32;
+                }
+            }
+        }
+        if adulterar {
+            c[7] ^= 1;
+        }
+        u.gpu_progresso(numero, n as u64);
+        let bytes: Vec<u8> = c.iter().flat_map(|x| x.to_le_bytes()).collect();
+        u.gpu_resultado(numero, &bytes).unwrap();
+        numero
+    }
+
+    #[test]
+    fn gpu_honesta_e_creditada_e_adulterada_e_recusada() {
+        let (u, p) = worker("gpu", &Partida { gpu: true, ..partida() });
+        *u.ritmo_gpu.lock().unwrap() = 1.0e5;
+        fazer_na_gpu(&u, false);
+        assert_eq!(u.placar().liquidadas, 1);
+        assert_eq!(u.reservada.load(Ordering::Relaxed), 0);
+        fazer_na_gpu(&u, true);
+        let placar = u.placar();
+        assert_eq!(placar.recusadas, 1, "a CPU pegou o erro da GPU");
+        assert!(auditar(&p, 1).unwrap().problemas.is_empty());
+        // desligada, não entrega tarefa
+        u.ajustar_tudo(None, None, None, None, Some(false), None);
+        assert!(u.gpu_pegar("x").is_err());
+        let _ = std::fs::remove_dir_all(p);
+    }
+
+    #[test]
+    fn gpu_esquecida_vence_e_libera_a_memoria() {
+        let (u, p) = worker("gpu-vence", &Partida { gpu: true, ..partida() });
+        *u.ritmo_gpu.lock().unwrap() = 1.0e5;
+        let (numero, _) = u.gpu_pegar("x").unwrap();
+        u.gpu_cancelar(numero, "a janela fechou");
+        assert_eq!(u.placar().canceladas, 1);
+        assert_eq!(u.reservada.load(Ordering::Relaxed), 0);
+        assert!(u.gpu_resultado(numero, &[0; 16]).is_err(), "encerrada não aceita resultado");
         let _ = std::fs::remove_dir_all(p);
     }
 

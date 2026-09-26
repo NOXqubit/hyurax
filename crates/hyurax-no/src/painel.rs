@@ -45,6 +45,8 @@ const INDEX: &str = include_str!("../painel/index.html");
 const CSS: &str = include_str!("../painel/painel.css");
 const JS: &str = include_str!("../painel/painel.js");
 const MOLECULAS: &str = include_str!("../painel/moleculas.js");
+const GPU: &str = include_str!("../painel/gpu.js");
+const GPU_TRABALHADOR: &str = include_str!("../painel/gpu-trabalhador.js");
 /// Gerador de QR Code, o mesmo do site: serve para abrir o painel no celular.
 const QRCODE: &str = include_str!("../../../site/vendor/qrcode.min.js");
 
@@ -297,6 +299,8 @@ impl Painel {
         let _ = writeln!(texto, "ultrax_uso_cpu={}", u.uso_cpu.load(Ordering::Relaxed));
         let _ = writeln!(texto, "ultrax_memoria_mib={}", u.memoria_mib.load(Ordering::Relaxed));
         let _ = writeln!(texto, "ultrax_debug={}", u8::from(u.debug.load(Ordering::Relaxed)));
+        let _ = writeln!(texto, "ultrax_gpu={}", u8::from(u.gpu_ligada.load(Ordering::Relaxed)));
+        let _ = writeln!(texto, "ultrax_gpu_uso={}", u.gpu_uso.load(Ordering::Relaxed));
         if let Ok(s) = self.sementes.lock() {
             for semente in s.iter() {
                 let _ = writeln!(texto, "semente={semente}");
@@ -335,6 +339,8 @@ struct Ajustes {
     ultrax_uso_cpu: Option<u32>,
     ultrax_memoria_mib: Option<u32>,
     ultrax_debug: bool,
+    ultrax_gpu: bool,
+    ultrax_gpu_uso: Option<u32>,
 }
 
 fn ler_ajustes(dados: &Path) -> Ajustes {
@@ -365,6 +371,8 @@ fn ler_ajustes(dados: &Path) -> Ajustes {
                     v.trim().parse().ok().filter(|n| (ultrax::MEMORIA_MIN_MIB..=ultrax::MEMORIA_MAX_MIB).contains(n));
             }
             Some(("ultrax_debug", v)) => a.ultrax_debug = v.trim() == "1",
+            Some(("ultrax_gpu", v)) => a.ultrax_gpu = v.trim() == "1",
+            Some(("ultrax_gpu_uso", v)) => a.ultrax_gpu_uso = v.trim().parse().ok().filter(|n| (10..=100).contains(n)),
             Some(("semente", v)) if semente_valida(v.trim()) && a.sementes.len() < SEMENTES_MAX => {
                 a.sementes.push(v.trim().to_string());
             }
@@ -633,6 +641,8 @@ fn ligar(o: Opcoes, rede: Arc<Rede>, partida: Partida, ajustes: &Ajustes) -> Res
             uso_cpu: ajustes.ultrax_uso_cpu.unwrap_or(100),
             memoria_mib: ajustes.ultrax_memoria_mib.unwrap_or(ultrax::MEMORIA_PADRAO_MIB),
             debug: ajustes.ultrax_debug,
+            gpu: ajustes.ultrax_gpu,
+            gpu_uso: ajustes.ultrax_gpu_uso.unwrap_or(50),
         },
         Box::new(move |tipo, texto| {
             let _ = avisos.send((tipo, texto));
@@ -1341,6 +1351,8 @@ struct Pedido {
     host: String,
     origem: Option<String>,
     corpo: String,
+    /// O corpo em bytes, para quem manda binário (o resultado da GPU).
+    bruto: Vec<u8>,
 }
 
 fn ler_pedido(s: &mut TcpStream) -> Option<Pedido> {
@@ -1372,7 +1384,11 @@ fn ler_pedido(s: &mut TcpStream) -> Option<Pedido> {
         match nome.trim().to_ascii_lowercase().as_str() {
             "host" => host = valor.to_ascii_lowercase(),
             "origin" => origem = Some(valor.to_ascii_lowercase()),
-            "content-length" => tamanho = valor.parse().ok().filter(|t| *t <= 8192)?,
+            // o resultado da GPU é uma matriz inteira; o resto do painel é formulário pequeno
+            "content-length" => {
+                let maximo = if caminho.starts_with("/api/ultrax/gpu/resultado/") { ultrax::GPU_RESULTADO_MAX } else { 8192 };
+                tamanho = valor.parse().ok().filter(|t| *t <= maximo)?;
+            }
             _ => {}
         }
     }
@@ -1385,7 +1401,8 @@ fn ler_pedido(s: &mut TcpStream) -> Option<Pedido> {
         corpo.extend_from_slice(pedaco.get(..n)?);
     }
     corpo.truncate(tamanho);
-    Some(Pedido { metodo, caminho, host, origem, corpo: String::from_utf8_lossy(&corpo).into_owned() })
+    let texto = if caminho.starts_with("/api/ultrax/gpu/resultado/") { String::new() } else { String::from_utf8_lossy(&corpo).into_owned() };
+    Some(Pedido { metodo, caminho, host, origem, corpo: texto, bruto: corpo })
 }
 
 /// Decodifica `application/x-www-form-urlencoded`: `+` é espaço, `%XX` é byte.
@@ -1462,10 +1479,20 @@ fn atender(mut s: TcpStream, porta: u16, painel: &Painel, rede: &Arc<Rede>, o: &
             "/painel.css" => responder(&mut s, "200 OK", "text/css; charset=utf-8", CSS.as_bytes()),
             "/painel.js" => responder(&mut s, "200 OK", "text/javascript; charset=utf-8", JS.as_bytes()),
             "/moleculas.js" => responder(&mut s, "200 OK", "text/javascript; charset=utf-8", MOLECULAS.as_bytes()),
+            "/gpu.js" => responder(&mut s, "200 OK", "text/javascript; charset=utf-8", GPU.as_bytes()),
+            "/gpu-trabalhador.js" => responder(&mut s, "200 OK", "text/javascript; charset=utf-8", GPU_TRABALHADOR.as_bytes()),
             "/qrcode.min.js" => responder(&mut s, "200 OK", "text/javascript; charset=utf-8", QRCODE.as_bytes()),
             "/api/estado" => {
                 let json = estado_json(painel, rede, o, local && host_local, porta);
                 responder(&mut s, "200 OK", "application/json; charset=utf-8", json.as_bytes())
+            }
+            // As matrizes da tarefa da GPU: só para a janela deste computador.
+            r if r.starts_with("/api/ultrax/gpu/entrada/") => {
+                let numero = r.trim_start_matches("/api/ultrax/gpu/entrada/").parse::<u32>().ok();
+                match numero.filter(|_| local && host_local).and_then(|n| painel.ultrax.gpu_entrada(n)) {
+                    Some(bytes) => responder(&mut s, "200 OK", "application/octet-stream", &bytes),
+                    None => responder(&mut s, "404 Not Found", "text/plain", b"tarefa de GPU desconhecida"),
+                }
             }
             _ => responder(&mut s, "404 Not Found", "text/plain", b"nao existe"),
         };
@@ -1542,10 +1569,48 @@ fn atender(mut s: TcpStream, porta: u16, painel: &Painel, rede: &Arc<Rede>, o: &
             let r = trocar_ajustes(painel, &campos).map(|()| "{\"ok\":true}".to_string());
             responder_json(&mut s, r)
         }
+        "/api/ultrax/gpu/pegar" => {
+            let nome = campo(&campos, "nome").unwrap_or_default();
+            let r = painel.ultrax.gpu_pegar(&nome).map(|(numero, n)| format!("{{\"numero\":{numero},\"n\":{n}}}"));
+            responder_json(&mut s, r)
+        }
+        r if r.starts_with("/api/ultrax/gpu/progresso/") => {
+            if let (Ok(numero), Some(linhas)) = (
+                r.trim_start_matches("/api/ultrax/gpu/progresso/").parse::<u32>(),
+                campo(&campos, "linhas").and_then(|v| v.parse::<u64>().ok()),
+            ) {
+                painel.ultrax.gpu_progresso(numero, linhas);
+            }
+            responder(&mut s, "204 No Content", "text/plain", b"")
+        }
+        r if r.starts_with("/api/ultrax/gpu/cancelar/") => {
+            if let Ok(numero) = r.trim_start_matches("/api/ultrax/gpu/cancelar/").parse::<u32>() {
+                let motivo = campo(&campos, "motivo").unwrap_or_else(|| "a janela desistiu da tarefa".into());
+                let motivo: String = motivo.chars().filter(|c| !c.is_control()).take(160).collect();
+                painel.ultrax.gpu_cancelar(numero, &motivo);
+            }
+            responder(&mut s, "204 No Content", "text/plain", b"")
+        }
+        r if r.starts_with("/api/ultrax/gpu/resultado/") => {
+            let r = r
+                .trim_start_matches("/api/ultrax/gpu/resultado/")
+                .parse::<u32>()
+                .map_err(|_| "número de tarefa inválido".to_string())
+                .and_then(|numero| painel.ultrax.gpu_resultado(numero, &p.bruto))
+                .map(|()| "{\"ok\":true}".to_string());
+            responder_json(&mut s, r)
+        }
         "/api/ultrax" => {
             let numero = |nome: &str| campo(&campos, nome).and_then(|v| v.parse::<u32>().ok());
             let sim = |nome: &str| campo(&campos, nome).map(|v| v == "1");
-            painel.ultrax.ajustar(numero("linhas"), numero("uso_cpu"), numero("memoria_mib"), sim("debug"));
+            painel.ultrax.ajustar_tudo(
+                numero("linhas"),
+                numero("uso_cpu"),
+                numero("memoria_mib"),
+                sim("debug"),
+                sim("gpu"),
+                numero("gpu_uso"),
+            );
             if let Some(ligar) = sim("ligar") {
                 painel.ultrax.ligar(ligar);
             }
