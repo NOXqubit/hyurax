@@ -71,12 +71,18 @@ Para ver o endereço de novo: `./hyurax-no carteira ver --arquivo carteira.txt`.
   internet, libere essa porta no roteador (redirecionamento de porta). Sem
   isso, o nó ainda funciona, mas só conecta para fora.
 
-Para entrar numa rede que já existe, adicione `--semente IP:PORTA` de um nó
-conhecido (várias, separadas por vírgula). O nó descobre os outros sozinho.
+Na rede de teste, **o nó procura a rede sozinho**: sem `--semente`, ele lê a
+lista publicada no repositório do projeto
+([`rede/sementes-testnet.txt`](../rede/sementes-testnet.txt)) e bate nos
+endereços dela. Para escolher você mesmo, use `--semente IP:PORTA` (várias,
+separadas por vírgula) ou escreva um endereço por linha em
+`PASTA/sementes.txt`. Depois do primeiro par, o nó descobre os outros sozinho.
+`--sem-sementes-padrao` faz o nó não buscar lista nenhuma.
 
-> **Nós semente oficiais ainda não existem.** Enquanto a testnet pública não
-> sobe, teste com dois aparelhos seus na mesma rede local, ou com um amigo:
-> um roda `no --porta 8790` e o outro usa `--semente IP_DO_PRIMEIRO:8790`.
+> **A lista publicada ainda está vazia.** Enquanto o primeiro semente não
+> responde de fora, teste com dois aparelhos seus na mesma rede local, ou com
+> um amigo: um roda `no --porta 8790` e o outro usa
+> `--semente IP_DO_PRIMEIRO:8790`.
 
 ## 4. Minerar
 

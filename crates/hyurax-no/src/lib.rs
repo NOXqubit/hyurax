@@ -22,6 +22,7 @@ mod envio;
 mod maquinas;
 pub mod painel;
 mod seguranca;
+pub mod sementes;
 mod senha;
 pub mod totp;
 
@@ -179,8 +180,14 @@ fn ler_opcoes(args: &[String]) -> Result<Opcoes, String> {
             _ => return Err(format!("opção desconhecida: {nome}")),
         }
     }
-    if o.sementes.is_empty() && !o.sem_sementes_padrao && o.rede.nome == ParametrosRede::TESTNET.nome {
-        o.sementes = SEMENTES_TESTNET.iter().map(|s| (*s).to_string()).collect();
+    // Sem `--semente`: primeiro o arquivo do dono da máquina, depois a lista
+    // embutida no programa. A lista publicada na internet fica para depois de o
+    // nó subir (`procurar_a_rede`), para não atrasar a abertura.
+    if o.sementes.is_empty() && !o.sem_sementes_padrao {
+        o.sementes = sementes::do_arquivo(&o.pasta);
+        if o.sementes.is_empty() && o.rede.nome == ParametrosRede::TESTNET.nome {
+            o.sementes = SEMENTES_TESTNET.iter().map(|s| (*s).to_string()).collect();
+        }
     }
     Ok(o)
 }
@@ -344,7 +351,38 @@ fn subir_rede(o: &Opcoes) -> Result<Arc<Rede>, String> {
             Err(e) => println!("  aviso: não consegui conectar em {semente}: {e}"),
         }
     }
+    procurar_a_rede(o, &rede);
     Ok(rede)
+}
+
+/// Quando o nó não tem para onde ligar, procura a rede nas fontes públicas.
+///
+/// Só acontece na testnet, só quando ninguém passou `--semente` e a lista
+/// embutida está vazia, e `--sem-sementes-padrao` desliga. A busca roda numa
+/// linha à parte: o programa abre na hora, e a rede aparece quando aparecer.
+fn procurar_a_rede(o: &Opcoes, rede: &Arc<Rede>) {
+    if !o.sementes.is_empty() || o.sem_sementes_padrao || o.rede.nome != ParametrosRede::TESTNET.nome {
+        return;
+    }
+    let rede = Arc::clone(rede);
+    std::thread::spawn(move || {
+        println!("Sem semente configurada: procurando a lista publicada em {}", sementes::url_publicada());
+        match sementes::publicadas() {
+            Ok(lista) if lista.is_empty() => {
+                println!("  a lista publicada ainda não tem nenhum nó. Use --semente IP:PORTA, ou ponha o seu nó no ar (docs/NO-SEMENTE.md).");
+            }
+            Ok(lista) => {
+                for semente in lista {
+                    rede.semear(&semente);
+                    match rede.conectar(semente.as_str()) {
+                        Ok(()) => println!("  conectando em {semente} (da lista publicada)"),
+                        Err(e) => println!("  aviso: não consegui conectar em {semente}: {e}"),
+                    }
+                }
+            }
+            Err(e) => println!("  não consegui ler a lista publicada: {e}"),
+        }
+    });
 }
 
 /// Grava a cadeia no disco.

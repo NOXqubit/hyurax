@@ -35,7 +35,10 @@ não é.
 | 14/09/2026 | Redesign do site (abertura com o A de metal, capítulos 01, 03, 04 e 08, atos) |
 | 14/09/2026 | Semana 6, parte que não depende de servidor: sementes embutidas, `--exportar`, kit `deploy/` e guia `docs/NO-SEMENTE.md` |
 
-Próximo: **subir o primeiro nó semente**. Precisa de uma máquina ligada 24 h, e a conta no provedor é do autor (guia em `docs/NO-SEMENTE.md`).
+| 20/09/2026 | Mempool que só aceita o que dá para minerar em sequência; saldo não derruba mais par honesto; versão alinhada com a etiqueta `v0.2.0-teste.1` |
+| 26/09/2026 | Semana 6, parte que não depende de servidor pago: lista de sementes publicada no repositório (`rede/sementes-testnet.txt`), que o nó busca sozinho; script para o PC do autor servir de semente; ensaio com três processos (bloco e transferência atravessando a rede); passo a passo em `docs/LANCAR-A-REDE.md` |
+
+Próximo: **o primeiro nó respondendo de fora**. O PC do autor serve para começar (`scripts/no-sempre-ligado.ps1` + porta 8790 no roteador + teste pelo 4G do celular). Os passos 1, 2 e 3 de `docs/LANCAR-A-REDE.md` são do autor: renomear e publicar o repositório, criar a etiqueta, e deixar o nó ligado.
 
 ## Semanas
 

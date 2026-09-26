@@ -422,13 +422,10 @@ fn completar_enfeites(lista: &str) -> String {
     completar(lista, &ENFEITES_CONHECIDOS)
 }
 
-/// `host:porta`, com porta de 1 a 65535 e host sem espaço nem caractere estranho.
+/// `host:porta`: a mesma regra que o nó usa para a lista de sementes, para o
+/// painel nunca aceitar um endereço que o nó recusaria.
 fn semente_valida(s: &str) -> bool {
-    let Some((host, porta)) = s.rsplit_once(':') else { return false };
-    !host.is_empty()
-        && host.len() <= 253
-        && host.chars().all(|c| c.is_ascii_alphanumeric() || matches!(c, '.' | '-' | '[' | ']' | ':'))
-        && porta.parse::<u16>().is_ok_and(|p| p > 0)
+    crate::sementes::valida(s)
 }
 
 /// O endereço deste computador na rede local, para abrir o painel no celular.

@@ -57,14 +57,35 @@ hyurax-no no --rede testnet --pasta teste --semente IP_DO_SERVIDOR:8790
 
 5. Abra o explorador: `http://IP_DO_SERVIDOR:8080/`.
 
+## No Windows, com o seu próprio PC
+
+Para começar sem conta em nuvem nenhuma:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\no-sempre-ligado.ps1
+```
+
+O script cria uma tarefa que sobe o nó a cada logon, abre a porta no Firewall
+do Windows (rodando como administrador), mostra o seu endereço de fora e diz o
+que redirecionar no roteador. Para desfazer tudo: o mesmo comando com
+`-Remover`.
+
 ## Depois que ele responder
 
-Mande o endereço `IP:8790`. Ele entra na lista `SEMENTES_TESTNET` em
-`crates/hyurax-no/src/main.rs`, e a próxima versão do programa já conecta
-sozinha, sem ninguém precisar digitar `--semente`.
+Confira **de fora** — pelo 4G do celular, com o Wi-Fi desligado. Se aparecer
+`1 par(es)`, o endereço `IP:8790` entra numa linha de
+[`rede/sementes-testnet.txt`](../rede/sementes-testnet.txt).
 
-Só entra na lista um semente que já respondeu de verdade: endereço morto no
-programa atrapalha quem está começando.
+Todo nó que abre sem semente configurada busca esse arquivo sozinho (com o
+`curl` do sistema), então **não precisa de versão nova do programa** para a
+rede ser encontrada. A ordem de procura é: `PASTA/sementes.txt` na máquina de
+quem roda, depois a lista embutida `SEMENTES_TESTNET` em
+`crates/hyurax-no/src/lib.rs`, depois o arquivo publicado.
+`--sem-sementes-padrao` desliga as duas últimas.
+
+Só entra na lista um semente que já respondeu de verdade: endereço morto
+atrapalha justamente quem está começando. O passo a passo completo do
+lançamento está em [`LANCAR-A-REDE.md`](LANCAR-A-REDE.md).
 
 ## Manutenção
 

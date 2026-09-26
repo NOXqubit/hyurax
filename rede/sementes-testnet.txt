@@ -1,0 +1,32 @@
+# Sementes da rede de TESTE do Hyurax.
+#
+# Um endereço por linha, no formato IP:PORTA (ou nome:PORTA). O que vem depois
+# de "#" é comentário. O programa lê no máximo 16 endereços.
+#
+# Para que serve: um nó recém-aberto precisa conhecer alguém que já está na
+# rede. Ele procura nesta ordem e para no primeiro que der resultado:
+#
+#   1. PASTA/sementes.txt, na máquina de quem roda;
+#   2. a lista embutida no programa;
+#   3. este arquivo, buscado em raw.githubusercontent.com.
+#
+# Por isso esta lista existe: ninguém precisa esperar versão nova do programa
+# para a rede ser encontrada, e não há servidor para pagar.
+#
+# Estar nesta lista NÃO é selo de confiança. É só um endereço para bater. Quem
+# atender ainda tem que passar pelo aperto de mão cifrado, falar a mesma rede e
+# provar cada bloco que mandar.
+#
+# Para entrar na lista:
+#
+#   1. ponha o seu nó no ar (docs/NO-SEMENTE.md) e deixe a porta 8790 aberta;
+#   2. confira de fora da sua rede que ele responde:
+#        hyurax-no no --rede testnet --pasta teste --semente SEU_IP:8790
+#      (de outra internet — o 4G do celular serve);
+#   3. abra um pedido com o endereço. Só entra endereço que já respondeu: nó
+#      morto na lista atrapalha justamente quem está começando.
+#
+# Para sair: apague a sua linha. Não há trava nenhuma.
+#
+# --------------------------------------------------------------------------
+# (nenhum nó semente publicado ainda — a rede de teste pública ainda não subiu)
