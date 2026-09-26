@@ -19,7 +19,7 @@ trocá-los mudaria vetores e a instância do trabalho útil do consenso.
 | Mercado Utrax: matriz, mochila, difusão, escrow | `reference/hyurax/utrax.py`, spec §18 | **só Python** | Os três trabalhos e as regras (executor entrega resultado, submissão inválida não trava tarefa) |
 | Vetores do Utrax | `vectors/utrax.json` | prontos | Conferir a tradução byte a byte |
 | Minerador com limite de CPU | `hyurax-no/src/painel.rs` | Rust | Linhas, pausa proporcional, medição por tentativa |
-| Identidade de nó (Ed25519) | `hyurax-net`, `PASTA/no.chave` | Rust | É o `WORKER_ID` natural |
+| Identidade de nó (X25519, a chave da cifra) | `hyurax-net`, `PASTA/no.chave` | Rust | O `WORKER_ID` é derivado dela (ver o registro de prova) |
 | Rede cifrada entre nós | `hyurax-net`, spec §21 | Rust | Transporte do modo TESTNET |
 | Painel com janela | `hyurax-no/painel/` | Rust + JS | Vira o painel do ULTRAX; a estação 3D sai |
 
@@ -121,22 +121,49 @@ CREATED → QUEUED → ASSIGNED → EXECUTING → SUBMITTED → VERIFYING → VE
                                    └→ CANCELLED / EXPIRED
 ```
 
+Até o veredito, a tarefa pode ser cancelada ou expirar. Cancelar durante a
+conferência deixa o resultado **sem julgamento**, o que não é o mesmo que
+recusado. Recusada volta para a fila uma vez; recusada de novo é abandonada
+(erro que se repete).
+
 Só essas transições são aceitas; qualquer outra é erro, com teste. Cada
-transição vira um evento com horário, gravado num registro só de acréscimo.
+transição vira um evento com horário, gravado no histórico
+(`PASTA/ultrax/historico.txt`). O histórico só recebe linhas novas; passando
+de 4 MiB, o arquivo vira `historico.txt.1` e o `.1` anterior se perde: ele
+guarda as tarefas recentes (alguns milhares), não todas desde sempre.
+
+A telemetria segue a ordem da especificação, com uma troca registrada aqui:
+**RESOURCE ALLOCATED vem antes de WORK STARTED**, porque a memória é reservada
+antes de o trabalho começar. Tarefa que não cabe nem começa.
 
 ### Registro de prova
 
 | Campo | Conteúdo |
 |---|---|
-| `TASK_ID` | SHA-512 da especificação codificada: tipo, parâmetros, semente, verificação |
-| `INPUT_HASH` | SHA-512 da entrada (as matrizes, os itens da mochila, a grade, o lote de dados) |
+| `TASK_ID` | SHA-512 da especificação codificada: tipo, parâmetros, método de verificação, forma da instância, origem, prioridade, horários |
+| `INPUT_HASH` | Tarefa gerada: SHA-512 de especificação e semente, porque a entrada é função determinística das duas (evita montar 8 MB só para o hash). Tarefa com dados de fora, quando existir: hash dos dados |
 | `WORK_TYPE` / `PARAMETERS` | O que foi pedido |
 | `VERIFICATION_METHOD` | Freivalds, recomputação, resultado esperado ou redundância |
 | `RESULT_HASH` | SHA-512 do resultado, na codificação canônica |
-| `WORKER_ID` | Chave pública da identidade do nó (`no.chave`) |
+| `WORKER_ID` | Chave pública Ed25519 do worker, derivada por hash com domínio próprio do segredo de `no.chave`. A chave de `no.chave` é X25519, da cifra; usar o mesmo segredo nos dois algoritmos não se faz. Na Etapa 5 o nó prova o vínculo entre as duas pelo canal cifrado |
 | `TIMESTAMP` | Início e fim da execução |
-| `STATUS` | Estado atual do ciclo |
-| assinatura | Ed25519 do worker sobre os campos acima, para o resultado ser atribuível |
+| `STATUS` | Estado atual do ciclo. Fica **fora** da assinatura do registro, porque muda depois da entrega |
+| assinatura | Ed25519 do worker sobre os campos acima (menos `STATUS`), para o resultado ser atribuível |
+| veredito | Segunda assinatura, sobre o hash do registro e o estado final. Trocar `REJECTED` por `SETTLED` no arquivo quebra essa assinatura |
+
+`hyurax-no ultrax auditar` confere cada linha do histórico:
+
+- refaz o `TASK_ID`;
+- exige o worker deste nó e as duas assinaturas;
+- confere as operações contra o modelo de custo;
+- confere se a tarefa marcada como desafio é mesmo um desafio do gabarito;
+- procura tarefa liquidada duas vezes;
+- com o histórico inteiro, compara o placar;
+- refaz do zero uma amostra de tarefas liquidadas.
+
+**O limite dela, dito na própria saída:** quem tem o `no.chave` assina
+qualquer coisa. A auditoria prova que o histórico é coerente, não que o dono
+é honesto. Isso só se resolve com verificação por outros nós (Etapa 5).
 
 ### Work Score, versão 1
 
@@ -159,7 +186,7 @@ medição é chute, e chute vestido de métrica é o que o princípio 3 proíbe.
 
 | Modo | Tarefas | Verificação | Quando |
 |---|---|---|---|
-| **LAB** | Geradas nesta máquina | Pela própria máquina, com método matemático ou recomputação; mais tarefas-desafio de resposta conhecida | Etapa 2 |
+| **LAB** | Geradas nesta máquina | Pela própria máquina. Freivalds usa outra conta, então pega também defeito que se repete na multiplicação. A recomputação roda o mesmo código de novo e só pega erro passageiro. O erro que se repete, quem pega são as tarefas-desafio | Etapa 2 |
 | **TESTNET** | Trocadas entre nós da rede de teste | Por outros nós; redundância entre workers diferentes | Etapa 5 |
 | **REAL** | De clientes externos | Paga pelo cliente (spec §18) | Só com cliente de verdade |
 
@@ -171,8 +198,9 @@ medição é chute, e chute vestido de métrica é o que o princípio 3 proíbe.
 | Matemático | Difusão em ponto fixo | Recomputação | 1 |
 | Otimização | Mochila 0/1, exigindo o ótimo | Recomputação da programação dinâmica | 1 |
 | IA | Rede neural pequena, em inteiros de ponto fixo, prevendo solubilidade de moléculas reais (AqSolDB, domínio público CC0) | Recomputação da inferência; Freivalds nas camadas | 4 |
-| Verificação | Reconferir provas de trabalho útil dos blocos já guardados | Resultado esperado: a cadeia já foi aceita | 2 |
-| Rede | Latência e disponibilidade medidas contra os pares reais | Medida direta, sem prova forte (dito na tela) | 2 |
+| Verificação | Tarefas-desafio: casos de `vectors/utrax.json`, com a resposta calculada pelo gabarito em Python, fora desta máquina. Uma a cada 10 tarefas | Resultado esperado | 2 |
+| Verificação | Reconferir provas de trabalho útil dos blocos já guardados | Resultado esperado: a cadeia já foi aceita | depois |
+| Rede | Latência e disponibilidade medidas contra os pares reais | Medida direta, sem prova forte (dito na tela) | 5, porque precisa de pares de verdade |
 | Matemático | Transformada NTT | Avaliação em ponto aleatório (Schwartz-Zippel) | depois |
 
 A IA usa **inteiros**, não ponto flutuante, pelo mesmo motivo da difusão:
@@ -189,11 +217,38 @@ começa com a anterior verde.
 |---|---|---|
 | 0 | Este documento | O autor leu |
 | 1 | Crate `hyurax-ultrax`: tipos de trabalho (matriz, mochila, difusão), especificação e `TASK_ID`, ciclo de vida, registro de prova, verificação, validador por maioria, reputação, Work Score v1 | Os três trabalhos batem byte a byte com `vectors/utrax.json`; transição inválida recusada; resultado adulterado recusado; divergência 2×1 detectada sem punir quem não tem evidência contra si |
-| 2 | Worker LAB no `hyurax-no`: gerador de tarefas, fila, execução com limite de CPU e memória, prazo e cancelamento, tarefas-desafio, histórico em disco, telemetria com modo DEBUG | O programa executa e verifica tarefas sozinho, respeitando os limites, e o histórico sobrevive a reiniciar |
+| 2 | Worker LAB no `hyurax-no`: gerador de tarefas, fila, execução com limite de CPU e memória, prazo e cancelamento, tarefas-desafio, histórico em disco, telemetria com modo DEBUG, auditoria. **Pronta em 26/09/2026** | O programa executa e verifica tarefas sozinho, respeitando os limites, e o histórico sobrevive a reiniciar |
 | 3 | Painel ULTRAX no lugar da estação 3D: trabalho ativo, histórico, verificação, contribuição, nó e o selo do modo | Um usuário responde às 7 perguntas do critério de sucesso olhando a tela |
 | 4 | Trabalho de IA: rede pequena em ponto fixo sobre a AqSolDB, com a molécula desenhada na tela | Inferência verificada por recomputação; a curva de erro na tela sai do cálculo real |
 | 5 | TESTNET: mensagens de tarefa e resultado entre nós, redundância com workers independentes, reputação por `WORKER_ID` | Três nós separados executam a mesma tarefa, e um resultado adulterado é detectado pela maioria |
 | 6 | GPU (depois de medir se compensa), sandbox para trabalho externo, estrutura de JOB/cliente | Só com hardware para testar e com decisão sobre o equilíbrio CPU × GPU |
+
+### Medido na Etapa 2 (Atom x5-Z8350, uma linha, versão otimizada)
+
+| Tarefa | Operações | Cálculo |
+|---|---|---|
+| Matriz 1024 × 1024 | 1,07 bilhão | 4,0 a 4,6 s |
+| Difusão 256 × 256, 1024 passos | 67 milhões | 1,8 a 2,5 s |
+| Mochila 256 itens | 1,6 milhão | 0,02 s |
+
+- **Limite de CPU em 50%:** a matriz levou 0,66 s de cálculo em 1,35 s de
+  relógio.
+- **12 tarefas seguidas:** as 12 foram liquidadas, e a tarefa-desafio passou.
+- **Auditoria:** conferiu os 13 registros (as 12 tarefas e uma que ficou na
+  fila e foi cancelada no fim). Refez do zero 4 tarefas sorteadas, com o mesmo
+  resultado.
+- **A mochila é pequena de propósito.** O gabarito limita a 256 itens, porque a
+  escolha cabe numa máscara de 32 bytes. Ela passa do limite só numa versão
+  nova do formato.
+
+### Limites conhecidos, para resolver antes da Etapa 5
+
+- **A nota de reputação não pesa divergência nem tamanho.** Um worker que
+  diverge sempre da maioria mantém a nota, e mil tarefas pequenas diluem uma
+  recusa grande. No LAB isso não importa, porque ninguém escolhe worker pela
+  nota. Na TESTNET importa, e a regra ganha versão nova.
+- **O placar (`placar.txt`) não é assinado.** A auditoria o compara com o
+  histórico enquanto o histórico está inteiro.
 
 ### GPU, dito com todas as letras
 

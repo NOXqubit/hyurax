@@ -38,6 +38,7 @@ use hyurax_pow::ConfigMineracao;
 use hyurax_tx::{HYX, Tx};
 
 use crate::seguranca::Seguranca;
+use crate::ultrax::{self, Ultrax};
 use crate::{Opcoes, carteira, envio, hex, hyx, maquinas, salvar, subir_rede, totp};
 
 const INDEX: &str = include_str!("../painel/index.html");
@@ -157,6 +158,10 @@ struct Painel {
     /// As outras máquinas do dono, por `IP:PORTA`, e a última olhada em cada uma.
     maquinas: Mutex<Vec<String>>,
     maquinas_vistas: Mutex<Vec<maquinas::Vista>>,
+    /// O motor de trabalho útil, no modo LAB. Separado da mineração: ela
+    /// protege a cadeia e rende HYX; ele executa trabalho verificável e rende
+    /// Work Score, sem conversão entre os dois.
+    ultrax: Arc<Ultrax>,
 }
 
 struct Evento {
@@ -304,6 +309,12 @@ impl Painel {
         }
         let _ = writeln!(texto, "avisar_bloco={}", u8::from(self.avisar_bloco.load(Ordering::Relaxed)));
         let _ = writeln!(texto, "som_bloco={}", u8::from(self.som_bloco.load(Ordering::Relaxed)));
+        let u = &self.ultrax;
+        let _ = writeln!(texto, "ultrax={}", u8::from(u.ligado.load(Ordering::Relaxed)));
+        let _ = writeln!(texto, "ultrax_linhas={}", u.linhas.load(Ordering::Relaxed));
+        let _ = writeln!(texto, "ultrax_uso_cpu={}", u.uso_cpu.load(Ordering::Relaxed));
+        let _ = writeln!(texto, "ultrax_memoria_mib={}", u.memoria_mib.load(Ordering::Relaxed));
+        let _ = writeln!(texto, "ultrax_debug={}", u8::from(u.debug.load(Ordering::Relaxed)));
         if let Ok(s) = self.sementes.lock() {
             for semente in s.iter() {
                 let _ = writeln!(texto, "semente={semente}");
@@ -342,6 +353,11 @@ struct Ajustes {
     mesa: Option<String>,
     avisar_bloco: Option<bool>,
     som_bloco: Option<bool>,
+    ultrax: bool,
+    ultrax_linhas: Option<u32>,
+    ultrax_uso_cpu: Option<u32>,
+    ultrax_memoria_mib: Option<u32>,
+    ultrax_debug: bool,
 }
 
 fn ler_ajustes(dados: &Path) -> Ajustes {
@@ -364,6 +380,14 @@ fn ler_ajustes(dados: &Path) -> Ajustes {
             Some(("mesa", v)) if MESAS.contains(&v.trim()) => a.mesa = Some(v.trim().to_string()),
             Some(("avisar_bloco", v)) => a.avisar_bloco = Some(v.trim() == "1"),
             Some(("som_bloco", v)) => a.som_bloco = Some(v.trim() == "1"),
+            Some(("ultrax", v)) => a.ultrax = v.trim() == "1",
+            Some(("ultrax_linhas", v)) => a.ultrax_linhas = v.trim().parse().ok().filter(|n| *n >= 1),
+            Some(("ultrax_uso_cpu", v)) => a.ultrax_uso_cpu = v.trim().parse().ok().filter(|n| (10..=100).contains(n)),
+            Some(("ultrax_memoria_mib", v)) => {
+                a.ultrax_memoria_mib =
+                    v.trim().parse().ok().filter(|n| (ultrax::MEMORIA_MIN_MIB..=ultrax::MEMORIA_MAX_MIB).contains(n));
+            }
+            Some(("ultrax_debug", v)) => a.ultrax_debug = v.trim() == "1",
             Some(("semente", v)) if semente_valida(v.trim()) && a.sementes.len() < SEMENTES_MAX => {
                 a.sementes.push(v.trim().to_string());
             }
@@ -608,6 +632,26 @@ fn ligar(o: Opcoes, rede: Arc<Rede>, partida: Partida, ajustes: &Ajustes) -> Res
     let app = ambiente.app;
     let seguranca = Seguranca::ler(&ambiente.dados);
     let trava = seguranca.ligado() && seguranca.trava;
+    // O ULTRAX assina com uma chave derivada da identidade do nó. Os avisos
+    // dele chegam ao fluxo de eventos por um canal, porque o painel ainda não
+    // existe na hora de abrir o worker.
+    let identidade = crate::identidade_do_no(&o)?;
+    let (avisos, avisos_rx) = std::sync::mpsc::channel::<(&'static str, String)>();
+    let ultrax = Ultrax::abrir(
+        &ambiente.dados,
+        identidade.segredo(),
+        nucleos,
+        &ultrax::Partida {
+            ligado: ajustes.ultrax,
+            linhas: ajustes.ultrax_linhas.unwrap_or(1),
+            uso_cpu: ajustes.ultrax_uso_cpu.unwrap_or(100),
+            memoria_mib: ajustes.ultrax_memoria_mib.unwrap_or(ultrax::MEMORIA_PADRAO_MIB),
+            debug: ajustes.ultrax_debug,
+        },
+        Box::new(move |tipo, texto| {
+            let _ = avisos.send((tipo, texto));
+        }),
+    );
     let painel = Arc::new(Painel {
         ambiente,
         endereco: Mutex::new(endereco),
@@ -644,7 +688,16 @@ fn ligar(o: Opcoes, rede: Arc<Rede>, partida: Partida, ajustes: &Ajustes) -> Res
         destravado: AtomicBool::new(!trava),
         maquinas: Mutex::new(ajustes.maquinas.clone()),
         maquinas_vistas: Mutex::new(Vec::new()),
+        ultrax,
     });
+    {
+        let painel = Arc::clone(&painel);
+        std::thread::spawn(move || {
+            for (tipo, texto) in avisos_rx {
+                painel.registrar(tipo, texto);
+            }
+        });
+    }
     painel.registrar("no", format!("nó no ar na rede {}", o.rede.nome));
     if app && endereco.is_none() {
         painel.registrar("carteira", "nenhuma carteira ainda: crie ou importe uma para minerar".into());
@@ -657,6 +710,9 @@ fn ligar(o: Opcoes, rede: Arc<Rede>, partida: Partida, ajustes: &Ajustes) -> Res
     let ip = if na_rede || app { IpAddr::V4(Ipv4Addr::UNSPECIFIED) } else { IpAddr::V4(Ipv4Addr::LOCALHOST) };
     let ouvinte = TcpListener::bind(SocketAddr::new(ip, porta_painel))
         .map_err(|e| format!("não consegui abrir o painel na porta {porta_painel}: {e}"))?;
+    // O worker só começa depois de o painel ter onde aparecer: sem a porta, ele
+    // rodaria escondido, sem botão para desligar.
+    painel.ultrax.iniciar();
     let o = Arc::new(o);
     {
         let (painel, rede, o) = (Arc::clone(&painel), Arc::clone(&rede), Arc::clone(&o));
@@ -1542,6 +1598,16 @@ fn atender(mut s: TcpStream, porta: u16, painel: &Painel, rede: &Arc<Rede>, o: &
             let r = trocar_ajustes(painel, &campos).map(|()| "{\"ok\":true}".to_string());
             responder_json(&mut s, r)
         }
+        "/api/ultrax" => {
+            let numero = |nome: &str| campo(&campos, nome).and_then(|v| v.parse::<u32>().ok());
+            let sim = |nome: &str| campo(&campos, nome).map(|v| v == "1");
+            painel.ultrax.ajustar(numero("linhas"), numero("uso_cpu"), numero("memoria_mib"), sim("debug"));
+            if let Some(ligar) = sim("ligar") {
+                painel.ultrax.ligar(ligar);
+            }
+            painel.gravar_ajustes();
+            responder(&mut s, "204 No Content", "text/plain", b"")
+        }
         "/api/abrir-pasta" if app => match abrir_pasta(painel) {
             Ok(()) => responder(&mut s, "204 No Content", "text/plain", b""),
             Err(e) => responder_json(&mut s, Err(e)),
@@ -1554,7 +1620,7 @@ fn atender(mut s: TcpStream, porta: u16, painel: &Painel, rede: &Arc<Rede>, o: &
 // Estado em JSON
 // ---------------------------------------------------------------------------
 
-fn texto_json(s: &str) -> String {
+pub(crate) fn texto_json(s: &str) -> String {
     let mut j = String::with_capacity(s.len().saturating_add(2));
     j.push('"');
     for c in s.chars() {
@@ -1680,6 +1746,8 @@ fn estado_json(painel: &Painel, rede: &Rede, o: &Opcoes, pode_mandar: bool, port
         o.rede.uteis.useful_size_max,
         u64::from(trabalho_n) * u64::from(trabalho_n) * 4,
     );
+    // ULTRAX: o motor de trabalho útil, separado da mineração.
+    let _ = write!(j, "\"ultrax\":{},", painel.ultrax.json());
     // Segundo fator, envio e histórico da carteira.
     let (fator_ligado, exige_envio, trava) = painel
         .seguranca

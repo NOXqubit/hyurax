@@ -1182,6 +1182,7 @@ dependencies = [
  "hyurax-pow",
  "hyurax-store",
  "hyurax-tx",
+ "hyurax-ultrax",
  "tao",
  "wry",
 ]

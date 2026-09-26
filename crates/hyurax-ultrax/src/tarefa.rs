@@ -3,12 +3,14 @@
 //!
 //! ```text
 //! CREATED → QUEUED → ASSIGNED → EXECUTING → SUBMITTED → VERIFYING → VERIFIED → SETTLED
-//!    │         │        │   ↖        │                        └──→ REJECTED ──→ QUEUED
-//!    └─────────┴────────┴── CANCELLED / EXPIRED ◄──┘
+//!                                                            └──→ REJECTED ──→ QUEUED
 //! ```
 //!
-//! Só essas transições passam; qualquer outra é erro. Resultado recusado não
-//! trava a tarefa: ela volta para a fila (spec §18). Cada transição vira um
+//! Até o veredito, a tarefa pode ser cancelada ou expirar em qualquer passo
+//! (menos em CREATED, que só se cancela). Só essas transições passam; qualquer
+//! outra é erro. Resultado recusado não trava a tarefa: ela volta para a fila
+//! (spec §18). Cancelar durante a conferência deixa o resultado **sem
+//! julgamento**, o que não é o mesmo que recusado. Cada transição vira um
 //! evento com horário, para auditoria.
 
 use std::fmt;
@@ -83,8 +85,9 @@ impl Estado {
                 // o worker desistiu ou caiu: volta para a fila
                 | (Atribuida, Executando | NaFila | Cancelada | Expirada)
                 | (Executando, Enviada | NaFila | Cancelada | Expirada)
-                | (Enviada, Verificando)
-                | (Verificando, Verificada | Recusada)
+                | (Enviada, Verificando | Cancelada | Expirada)
+                // interromper a conferência não é recusar: o resultado fica sem julgamento
+                | (Verificando, Verificada | Recusada | Cancelada | Expirada)
                 | (Verificada, Liquidada)
                 // submissão inválida não trava a tarefa
                 | (Recusada, NaFila | Cancelada | Expirada)
@@ -138,6 +141,34 @@ pub enum Instancia {
     Compartilhada,
 }
 
+/// Método e forma de instância precisam combinar, senão a verificação não
+/// protege nada:
+///
+/// - instância **por worker** só com conferência própria (a do tipo) ou
+///   resultado esperado. Com redundância, cada worker teria uma instância
+///   diferente e não haveria o que comparar;
+/// - instância **compartilhada** só com redundância ou resultado esperado. Com
+///   a conferência do tipo, copiar o resultado de outro worker passaria.
+pub fn validar_combinacao(
+    esp: &Especificacao,
+    metodo: MetodoDeVerificacao,
+    instancia: Instancia,
+) -> Result<(), ErroDeTrabalho> {
+    use MetodoDeVerificacao::{Redundancia, ResultadoEsperado};
+    match (instancia, metodo) {
+        (_, ResultadoEsperado) => Ok(()),
+        (Instancia::Compartilhada, Redundancia) => Ok(()),
+        (Instancia::Compartilhada, _) => {
+            Err(ErroDeTrabalho::Combinacao("instância compartilhada exige redundância ou resultado esperado"))
+        }
+        (Instancia::PorWorker, Redundancia) => {
+            Err(ErroDeTrabalho::Combinacao("redundância exige a mesma instância para todos os workers"))
+        }
+        (Instancia::PorWorker, m) if m == esp.tipo().metodo() => Ok(()),
+        (Instancia::PorWorker, _) => Err(ErroDeTrabalho::Combinacao("o método não é o do tipo de trabalho")),
+    }
+}
+
 /// Uma tarefa.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Tarefa {
@@ -176,6 +207,7 @@ impl Tarefa {
         criada_ms: u64,
         prazo_ms: u64,
     ) -> Result<Self, ErroDeTrabalho> {
+        validar_combinacao(&especificacao, metodo, instancia)?;
         let mut w = Writer::new();
         w.raw(DOMINIO_TAREFA);
         especificacao.codificar(&mut w);
@@ -248,7 +280,11 @@ mod testes {
 
     fn tarefa(instancia: Instancia) -> Tarefa {
         let esp = Especificacao::nova(TipoDeTrabalho::Matriz, 8, 0).unwrap();
-        Tarefa::nova(esp, MetodoDeVerificacao::Freivalds, instancia, b"origem", 5, 1_000, 61_000).unwrap()
+        let metodo = match instancia {
+            Instancia::PorWorker => MetodoDeVerificacao::Freivalds,
+            Instancia::Compartilhada => MetodoDeVerificacao::Redundancia,
+        };
+        Tarefa::nova(esp, metodo, instancia, b"origem", 5, 1_000, 61_000).unwrap()
     }
 
     #[test]
@@ -310,6 +346,18 @@ mod testes {
         let c = tarefa(Instancia::Compartilhada);
         assert_eq!(c.semente_para(b"worker A"), c.semente_para(b"worker B"));
         assert_ne!(t.id, c.id, "a forma da instância faz parte do id");
+    }
+
+    #[test]
+    fn combinacoes_que_nao_protegem_sao_recusadas() {
+        let esp = Especificacao::nova(TipoDeTrabalho::Matriz, 8, 0).unwrap();
+        let nova = |m, i| Tarefa::nova(esp, m, i, b"o", 0, 0, 1);
+        assert!(nova(MetodoDeVerificacao::Freivalds, Instancia::PorWorker).is_ok());
+        assert!(nova(MetodoDeVerificacao::ResultadoEsperado, Instancia::Compartilhada).is_ok());
+        assert!(nova(MetodoDeVerificacao::Redundancia, Instancia::Compartilhada).is_ok());
+        assert!(nova(MetodoDeVerificacao::Freivalds, Instancia::Compartilhada).is_err(), "cópia passaria");
+        assert!(nova(MetodoDeVerificacao::Redundancia, Instancia::PorWorker).is_err());
+        assert!(nova(MetodoDeVerificacao::Recomputacao, Instancia::PorWorker).is_err(), "não é o método da matriz");
     }
 
     #[test]

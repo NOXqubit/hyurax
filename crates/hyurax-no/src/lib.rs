@@ -11,6 +11,8 @@
 //! hyurax-no painel           --arquivo carteira.txt [--painel-porta 8800]
 //! hyurax-no no               --rede testnet --pasta dados --porta P
 //! hyurax-no estado           --rede testnet --pasta dados [--endereco HEX]
+//! hyurax-no ultrax lab       --pasta dados [--tarefas N] [--linhas L] [--uso-cpu P]
+//! hyurax-no ultrax auditar   --pasta dados [--amostra N]
 //! ```
 //!
 //! Cada bloco minerado ou recebido passa pela validação completa, e a cadeia é
@@ -25,6 +27,7 @@ mod seguranca;
 pub mod sementes;
 mod senha;
 pub mod totp;
+mod ultrax;
 
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
@@ -77,6 +80,17 @@ hyurax-no — nó do Hyurax (rede de TESTE)
 
   hyurax-no estado --rede testnet --pasta dados [--endereco HEX]
       Mostra a altura da cadeia e, com --endereco, o saldo.
+
+  hyurax-no ultrax lab --pasta dados [--tarefas N] [--linhas L] [--uso-cpu P]
+                      [--memoria-mib M] [--debug]
+      ULTRAX, o motor de trabalho útil, no modo LAB: gera tarefas reais (matrizes,
+      mochila, difusão), executa, assina, confere e mostra cada uma. É carga de
+      teste gerada nesta máquina, não trabalho encomendado. Work Score não é HYX.
+      --tarefas 0 (padrão) roda até Ctrl+C.
+
+  hyurax-no ultrax auditar --pasta dados [--amostra N]
+      Confere o histórico do ULTRAX: refaz o TASK_ID e a assinatura de cada
+      registro, e refaz do zero N tarefas sorteadas (padrão 5).
 
 Dois aparelhos na mesma rede local, por exemplo:
   no PC:      hyurax-no no --porta 8790 --pasta dados
@@ -302,7 +316,12 @@ fn abrir_cadeia(o: &Opcoes) -> Result<Chain, String> {
 /// A identidade do nó na cifra da rede: `PASTA/no.chave`. Criada na primeira
 /// vez; depois, a mesma a cada execução. Apagar o arquivo dá identidade nova.
 fn identidade_do_no(o: &Opcoes) -> Result<Identidade, String> {
-    let arquivo = o.pasta.join("no.chave");
+    identidade_na_pasta(&o.pasta)
+}
+
+/// A identidade guardada em `pasta/no.chave`, criada se ainda não existir.
+fn identidade_na_pasta(pasta: &Path) -> Result<Identidade, String> {
+    let arquivo = pasta.join("no.chave");
     if arquivo.exists() {
         let texto = ler_arquivo(&arquivo)?;
         let segredo: [u8; 32] = texto
@@ -647,6 +666,7 @@ pub fn principal(args: &[String]) -> Result<(), String> {
         "painel" => painel::painel(resto),
         "no" => servir_no(resto),
         "estado" => estado(resto),
+        "ultrax" => ultrax::comando(resto),
         "ajuda" | "--ajuda" | "-h" => {
             print!("{AJUDA}");
             Ok(())

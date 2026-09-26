@@ -210,6 +210,8 @@ pub enum ErroDeTrabalho {
     Codec(CodecError),
     /// Quem pediu a execução mandou parar.
     Cancelado,
+    /// Método de verificação e forma de instância que não combinam.
+    Combinacao(&'static str),
 }
 
 impl fmt::Display for ErroDeTrabalho {
@@ -222,6 +224,7 @@ impl fmt::Display for ErroDeTrabalho {
             Self::TipoDesconhecido(c) => write!(f, "tipo de trabalho desconhecido: {c}"),
             Self::Codec(e) => write!(f, "{e}"),
             Self::Cancelado => write!(f, "execução cancelada"),
+            Self::Combinacao(motivo) => write!(f, "combinação inválida: {motivo}"),
         }
     }
 }
@@ -337,17 +340,21 @@ impl Especificacao {
         })
     }
 
-    /// Memória que a execução ocupa, em bytes, com folga pequena.
+    /// Memória no pico, em bytes: execução e verificação da mesma tarefa, com
+    /// o resultado guardado entre as duas. É o que o gerenciador de recursos
+    /// reserva antes de começar.
     pub fn memoria_bytes(&self) -> u64 {
         let t = u64::from(self.tamanho);
         let quadrado = t.saturating_mul(t);
         match self.tipo {
-            // A e B em u32, C em i64, e o XOF que gera A e B
-            TipoDeTrabalho::Matriz => quadrado.saturating_mul(4 + 4 + 8 + 8),
-            // tabela de escolhas, uma linha por item, e a linha da programação dinâmica
+            // resultado em bytes (8), e na verificação: C em u64 (8), A e B em
+            // u32 (8) e em u64 (16), e o XOF que gera A e B (8)
+            TipoDeTrabalho::Matriz => quadrado.saturating_mul(8 + 8 + 8 + 16 + 8),
+            // tabela de escolhas (1 byte por célula) e a linha da programação
+            // dinâmica, com folga para a verificação refazer a linha
             TipoDeTrabalho::Mochila => self.operacoes_maximas().saturating_mul(1 + 1),
-            // duas grades em i64
-            TipoDeTrabalho::Difusao => quadrado.saturating_mul(8 + 8),
+            // resultado (8) e, na recomputação, duas grades (16) e o resultado refeito (8)
+            TipoDeTrabalho::Difusao => quadrado.saturating_mul(8 + 16 + 8 + 16),
         }
     }
 }
@@ -357,7 +364,8 @@ impl Especificacao {
 pub struct Execucao {
     /// O resultado, nos mesmos bytes do gabarito.
     pub resultado: Vec<u8>,
-    /// Operações de fato feitas.
+    /// Operações pelo modelo de custo declarado do tipo. Na mochila, o modelo
+    /// conta `n · (C+1)` células, mesmo as que um item pesado pula.
     pub operacoes: u64,
 }
 
@@ -413,10 +421,27 @@ pub fn executar(
 
 /// Confere um resultado. `Err` traz o motivo, que é a evidência da recusa.
 pub fn verificar(esp: &Especificacao, semente: &[u8], resultado: &[u8]) -> Result<(), Recusa> {
+    verificar_controlado(esp, semente, resultado, &mut |_| true).unwrap_or_else(|e| Err(Recusa(e.to_string())))
+}
+
+/// Confere um resultado com o mesmo controle da execução: `continuar` recebe
+/// as operações feitas e pode interromper.
+///
+/// Os dois níveis de `Result` separam coisas que não podem se misturar:
+/// `Err(ErroDeTrabalho::Cancelado)` quer dizer que **ninguém julgou** o
+/// resultado (mandaram parar); `Ok(Err(recusa))` quer dizer que o resultado foi
+/// julgado e **está errado**. Tratar a interrupção como recusa puniria um
+/// worker honesto.
+pub fn verificar_controlado(
+    esp: &Especificacao,
+    semente: &[u8],
+    resultado: &[u8],
+    continuar: &mut dyn FnMut(u64) -> bool,
+) -> Result<Result<(), Recusa>, ErroDeTrabalho> {
     match esp.tipo {
-        TipoDeTrabalho::Matriz => verificar_matriz(esp.tamanho, semente, resultado),
-        TipoDeTrabalho::Mochila => verificar_mochila(esp.tamanho, semente, resultado),
-        TipoDeTrabalho::Difusao => verificar_difusao(esp.tamanho, esp.passos, semente, resultado),
+        TipoDeTrabalho::Matriz => verificar_matriz(esp.tamanho, semente, resultado, continuar),
+        TipoDeTrabalho::Mochila => verificar_mochila(esp.tamanho, semente, resultado, continuar),
+        TipoDeTrabalho::Difusao => verificar_difusao(esp.tamanho, esp.passos, semente, resultado, continuar),
     }
 }
 
@@ -457,7 +482,7 @@ fn executar_matriz(
     let por_linha = u64::from(n).saturating_mul(u64::from(n));
     let mut acumulado = vec![0u64; lado];
     let mut c = Vec::with_capacity(lado.saturating_mul(lado).saturating_mul(8));
-    for linha_a in a.chunks_exact(lado) {
+    for (k, linha_a) in a.chunks_exact(lado).enumerate() {
         acumulado.fill(0);
         for (&aik, linha_b) in linha_a.iter().zip(b.chunks_exact(lado)) {
             let aik = u64::from(aik);
@@ -468,7 +493,8 @@ fn executar_matriz(
         for &v in &acumulado {
             c.extend_from_slice(&i64::try_from(v).unwrap_or(i64::MAX).to_le_bytes());
         }
-        if !continuar(por_linha) {
+        // o último pedaço conta as operações, mas não cancela: o trabalho já acabou
+        if !continuar(por_linha) && k.saturating_add(1) < lado {
             return Err(ErroDeTrabalho::Cancelado);
         }
     }
@@ -483,10 +509,15 @@ fn aplicar(m: &[u64], r: &[u64], n: usize) -> Vec<u64> {
         .collect()
 }
 
-fn verificar_matriz(n: u32, semente: &[u8], resultado: &[u8]) -> Result<(), Recusa> {
+fn verificar_matriz(
+    n: u32,
+    semente: &[u8],
+    resultado: &[u8],
+    continuar: &mut dyn FnMut(u64) -> bool,
+) -> Result<Result<(), Recusa>, ErroDeTrabalho> {
     let lado = n as usize;
     if Some(resultado.len()) != lado.checked_mul(lado).and_then(|q| q.checked_mul(8)) {
-        return Err(Recusa("resultado com tamanho que não fecha n·n".into()));
+        return Ok(Err(Recusa("resultado com tamanho que não fecha n·n".into())));
     }
     // Faixa antes de qualquer conta (spec §18): sem ela, entradas perto de
     // 2^63 fariam a conferência estourar e dar a volta em silêncio.
@@ -497,10 +528,10 @@ fn verificar_matriz(n: u32, semente: &[u8], resultado: &[u8]) -> Result<(), Recu
         let v = i64::from_le_bytes(*bytes);
         match u64::try_from(v) {
             Ok(v) if v <= limite => c.push(v),
-            _ => return Err(Recusa("resultado fora da faixa possível de um produto honesto".into())),
+            _ => return Ok(Err(Recusa("resultado fora da faixa possível de um produto honesto".into()))),
         }
     }
-    let (a, b) = matrizes(n, semente).map_err(|e| Recusa(e.to_string()))?;
+    let (a, b) = matrizes(n, semente)?;
     let a: Vec<u64> = a.into_iter().map(u64::from).collect();
     let b: Vec<u64> = b.into_iter().map(u64::from).collect();
 
@@ -510,13 +541,18 @@ fn verificar_matriz(n: u32, semente: &[u8], resultado: &[u8]) -> Result<(), Recu
     entrada.extend_from_slice(&n.to_be_bytes());
     entrada.extend_from_slice(resultado);
     let valores = inteiros(&sha512(&entrada), RODADAS_FREIVALDS.saturating_mul(lado), 1 << BITS_FREIVALDS, DOMINIO_FREIVALDS);
+    let por_rodada = u64::from(n).saturating_mul(u64::from(n)).saturating_mul(3);
     for (rodada, r) in (1u32..).zip(valores.chunks_exact(lado)) {
         let r: Vec<u64> = r.iter().copied().map(u64::from).collect();
         if aplicar(&a, &aplicar(&b, &r, lado), lado) != aplicar(&c, &r, lado) {
-            return Err(Recusa(format!("o resultado não confere na rodada {rodada} de Freivalds")));
+            return Ok(Err(Recusa(format!("o resultado não confere na rodada {rodada} de Freivalds"))));
+        }
+        // depois da última rodada o julgamento está feito: parar agora não o desfaz
+        if !continuar(por_rodada) && (rodada as usize) < RODADAS_FREIVALDS {
+            return Err(ErroDeTrabalho::Cancelado);
         }
     }
-    Ok(())
+    Ok(Ok(()))
 }
 
 // ---------------------------------------------------------------------------
@@ -565,7 +601,8 @@ fn programacao_dinamica(
     let cap = inst.capacidade as usize;
     let mut melhor = vec![0u64; cap.saturating_add(1)];
     let mut escolhas = Vec::new();
-    for (&peso, &valor) in inst.pesos.iter().zip(&inst.valores) {
+    let itens = inst.pesos.len();
+    for (k, (&peso, &valor)) in inst.pesos.iter().zip(&inst.valores).enumerate() {
         let peso = peso as usize;
         let mut linha = if com_escolhas { vec![false; cap.saturating_add(1)] } else { Vec::new() };
         if peso <= cap {
@@ -584,7 +621,7 @@ fn programacao_dinamica(
             }
         }
         escolhas.push(linha);
-        if !continuar((cap as u64).saturating_add(1)) {
+        if !continuar((cap as u64).saturating_add(1)) && k.saturating_add(1) < itens {
             return Err(ErroDeTrabalho::Cancelado);
         }
     }
@@ -617,34 +654,38 @@ fn executar_mochila(
 
 /// Confere que o resultado é o **ótimo**, não só viável. Aceitar qualquer
 /// solução viável deixava 40 bytes de zeros passarem como trabalho.
-fn verificar_mochila(itens: u32, semente: &[u8], resultado: &[u8]) -> Result<(), Recusa> {
-    let (valor_bytes, mascara) = resultado
-        .split_first_chunk::<8>()
-        .filter(|(_, resto)| resto.len() == 32)
-        .ok_or_else(|| Recusa("resultado da mochila precisa de 40 bytes".into()))?;
+fn verificar_mochila(
+    itens: u32,
+    semente: &[u8],
+    resultado: &[u8],
+    continuar: &mut dyn FnMut(u64) -> bool,
+) -> Result<Result<(), Recusa>, ErroDeTrabalho> {
+    let Some((valor_bytes, mascara)) = resultado.split_first_chunk::<8>().filter(|(_, resto)| resto.len() == 32) else {
+        return Ok(Err(Recusa("resultado da mochila precisa de 40 bytes".into())));
+    };
     let declarado = u64::from_be_bytes(*valor_bytes);
     let tem = |i: usize| mascara.get(31usize.wrapping_sub(i / 8)).is_some_and(|b| b & (1 << (i % 8)) != 0);
     let n = itens as usize;
     if (n..256).any(tem) {
-        return Err(Recusa("máscara com item que não existe".into()));
+        return Ok(Err(Recusa("máscara com item que não existe".into())));
     }
-    let inst = instancia_mochila(itens, semente).map_err(|e| Recusa(e.to_string()))?;
+    let inst = instancia_mochila(itens, semente)?;
     let (mut peso, mut valor) = (0u64, 0u64);
     for i in (0..n).filter(|&i| tem(i)) {
         peso = peso.saturating_add(u64::from(inst.pesos.get(i).copied().unwrap_or(0)));
         valor = valor.saturating_add(u64::from(inst.valores.get(i).copied().unwrap_or(0)));
     }
     if peso > u64::from(inst.capacidade) {
-        return Err(Recusa(format!("a escolha pesa {peso} e a capacidade é {}", inst.capacidade)));
+        return Ok(Err(Recusa(format!("a escolha pesa {peso} e a capacidade é {}", inst.capacidade))));
     }
     if valor != declarado {
-        return Err(Recusa(format!("valor declarado {declarado} difere da soma da escolha {valor}")));
+        return Ok(Err(Recusa(format!("valor declarado {declarado} difere da soma da escolha {valor}"))));
     }
-    let (otimo, _) = programacao_dinamica(&inst, false, &mut |_| true).map_err(|e| Recusa(e.to_string()))?;
+    let (otimo, _) = programacao_dinamica(&inst, false, continuar)?;
     if declarado != otimo {
-        return Err(Recusa(format!("a escolha vale {declarado}, mas o ótimo é {otimo}")));
+        return Ok(Err(Recusa(format!("a escolha vale {declarado}, mas o ótimo é {otimo}"))));
     }
-    Ok(())
+    Ok(Ok(()))
 }
 
 // ---------------------------------------------------------------------------
@@ -672,7 +713,7 @@ fn executar_difusao(
     let mut nova = vec![0i64; celulas];
     let em = |grade: &[i64], i: usize, j: usize| grade.get(i.saturating_mul(g).saturating_add(j)).copied().unwrap_or(0);
     let ultima = g.saturating_sub(1);
-    for _ in 0..passos {
+    for passo in 0..passos {
         for i in 0..g {
             let acima = if i == ultima { 0 } else { i.saturating_add(1) };
             let abaixo = if i == 0 { ultima } else { i.saturating_sub(1) };
@@ -696,7 +737,7 @@ fn executar_difusao(
             }
         }
         std::mem::swap(&mut grade, &mut nova);
-        if !continuar(celulas as u64) {
+        if !continuar(celulas as u64) && passo.saturating_add(1) < passos {
             return Err(ErroDeTrabalho::Cancelado);
         }
     }
@@ -705,15 +746,23 @@ fn executar_difusao(
 }
 
 /// Sem prova curta: refaz e compara. O custo está declarado na tarefa.
-fn verificar_difusao(lado: u32, passos: u32, semente: &[u8], resultado: &[u8]) -> Result<(), Recusa> {
-    let refeito = executar_difusao(lado, passos, semente, &mut |_| true).map_err(|e| Recusa(e.to_string()))?;
-    if refeito.resultado.len() != resultado.len() {
-        return Err(Recusa("resultado com tamanho que não fecha a grade".into()));
+fn verificar_difusao(
+    lado: u32,
+    passos: u32,
+    semente: &[u8],
+    resultado: &[u8],
+    continuar: &mut dyn FnMut(u64) -> bool,
+) -> Result<Result<(), Recusa>, ErroDeTrabalho> {
+    let esperado = (lado as usize).saturating_mul(lado as usize).saturating_mul(8);
+    // o tamanho primeiro: resultado que nem fecha a grade não merece a recomputação
+    if resultado.len() != esperado {
+        return Ok(Err(Recusa("resultado com tamanho que não fecha a grade".into())));
     }
-    match refeito.resultado.as_chunks::<8>().0.iter().zip(resultado.as_chunks::<8>().0).position(|(a, b)| a != b) {
+    let refeito = executar_difusao(lado, passos, semente, continuar)?;
+    Ok(match refeito.resultado.as_chunks::<8>().0.iter().zip(resultado.as_chunks::<8>().0).position(|(a, b)| a != b) {
         None => Ok(()),
         Some(k) => Err(Recusa(format!("a célula {k} difere da recomputação"))),
-    }
+    })
 }
 
 #[cfg(test)]
@@ -815,6 +864,40 @@ mod testes {
         });
         assert_eq!(r, Err(ErroDeTrabalho::Cancelado));
         assert_eq!(feitas, 10 * 64 * 64);
+    }
+
+    #[test]
+    fn verificacao_interrompida_nao_e_recusa() {
+        for esp in [
+            Especificacao::nova(TipoDeTrabalho::Matriz, 16, 0).unwrap(),
+            Especificacao::nova(TipoDeTrabalho::Mochila, 40, 0).unwrap(),
+            Especificacao::nova(TipoDeTrabalho::Difusao, 12, 6).unwrap(),
+        ] {
+            let exec = rodar(&esp);
+            let mut chamadas = 0u64;
+            let r = verificar_controlado(&esp, SEMENTE, &exec.resultado, &mut |_| {
+                chamadas += 1;
+                false
+            });
+            assert_eq!(r, Err(ErroDeTrabalho::Cancelado), "{}", esp.resumo());
+            assert_eq!(chamadas, 1);
+            // sem interromper, o mesmo resultado passa
+            assert_eq!(verificar_controlado(&esp, SEMENTE, &exec.resultado, &mut |_| true), Ok(Ok(())));
+        }
+    }
+
+    #[test]
+    fn verificacao_da_matriz_conta_as_operacoes() {
+        let esp = Especificacao::nova(TipoDeTrabalho::Matriz, 20, 0).unwrap();
+        let exec = rodar(&esp);
+        let mut feitas = 0u64;
+        verificar_controlado(&esp, SEMENTE, &exec.resultado, &mut |ops| {
+            feitas += ops;
+            true
+        })
+        .unwrap()
+        .unwrap();
+        assert_eq!(feitas, operacoes_de_verificacao(&esp));
     }
 
     #[test]
