@@ -38,6 +38,7 @@ não é.
 | 20/09/2026 | Mempool que só aceita o que dá para minerar em sequência; saldo não derruba mais par honesto; versão alinhada com a etiqueta `v0.2.0-teste.1` |
 | 26/09/2026 | Semana 6, parte que não depende de servidor pago: lista de sementes publicada no repositório (`rede/sementes-testnet.txt`), que o nó busca sozinho; script para o PC do autor servir de semente; ensaio com três processos (bloco e transferência atravessando a rede); passo a passo em `docs/LANCAR-A-REDE.md` |
 | 26/09/2026 | Ticker HYUR vira HYX (só exibição); documento do HYX Index registrado em `docs/HYX-INDEX.md` |
+| 26/09/2026 | ULTRAX, etapas 0 e 1: arquitetura e plano de migração em `docs/ULTRAX.md`; crate `hyurax-ultrax` com matriz, mochila e difusão iguais ao gabarito byte a byte, ciclo de vida, registro de prova assinado, validador, reputação e Work Score |
 
 Próximo: **o primeiro nó respondendo de fora**. O PC do autor serve para começar (`scripts/no-sempre-ligado.ps1` + porta 8790 no roteador + teste pelo 4G do celular). Os passos 1, 2 e 3 de `docs/LANCAR-A-REDE.md` são do autor: renomear e publicar o repositório, criar a etiqueta, e deixar o nó ligado.
 

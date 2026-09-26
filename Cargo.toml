@@ -16,6 +16,7 @@ members = [
     "crates/hyurax-wire",
     "crates/hyurax-eter",
     "crates/hyurax-net",
+    "crates/hyurax-ultrax",
     "crates/hyurax-no",
 ]
 
@@ -64,6 +65,7 @@ hyurax-store = { path = "crates/hyurax-store" }
 hyurax-wire = { path = "crates/hyurax-wire" }
 hyurax-eter = { path = "crates/hyurax-eter" }
 hyurax-net = { path = "crates/hyurax-net" }
+hyurax-ultrax = { path = "crates/hyurax-ultrax" }
 
 # Vetores de teste. Rust puro.
 serde = { version = "1", features = ["derive"] }
