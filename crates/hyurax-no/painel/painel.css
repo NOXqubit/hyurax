@@ -1043,6 +1043,28 @@ input[type="number"] {
   .u-recursos div:nth-child(n + 3) { border-top: 1px solid var(--fio); }
 }
 
+/* ---------- IA ---------- */
+/* A molécula precisa de largura para ser lida: duas colunas, como o ULTRAX. */
+.bloco.ia { grid-column: span 2; grid-row: span 2; overflow-y: auto; }
+@media (max-width: 760px) { .bloco.ia { grid-column: span 1; grid-row: span 1; } }
+body.destacado .bloco.ia { grid-column: span 1; grid-row: span 1; }
+.ia-grade { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 1px; background: var(--fio); border-bottom: 1px solid var(--fio); }
+.ia-grade > * { background: var(--painel); margin: 0; }
+.ia-molecula { display: grid; grid-template-rows: auto auto; align-content: start; }
+.ia-molecula canvas { width: 100%; height: 230px; display: block; }
+.ia-molecula figcaption { padding: 8px 12px 10px; display: grid; gap: 2px; border-top: 1px dashed var(--fio); }
+.ia-molecula figcaption b { font: 600 15px/1.2 var(--display); font-stretch: condensed; letter-spacing: 0.02em; overflow-wrap: anywhere; }
+.ia-molecula figcaption span { color: var(--tinta-2); }
+.ia-numeros { padding: 12px; display: grid; gap: 6px; align-content: start; }
+.ia-numeros > small { font-size: 9.5px; letter-spacing: 0.2em; text-transform: uppercase; }
+.ia-sol { margin: 0 0 8px; }
+.ia-sol div { padding: 4px 0; }
+.ia-erro { margin: 0; color: var(--tinta-2); font-size: 11px; }
+.ia-erro b { font: 600 26px/1 var(--display); color: var(--tinta); margin-right: 4px; }
+.ia-curva { width: 100%; height: 86px; display: block; }
+.ia-nota { font-size: 11px; color: var(--tinta-3); }
+@media (max-width: 760px) { .ia-grade { grid-template-columns: 1fr; } }
+
 /* ---------- verificação e contribuição ---------- */
 .verificacao { overflow-y: auto; padding-bottom: 12px; }
 .v-grade { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--fio); border-bottom: 1px solid var(--fio); }

@@ -40,6 +40,10 @@
       "bytes": 1960,
       "sha512_16": "0d7d124ec8d41a20ce1e3ac253869f2f"
     },
+    "ia.json": {
+      "bytes": 7824,
+      "sha512_16": "57ef12f89c9c4d9f3634970ed23542bb"
+    },
     "state.json": {
       "bytes": 30480,
       "sha512_16": "b5f23581ea4f40981e100ded4a5a173e"

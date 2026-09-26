@@ -219,7 +219,7 @@ começa com a anterior verde.
 | 1 | Crate `hyurax-ultrax`: tipos de trabalho (matriz, mochila, difusão), especificação e `TASK_ID`, ciclo de vida, registro de prova, verificação, validador por maioria, reputação, Work Score v1 | Os três trabalhos batem byte a byte com `vectors/utrax.json`; transição inválida recusada; resultado adulterado recusado; divergência 2×1 detectada sem punir quem não tem evidência contra si |
 | 2 | Worker LAB no `hyurax-no`: gerador de tarefas, fila, execução com limite de CPU e memória, prazo e cancelamento, tarefas-desafio, histórico em disco, telemetria com modo DEBUG, auditoria. **Pronta em 26/09/2026** | O programa executa e verifica tarefas sozinho, respeitando os limites, e o histórico sobrevive a reiniciar |
 | 3 | Painel ULTRAX no lugar da estação 3D: trabalho ativo, histórico, verificação, contribuição, nó e o selo do modo. **Pronta em 26/09/2026** | Um usuário responde às 7 perguntas do critério de sucesso olhando a tela |
-| 4 | Trabalho de IA: rede pequena em ponto fixo sobre a AqSolDB, com a molécula desenhada na tela | Inferência verificada por recomputação; a curva de erro na tela sai do cálculo real |
+| 4 | Trabalho de IA: rede pequena em ponto fixo sobre a AqSolDB, com a molécula desenhada na tela. **Pronta em 26/09/2026** | Inferência verificada por recomputação; a curva de erro na tela sai do cálculo real |
 | 5 | TESTNET: mensagens de tarefa e resultado entre nós, redundância com workers independentes, reputação por `WORKER_ID` | Três nós separados executam a mesma tarefa, e um resultado adulterado é detectado pela maioria |
 | 6 | GPU (depois de medir se compensa), sandbox para trabalho externo, estrutura de JOB/cliente | Só com hardware para testar e com decisão sobre o equilíbrio CPU × GPU |
 
@@ -258,6 +258,27 @@ sozinho na tela. GPU aparece como "não usada" e temperatura como "não
 medida", porque o programa não mede nenhuma das duas. A mineração ganhou
 painel próprio, e o botão ULTRAX fica ao lado do MINERAR: são duas coisas
 diferentes, e podem rodar juntas.
+
+### O trabalho de IA (Etapa 4)
+
+- **A base:** 2.048 moléculas da AqSolDB (CC0), filtradas e preparadas por
+  `reference/tools/preparar_moleculas.py`, e embutidas no programa
+  (300 KB).
+- **O modelo:** rede de 10 descritores → 16 neurônios → 1 saída, em inteiros
+  Q12. A especificação é `reference/hyurax/ia.py`; o Rust
+  (`hyurax-ultrax/src/ia.rs`) bate byte a byte com `vectors/ia.json`.
+- **A tarefa:** um treino de `passos` passos com lotes de 32. A taxa de
+  aprendizado cai em três degraus (1/64, 1/128, 1/256). Com taxa fixa, o treino
+  longo não assentava: o erro de validação ia de 0,31 para 2,1. O resultado é
+  a conta dos pesos finais mais o erro de validação, e a conferência é por
+  recomputação.
+- **O que sai:** o melhor modelo desta máquina erra, em média, cerca de ±1,2
+  em log S nas 410 moléculas que ficaram fora do treino. Modelos simples
+  publicados sobre essa base ficam na mesma faixa. A tela mostra uma dessas
+  410 a cada 8 segundos, com a estrutura desenhada a partir do SMILES, a
+  solubilidade medida e a prevista.
+- **O que não é:** prever solubilidade é uma etapa de triagem na pesquisa de
+  remédios. Não é descoberta de remédio, e a tela diz isso.
 
 ### Limites conhecidos, para resolver antes da Etapa 5
 

@@ -7,6 +7,7 @@
 //!
 //! As peças, separadas de propósito:
 //!
+//! - [`ia`]: o treino de rede neural sobre moléculas reais (AqSolDB);
 //! - [`trabalho`]: os tipos de trabalho. Cada um sabe executar, verificar e
 //!   contar as operações que fez. Matriz, mochila e difusão são a tradução de
 //!   `reference/hyurax/utrax.py`, conferida contra `vectors/utrax.json`;
@@ -32,6 +33,7 @@ macro_rules! dominio {
     };
 }
 
+pub mod ia;
 pub mod pontuacao;
 pub mod prova;
 pub mod reputacao;

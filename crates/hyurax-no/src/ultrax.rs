@@ -46,6 +46,7 @@ use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 use hyurax_crypto::{HASH_LEN, PUBKEY_LEN, SECRET_LEN, ed25519_public_key, sha512};
+use hyurax_ultrax::ia;
 use hyurax_ultrax::pontuacao::WorkScore;
 use hyurax_ultrax::prova::{RegistroDeProva, chave_do_worker};
 use hyurax_ultrax::reputacao::Reputacao;
@@ -95,6 +96,8 @@ const SEMENTE_DOS_DESAFIOS: &[u8] = b"vetor utrax";
 
 /// Uma tarefa de resposta conhecida.
 struct Desafio {
+    /// A semente que o gabarito usou nos vetores.
+    semente: &'static [u8],
     tipo: TipoDeTrabalho,
     tamanho: u32,
     passos: u32,
@@ -102,31 +105,47 @@ struct Desafio {
     esperado: &'static str,
 }
 
-/// Os maiores casos de `vectors/utrax.json`. O teste
-/// `desafios_batem_com_os_vetores` confere cada hash contra o arquivo.
-const DESAFIOS: [Desafio; 3] = [
+/// Os maiores casos de `vectors/utrax.json` e de `vectors/ia.json`. O teste
+/// `desafios_batem_com_os_vetores` confere cada hash contra os arquivos.
+const DESAFIOS: [Desafio; 4] = [
     Desafio {
+        semente: SEMENTE_DOS_DESAFIOS,
         tipo: TipoDeTrabalho::Matriz,
         tamanho: 16,
         passos: 0,
         esperado: "99c04ebd0b60b1f45a25db543baf9a711adc368c04bd546cf0d90b920268e32fd3cd7d3d4baa1c72f5a37cca20658163e30bd70567b9b824d16dd7f3b416a721",
     },
     Desafio {
+        semente: SEMENTE_DOS_DESAFIOS,
         tipo: TipoDeTrabalho::Mochila,
         tamanho: 20,
         passos: 0,
         esperado: "fab8cbd7ae0f02316570aecec412b23647cc04d188c4764544a389d67ed2a8ef7b202787f5bb1eda76ed92d52ac3da17610b24b1b41b5762323c62c2804450b5",
     },
     Desafio {
+        semente: SEMENTE_DOS_DESAFIOS,
         tipo: TipoDeTrabalho::Difusao,
         tamanho: 16,
         passos: 10,
         esperado: "8bf5147ea7293fe06e363b45cd40d27d1d5076187ab4cdbea5e936e5feb028a54f491be69c8ecff844df73a6928a87e9bbd4a84729e75a7f4be4f9acbb4984c9",
     },
+    Desafio {
+        semente: b"vetor ia",
+        tipo: TipoDeTrabalho::Ia,
+        tamanho: 16,
+        passos: 25,
+        esperado: "96dc8131d4839cff07f6cd34112e7508988a1b0dc15abb15df328337ed8068795157860565ed786891884b2835f43a345b4ab073d91f6e1ad92c7665b7beddee",
+    },
 ];
 
-fn semente_dos_desafios() -> [u8; HASH_LEN] {
-    sha512(SEMENTE_DOS_DESAFIOS)
+/// O desafio do gabarito que tem exatamente esta especificação.
+fn desafio_de(esp: &Especificacao) -> Option<&'static Desafio> {
+    DESAFIOS.iter().find(|d| d.tipo == esp.tipo() && d.tamanho == esp.tamanho() && d.passos == esp.passos())
+}
+
+/// A semente de um desafio, a mesma do vetor do gabarito.
+fn semente_do_desafio(esp: &Especificacao) -> [u8; HASH_LEN] {
+    sha512(desafio_de(esp).map_or(SEMENTE_DOS_DESAFIOS, |d| d.semente))
 }
 
 fn agora_ms() -> u64 {
@@ -138,7 +157,86 @@ fn indice(tipo: TipoDeTrabalho) -> usize {
         TipoDeTrabalho::Matriz => 0,
         TipoDeTrabalho::Mochila => 1,
         TipoDeTrabalho::Difusao => 2,
+        TipoDeTrabalho::Ia => 3,
     }
+}
+
+/// O melhor modelo de IA treinado nesta máquina até agora, e o último treino.
+#[derive(Clone, Debug, Default)]
+struct Modelo {
+    /// Pesos e erro de validação (Q12) do melhor treino.
+    melhor: Option<(ia::Pesos, u64)>,
+    /// Tarefa que treinou o melhor.
+    tarefa: u32,
+    /// Treinos verificados.
+    treinos: u64,
+    /// Curva e erro do último treino.
+    ultima_curva: Vec<u64>,
+    ultimo_erro: Option<u64>,
+}
+
+impl Modelo {
+    fn texto(&self) -> String {
+        let mut t = String::from("# Melhor modelo de IA do ULTRAX (modo LAB): pesos e erro, codificados como no resultado da tarefa.\n");
+        if let Some((pesos, erro)) = &self.melhor {
+            let _ = writeln!(t, "melhor={}", hex(&ia::codificar(pesos, *erro)));
+        }
+        let _ = writeln!(t, "tarefa={}", self.tarefa);
+        let _ = writeln!(t, "treinos={}", self.treinos);
+        if let Some(e) = self.ultimo_erro {
+            let _ = writeln!(t, "ultimo_erro={e}");
+        }
+        let curva: Vec<String> = self.ultima_curva.iter().map(u64::to_string).collect();
+        let _ = writeln!(t, "ultima_curva={}", curva.join(","));
+        t
+    }
+
+    fn de_texto(texto: &str) -> Self {
+        let mut m = Self::default();
+        for linha in texto.lines() {
+            match linha.trim().split_once('=') {
+                Some(("melhor", v)) => {
+                    m.melhor = decodificar_hex(v.trim()).and_then(|b| ia::decodificar(&b));
+                }
+                Some(("tarefa", v)) => m.tarefa = v.trim().parse().unwrap_or(0),
+                Some(("treinos", v)) => m.treinos = v.trim().parse().unwrap_or(0),
+                Some(("ultimo_erro", v)) => m.ultimo_erro = v.trim().parse().ok(),
+                Some(("ultima_curva", v)) => {
+                    m.ultima_curva = v.split(',').filter_map(|x| x.trim().parse().ok()).collect();
+                }
+                _ => {}
+            }
+        }
+        m
+    }
+}
+
+fn decodificar_hex(texto: &str) -> Option<Vec<u8>> {
+    if !texto.len().is_multiple_of(2) {
+        return None;
+    }
+    (0..texto.len())
+        .step_by(2)
+        .map(|i| texto.get(i..i.saturating_add(2)).and_then(|par| u8::from_str_radix(par, 16).ok()))
+        .collect()
+}
+
+/// A curva em até `pontos` trechos, cada um com a média dos passos dele. O
+/// erro de um lote só é ruidoso; a média do trecho mostra a tendência de
+/// verdade, sem inventar ponto nenhum.
+fn resumir_curva(curva: &[u64], pontos: usize) -> Vec<u64> {
+    if curva.len() <= pontos || pontos == 0 {
+        return curva.to_vec();
+    }
+    (0..pontos)
+        .filter_map(|k| {
+            let inicio = k.saturating_mul(curva.len()) / pontos;
+            let fim = k.saturating_add(1).saturating_mul(curva.len()) / pontos;
+            let trecho = curva.get(inicio..fim.max(inicio.saturating_add(1)))?;
+            let soma = trecho.iter().fold(0u128, |s, &v| s.saturating_add(u128::from(v)));
+            u64::try_from(soma / trecho.len().max(1) as u128).ok()
+        })
+        .collect()
 }
 
 fn mib(bytes: u64) -> f64 {
@@ -201,7 +299,7 @@ pub struct Placar {
     /// Segundos com o ULTRAX ligado.
     pub segundos_ligado: u64,
     /// Tarefas verificadas por tipo: matriz, mochila, difusão.
-    pub por_tipo: [u64; 3],
+    pub por_tipo: [u64; 4],
     /// Tarefas geradas desde sempre: é o que decide a vez da tarefa-desafio.
     pub geradas: u64,
     /// Recusadas duas vezes: erro que se repete, e não parada de quem manda.
@@ -227,6 +325,7 @@ impl Placar {
             ("matriz", self.por_tipo[0]),
             ("mochila", self.por_tipo[1]),
             ("difusao", self.por_tipo[2]),
+            ("ia", self.por_tipo[3]),
             ("geradas", self.geradas),
             ("abandonadas", self.abandonadas),
             ("rep_enviadas", r.enviadas),
@@ -261,6 +360,7 @@ impl Placar {
                 "matriz" => &mut p.por_tipo[0],
                 "mochila" => &mut p.por_tipo[1],
                 "difusao" => &mut p.por_tipo[2],
+                "ia" => &mut p.por_tipo[3],
                 "geradas" => &mut p.geradas,
                 "abandonadas" => &mut p.abandonadas,
                 "rep_enviadas" => &mut p.reputacao.enviadas,
@@ -334,7 +434,9 @@ pub struct Ultrax {
     historico: Mutex<VecDeque<Lembranca>>,
     telemetria: Mutex<VecDeque<Marca>>,
     /// Operações por segundo de cálculo puro, por tipo (média que esquece devagar).
-    ritmo: Mutex<[f64; 3]>,
+    ritmo: Mutex<[f64; 4]>,
+    /// O melhor modelo de IA e o último treino, gravados em `modelo.txt`.
+    modelo: Mutex<Modelo>,
     aviso: Aviso,
 }
 
@@ -380,11 +482,15 @@ impl Ultrax {
             placar: Mutex::new(placar),
             historico: Mutex::new(VecDeque::new()),
             telemetria: Mutex::new(VecDeque::new()),
-            ritmo: Mutex::new([RITMO_INICIAL; 3]),
+            ritmo: Mutex::new([RITMO_INICIAL; 4]),
+            modelo: Mutex::new(Modelo::default()),
             aviso,
             pasta,
         });
         u.carregar_historico_recente();
+        if let (Ok(texto), Ok(mut m)) = (std::fs::read_to_string(u.pasta.join("modelo.txt")), u.modelo.lock()) {
+            *m = Modelo::de_texto(&texto);
+        }
         u
     }
 
@@ -517,7 +623,7 @@ impl Ultrax {
         hyurax_net::entropia::preencher(&mut origem)?;
         let e_desafio = k % DESAFIO_A_CADA == DESAFIO_A_CADA - 1;
         let (especificacao, metodo, instancia, prioridade, desafio) = if e_desafio {
-            let qual = usize::try_from((k / DESAFIO_A_CADA) % 3).unwrap_or(0);
+            let qual = usize::try_from((k / DESAFIO_A_CADA) % DESAFIOS.len() as u64).unwrap_or(0);
             let d = DESAFIOS.get(qual).ok_or("desafio inexistente")?;
             let esp = Especificacao::nova(d.tipo, d.tamanho, d.passos).map_err(|e| e.to_string())?;
             (esp, MetodoDeVerificacao::ResultadoEsperado, Instancia::Compartilhada, 200, Some(qual))
@@ -525,7 +631,7 @@ impl Ultrax {
             // os desafios não tiram a vez de ninguém: a rotação conta só as normais
             let normais = k.saturating_sub(k / DESAFIO_A_CADA);
             let tipo = TipoDeTrabalho::TODOS
-                .get(usize::try_from(normais % 3).unwrap_or(0))
+                .get(usize::try_from(normais % TipoDeTrabalho::TODOS.len() as u64).unwrap_or(0))
                 .copied()
                 .unwrap_or(TipoDeTrabalho::Matriz);
             let esp = self.dimensionar(tipo)?;
@@ -570,6 +676,19 @@ impl Ultrax {
         let cabe = |esp: &Especificacao| esp.memoria_bytes() <= orcamento;
         let erro = |e: ErroDeTrabalho| e.to_string();
         let esp = match tipo {
+            TipoDeTrabalho::Ia => {
+                // lote de 32; os passos enchem o tempo-alvo
+                let lote = 32u32;
+                let por_passo = f64::from(lote) * 368.0 + 193.0;
+                let mut passos = ((alvo / por_passo) as u32).clamp(16, ia::PASSOS_MAX);
+                loop {
+                    let esp = Especificacao::nova(tipo, lote, passos).map_err(erro)?;
+                    if cabe(&esp) || passos <= 16 {
+                        break esp;
+                    }
+                    passos = passos.saturating_mul(3) / 4;
+                }
+            }
             TipoDeTrabalho::Matriz => {
                 let mut n = (alvo.cbrt() as u32).clamp(32, trabalho::MATRIZ_LADO_MAX);
                 loop {
@@ -716,7 +835,7 @@ impl Ultrax {
         );
 
         let semente = match item.desafio {
-            Some(_) => semente_dos_desafios(),
+            Some(_) => semente_do_desafio(&esp),
             None => item.tarefa.semente_para(&self.worker),
         };
         let entrada = hash_da_entrada(&esp, &semente).ok();
@@ -870,6 +989,9 @@ impl Ultrax {
                 let pontos = WorkScore { operacoes_verificadas: exec.operacoes, operacoes_sem_credito: 0 }.texto();
                 let _ = item.tarefa.avancar(Estado::Liquidada, agora_ms(), format!("+{pontos} de Work Score"));
                 self.marcar(numero, "SETTLEMENT COMPLETED", format!("+{pontos} de Work Score · medida de contribuição, sem valor em HYX"));
+                if esp.tipo() == TipoDeTrabalho::Ia && item.desafio.is_none() {
+                    self.guardar_modelo(numero, &exec);
+                }
                 self.encerrar(&item, Some((&registro, assinatura)), ms_calculo, "");
             }
             Parecer::Recusado(recusa) => {
@@ -899,6 +1021,81 @@ impl Ultrax {
             // O worker LAB só julga por conferência; maioria e repetição não acontecem aqui.
             Parecer::Divergente | Parecer::Repetida => {}
         }
+    }
+
+    /// Um treino verificado: vira o último treino, e o melhor se errar menos.
+    fn guardar_modelo(&self, numero: u32, exec: &trabalho::Execucao) {
+        let Some((pesos, erro)) = ia::decodificar(&exec.resultado) else { return };
+        let texto = match self.modelo.lock() {
+            Ok(mut m) => {
+                m.treinos = m.treinos.saturating_add(1);
+                m.ultima_curva = resumir_curva(&exec.curva, 96);
+                m.ultimo_erro = Some(erro);
+                if m.melhor.as_ref().is_none_or(|(_, e)| erro < *e) {
+                    m.melhor = Some((pesos, erro));
+                    m.tarefa = numero;
+                    let base = ia::Base::embutida();
+                    self.marcar(
+                        numero,
+                        "MODEL IMPROVED",
+                        format!("novo melhor modelo: erro típico de {:.2} em log S", ia::rmse_em_logs(erro, base) as f64 / 1000.0),
+                    );
+                }
+                m.texto()
+            }
+            Err(_) => return,
+        };
+        let _vez = self.escrita.lock();
+        let arquivo = self.pasta.join("modelo.txt");
+        let temporario = arquivo.with_extension("tmp");
+        if std::fs::write(&temporario, texto).is_ok() {
+            let _ = std::fs::rename(&temporario, &arquivo);
+        }
+    }
+
+    /// O painel da IA: o melhor modelo, o último treino e uma molécula de
+    /// validação com a solubilidade medida e a prevista pelo melhor modelo.
+    /// A molécula muda a cada 8 segundos.
+    fn json_ia(&self) -> String {
+        let base = ia::Base::embutida();
+        let Ok(m) = self.modelo.lock() else { return "null".into() };
+        let (_, validacao) = base.divisao();
+        let vez = usize::try_from(agora_ms() / 8000).unwrap_or(0);
+        let amostra = validacao.get(vez % validacao.len().max(1)).and_then(|&k| base.moleculas.get(k));
+        let mut j = String::with_capacity(2048);
+        let _ = write!(
+            j,
+            "{{\"moleculas\":{},\"validacao\":{},\"treinos\":{},\"tarefa\":{},\"melhor_erro\":{},\"melhor_rmse_mili\":{},\
+             \"ultimo_rmse_mili\":{},\"ultima_curva\":[{}],\"desvio_mili\":{},\"descritores\":[{}],\"amostra\":",
+            base.moleculas.len(),
+            validacao.len(),
+            m.treinos,
+            m.tarefa,
+            m.melhor.as_ref().map_or("null".into(), |(_, e)| e.to_string()),
+            m.melhor.as_ref().map_or("null".into(), |(_, e)| ia::rmse_em_logs(*e, base).to_string()),
+            m.ultimo_erro.map_or("null".into(), |e| ia::rmse_em_logs(e, base).to_string()),
+            m.ultima_curva.iter().map(|&c| ia::rmse_em_logs(c, base).to_string()).collect::<Vec<_>>().join(","),
+            base.desvio_mili,
+            ia::DESCRITORES.iter().map(|d| texto_json(d)).collect::<Vec<_>>().join(","),
+        );
+        match amostra {
+            Some(mol) => {
+                let previsto = m.melhor.as_ref().map(|(p, _)| base.logs_de(ia::prever(p, &mol.x).0));
+                let _ = write!(
+                    j,
+                    "{{\"id\":{},\"nome\":{},\"formula\":{},\"smiles\":{},\"massa_mili\":{},\"medido_mili\":{},\"previsto_mili\":{}}}}}",
+                    texto_json(&mol.id),
+                    texto_json(&mol.nome),
+                    texto_json(&mol.formula),
+                    texto_json(&mol.smiles),
+                    mol.massa_mili,
+                    mol.logs_mili,
+                    previsto.map_or("null".into(), |v| v.to_string()),
+                );
+            }
+            None => j.push_str("null}"),
+        }
+        j
     }
 
     fn somar_tempo(&self, ms_calculo: u64, ms_verificacao: u64) {
@@ -1109,7 +1306,7 @@ impl Ultrax {
             "],\"placar\":{{\"liquidadas\":{},\"recusadas\":{},\"canceladas\":{},\"expiradas\":{},\
              \"desafios_certos\":{},\"desafios_errados\":{},\"work_score\":\"{}\",\"operacoes_verificadas\":{},\
              \"operacoes_sem_credito\":{},\"ms_calculo\":{},\"ms_verificacao\":{},\"segundos_ligado\":{},\
-             \"matriz\":{},\"mochila\":{},\"difusao\":{},\"enviadas\":{},\"verificadas\":{},\"divergentes\":{},\
+             \"matriz\":{},\"mochila\":{},\"difusao\":{},\"ia\":{},\"enviadas\":{},\"verificadas\":{},\"divergentes\":{},\
              \"disputadas\":{},\"nota\":{},\"taxa\":{},\"geradas\":{},\"abandonadas\":{}}},",
             p.liquidadas,
             p.recusadas,
@@ -1126,6 +1323,7 @@ impl Ultrax {
             p.por_tipo[0],
             p.por_tipo[1],
             p.por_tipo[2],
+            p.por_tipo[3],
             r.enviadas,
             r.verificadas,
             r.divergentes,
@@ -1135,6 +1333,7 @@ impl Ultrax {
             p.geradas,
             p.abandonadas,
         );
+        let _ = write!(j, "\"ia\":{},", self.json_ia());
         j.push_str("\"historico\":[");
         if let Ok(h) = self.historico.lock() {
             for (k, x) in h.iter().enumerate() {
@@ -1488,9 +1687,7 @@ fn conferir_linha(r: &Registro, t: Option<&Tarefa>, esperado: Option<[u8; PUBKEY
         a.problemas.push(format!("#{n:08}: o TASK_ID não confere com os campos (registro alterado)"));
     }
     // desafio só é desafio se for exatamente um dos casos do gabarito
-    let desafio = DESAFIOS.iter().find(|d| {
-        d.tipo == r.especificacao.tipo() && d.tamanho == r.especificacao.tamanho() && d.passos == r.especificacao.passos()
-    });
+    let desafio = desafio_de(&r.especificacao);
     if r.desafio {
         if desafio.is_none() || r.metodo != MetodoDeVerificacao::ResultadoEsperado || r.instancia != Instancia::Compartilhada {
             a.problemas.push(format!("#{n:08}: marcada como desafio, mas não é um desafio do gabarito"));
@@ -1522,7 +1719,7 @@ fn conferir_linha(r: &Registro, t: Option<&Tarefa>, esperado: Option<[u8; PUBKEY
         a.problemas.push(format!("#{n:08}: o veredito assinado não confere com o estado {}", r.estado.nome()));
     }
     // as operações são a base do Work Score: precisam ser as do modelo de custo
-    let semente = if r.desafio { semente_dos_desafios() } else { t.map_or([0; HASH_LEN], |t| t.semente_para(&prova.worker)) };
+    let semente = if r.desafio { semente_do_desafio(&r.especificacao) } else { t.map_or([0; HASH_LEN], |t| t.semente_para(&prova.worker)) };
     let devidas = operacoes_da_instancia(&r.especificacao, &semente);
     if r.operacoes != devidas {
         a.problemas.push(format!("#{n:08}: declara {} operações, e a tarefa tem {devidas}", r.operacoes));
@@ -1597,7 +1794,7 @@ pub fn auditar(dados: &Path, amostra: usize) -> Result<Auditoria, String> {
     for k in escolhidas {
         let Some((r, t)) = liquidadas.get(k) else { continue };
         let Some(worker) = r.worker else { continue };
-        let semente = if r.desafio { semente_dos_desafios() } else { t.semente_para(&worker) };
+        let semente = if r.desafio { semente_do_desafio(&r.especificacao) } else { t.semente_para(&worker) };
         a.refeitas = a.refeitas.saturating_add(1);
         match trabalho::executar(&r.especificacao, &semente, &mut |_| true) {
             Ok(exec) if Some(hash_do_resultado(&exec.resultado)) == r.resultado && exec.operacoes == r.operacoes => {
@@ -1735,7 +1932,7 @@ mod testes {
         let p = pasta(nome);
         let u = Ultrax::abrir(&p, &[9; 32], 2, partida, Box::new(|_, _| {}));
         // ritmo baixo: o gerador faz tarefas pequenas, que o modo debug roda rápido
-        *u.ritmo.lock().unwrap() = [1.0e5; 3];
+        *u.ritmo.lock().unwrap() = [1.0e5; 4];
         (u, p)
     }
 
@@ -1745,11 +1942,14 @@ mod testes {
 
     #[test]
     fn desafios_batem_com_os_vetores() {
-        let caminho: PathBuf = [env!("CARGO_MANIFEST_DIR"), "..", "..", "vectors", "utrax.json"].iter().collect();
-        let texto = std::fs::read_to_string(caminho).unwrap();
+        let ler = |nome: &str| {
+            let caminho: PathBuf = [env!("CARGO_MANIFEST_DIR"), "..", "..", "vectors", nome].iter().collect();
+            std::fs::read_to_string(caminho).unwrap()
+        };
+        let texto = ler("utrax.json") + &ler("ia.json");
         for d in &DESAFIOS {
             let esp = Especificacao::nova(d.tipo, d.tamanho, d.passos).unwrap();
-            let exec = trabalho::executar(&esp, &semente_dos_desafios(), &mut |_| true).unwrap();
+            let exec = trabalho::executar(&esp, &semente_do_desafio(&esp), &mut |_| true).unwrap();
             // o resultado calculado aqui está, em hexadecimal, dentro do arquivo do gabarito
             assert!(texto.contains(&hex(&exec.resultado)), "{} fora dos vetores", esp.resumo());
             assert_eq!(hex(&hash_do_resultado(&exec.resultado)), d.esperado, "{}", esp.resumo());
@@ -1878,7 +2078,7 @@ mod testes {
         let partida = Partida { memoria_mib: MEMORIA_MIN_MIB, linhas: 16, ..partida() };
         let u = Ultrax::abrir(&p, &[9; 32], 16, &partida, Box::new(|_, _| {}));
         // máquina rápida: os passos batem no máximo, e 2 MiB por linha não cabem a grade 256
-        *u.ritmo.lock().unwrap() = [1.0e10; 3];
+        *u.ritmo.lock().unwrap() = [1.0e10; 4];
         let esp = u.dimensionar(TipoDeTrabalho::Difusao).unwrap();
         assert!(esp.memoria_bytes() <= u64::from(MEMORIA_MIN_MIB) * 1024 * 1024 / 16, "{}", esp.resumo());
         let _ = std::fs::remove_dir_all(p);
@@ -1958,6 +2158,25 @@ mod testes {
             "{placar:?}"
         );
         assert_eq!(u.finais.load(Ordering::Relaxed), 1, "uma tarefa, um final");
+        let _ = std::fs::remove_dir_all(p);
+    }
+
+    #[test]
+    fn treino_de_ia_guarda_o_melhor_modelo() {
+        let (u, p) = worker("ia", &partida());
+        // a quarta tarefa normal é a de IA
+        u.sequencia.store(3, Ordering::Relaxed);
+        let item = u.gerar(agora_ms()).unwrap();
+        assert_eq!(item.tarefa.especificacao.tipo(), TipoDeTrabalho::Ia);
+        u.processar(0, item);
+        assert_eq!(u.placar().por_tipo[3], 1);
+        let json = u.json();
+        assert!(json.contains("\"treinos\":1"), "{json}");
+        assert!(json.contains("\"previsto_mili\":-") || json.contains("\"previsto_mili\":"), "{json}");
+        // e o modelo sobrevive a reabrir
+        let reaberto = Ultrax::abrir(&p, &[9; 32], 2, &partida(), Box::new(|_, _| {}));
+        assert!(reaberto.modelo.lock().unwrap().melhor.is_some());
+        assert!(auditar(&p, 1).unwrap().problemas.is_empty());
         let _ = std::fs::remove_dir_all(p);
     }
 

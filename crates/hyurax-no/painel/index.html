@@ -91,6 +91,30 @@
     </div>
   </section>
 
+  <!-- IA: a rede neural que o ULTRAX treina, e uma molécula de verdade. -->
+  <section class="bloco ia" id="painel-ia" data-painel="ia" aria-label="IA, solubilidade de moléculas">
+    <header class="rotulo"><span>IA · Moléculas</span><span class="rotulo-fim"><span class="selo-modo">AI WORK · LAB</span><span id="ia-treinos">—</span></span></header>
+    <div class="ia-grade">
+      <figure class="ia-molecula">
+        <canvas id="ia-desenho" role="img" aria-label="Estrutura da molécula"></canvas>
+        <figcaption><b id="ia-nome">—</b><span id="ia-formula" class="num">—</span></figcaption>
+      </figure>
+      <div class="ia-numeros">
+        <small>Solubilidade na água</small>
+        <dl class="pares ia-sol">
+          <div><dt>Medida no laboratório</dt><dd id="ia-medido" class="num">—</dd></div>
+          <div><dt>Prevista pela IA</dt><dd id="ia-previsto" class="num">—</dd></div>
+          <div><dt>Diferença</dt><dd id="ia-diferenca" class="num">—</dd></div>
+        </dl>
+        <small>Melhor modelo desta máquina</small>
+        <p class="ia-erro"><b id="ia-rmse" class="num">—</b> <span>erro típico, em log S, nas <span id="ia-validacao">410</span> moléculas que ele nunca viu no treino</span></p>
+        <canvas id="ia-curva" class="ia-curva" role="img" aria-label="Erro durante o último treino"></canvas>
+        <p class="v-regra">Curva do último treino: o erro caindo a cada passo.</p>
+      </div>
+    </div>
+    <p class="nota nota-painel ia-nota">A rede neural (10 descritores → 16 neurônios → 1) aprende a prever a solubilidade a partir de 2.048 moléculas da AqSolDB (domínio público). Prever solubilidade é uma etapa de triagem na pesquisa de remédios; isto não descobre remédio. Modo LAB: ninguém encomendou este treino.</p>
+  </section>
+
   <!-- Verificação, contribuição, reputação e o nó: as respostas do ULTRAX. -->
   <section class="bloco verificacao" id="painel-verificacao" data-painel="verificacao" aria-label="Verificação e contribuição">
     <header class="rotulo"><span>Verificação · Contribuição</span><span class="rotulo-fim"><span id="v-desde">—</span></span></header>

@@ -16,3 +16,6 @@
 
 # Vetores: o git não encosta. Nem para normalizar, nem para converter.
 vectors/** -text
+
+# A base de moléculas do ULTRAX entra no hash dos vetores de IA: também intocada.
+crates/hyurax-ultrax/dados/** -text

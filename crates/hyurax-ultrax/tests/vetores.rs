@@ -84,3 +84,33 @@ fn difusao_igual_ao_gabarito() {
         assert!(verificar(&esp, &semente, &esperado).is_ok());
     }
 }
+
+#[test]
+fn ia_igual_ao_gabarito() {
+    use hyurax_ultrax::ia::{self, Base};
+    let doc = carregar("ia.json");
+    assert_eq!(
+        hex::encode(hyurax_crypto::sha512(ia::BASE_TSV.as_bytes())),
+        doc["base_sha512"].as_str().unwrap(),
+        "a base embutida é a mesma que o gabarito leu"
+    );
+    let base = Base::embutida();
+    assert_eq!(base.moleculas.len() as u64, doc["moleculas"].as_u64().unwrap());
+    let semente = bytes(&doc["semente"]);
+    let iniciais = ia::pesos_iniciais(&semente);
+    assert_eq!(ia::codificar(&iniciais, 0), bytes(&doc["pesos_iniciais"]));
+    let (_, validacao) = base.divisao();
+    assert_eq!(ia::erro_de_validacao(&iniciais, base, &validacao), doc["erro_inicial"].as_u64().unwrap());
+    for caso in doc["treinos"].as_array().unwrap() {
+        let lote = numero(&caso["lote"]);
+        let passos = numero(&caso["passos"]);
+        let t = ia::treinar(&semente, lote, passos, base, &mut |_| true).unwrap();
+        assert_eq!(ia::codificar(&t.pesos, t.erro), bytes(&caso["resultado"]), "lote {lote}, {passos} passos");
+        let curva: Vec<u64> = caso["curva"].as_array().unwrap().iter().map(|v| v.as_u64().unwrap()).collect();
+        assert_eq!(t.curva, curva);
+        let esp = Especificacao::nova(TipoDeTrabalho::Ia, lote, passos).unwrap();
+        assert_eq!(esp.operacoes_fixas(), caso["operacoes"].as_u64());
+        // e pelo caminho do worker, com a mesma semente
+        assert_eq!(rodar(&esp, &semente), bytes(&caso["resultado"]));
+    }
+}

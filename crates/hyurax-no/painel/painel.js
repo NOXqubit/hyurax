@@ -1,6 +1,8 @@
 // Hyurax — lê o estado do nó a cada segundo e desenha o painel.
 // Tudo o que aparece aqui vem de /api/estado: nada é simulado.
 
+import { desenharMolecula, desenharCurva } from "./moleculas.js";
+
 const $ = (id) => document.getElementById(id);
 const fmt = new Intl.NumberFormat("pt-BR");
 const fmt1 = new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
@@ -1206,6 +1208,7 @@ trabalho.addEventListener("keydown", (ev) => {
 // painel sozinho numa janela à parte (endereço /?so=NOME).
 const NOMES_PAINEIS = {
   ultrax: "ULTRAX · trabalho ativo",
+  ia: "IA · moléculas",
   verificacao: "Verificação e contribuição",
   mineracao: "Mineração",
   historico: "Histórico de tarefas",
@@ -1218,7 +1221,7 @@ const NOMES_PAINEIS = {
   mercado: "Mercado",
   maquinas: "Minhas máquinas",
 };
-const PAINEIS_PADRAO = "ultrax,verificacao,carteira,mineracao,historico,telemetria,livro,fluxo,-rede,-ritmo,-mercado,-maquinas";
+const PAINEIS_PADRAO = "ultrax,ia,verificacao,carteira,mineracao,historico,telemetria,livro,fluxo,-rede,-ritmo,-mercado,-maquinas";
 const destacado = new URLSearchParams(location.search).get("so");
 let listaPaineis = PAINEIS_PADRAO;
 
@@ -1326,7 +1329,12 @@ $("paineis").addEventListener("keydown", (ev) => {
 // Tudo aqui sai de /api/estado → ultrax. O progresso é o que o worker contou,
 // em unidades reais do trabalho: nada anda sozinho na tela.
 const CICLO = ["CREATED", "QUEUED", "ASSIGNED", "EXECUTING", "SUBMITTED", "VERIFYING", "VERIFIED", "SETTLED"];
-const TIPOS = { matrix: "Multiplicação de matrizes", knapsack: "Otimização da mochila", diffusion: "Difusão de calor" };
+const TIPOS = {
+  matrix: "Multiplicação de matrizes",
+  knapsack: "Otimização da mochila",
+  diffusion: "Difusão de calor",
+  "ai-training": "Treino de rede neural",
+};
 const CELULAS_MAX = 64;
 let ultraxOcupado = false;
 
@@ -1386,8 +1394,10 @@ function fatias(a) {
     if (a.desafio) return [1, "comparação com a resposta do gabarito"];
     if (a.tipo === "matrix") return [4, "rodadas de Freivalds"];
     if (a.tipo === "knapsack") return [a.tamanho, "itens recalculados"];
+    if (a.tipo === "ai-training") return [a.passos, "passos de treino refeitos"];
     return [a.passos, "passos refeitos"];
   }
+  if (a.tipo === "ai-training") return [a.passos, "passos de treino"];
   if (a.tipo === "matrix") return [a.tamanho, "linhas de C calculadas"];
   if (a.tipo === "knapsack") return [a.tamanho, "itens da programação dinâmica"];
   return [a.passos, "passos da difusão"];
@@ -1490,9 +1500,67 @@ function desenharUltrax(e) {
   texto("u-r-gpu", u.gpu || "não usada");
 
   desenharVerificacao(e, u);
+  desenharIa(u.ia);
   desenharHistoricoUltrax(u);
   desenharTelemetria(u);
 }
+
+// ---------- IA ----------
+// A molécula é de verdade (base AqSolDB) e a previsão vem do melhor modelo
+// treinado nesta máquina. O desenho só é refeito quando a molécula muda.
+let moleculaDesenhada = "";
+let curvaDesenhada = "";
+function coresDoTema() {
+  const css = getComputedStyle(document.documentElement);
+  return {
+    tinta: css.getPropertyValue("--tinta").trim() || "#f3f3f1",
+    fraca: css.getPropertyValue("--tinta-3").trim() || "rgba(243,243,241,.38)",
+    fio: css.getPropertyValue("--fio-forte").trim() || "rgba(243,243,241,.28)",
+    fonte: getComputedStyle(document.body).fontFamily,
+  };
+}
+// log S (mol/L) e massa molar dão a solubilidade em g/L, que se lê melhor.
+function gramasPorLitro(logsMili, massaMili) {
+  const gl = Math.pow(10, logsMili / 1000) * (massaMili / 1000);
+  if (gl >= 100) return `${fmt.format(Math.round(gl))} g/L`;
+  if (gl >= 1) return `${fmt1.format(gl)} g/L`;
+  if (gl >= 0.001) return `${fmt1.format(gl * 1000)} mg/L`;
+  return `${fmt1.format(gl * 1e6)} µg/L`;
+}
+const logs = (mili) => `log S ${(mili / 1000).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+function desenharIa(ia) {
+  if (!ia || $("painel-ia").hidden) return;
+  texto("ia-treinos", ia.treinos ? `${fmt.format(ia.treinos)} treino${ia.treinos > 1 ? "s" : ""}` : "sem treino ainda");
+  texto("ia-validacao", fmt.format(ia.validacao || 0));
+  texto("ia-rmse", typeof ia.melhor_rmse_mili === "number" ? `± ${(ia.melhor_rmse_mili / 1000).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "—");
+  const a = ia.amostra;
+  if (a) {
+    texto("ia-nome", a.nome || a.id);
+    texto("ia-formula", `${a.formula} · ${fmt1.format(a.massa_mili / 1000)} g/mol · ${a.id}`);
+    texto("ia-medido", `${logs(a.medido_mili)} · ${gramasPorLitro(a.medido_mili, a.massa_mili)}`);
+    if (typeof a.previsto_mili === "number") {
+      texto("ia-previsto", `${logs(a.previsto_mili)} · ${gramasPorLitro(a.previsto_mili, a.massa_mili)}`);
+      const dif = (a.previsto_mili - a.medido_mili) / 1000;
+      texto("ia-diferenca", `${dif >= 0 ? "+" : "−"}${Math.abs(dif).toLocaleString("pt-BR", { maximumFractionDigits: 2, minimumFractionDigits: 2 })} em log S`);
+    } else {
+      texto("ia-previsto", "ainda não há modelo treinado");
+      texto("ia-diferenca", "—");
+    }
+    if (a.smiles !== moleculaDesenhada) {
+      moleculaDesenhada = a.smiles;
+      $("ia-desenho").setAttribute("aria-label", `Estrutura de ${a.nome}: ${a.smiles}`);
+      desenharMolecula($("ia-desenho"), a.smiles, coresDoTema());
+    }
+  }
+  const curva = Array.isArray(ia.ultima_curva) ? ia.ultima_curva : [];
+  const chave = curva.join(",");
+  if (chave !== curvaDesenhada) {
+    curvaDesenhada = chave;
+    desenharCurva($("ia-curva"), curva, coresDoTema());
+  }
+}
+addEventListener("resize", () => { moleculaDesenhada = ""; curvaDesenhada = ""; });
 
 function desenharVerificacao(e, u) {
   const p = u.placar || {};

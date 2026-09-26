@@ -15,6 +15,8 @@ use hyurax_codec::{CodecError, Reader, Writer};
 use hyurax_crypto::{HASH_LEN, sha512, xof};
 use hyurax_usefulpow::generate_matrices;
 
+use crate::ia;
+
 /// Domínio do desafio de Freivalds do mercado (`utrax.DOMAIN_FREIVALDS`).
 pub const DOMINIO_FREIVALDS: &[u8] = dominio!("FREIVALDS-v1");
 /// Domínio da instância: o mesmo gerador do trabalho útil do consenso.
@@ -133,11 +135,14 @@ pub enum TipoDeTrabalho {
     Mochila,
     /// Difusão de calor numa grade, em ponto fixo.
     Difusao,
+    /// Treino de uma rede neural que prevê a solubilidade de moléculas reais.
+    /// `tamanho` é o lote; `passos`, os passos de descida do gradiente.
+    Ia,
 }
 
 impl TipoDeTrabalho {
     /// Todos, na ordem do código.
-    pub const TODOS: [Self; 3] = [Self::Matriz, Self::Mochila, Self::Difusao];
+    pub const TODOS: [Self; 4] = [Self::Matriz, Self::Mochila, Self::Difusao, Self::Ia];
 
     /// Código na codificação canônica.
     pub fn codigo(self) -> u8 {
@@ -145,6 +150,7 @@ impl TipoDeTrabalho {
             Self::Matriz => 1,
             Self::Mochila => 2,
             Self::Difusao => 3,
+            Self::Ia => 4,
         }
     }
 
@@ -159,6 +165,7 @@ impl TipoDeTrabalho {
             Self::Matriz => "matrix",
             Self::Mochila => "knapsack",
             Self::Difusao => "diffusion",
+            Self::Ia => "ai-training",
         }
     }
 
@@ -168,6 +175,7 @@ impl TipoDeTrabalho {
             Self::Matriz => "multiplicação de matrizes",
             Self::Mochila => "otimização da mochila",
             Self::Difusao => "simulação de difusão de calor",
+            Self::Ia => "treino de rede neural (solubilidade de moléculas)",
         }
     }
 
@@ -176,6 +184,7 @@ impl TipoDeTrabalho {
         match self {
             Self::Matriz | Self::Difusao => Categoria::Matematico,
             Self::Mochila => Categoria::Otimizacao,
+            Self::Ia => Categoria::Ia,
         }
     }
 
@@ -183,7 +192,7 @@ impl TipoDeTrabalho {
     pub fn metodo(self) -> MetodoDeVerificacao {
         match self {
             Self::Matriz => MetodoDeVerificacao::Freivalds,
-            Self::Mochila | Self::Difusao => MetodoDeVerificacao::Recomputacao,
+            Self::Mochila | Self::Difusao | Self::Ia => MetodoDeVerificacao::Recomputacao,
         }
     }
 }
@@ -262,12 +271,14 @@ impl Especificacao {
             TipoDeTrabalho::Matriz => (1, MATRIZ_LADO_MAX),
             TipoDeTrabalho::Mochila => (1, MOCHILA_ITENS_MAX),
             TipoDeTrabalho::Difusao => (2, DIFUSAO_GRADE_MAX),
+            TipoDeTrabalho::Ia => (1, ia::LOTE_MAX),
         };
         if !(minimo..=maximo).contains(&tamanho) {
             return Err(ErroDeTrabalho::Tamanho { tipo, valor: tamanho, minimo, maximo });
         }
         let passos_ok = match tipo {
             TipoDeTrabalho::Difusao => (1..=DIFUSAO_PASSOS_MAX).contains(&passos),
+            TipoDeTrabalho::Ia => (1..=ia::PASSOS_MAX).contains(&passos),
             TipoDeTrabalho::Matriz | TipoDeTrabalho::Mochila => passos == 0,
         };
         if !passos_ok {
@@ -313,6 +324,7 @@ impl Especificacao {
             TipoDeTrabalho::Matriz => format!("{0} × {0}", self.tamanho),
             TipoDeTrabalho::Mochila => format!("{} itens", self.tamanho),
             TipoDeTrabalho::Difusao => format!("grade {0} × {0}, {1} passos", self.tamanho, self.passos),
+            TipoDeTrabalho::Ia => format!("lote de {}, {} passos", self.tamanho, self.passos),
         }
     }
 
@@ -321,10 +333,15 @@ impl Especificacao {
     /// vale o que [`executar`] devolve.
     ///
     /// - matriz: `n³` multiplicações com soma;
-    /// - difusão: `g² · passos` atualizações de célula.
+    /// - difusão: `g² · passos` atualizações de célula;
+    /// - IA: o modelo de [`ia::operacoes`].
     pub fn operacoes_fixas(&self) -> Option<u64> {
         let t = u64::from(self.tamanho);
         match self.tipo {
+            TipoDeTrabalho::Ia => {
+                let (_, validacao) = ia::Base::embutida().divisao();
+                Some(ia::operacoes(self.tamanho, self.passos, validacao.len()))
+            }
             TipoDeTrabalho::Matriz => Some(t.saturating_mul(t).saturating_mul(t)),
             TipoDeTrabalho::Difusao => Some(t.saturating_mul(t).saturating_mul(u64::from(self.passos))),
             TipoDeTrabalho::Mochila => None,
@@ -355,6 +372,11 @@ impl Especificacao {
             TipoDeTrabalho::Mochila => self.operacoes_maximas().saturating_mul(1 + 1),
             // resultado (8) e, na recomputação, duas grades (16) e o resultado refeito (8)
             TipoDeTrabalho::Difusao => quadrado.saturating_mul(8 + 16 + 8 + 16),
+            // o sorteio dos lotes (4 bytes por amostra) duas vezes, e folga para os pesos
+            TipoDeTrabalho::Ia => u64::from(self.tamanho)
+                .saturating_mul(u64::from(self.passos))
+                .saturating_mul(8)
+                .saturating_add(64 * 1024),
         }
     }
 }
@@ -367,6 +389,8 @@ pub struct Execucao {
     /// Operações pelo modelo de custo declarado do tipo. Na mochila, o modelo
     /// conta `n · (C+1)` células, mesmo as que um item pesado pula.
     pub operacoes: u64,
+    /// Na IA, o erro médio de cada passo do treino (Q12); vazio nos outros tipos.
+    pub curva: Vec<u64>,
 }
 
 /// `INPUT_HASH`: identifica a entrada da tarefa.
@@ -416,6 +440,7 @@ pub fn executar(
         TipoDeTrabalho::Matriz => executar_matriz(esp.tamanho, semente, continuar),
         TipoDeTrabalho::Mochila => executar_mochila(esp.tamanho, semente, continuar),
         TipoDeTrabalho::Difusao => executar_difusao(esp.tamanho, esp.passos, semente, continuar),
+        TipoDeTrabalho::Ia => executar_ia(esp, semente, continuar),
     }
 }
 
@@ -442,6 +467,16 @@ pub fn verificar_controlado(
         TipoDeTrabalho::Matriz => verificar_matriz(esp.tamanho, semente, resultado, continuar),
         TipoDeTrabalho::Mochila => verificar_mochila(esp.tamanho, semente, resultado, continuar),
         TipoDeTrabalho::Difusao => verificar_difusao(esp.tamanho, esp.passos, semente, resultado, continuar),
+        TipoDeTrabalho::Ia => {
+            let refeito = executar_ia(esp, semente, continuar)?;
+            Ok(if refeito.resultado == resultado {
+                Ok(())
+            } else if resultado.len() != refeito.resultado.len() {
+                Err(Recusa("resultado com tamanho que não fecha os pesos da rede".into()))
+            } else {
+                Err(Recusa("os pesos treinados diferem da recomputação".into()))
+            })
+        }
     }
 }
 
@@ -453,8 +488,21 @@ pub fn operacoes_de_verificacao(esp: &Especificacao) -> u64 {
             // três produtos matriz-vetor por rodada
             t.saturating_mul(t).saturating_mul(3).saturating_mul(RODADAS_FREIVALDS as u64)
         }
-        TipoDeTrabalho::Mochila | TipoDeTrabalho::Difusao => esp.operacoes_maximas(),
+        TipoDeTrabalho::Mochila | TipoDeTrabalho::Difusao | TipoDeTrabalho::Ia => esp.operacoes_maximas(),
     }
+}
+
+// ---------------------------------------------------------------------------
+// IA
+// ---------------------------------------------------------------------------
+
+fn executar_ia(esp: &Especificacao, semente: &[u8], continuar: &mut dyn FnMut(u64) -> bool) -> Result<Execucao, ErroDeTrabalho> {
+    let treino = ia::treinar(semente, esp.tamanho, esp.passos, ia::Base::embutida(), continuar).ok_or(ErroDeTrabalho::Cancelado)?;
+    Ok(Execucao {
+        resultado: ia::codificar(&treino.pesos, treino.erro),
+        operacoes: esp.operacoes_fixas().unwrap_or(0),
+        curva: treino.curva,
+    })
 }
 
 // ---------------------------------------------------------------------------
@@ -498,7 +546,7 @@ fn executar_matriz(
             return Err(ErroDeTrabalho::Cancelado);
         }
     }
-    Ok(Execucao { resultado: c, operacoes: por_linha.saturating_mul(u64::from(n)) })
+    Ok(Execucao { resultado: c, operacoes: por_linha.saturating_mul(u64::from(n)), curva: Vec::new() })
 }
 
 /// `M · r`, com `M` linha a linha. Com as faixas conferidas antes, cada soma
@@ -649,7 +697,7 @@ fn executar_mochila(
     let mut resultado = otimo.to_be_bytes().to_vec();
     resultado.extend_from_slice(&mascara);
     let operacoes = u64::from(itens).saturating_mul(u64::from(inst.capacidade).saturating_add(1));
-    Ok(Execucao { resultado, operacoes })
+    Ok(Execucao { resultado, operacoes, curva: Vec::new() })
 }
 
 /// Confere que o resultado é o **ótimo**, não só viável. Aceitar qualquer
@@ -742,7 +790,7 @@ fn executar_difusao(
         }
     }
     let resultado = grade.iter().flat_map(|v| v.to_le_bytes()).collect();
-    Ok(Execucao { resultado, operacoes: (celulas as u64).saturating_mul(u64::from(passos)) })
+    Ok(Execucao { resultado, operacoes: (celulas as u64).saturating_mul(u64::from(passos)), curva: Vec::new() })
 }
 
 /// Sem prova curta: refaz e compara. O custo está declarado na tarefa.
@@ -841,6 +889,20 @@ mod testes {
         let mut fantasma = exec.resultado.clone();
         fantasma[8] |= 0x80;
         assert!(verificar(&esp, SEMENTE, &fantasma).unwrap_err().0.contains("não existe"));
+    }
+
+    #[test]
+    fn ia_treina_e_confere() {
+        let esp = Especificacao::nova(TipoDeTrabalho::Ia, 8, 6).unwrap();
+        let exec = rodar(&esp);
+        assert_eq!(exec.curva.len(), 6);
+        assert_eq!(Some(exec.operacoes), esp.operacoes_fixas());
+        assert_eq!(verificar(&esp, SEMENTE, &exec.resultado), Ok(()));
+        let mut errado = exec.resultado.clone();
+        errado[3] ^= 1;
+        assert!(verificar(&esp, SEMENTE, &errado).unwrap_err().0.contains("pesos"));
+        assert!(Especificacao::nova(TipoDeTrabalho::Ia, 257, 1).is_err());
+        assert!(Especificacao::nova(TipoDeTrabalho::Ia, 8, 0).is_err());
     }
 
     #[test]

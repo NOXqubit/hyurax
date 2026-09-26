@@ -26,7 +26,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 OUT_DIR = ROOT.parent / "vectors"
 
-from hyurax import argon2, codec, consensus, crypto, identidade, usefulpow, utrax  # noqa: E402
+from hyurax import argon2, codec, consensus, crypto, ia, identidade, usefulpow, utrax  # noqa: E402
 from hyurax.block import BlockHeader  # noqa: E402
 from hyurax.chain import Chain, make_genesis  # noqa: E402
 from hyurax.consensus import MAINNET, REGTEST, TESTNET  # noqa: E402
@@ -848,6 +848,31 @@ def vec_utrax() -> dict:
     return {"matrix": matrix, "knapsack": knapsack, "diffusion": diffusion}
 
 
+def vec_ia() -> dict:
+    """Treino de rede neural do ULTRAX: pesos iniciais, curva, pesos finais e
+    erro, para lotes e passos pequenos. O hash da base trava as moléculas: se o
+    arquivo mudar, o vetor acusa."""
+    semente = crypto.H(b"vetor ia")
+    base = ia.carregar()
+    casos = []
+    for lote, passos in ((4, 3), (8, 10), (16, 25)):
+        pesos, erro, curva = ia.treinar(semente, lote, passos, base)
+        casos.append({
+            "lote": lote, "passos": passos,
+            "resultado": h(ia.codificar(pesos, erro)), "erro": erro, "curva": curva,
+            "operacoes": ia.operacoes(lote, passos, len(ia.treino_e_validacao(base)[1])),
+        })
+    iniciais = ia.pesos_iniciais(semente)
+    return {
+        "semente": h(semente),
+        "base_sha512": crypto.H(ia.ARQUIVO.read_bytes()).hex(),
+        "moleculas": len(base),
+        "pesos_iniciais": h(ia.codificar(iniciais, 0)),
+        "erro_inicial": ia.erro_de_validacao(iniciais, ia.treino_e_validacao(base)[1]),
+        "treinos": casos,
+    }
+
+
 def vec_usefulpow() -> dict:
     """Trabalho util no consenso: regra do tamanho, semente, prova e recusas."""
     tamanhos = []
@@ -1156,6 +1181,7 @@ FILES = {
     "chain.json": vec_chain,
     "utrax.json": vec_utrax,
     "usefulpow.json": vec_usefulpow,
+    "ia.json": vec_ia,
 }
 
 

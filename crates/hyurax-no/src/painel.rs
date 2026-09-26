@@ -44,6 +44,7 @@ use crate::{Opcoes, carteira, envio, hex, hyx, maquinas, salvar, subir_rede, tot
 const INDEX: &str = include_str!("../painel/index.html");
 const CSS: &str = include_str!("../painel/painel.css");
 const JS: &str = include_str!("../painel/painel.js");
+const MOLECULAS: &str = include_str!("../painel/moleculas.js");
 /// Gerador de QR Code, o mesmo do site: serve para abrir o painel no celular.
 const QRCODE: &str = include_str!("../../../site/vendor/qrcode.min.js");
 
@@ -62,9 +63,10 @@ const PORTA_P2P: u16 = 8790;
 /// São estimativas honestas, e o usuário ajusta as duas nos Ajustes.
 /// Painéis que existem, na ordem de fábrica. Um "-" na frente quer dizer fechado.
 const PAINEIS_PADRAO: &str =
-    "ultrax,verificacao,carteira,mineracao,historico,telemetria,livro,fluxo,-rede,-ritmo,-mercado,-maquinas";
-const PAINEIS_CONHECIDOS: [&str; 12] = [
+    "ultrax,ia,verificacao,carteira,mineracao,historico,telemetria,livro,fluxo,-rede,-ritmo,-mercado,-maquinas";
+const PAINEIS_CONHECIDOS: [&str; 13] = [
     "ultrax",
+    "ia",
     "verificacao",
     "carteira",
     "mineracao",
@@ -422,8 +424,8 @@ fn migrar_paineis(lista: &str) -> String {
         .map(str::trim)
         .filter(|s| !s.is_empty())
         .map(|item| match item {
-            "estacao" => "ultrax,verificacao,mineracao,historico,telemetria".to_string(),
-            "-estacao" => "-ultrax,-verificacao,mineracao,-historico,-telemetria".to_string(),
+            "estacao" => "ultrax,ia,verificacao,mineracao,historico,telemetria".to_string(),
+            "-estacao" => "-ultrax,-ia,-verificacao,mineracao,-historico,-telemetria".to_string(),
             outro => outro.to_string(),
         })
         .collect::<Vec<_>>()
@@ -1459,6 +1461,7 @@ fn atender(mut s: TcpStream, porta: u16, painel: &Painel, rede: &Arc<Rede>, o: &
             "/" => responder(&mut s, "200 OK", "text/html; charset=utf-8", INDEX.as_bytes()),
             "/painel.css" => responder(&mut s, "200 OK", "text/css; charset=utf-8", CSS.as_bytes()),
             "/painel.js" => responder(&mut s, "200 OK", "text/javascript; charset=utf-8", JS.as_bytes()),
+            "/moleculas.js" => responder(&mut s, "200 OK", "text/javascript; charset=utf-8", MOLECULAS.as_bytes()),
             "/qrcode.min.js" => responder(&mut s, "200 OK", "text/javascript; charset=utf-8", QRCODE.as_bytes()),
             "/api/estado" => {
                 let json = estado_json(painel, rede, o, local && host_local, porta);
@@ -1851,13 +1854,13 @@ mod testes {
     fn lista_salva_com_a_estacao_ganha_o_ultrax_no_lugar() {
         let velha = "carteira,estacao,rede,livro,ritmo,fluxo,-mercado,-maquinas";
         let migrada = migrar_paineis(velha);
-        assert!(migrada.starts_with("carteira,ultrax,verificacao,mineracao,historico,telemetria,rede"), "{migrada}");
+        assert!(migrada.starts_with("carteira,ultrax,ia,verificacao,mineracao,historico,telemetria,rede"), "{migrada}");
         assert!(paineis_validos(&migrada), "{migrada}");
         let completa = completar_paineis(&migrada);
         assert_eq!(completa.split(',').count(), PAINEIS_CONHECIDOS.len(), "{completa}");
         // estação fechada: o ULTRAX nasce fechado, mas a mineração, que estava dentro dela, fica à vista
         let fechada = migrar_paineis("-estacao,carteira");
-        assert!(fechada.starts_with("-ultrax,-verificacao,mineracao,"), "{fechada}");
+        assert!(fechada.starts_with("-ultrax,-ia,-verificacao,mineracao,"), "{fechada}");
         assert!(paineis_validos(&fechada));
         // sem estação, nada muda
         assert_eq!(migrar_paineis("carteira,-rede"), "carteira,-rede");
