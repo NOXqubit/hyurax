@@ -9,17 +9,37 @@
 <!-- Preto desde o primeiro quadro: sem isso a janela pisca branca enquanto o
      motor do navegador carrega a folha de estilo. -->
 <style>html, body { background: #030303; color: #f3f3f1; }</style>
+<link rel="preload" href="/fontes/archivo.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="/painel.css">
 <script src="/qrcode.min.js" defer></script>
 <script type="module" src="/painel.js"></script>
 </head>
 <body>
-<header class="barra">
+<!-- A casca do programa: navegação à esquerda, e a seção aberta à direita. -->
+<aside class="lateral" aria-label="Navegação">
   <div class="marca">
     <svg viewBox="0 0 64 64" aria-hidden="true"><g stroke="currentColor" stroke-width="3.6" stroke-linecap="round" opacity=".55"><line x1="18" y1="14" x2="18" y2="50"/><line x1="46" y1="14" x2="46" y2="50"/><line x1="18" y1="32" x2="46" y2="32"/></g><g fill="currentColor"><circle cx="18" cy="14" r="5"/><circle cx="18" cy="50" r="5"/><circle cx="46" cy="14" r="5"/><circle cx="46" cy="50" r="5"/><circle cx="18" cy="32" r="5.6"/><circle cx="46" cy="32" r="5.6"/></g></svg>
     <span class="palavra">HYURAX</span>
     <span class="sub" id="marca-rede">rede de teste</span>
   </div>
+  <nav class="vistas" aria-label="Seções">
+    <button type="button" class="vista" data-vista="inicio" aria-current="page"><span class="vista-icone" aria-hidden="true">◎</span><span class="vista-nome">Visão geral</span></button>
+    <button type="button" class="vista" data-vista="ultrax"><span class="vista-icone" aria-hidden="true">◆</span><span class="vista-nome">ULTRAX</span><span class="vista-estado" id="n-ultrax"></span></button>
+    <button type="button" class="vista" data-vista="ia"><span class="vista-icone" aria-hidden="true">⬡</span><span class="vista-nome">IA · Moléculas</span><span class="vista-estado" id="n-ia"></span></button>
+    <button type="button" class="vista" data-vista="mineracao"><span class="vista-icone" aria-hidden="true">▣</span><span class="vista-nome">Mineração</span><span class="vista-estado" id="n-mineracao"></span></button>
+    <button type="button" class="vista" data-vista="carteira"><span class="vista-icone" aria-hidden="true">◈</span><span class="vista-nome">Carteira</span></button>
+    <button type="button" class="vista" data-vista="rede"><span class="vista-icone" aria-hidden="true">⌖</span><span class="vista-nome">Rede</span><span class="vista-estado" id="n-rede"></span></button>
+  </nav>
+  <div class="lateral-pe">
+    <button type="button" id="abrir-paineis" class="lateral-botao" aria-haspopup="dialog">Organizar painéis</button>
+    <button type="button" id="abrir-ajustes" class="lateral-botao" aria-haspopup="dialog">Ajustes</button>
+    <p class="lateral-selo">Rede de teste · o HYX não tem valor</p>
+  </div>
+</aside>
+
+<div class="corpo">
+<header class="barra">
+  <h1 class="barra-titulo" id="vista-titulo">Visão geral</h1>
   <dl class="leituras">
     <div><dt>Rede</dt><dd id="l-rede">—</dd></div>
     <div><dt>Altura</dt><dd id="l-altura" class="num">—</dd></div>
@@ -40,13 +60,51 @@
     <button type="button" id="minerar" class="minerar" aria-pressed="false">
       <i aria-hidden="true"></i><span>MINERAR</span>
     </button>
-    <button type="button" id="abrir-paineis" class="ajustes-botao" aria-haspopup="dialog">Painéis</button>
-    <button type="button" id="abrir-ajustes" class="ajustes-botao" aria-haspopup="dialog">Ajustes</button>
   </div>
   <p class="so-ver" id="so-ver" hidden>Somente leitura · os comandos ficam no computador que minera</p>
 </header>
 
 <main class="grade">
+  <!-- Visão geral: o essencial num relance, e cada cartão leva à seção dele. -->
+  <section class="bloco inicio" id="painel-inicio" data-painel="inicio" aria-label="Visão geral">
+    <div class="inicio-frase">
+      <small>Agora, nesta máquina</small>
+      <p id="i-frase">Lendo o nó…</p>
+    </div>
+    <div class="inicio-cartoes">
+      <button type="button" class="cartao" data-ir="ultrax">
+        <span class="cartao-rotulo">ULTRAX · trabalho útil</span>
+        <b class="cartao-numero num" id="i-score">0,00</b>
+        <span class="cartao-legenda">Work Score · <span id="i-ultrax-estado">desligado</span></span>
+        <span class="cartao-pe num" id="i-tarefas">—</span>
+      </button>
+      <button type="button" class="cartao" data-ir="ia">
+        <span class="cartao-rotulo">IA · moléculas</span>
+        <b class="cartao-numero num" id="i-ia-erro">—</b>
+        <span class="cartao-legenda">erro típico do melhor modelo, em log S</span>
+        <span class="cartao-pe" id="i-ia-mol">—</span>
+      </button>
+      <button type="button" class="cartao" data-ir="mineracao">
+        <span class="cartao-rotulo">Mineração</span>
+        <b class="cartao-numero num" id="i-min-blocos">0</b>
+        <span class="cartao-legenda">blocos meus na cadeia · <span id="i-min-estado">parada</span></span>
+        <span class="cartao-pe num" id="i-min-ritmo">—</span>
+      </button>
+      <button type="button" class="cartao" data-ir="carteira">
+        <span class="cartao-rotulo">Carteira</span>
+        <b class="cartao-numero num" id="i-saldo">0</b>
+        <span class="cartao-legenda">HYX gastável · rede de teste, sem valor</span>
+        <span class="cartao-pe num" id="i-imaturo">—</span>
+      </button>
+      <button type="button" class="cartao" data-ir="rede">
+        <span class="cartao-rotulo">Rede</span>
+        <b class="cartao-numero num" id="i-altura">0</b>
+        <span class="cartao-legenda">altura da cadeia · <span id="i-pares">0 pares</span></span>
+        <span class="cartao-pe num" id="i-ponta">—</span>
+      </button>
+    </div>
+  </section>
+
   <!-- ULTRAX: o que esta máquina está calculando agora, de verdade. -->
   <section class="bloco ultrax" id="painel-ultrax" data-painel="ultrax" aria-label="ULTRAX, trabalho ativo">
     <header class="rotulo">
@@ -269,6 +327,7 @@
 </main>
 
 <footer class="fita" aria-hidden="true"><div id="fita-trilho"></div></footer>
+</div>
 <p id="desligado" class="desligado" hidden>Sem resposta do nó. O programa ainda está aberto?</p>
 
 <!-- Achou um bloco: o aviso que vale a pena interromper alguém. -->

@@ -1207,7 +1207,45 @@ trabalho.addEventListener("keydown", (ev) => {
 // ---------- painéis: quais aparecem, em que ordem, e o modo destacado ----------
 // A janela é do dono: ele fecha o que não quer, muda a ordem e pode abrir um
 // painel sozinho numa janela à parte (endereço /?so=NOME).
+// ---------- seções ----------
+// A navegação à esquerda escolhe a seção; cada seção mostra os painéis dela.
+// Dentro da seção, o dono ainda fecha e reordena painéis (menu Organizar).
+const VISTAS = {
+  inicio: { titulo: "Visão geral", paineis: ["inicio", "fluxo"] },
+  ultrax: { titulo: "ULTRAX", paineis: ["ultrax", "verificacao", "historico", "telemetria"] },
+  ia: { titulo: "IA · Moléculas", paineis: ["ia"] },
+  mineracao: { titulo: "Mineração", paineis: ["mineracao", "ritmo", "livro"] },
+  carteira: { titulo: "Carteira", paineis: ["carteira"] },
+  rede: { titulo: "Rede", paineis: ["rede", "maquinas", "mercado"] },
+};
+let vista = "inicio";
+try {
+  const salva = localStorage.getItem("hyurax.vista");
+  if (salva && VISTAS[salva]) vista = salva;
+} catch { /* sem armazenamento: começa na visão geral */ }
+
+function irPara(nome) {
+  if (!VISTAS[nome]) return;
+  vista = nome;
+  try { localStorage.setItem("hyurax.vista", nome); } catch { /* segue sem lembrar */ }
+  document.querySelectorAll(".vista").forEach((b) => {
+    if (b.dataset.vista === nome) b.setAttribute("aria-current", "page");
+    else b.removeAttribute("aria-current");
+  });
+  texto("vista-titulo", VISTAS[nome].titulo);
+  document.title = nome === "inicio" ? "Hyurax" : `${VISTAS[nome].titulo} · Hyurax`;
+  aplicarPaineis(listaPaineis);
+  document.querySelector(".grade")?.scrollTo({ top: 0 });
+  if (ultimo) {
+    // o que depende de tamanho (molécula, gráfico) se desenha de novo no lugar novo
+    dispatchEvent(new Event("resize"));
+  }
+}
+document.querySelectorAll(".vista").forEach((b) => b.addEventListener("click", () => irPara(b.dataset.vista)));
+document.querySelectorAll("[data-ir]").forEach((b) => b.addEventListener("click", () => irPara(b.dataset.ir)));
+
 const NOMES_PAINEIS = {
+  inicio: "Visão geral",
   ultrax: "ULTRAX · trabalho ativo",
   ia: "IA · moléculas",
   verificacao: "Verificação e contribuição",
@@ -1222,7 +1260,7 @@ const NOMES_PAINEIS = {
   mercado: "Mercado",
   maquinas: "Minhas máquinas",
 };
-const PAINEIS_PADRAO = "ultrax,ia,verificacao,carteira,mineracao,historico,telemetria,livro,fluxo,-rede,-ritmo,-mercado,-maquinas";
+const PAINEIS_PADRAO = "inicio,ultrax,ia,verificacao,carteira,mineracao,historico,telemetria,livro,fluxo,rede,ritmo,-mercado,-maquinas";
 const destacado = new URLSearchParams(location.search).get("so");
 let listaPaineis = PAINEIS_PADRAO;
 
@@ -1239,7 +1277,9 @@ function aplicarPaineis(lista) {
   document.querySelectorAll("[data-painel]").forEach((secao) => {
     const nome = secao.dataset.painel;
     const parte = partes.find((p) => p.nome === nome);
-    const visivel = destacado ? nome === destacado : !!parte?.aberto;
+    const naVista = (VISTAS[vista]?.paineis || []).includes(nome);
+    // a visão geral não se fecha: é para onde o programa sempre volta
+    const visivel = destacado ? nome === destacado : naVista && (nome === "inicio" || !!parte?.aberto);
     secao.hidden = !visivel;
     secao.style.order = String(partes.findIndex((p) => p.nome === nome));
   });
@@ -1353,6 +1393,7 @@ async function alternarUltrax() {
   const u = ultimo?.ultrax;
   if (!u) return;
   const ligar = !u.ligado;
+  if (ligar) irPara("ultrax");
   if (ligar && !pecas(listaPaineis).some((p) => p.nome === "ultrax" && p.aberto)) {
     const novas = pecas(listaPaineis).map((p) => `${p.nome === "ultrax" || p.aberto ? "" : "-"}${p.nome}`);
     await salvarPaineis(novas.join(","));
@@ -1661,6 +1702,55 @@ function desenharTelemetria(u) {
   }));
 }
 
+// ---------- visão geral ----------
+function desenharInicio(e) {
+  const u = e.ultrax || {};
+  const p = u.placar || {};
+  const ativas = Array.isArray(u.ativas) ? u.ativas : [];
+  const frases = [];
+  if (!u.ligado) {
+    frases.push("O ULTRAX está desligado.");
+  } else if (ativas.length) {
+    const a = ativas[0];
+    const pct = a.total > 0 ? Math.round((100 * a.feitas) / a.total) : 0;
+    const onde = a.dispositivo === "GPU" ? " na GPU" : "";
+    const fase = a.estado === "VERIFYING" ? "conferindo" : "calculando";
+    frases.push(`O ULTRAX está ${fase} ${(TIPOS[a.tipo] || a.descricao).toLowerCase()} ${a.resumo}${onde} (${pct}%)${ativas.length > 1 ? `, e mais ${ativas.length - 1}` : ""}.`);
+  } else {
+    frases.push("O ULTRAX está ligado, preparando a próxima tarefa.");
+  }
+  frases.push(e.minerando ? `A mineração procura o bloco ${fmt.format(e.rodada_altura || e.altura + 1)}.` : "A mineração está parada.");
+  if (e.pares === 0) frases.push("Sem pares por enquanto.");
+  texto("i-frase", frases.join(" "));
+  texto("i-score", virgula(p.work_score));
+  texto("i-ultrax-estado", u.ligado ? (u.gpu?.ligada ? "CPU e GPU trabalhando" : "trabalhando") : "desligado");
+  texto("i-tarefas", `${fmt.format(p.liquidadas || 0)} tarefas verificadas · reputação ${fmt.format(p.nota ?? 500)}/1000`);
+  const ia = u.ia || {};
+  texto("i-ia-erro", typeof ia.melhor_rmse_mili === "number" ? `± ${(ia.melhor_rmse_mili / 1000).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "—");
+  texto("i-ia-mol", ia.amostra ? `${ia.amostra.nome} · ${ia.amostra.formula}` : "sem treino ainda");
+  texto("i-min-blocos", fmt.format(e.meus_cadeia || 0));
+  texto("i-min-estado", e.minerando ? "minerando" : "parada");
+  texto("i-min-ritmo", `${fmt1.format(e.ritmo || 0)} tent/s · ${fmt.format(e.tentativas || 0)} tentativas`);
+  texto("i-saldo", moeda(e.saldo));
+  texto("i-imaturo", `esperando liberar: ${moeda(e.imaturo)} HYX`);
+  texto("i-altura", fmt.format(e.altura || 0));
+  texto("i-pares", `${fmt.format(e.pares || 0)} par${e.pares === 1 ? "" : "es"}`);
+  texto("i-ponta", e.ponta ? `ponta ${curto(e.ponta)}` : "—");
+
+  // indicadores da navegação: o que está vivo aparece invertido
+  const marca = (id, textoDaMarca, vivo) => {
+    const el = $(id);
+    if (!el) return;
+    if (el.textContent !== textoDaMarca) el.textContent = textoDaMarca;
+    el.classList.toggle("vivo", !!vivo);
+  };
+  const a = ativas[0];
+  marca("n-ultrax", u.ligado ? (a && a.total ? `${Math.round((100 * a.feitas) / a.total)}%` : "ON") : "", u.ligado);
+  marca("n-ia", ia.treinos ? fmt.format(ia.treinos) : "", false);
+  marca("n-mineracao", e.minerando ? "ON" : "", e.minerando);
+  marca("n-rede", String(e.pares ?? 0), false);
+}
+
 // ---------- mercado ----------
 function desenharMercado(e) {
   const ligado = e.mercado_ligado === true;
@@ -1708,6 +1798,7 @@ async function ler() {
     desenharSeguranca(e);
     desenharBarra(e);
     desenharMineracao(e);
+    desenharInicio(e);
     desenharUltrax(e);
     avisarGpu(e);
     desenharLateral(e);
@@ -1730,5 +1821,5 @@ setInterval(() => { texto("relogio", new Date().toLocaleTimeString("pt-BR", { ho
 setInterval(ler, 1000);
 addEventListener("resize", () => ultimo && desenharGrafico(ultimo));
 prepararBotoesDePainel();
-aplicarPaineis(listaPaineis);
+irPara(vista);
 ler();

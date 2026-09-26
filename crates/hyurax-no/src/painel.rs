@@ -47,6 +47,12 @@ const JS: &str = include_str!("../painel/painel.js");
 const MOLECULAS: &str = include_str!("../painel/moleculas.js");
 const GPU: &str = include_str!("../painel/gpu.js");
 const GPU_TRABALHADOR: &str = include_str!("../painel/gpu-trabalhador.js");
+/// As fontes da marca, embutidas (licença OFL, textos em `painel/fontes`): o
+/// programa funciona sem internet, e com a mesma letra do site.
+const FONTE_ARCHIVO: &[u8] = include_bytes!("../painel/fontes/archivo.woff2");
+const FONTE_MONO_400: &[u8] = include_bytes!("../painel/fontes/plex-mono-400.woff2");
+const FONTE_MONO_500: &[u8] = include_bytes!("../painel/fontes/plex-mono-500.woff2");
+const FONTE_MONO_600: &[u8] = include_bytes!("../painel/fontes/plex-mono-600.woff2");
 /// Gerador de QR Code, o mesmo do site: serve para abrir o painel no celular.
 const QRCODE: &str = include_str!("../../../site/vendor/qrcode.min.js");
 
@@ -65,8 +71,9 @@ const PORTA_P2P: u16 = 8790;
 /// São estimativas honestas, e o usuário ajusta as duas nos Ajustes.
 /// Painéis que existem, na ordem de fábrica. Um "-" na frente quer dizer fechado.
 const PAINEIS_PADRAO: &str =
-    "ultrax,ia,verificacao,carteira,mineracao,historico,telemetria,livro,fluxo,-rede,-ritmo,-mercado,-maquinas";
-const PAINEIS_CONHECIDOS: [&str; 13] = [
+    "inicio,ultrax,ia,verificacao,carteira,mineracao,historico,telemetria,livro,fluxo,rede,ritmo,-mercado,-maquinas";
+const PAINEIS_CONHECIDOS: [&str; 14] = [
+    "inicio",
     "ultrax",
     "ia",
     "verificacao",
@@ -427,6 +434,12 @@ fn completar_paineis(lista: &str) -> String {
 /// tinha a lista salva ganha os painéis novos onde a estação estava, abertos
 /// ou fechados como ela.
 fn migrar_paineis(lista: &str) -> String {
+    // a visão geral (0.3) entra na frente de toda lista salva antes dela
+    let lista = if lista.split(',').any(|i| i.trim().trim_start_matches('-') == "inicio") {
+        lista.to_string()
+    } else {
+        format!("inicio,{lista}")
+    };
     lista
         .split(',')
         .map(str::trim)
@@ -1488,6 +1501,10 @@ fn atender(mut s: TcpStream, porta: u16, painel: &Painel, rede: &Arc<Rede>, o: &
             "/moleculas.js" => responder(&mut s, "200 OK", "text/javascript; charset=utf-8", MOLECULAS.as_bytes()),
             "/gpu.js" => responder(&mut s, "200 OK", "text/javascript; charset=utf-8", GPU.as_bytes()),
             "/gpu-trabalhador.js" => responder(&mut s, "200 OK", "text/javascript; charset=utf-8", GPU_TRABALHADOR.as_bytes()),
+            "/fontes/archivo.woff2" => responder(&mut s, "200 OK", "font/woff2", FONTE_ARCHIVO),
+            "/fontes/plex-mono-400.woff2" => responder(&mut s, "200 OK", "font/woff2", FONTE_MONO_400),
+            "/fontes/plex-mono-500.woff2" => responder(&mut s, "200 OK", "font/woff2", FONTE_MONO_500),
+            "/fontes/plex-mono-600.woff2" => responder(&mut s, "200 OK", "font/woff2", FONTE_MONO_600),
             "/qrcode.min.js" => responder(&mut s, "200 OK", "text/javascript; charset=utf-8", QRCODE.as_bytes()),
             "/api/estado" => {
                 let json = estado_json(painel, rede, o, local && host_local, porta);
@@ -1926,16 +1943,17 @@ mod testes {
     fn lista_salva_com_a_estacao_ganha_o_ultrax_no_lugar() {
         let velha = "carteira,estacao,rede,livro,ritmo,fluxo,-mercado,-maquinas";
         let migrada = migrar_paineis(velha);
-        assert!(migrada.starts_with("carteira,ultrax,ia,verificacao,mineracao,historico,telemetria,rede"), "{migrada}");
+        assert!(migrada.starts_with("inicio,carteira,ultrax,ia,verificacao,mineracao,historico,telemetria,rede"), "{migrada}");
         assert!(paineis_validos(&migrada), "{migrada}");
         let completa = completar_paineis(&migrada);
         assert_eq!(completa.split(',').count(), PAINEIS_CONHECIDOS.len(), "{completa}");
         // estação fechada: o ULTRAX nasce fechado, mas a mineração, que estava dentro dela, fica à vista
         let fechada = migrar_paineis("-estacao,carteira");
-        assert!(fechada.starts_with("-ultrax,-ia,-verificacao,mineracao,"), "{fechada}");
+        assert!(fechada.starts_with("inicio,-ultrax,-ia,-verificacao,mineracao,"), "{fechada}");
         assert!(paineis_validos(&fechada));
         // sem estação, nada muda
-        assert_eq!(migrar_paineis("carteira,-rede"), "carteira,-rede");
+        assert_eq!(migrar_paineis("inicio,carteira,-rede"), "inicio,carteira,-rede");
+        assert_eq!(migrar_paineis("carteira,-rede"), "inicio,carteira,-rede", "a visão geral entra na frente");
         assert!(!paineis_validos("estacao"), "a estação não existe mais");
     }
 

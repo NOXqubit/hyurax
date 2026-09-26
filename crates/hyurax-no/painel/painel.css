@@ -1,18 +1,35 @@
-/* Hyurax · Minerador — terminal de operação, preto e branco.
-   Estado se lê pela forma (sólido, vazado, invertido), nunca por cor. */
+/* Hyurax — o programa. Preto e branco, como a marca: o estado se lê pela
+   forma (cheio, vazado, invertido), nunca por cor. Archivo para ler, IBM Plex
+   Mono para número e hash; as duas vêm embutidas (licença OFL, em /fontes). */
+
+@font-face {
+  font-family: "Archivo";
+  src: url("/fontes/archivo.woff2") format("woff2");
+  font-weight: 400 800;
+  font-stretch: 62% 125%;
+  font-display: swap;
+}
+@font-face { font-family: "IBM Plex Mono"; src: url("/fontes/plex-mono-400.woff2") format("woff2"); font-weight: 400; font-display: swap; }
+@font-face { font-family: "IBM Plex Mono"; src: url("/fontes/plex-mono-500.woff2") format("woff2"); font-weight: 500; font-display: swap; }
+@font-face { font-family: "IBM Plex Mono"; src: url("/fontes/plex-mono-600.woff2") format("woff2"); font-weight: 600; font-display: swap; }
 
 :root {
-  --fundo: #030303;
-  --painel: #0a0a0a;
-  --painel-2: #111;
-  --tinta: #f3f3f1;
-  --tinta-2: rgba(243, 243, 241, 0.64);
-  --tinta-3: rgba(243, 243, 241, 0.38);
-  --fio: rgba(243, 243, 241, 0.12);
-  --fio-forte: rgba(243, 243, 241, 0.28);
-  --mono: "Cascadia Mono", "IBM Plex Mono", Consolas, "SF Mono", ui-monospace, monospace;
-  --display: "Bahnschrift", "Archivo Narrow", "Arial Narrow", "Roboto Condensed", system-ui, sans-serif;
-  --r: 2px;
+  --fundo: #060607;
+  --lateral: #0a0a0b;
+  --painel: #0e0e10;
+  --painel-2: #16161a;
+  --painel-3: #1d1d22;
+  --tinta: #f4f4f2;
+  --tinta-2: rgba(244, 244, 242, 0.68);
+  --tinta-3: rgba(244, 244, 242, 0.42);
+  --fio: rgba(244, 244, 242, 0.09);
+  --fio-forte: rgba(244, 244, 242, 0.22);
+  --texto: "Archivo", "Segoe UI", "Helvetica Neue", Arial, system-ui, sans-serif;
+  --display: "Archivo", "Bahnschrift", "Arial Narrow", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", "Cascadia Mono", Consolas, "SF Mono", ui-monospace, monospace;
+  --r: 10px;
+  --r-p: 7px;
+  --lado: 24px;
   color-scheme: dark;
 }
 
@@ -21,74 +38,147 @@ body {
   margin: 0;
   background: var(--fundo);
   color: var(--tinta);
-  font: 13px/1.45 var(--mono);
+  font: 14px/1.5 var(--texto);
   display: grid;
-  grid-template-rows: auto 1fr auto;
+  grid-template-columns: 236px minmax(0, 1fr);
   min-height: 100vh;
   overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
 }
-/* No monitor, o painel ocupa a tela exata, sem rolar: é um painel de operação. */
-@media (min-width: 1101px) and (min-height: 600px) {
+/* No monitor, o programa ocupa a tela exata: a navegação fica, a seção rola. */
+@media (min-width: 761px) {
   body { height: 100vh; }
 }
 [hidden] { display: none !important; }
 button { font: inherit; color: inherit; }
 .num { font-variant-numeric: tabular-nums; }
-small { color: var(--tinta-3); font-size: 11px; }
-:focus-visible { outline: 1px solid var(--tinta); outline-offset: 2px; }
+small { color: var(--tinta-3); font-size: 11.5px; }
+:focus-visible { outline: 2px solid var(--tinta); outline-offset: 2px; }
+table, #fluxo, #u-telemetria, .u-fatos dd, .pares dd, .endereco, .curto, code { font-family: var(--mono); }
+table, #fluxo, #u-telemetria { font-size: 12px; }
+
+/* ---------- navegação ---------- */
+.lateral {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  padding: 20px 14px 16px;
+  background: var(--lateral);
+  border-right: 1px solid var(--fio);
+  overflow-y: auto;
+}
+.marca { display: flex; align-items: center; gap: 10px; padding: 0 8px; flex-wrap: wrap; }
+.marca svg { width: 26px; height: 26px; }
+.palavra { font: 700 21px/1 var(--display); font-stretch: 78%; letter-spacing: 0.07em; }
+.sub {
+  flex-basis: 100%;
+  font-size: 10px;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  color: var(--tinta-3);
+  padding-left: 36px;
+  margin-top: -6px;
+}
+.vistas { display: grid; gap: 2px; }
+.vista {
+  display: grid;
+  grid-template-columns: 22px 1fr auto;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: var(--r-p);
+  background: transparent;
+  color: var(--tinta-2);
+  cursor: pointer;
+  text-align: left;
+  font-size: 14px;
+  position: relative;
+}
+.vista:hover { background: var(--painel-2); color: var(--tinta); }
+.vista[aria-current="page"] { background: var(--painel-3); color: var(--tinta); font-weight: 600; }
+.vista[aria-current="page"]::before {
+  content: "";
+  position: absolute;
+  left: -14px;
+  top: 8px;
+  bottom: 8px;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: var(--tinta);
+}
+.vista-icone { font-size: 15px; text-align: center; opacity: 0.8; }
+.vista-estado {
+  font: 500 10px/1 var(--mono);
+  letter-spacing: 0.08em;
+  color: var(--tinta-3);
+  border: 1px solid var(--fio-forte);
+  border-radius: 999px;
+  padding: 3px 7px;
+}
+.vista-estado:empty { display: none; }
+.vista-estado.vivo { background: var(--tinta); color: var(--fundo); border-color: var(--tinta); }
+.lateral-pe { margin-top: auto; display: grid; gap: 6px; }
+.lateral-botao {
+  background: none;
+  border: 1px solid var(--fio);
+  border-radius: var(--r-p);
+  padding: 8px 12px;
+  color: var(--tinta-2);
+  cursor: pointer;
+  text-align: left;
+  font-size: 13px;
+}
+.lateral-botao:hover { color: var(--tinta); border-color: var(--fio-forte); background: var(--painel-2); }
+.lateral-selo { margin: 8px 4px 0; font-size: 11px; color: var(--tinta-3); line-height: 1.4; }
+
+/* ---------- a coluna da seção ---------- */
+.corpo { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; min-width: 0; min-height: 0; }
 
 /* ---------- barra ---------- */
 .barra {
   display: flex;
   align-items: center;
-  gap: 28px;
-  padding: 10px 16px;
+  gap: 24px;
+  padding: 16px var(--lado);
   border-bottom: 1px solid var(--fio);
+  background: rgba(6, 6, 7, 0.92);
+  backdrop-filter: blur(8px);
+  flex-wrap: wrap;
   position: sticky;
   top: 0;
   z-index: 5;
-  background: rgba(3, 3, 3, 0.92);
-  backdrop-filter: blur(6px);
-  flex-wrap: wrap;
 }
-.marca { display: flex; align-items: center; gap: 10px; }
-.marca svg { width: 26px; height: 26px; }
-.palavra {
-  font: 700 22px/1 var(--display);
-  font-stretch: condensed;
-  letter-spacing: 0.06em;
-}
-.sub {
-  font-size: 10px;
-  letter-spacing: 0.32em;
-  color: var(--tinta-3);
-  border-left: 1px solid var(--fio-forte);
-  padding-left: 10px;
-}
+.barra-titulo { margin: 0; font: 700 26px/1 var(--display); font-stretch: 80%; letter-spacing: 0.01em; }
 .leituras { display: flex; gap: 22px; margin: 0; flex-wrap: wrap; }
-.leituras div { display: grid; gap: 1px; }
-.leituras dt { font-size: 9.5px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--tinta-3); }
-.leituras dd { margin: 0; font-size: 15px; }
+.leituras div { display: grid; gap: 2px; }
+.leituras dt { font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--tinta-3); }
+.leituras dd { margin: 0; font: 500 14px/1.2 var(--mono); }
 .leituras small { font-size: 10px; }
 
-.controles { margin-left: auto; display: flex; gap: 10px; align-items: stretch; }
+.controles { margin-left: auto; display: flex; gap: 10px; align-items: stretch; flex-wrap: wrap; }
 .nucleos {
   display: flex;
   align-items: center;
   border: 1px solid var(--fio-forte);
-  border-radius: var(--r);
+  border-radius: var(--r-p);
 }
 .nucleos button {
   background: none;
   border: 0;
   width: 34px;
   height: 100%;
+  min-height: 36px;
   cursor: pointer;
   font-size: 16px;
 }
 .nucleos button:hover { background: var(--painel-2); }
 .nucleos button:disabled { opacity: 0.3; cursor: default; }
-.nucleos span { padding: 0 10px; border-inline: 1px solid var(--fio); white-space: nowrap; }
+.nucleos span { padding: 0 10px; border-inline: 1px solid var(--fio); white-space: nowrap; font-family: var(--mono); font-size: 12.5px; }
 .nucleos b { font-size: 15px; }
 
 .minerar {
@@ -98,16 +188,17 @@ small { color: var(--tinta-3); font-size: 11px; }
   padding: 9px 18px;
   border: 1px solid var(--tinta);
   background: transparent;
-  border-radius: var(--r);
+  border-radius: var(--r-p);
   cursor: pointer;
-  font: 700 13px/1 var(--mono);
-  letter-spacing: 0.24em;
+  font: 700 13px/1 var(--display);
+  font-stretch: 90%;
+  letter-spacing: 0.2em;
   min-width: 150px;
   justify-content: center;
 }
 .minerar i { width: 9px; height: 9px; border: 1.5px solid currentColor; border-radius: 50%; }
 .minerar:hover { background: var(--painel-2); }
-/* Ligado: botão invertido, e o círculo cheio pulsa. */
+/* Ligado: botão invertido, e a marca cheia pulsa. */
 .minerar[aria-pressed="true"] { background: var(--tinta); color: var(--fundo); }
 .minerar[aria-pressed="true"] i { background: currentColor; animation: pulso 1.1s ease-in-out infinite; }
 /* Sem carteira: borda tracejada e apagado, como tudo o que ainda não vale. */
@@ -115,62 +206,108 @@ small { color: var(--tinta-3); font-size: 11px; }
 .ajustes-botao {
   background: none;
   border: 1px solid var(--fio-forte);
-  border-radius: var(--r);
+  border-radius: var(--r-p);
   padding: 0 12px;
   cursor: pointer;
-  font-size: 10px;
-  letter-spacing: 0.2em;
+  font-size: 12px;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--tinta-2);
 }
 .ajustes-botao:hover { color: var(--tinta); border-color: var(--tinta); }
-.so-ver { margin: 0 0 0 auto; color: var(--tinta-3); font-size: 11px; letter-spacing: 0.08em; }
+.so-ver { margin: 0 0 0 auto; color: var(--tinta-3); font-size: 12px; }
 
 @keyframes pulso { 50% { transform: scale(0.55); opacity: 0.5; } }
 
 /* ---------- grade ---------- */
-/* Sem lugares fixos: cada painel escolhe a sua vez pela propriedade "order",
-   que o JavaScript acerta com o que está salvo nos ajustes. Fechar um painel
-   não deixa buraco: os outros ocupam o espaço. */
+/* Cada seção mostra os painéis dela. Sem lugar fixo: cada painel escolhe a vez
+   pela propriedade "order", e fechar um não deixa buraco. */
 .grade {
   display: grid;
-  gap: 1px;
-  background: var(--fio);
-  grid-template-columns: repeat(auto-fit, minmax(330px, 1fr));
-  grid-auto-rows: minmax(230px, auto);
+  gap: 14px;
+  padding: 20px var(--lado) 28px;
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  grid-auto-rows: minmax(240px, auto);
   min-height: 0;
   align-content: start;
-  /* com mais painéis do que cabem na tela, a grade rola; a barra fica */
   overflow-y: auto;
 }
 .bloco {
   background: var(--painel);
+  border: 1px solid var(--fio);
+  border-radius: var(--r);
   display: flex;
   flex-direction: column;
   min-width: 0;
   min-height: 0;
   position: relative;
+  overflow: hidden;
 }
-/* Na tela estreita a barra quebra em várias linhas; presa no topo, ela cobriria
-   metade do celular. Ali ela rola junto com a página. */
-@media (max-width: 760px) {
-  .barra { position: static; }
-}
-/* O ULTRAX é a peça grande: ocupa duas colunas e duas linhas quando cabe. */
+/* O ULTRAX é a peça grande: duas colunas e duas linhas quando cabe. */
 .bloco.ultrax { grid-column: span 2; grid-row: span 2; }
 @media (max-width: 760px) {
   .bloco.ultrax { grid-column: span 1; grid-row: span 1; min-height: 420px; }
 }
 /* Modo destacado: um painel só, ocupando a janela inteira. */
-body.destacado .grade { grid-template-columns: 1fr; }
+body.destacado { grid-template-columns: 1fr; }
+body.destacado .lateral { display: none; }
+body.destacado .grade { grid-template-columns: 1fr; grid-auto-rows: 1fr; }
 body.destacado .bloco.ultrax { grid-column: span 1; grid-row: span 1; }
 body.destacado .fita, body.destacado .controles, body.destacado .leituras { display: none; }
-/* Na janela destacada o painel é o dono da tela: sem botão de fechar (a janela
-   já fecha), sem borda dupla, e ocupando tudo. */
 body.destacado .fechar-painel { display: none; }
-body.destacado .grade { grid-auto-rows: 1fr; }
-body.destacado .barra { padding: 6px 12px; gap: 12px; }
-body.destacado .bloco { border: 0; }
+body.destacado .barra { padding: 8px 14px; gap: 12px; }
+body.destacado .bloco { border: 0; border-radius: 0; }
+
+/* ---------- visão geral ---------- */
+.bloco.inicio { grid-column: 1 / -1; background: transparent; border: 0; overflow: visible; gap: 16px; min-height: auto; }
+/* na visão geral, o fluxo de eventos usa a largura toda embaixo dos cartões */
+.bloco.fluxo { grid-column: 1 / -1; }
+.inicio-frase { display: grid; gap: 6px; }
+.inicio-frase small { font-size: 11px; letter-spacing: 0.22em; text-transform: uppercase; }
+.inicio-frase p { margin: 0; font: 600 clamp(20px, 2.1vw, 28px)/1.25 var(--display); font-stretch: 88%; max-width: 70ch; text-wrap: balance; }
+.inicio-cartoes { display: grid; grid-template-columns: repeat(auto-fit, minmax(176px, 1fr)); gap: 12px; }
+.cartao {
+  display: grid;
+  gap: 6px;
+  align-content: start;
+  text-align: left;
+  padding: 16px 18px 14px;
+  background: var(--painel);
+  border: 1px solid var(--fio);
+  border-radius: var(--r);
+  cursor: pointer;
+  min-width: 0;
+}
+.cartao:hover { border-color: var(--fio-forte); background: var(--painel-2); }
+.cartao-rotulo { font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--tinta-3); }
+.cartao-numero { font: 700 34px/1.05 var(--display); font-stretch: 80%; overflow-wrap: anywhere; }
+.cartao-legenda { color: var(--tinta-2); font-size: 13px; }
+.cartao-pe { color: var(--tinta-3); font-size: 12px; font-family: var(--mono); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ---------- celular: a navegação vira abas embaixo ---------- */
+@media (max-width: 760px) {
+  body { grid-template-columns: 1fr; padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px)); }
+  .lateral {
+    position: fixed;
+    inset: auto 0 0 0;
+    height: auto;
+    z-index: 20;
+    flex-direction: row;
+    padding: 6px 6px calc(6px + env(safe-area-inset-bottom, 0px));
+    border-right: 0;
+    border-top: 1px solid var(--fio);
+    overflow: visible;
+  }
+  .lateral .marca, .lateral-pe { display: none; }
+  .vistas { grid-auto-flow: column; grid-auto-columns: 1fr; width: 100%; }
+  .vista { grid-template-columns: 1fr; justify-items: center; gap: 2px; padding: 6px 2px; font-size: 10.5px; text-align: center; }
+  .vista-estado { display: none; }
+  .vista[aria-current="page"]::before { left: 20%; right: 20%; top: -6px; bottom: auto; width: auto; height: 3px; border-radius: 0 0 3px 3px; }
+  .barra { position: static; padding: 14px 16px; gap: 14px; }
+  .barra-titulo { font-size: 22px; flex-basis: 100%; }
+  .grade { padding: 14px 16px 24px; grid-template-columns: 1fr; }
+  :root { --lado: 16px; }
+}
 
 /* ---------- mineração ---------- */
 
@@ -1105,3 +1242,20 @@ body.destacado .bloco.ia { grid-column: span 1; grid-row: span 1; }
 @media (prefers-reduced-motion: reduce) {
   .u-unidades i { transition: none; }
 }
+
+/* ---------- acabamento da versão 0.3 ---------- */
+.rotulo {
+  min-height: 44px;
+  padding: 10px 16px;
+  font: 600 11.5px/1.2 var(--texto);
+  letter-spacing: 0.12em;
+  color: var(--tinta-3);
+}
+.rotulo > span:first-child { color: var(--tinta); }
+.dialogo .rotulo { font-size: 12px; padding: 14px 22px; }
+.acao, .lateral-botao, .ajustes-botao, .segmentos, .segmentos.compacto, .u-campo, .u-debug, .chave-liga.u-debug { border-radius: var(--r-p); }
+.dialogo { border-radius: calc(var(--r) + 2px); }
+.pares dt { font-size: 13px; }
+.selo-modo { border-radius: 999px; padding: 2px 9px; font: 600 10px/1.4 var(--mono); }
+.fita { font-family: var(--mono); }
+.u-titulo, .ia-molecula figcaption b, .v-grade b, .ia-erro b, .saldo span { font-family: var(--display); }
