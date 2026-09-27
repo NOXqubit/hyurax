@@ -26,7 +26,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 OUT_DIR = ROOT.parent / "vectors"
 
-from hyurax import argon2, codec, consensus, crypto, ia, identidade, usefulpow, utrax  # noqa: E402
+from hyurax import argon2, codec, consensus, crypto, ia, identidade, melhoramento, usefulpow, utrax  # noqa: E402
 from hyurax.block import BlockHeader  # noqa: E402
 from hyurax.chain import Chain, make_genesis  # noqa: E402
 from hyurax.consensus import MAINNET, REGTEST, TESTNET  # noqa: E402
@@ -873,6 +873,89 @@ def vec_ia() -> dict:
     }
 
 
+def vec_melhoramento() -> dict:
+    """Melhoramento de culturas do ULTRAX (tipo 6): o gerador xoshiro256**, a
+    arquitetura dos QTL, o fator de Liebig, unidades inteiras (bytes do
+    resultado, operacoes e o pedaco de cada chamada de `continuar`) e as
+    especificacoes que precisam ser recusadas, com a borda do teto de custo."""
+    semente = crypto.H(b"vetor melhoramento")
+    g = melhoramento.gerador_da_semente(semente)
+    gerador = [g.proximo() for _ in range(8)]
+
+    fatores = []
+    for agua in (0, 40, 79, 80, 200):
+        for nitrogenio in (0, 50, 100):
+            for solo in (0, 55, 150):
+                f, lim = melhoramento.fator_ambiental(agua, nitrogenio, solo)
+                fatores.append([agua, nitrogenio, solo, f, lim])
+
+    casos = []
+    for tamanho, passos, parametros in (
+        (8, 2, [5, 1, 50, 100, 100, 100, 100, 0]),
+        (16, 3, [64, 7, 25, 50, 40, 100, 60, 100]),
+        (10, 4, [130, 0xDEADBEEF, 100, 0, 200, 20, 100, 50]),
+        (20, 1, [200, 0xFFFFFFFF, 1, 1000, 0, 100, 100, 100]),
+        (4, 6, [1, 3, 1, 300, 100, 100, 100, 0]),
+        (1100, 1, [3, 9, 10, 100, 70, 90, 110, 30]),
+    ):
+        chamadas = []
+        sim = melhoramento.simular(tamanho, passos, parametros, semente,
+                                   lambda ops: chamadas.append(ops) or True)
+        casos.append({
+            "tamanho": tamanho, "passos": passos, "parametros": parametros,
+            "fator": sim["fator"], "limitante": sim["limitante"],
+            "sigma": sim["sigma"], "selecionados": sim["selecionados"],
+            "operacoes": melhoramento.operacoes(tamanho, passos, parametros),
+            "chamadas": chamadas,
+            "resultado": h(melhoramento.codificar(sim)),
+        })
+
+    # a borda do teto: a maior quantidade de geracoes aceita com 20.000
+    # plantas e 200 QTL, e uma a mais
+    grande = [200, 5, 10, 100, 100, 100, 100, 0]
+    passos_max = max(p for p in range(1, 1001)
+                     if melhoramento.operacoes(20_000, p, grande) <= melhoramento.TETO_OPERACOES)
+    aceitas = [
+        {"tamanho": 20_000, "passos": passos_max, "parametros": grande},
+        {"tamanho": 4, "passos": 1000, "parametros": [1, 0, 1, 0, 0, 0, 0, 0]},
+        {"tamanho": 100, "passos": 10, "parametros": [200, 0xFFFFFFFF, 100, 1000, 200, 200, 200, 100]},
+    ]
+    recusadas = [
+        {"tamanho": 20_000, "passos": passos_max + 1, "parametros": grande},
+        {"tamanho": 100, "passos": 10, "parametros": [0, 1, 20, 100, 100, 100, 100, 0]},
+        {"tamanho": 100, "passos": 10, "parametros": [201, 1, 20, 100, 100, 100, 100, 0]},
+        {"tamanho": 100, "passos": 10, "parametros": [50, 1, 0, 100, 100, 100, 100, 0]},
+        {"tamanho": 100, "passos": 10, "parametros": [50, 1, 101, 100, 100, 100, 100, 0]},
+        {"tamanho": 100, "passos": 10, "parametros": [50, 1, 20, 1001, 100, 100, 100, 0]},
+        {"tamanho": 100, "passos": 10, "parametros": [50, 1, 20, 100, 201, 100, 100, 0]},
+        {"tamanho": 100, "passos": 10, "parametros": [50, 1, 20, 100, 100, 201, 100, 0]},
+        {"tamanho": 100, "passos": 10, "parametros": [50, 1, 20, 100, 100, 100, 201, 0]},
+        {"tamanho": 100, "passos": 10, "parametros": [50, 1, 20, 100, 100, 100, 100, 101]},
+        {"tamanho": 3, "passos": 10, "parametros": [50, 1, 20, 100, 100, 100, 100, 0]},
+        {"tamanho": 100, "passos": 0, "parametros": [50, 1, 20, 100, 100, 100, 100, 0]},
+    ]
+    for caso in aceitas:
+        melhoramento.validar(caso["tamanho"], caso["passos"], caso["parametros"])
+    for caso in recusadas:
+        try:
+            melhoramento.validar(caso["tamanho"], caso["passos"], caso["parametros"])
+        except ValueError:
+            continue
+        raise AssertionError(f"o gabarito aceitou {caso}")
+
+    return {
+        "semente": h(semente),
+        "gerador": gerador,
+        "arquitetura": {"codigo": 12345, "qtl": 16,
+                        "efeitos": [list(e) for e in melhoramento.arquitetura(12345, 16)]},
+        "fatores": fatores,
+        "teto_operacoes": melhoramento.TETO_OPERACOES,
+        "casos": casos,
+        "aceitas": aceitas,
+        "recusadas": recusadas,
+    }
+
+
 def vec_usefulpow() -> dict:
     """Trabalho util no consenso: regra do tamanho, semente, prova e recusas."""
     tamanhos = []
@@ -1182,6 +1265,7 @@ FILES = {
     "utrax.json": vec_utrax,
     "usefulpow.json": vec_usefulpow,
     "ia.json": vec_ia,
+    "melhoramento.json": vec_melhoramento,
 }
 
 
