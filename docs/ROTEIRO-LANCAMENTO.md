@@ -47,6 +47,8 @@ não é.
 | 26/09/2026 | Redesign do programa (navegação por seção, visão geral, fontes da marca); instalador com os termos de uso, sem administrador e com desinstalação pelo Windows; termos também na primeira abertura |
 | 26/09/2026 | Redesign do site (capítulos ULTRAX e IA com moléculas reais); fontes servidas pelo próprio site, sem nenhum terceiro; política de privacidade e cookies (LGPD), termos de uso, `security.txt` e CSP em todas as páginas |
 | 26/09/2026 | Versão `v0.3.0-teste.1` preparada: instalador na Release, notas em `docs/NOTAS-v0.3.0-teste.1.md` |
+| 27/09/2026 | Computação científica: JOBs com unidades conferidas, motores de genética, plantas, rotas e triagem de 8.289 moléculas, visão 3D por eventos reais, ULTRA BENCHMARK e cálculo entre nós com compromisso, maioria e conferência local (ensaio com 3 processos: 30/30 em consenso 3/3) |
+| 27/09/2026 | Termos de uso versão 2 (computação científica); versão `v0.4.0-teste.1` preparada, notas em `docs/NOTAS-v0.4.0-teste.1.md` |
 
 Próximo: **o primeiro nó respondendo de fora**. O PC do autor serve para começar (`scripts/no-sempre-ligado.ps1` + porta 8790 no roteador + teste pelo 4G do celular). Os passos 1, 2 e 3 de `docs/LANCAR-A-REDE.md` são do autor: renomear e publicar o repositório, criar a etiqueta, e deixar o nó ligado.
 

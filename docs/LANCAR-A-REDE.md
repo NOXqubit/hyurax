@@ -63,11 +63,11 @@ código dentro do LEIA-ME.
 O GitHub monta os pacotes sozinho quando uma etiqueta `v*` chega:
 
 ```bash
-git tag v0.3.0-teste.1
+git tag v0.4.0-teste.1
 ```
 
 ```bash
-git push origin v0.3.0-teste.1
+git push origin v0.4.0-teste.1
 ```
 
 Em *Actions* aparece o `lancamento`. No fim, em *Releases*, ficam os pacotes com
@@ -76,7 +76,7 @@ e o de ARM que serve para o celular no Termux.
 
 Confira **antes de divulgar**: baixe o instalador do Windows, confira a soma, instale e abra o
 programa. A versão que ele mostra tem que ser a mesma da etiqueta
-(`0.3.0-teste.1`).
+(`0.4.0-teste.1`).
 
 ## Passo 3 — o primeiro nó sempre ligado (você)
 

@@ -16,7 +16,7 @@
 <p><a class="voltar" href="./">← Hyurax</a></p>
 <!-- Gerado por site/tools/gerar_termos.py a partir de docs/TERMOS-DE-USO.md. Não editar à mão. -->
 <h1>Termos de uso e isenção de responsabilidade</h1>
-<p><strong>Versão 1 · 26 de setembro de 2026</strong></p>
+<p><strong>Versão 2 · 27 de setembro de 2026</strong></p>
 <p>Leia com atenção. Ao instalar ou usar o Hyurax, você declara que leu, entendeu e concorda com estes termos. Se não concorda, não instale nem use.</p>
 <h2>1. O que é o Hyurax</h2>
 <p>O Hyurax é um <strong>software livre e experimental</strong>, distribuído sob a licença MIT ou a Apache-2.0, à escolha de quem usa. Ele liga o seu computador a uma <strong>rede de teste</strong>.</p>
@@ -37,16 +37,24 @@
 </ul>
 <h2>5. O uso do seu computador</h2>
 <p>A mineração e o ULTRAX usam o processador (CPU), a placa de vídeo ou a GPU integrada, a memória e a energia do seu computador. Isso esquenta o equipamento, aumenta a conta de luz e pode contribuir para o desgaste das peças. O programa mostra estimativas e tem limitadores de uso, mas <strong>você decide</strong> quanto usar e responde por essa decisão. Em notebook, fique de olho na temperatura e na bateria.</p>
-<h2>6. O ULTRAX e o Work Score</h2>
-<p>O ULTRAX executa trabalho computacional útil e verificável. No modo atual (LAB), as tarefas são geradas no seu próprio computador: é trabalho de teste, e <strong>ninguém de fora encomendou nem paga por ele</strong>.</p>
+<h2>6. O ULTRAX, a computação científica e o Work Score</h2>
+<p>O ULTRAX executa trabalho computacional útil e verificável. Ele trabalha de três jeitos:</p>
 <ul>
-<li>O <strong>Work Score</strong> mede contribuição computacional. **Não é dinheiro, não é HYX e não dá direito a pagamento, recompensa ou participação** de nenhum tipo.
-<li>A reputação mostrada no modo LAB é uma medida local.
+<li><strong>Modo LAB:</strong> as tarefas são geradas no seu próprio computador. É trabalho de teste, e <strong>ninguém de fora encomendou nem paga por ele</strong>.
+<li><strong>JOBs científicos seus:</strong> você pede o cálculo (genética, plantas, rotas, moléculas e outros), e o seu computador o faz.
+<li><strong>Calcular para outros nós:</strong> fica <strong>desligado</strong> até você ligar a chave &quot;Calcular unidades que outros nós pedirem&quot;. Ligada, o seu computador calcula pedaços de JOBs de outras pessoas, dentro dos limites de CPU, memória e tempo que você escolheu, e pode desligar quando quiser. <strong>Ninguém paga por esse trabalho.</strong>
+</ul>
+<p>Sobre os resultados, os pontos e os créditos:</p>
+<ul>
+<li>Os resultados são <strong>simulações e modelos</strong>. Não são laudo, diagnóstico, recomendação médica, agronômica, de engenharia ou de investimento, e <strong>não substituem</strong> estudo, ensaio de laboratório ou profissional habilitado. Um modelo pode errar, e o relatório diz onde ele sabidamente erra.
+<li>O <strong>Work Score</strong> e os <strong>créditos de computação</strong> medem contribuição computacional. <strong>Não são dinheiro, não são HYX e não dão direito a pagamento, recompensa ou participação</strong> de nenhum tipo.
+<li>A reputação de cada worker é uma medida <strong>local</strong>: é o que o seu nó viu, não uma nota da rede.
 </ul>
 <h2>7. Conexões que o programa faz</h2>
 <p>Para funcionar, o programa:</p>
 <ul>
 <li>conversa com <strong>outros nós da rede Hyurax</strong>, por conexão cifrada. Os nós com que você se conecta veem o seu endereço IP, como em qualquer rede par a par;
+<li>se você ligar &quot;calcular para outros nós&quot;, <strong>recebe</strong> deles a descrição do cálculo e <strong>devolve</strong> o resultado. Ao pedir um JOB com verificação entre nós, faz o contrário: manda a descrição e recebe os resultados. Cada resultado vai assinado com uma chave derivada da identidade do seu nó, que os outros nós veem. Ela não leva o seu nome nem a sua carteira;
 <li>baixa a <strong>lista pública de nós semente</strong> do repositório do projeto no GitHub;
 <li>consulta a <strong>api.coingecko.com</strong> para mostrar preços de criptomoedas, <strong>só</strong> se você ligar o painel &quot;Mercado&quot; nos ajustes;
 <li>se você ligar &quot;ver no celular&quot;, deixa o painel visível para aparelhos da sua rede local, só para leitura.
@@ -54,7 +62,7 @@
 <p>O programa <strong>não envia dados de uso, não tem rastreamento e não mostra anúncios</strong>.</p>
 <h2>8. Privacidade (LGPD)</h2>
 <ul>
-<li>Os dados do programa (cadeia, carteira cifrada, histórico do ULTRAX, ajustes) ficam na pasta <code>%APPDATA%\Hyurax</code> do seu computador. O projeto não recebe esses dados.
+<li>Os dados do programa (cadeia, carteira cifrada, histórico do ULTRAX, JOBs científicos e relatórios, ajustes) ficam na pasta <code>%APPDATA%\Hyurax</code> do seu computador. O projeto não recebe esses dados.
 <li>As <strong>transações na cadeia são públicas</strong> por natureza: qualquer nó vê os endereços e valores. Não coloque informação pessoal em lugar nenhum da cadeia.
 <li>Para apagar tudo, feche o programa e apague a pasta <code>%APPDATA%\Hyurax</code>. <strong>Isso apaga também a carteira</strong>: guarde uma cópia antes, se quiser.
 </ul>
