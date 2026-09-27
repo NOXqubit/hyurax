@@ -34,6 +34,7 @@ MODULES = [
     ("test_10_revisao_seguranca.py", "as 6 correcoes da revisao de ataque"),
     ("test_11_usefulpow_consenso.py", "trabalho util no consenso e politica criptografica"),
     ("test_12_ia.py", "treino de IA do ULTRAX sobre moleculas reais"),
+    ("test_13_genetica.py", "genetica de populacoes (Wright-Fisher) do ULTRAX"),
 ]
 
 

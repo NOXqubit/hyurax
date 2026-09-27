@@ -26,7 +26,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 OUT_DIR = ROOT.parent / "vectors"
 
-from hyurax import argon2, codec, consensus, crypto, ia, identidade, usefulpow, utrax  # noqa: E402
+from hyurax import argon2, codec, consensus, crypto, genetica, ia, identidade, usefulpow, utrax  # noqa: E402
 from hyurax.block import BlockHeader  # noqa: E402
 from hyurax.chain import Chain, make_genesis  # noqa: E402
 from hyurax.consensus import MAINNET, REGTEST, TESTNET  # noqa: E402
@@ -873,6 +873,79 @@ def vec_ia() -> dict:
     }
 
 
+def vec_genetica() -> dict:
+    """Genética de populações (Wright-Fisher) do ULTRAX: o fluxo de sorteios,
+    o limiar em Q32 nas bordas, trajetórias inteiras e as recusas. Os casos
+    passam pelas bordas: AA letal com a população toda AA (den = 0), mutação
+    e seleção no máximo, o menor tamanho e 64 loci."""
+    semente = crypto.H(b"vetor genetica")
+    s0 = genetica.estado_inicial(semente)
+    fluxo = [{"n": n, "saida": f"{genetica.splitmix64(s0, n):016x}"}
+             for n in (0, 1, 2, 3, 1000, 2**32 - 1, 2**40 + 7)]
+    padrao = [f"{genetica.splitmix64(0, n):016x}" for n in range(4)]
+
+    limiares = []
+    for k, m, selecao, dominancia, mutacao in (
+        (0, 16, 10_000, 50, 0), (16, 16, 10_000, 50, 0), (4, 16, 10_000, 50, 0),
+        (1, 3, 10_000, 50, 0), (0, 10, 10_000, 50, 10_000), (10, 10, 0, 50, 0),
+        (10, 10, 0, 50, 100), (9, 10, 0, 50, 0), (9, 10, 0, 100, 0), (1, 10, 0, 0, 0),
+        (123, 1000, 20_000, 100, 10_000), (77_777, 200_000, 13_579, 37, 4321),
+        (199_999, 200_000, 20_000, 0, 1), (1, 200_000, 0, 100, 10_000),
+    ):
+        limiares.append({
+            "k": k, "m": m, "selecao": selecao, "dominancia": dominancia, "mutacao": mutacao,
+            "limiar": genetica.limiar(k, m, genetica.aptidoes(selecao, dominancia), mutacao),
+        })
+
+    casos = []
+    for tamanho, passos, parametros in (
+        (5, 6, [3, 100, 10_500, 50, 3000]),
+        (20, 15, [4, 0, 10_000, 0, 5000]),
+        (3, 10, [2, 0, 0, 100, 10_000]),
+        (7, 9, [5, 10_000, 20_000, 100, 0]),
+        (2, 1, [1, 0, 10_000, 50, 5000]),
+        (100, 40, [8, 50, 12_000, 25, 1000]),
+        (1000, 3, [2, 1, 9_000, 75, 9999]),
+        (33, 12, [64, 0, 15_000, 0, 100]),
+    ):
+        resultado = genetica.executar(tamanho, passos, parametros, semente)
+        assert resultado == genetica.executar_referencia(tamanho, passos, parametros, semente)
+        casos.append({
+            "tamanho": tamanho, "passos": passos, "parametros": parametros,
+            "resultado": h(resultado),
+            "operacoes": genetica.operacoes(tamanho, passos, parametros),
+            "estatisticas": genetica.estatisticas(resultado),
+        })
+
+    recusados = []
+    for tamanho, passos, parametros in (
+        (1, 10, [4, 0, 10_000, 50, 5000]), (100_001, 10, [4, 0, 10_000, 50, 5000]),
+        (10, 0, [4, 0, 10_000, 50, 5000]), (10, 10_001, [4, 0, 10_000, 50, 5000]),
+        (10, 10, [0, 0, 10_000, 50, 5000]), (10, 10, [65, 0, 10_000, 50, 5000]),
+        (10, 10, [4, 10_001, 10_000, 50, 5000]), (10, 10, [4, 0, 20_001, 50, 5000]),
+        (10, 10, [4, 0, 10_000, 101, 5000]), (10, 10, [4, 0, 10_000, 50, 10_001]),
+        (100_000, 672, [64, 0, 10_000, 50, 5000]),
+    ):
+        try:
+            genetica.validar(tamanho, passos, parametros)
+            recusado = False
+        except ValueError:
+            recusado = True
+        assert recusado, (tamanho, passos, parametros)
+        recusados.append({"tamanho": tamanho, "passos": passos, "parametros": parametros})
+
+    return {
+        "semente": h(semente),
+        "estado_inicial": f"{s0:016x}",
+        "fluxo": fluxo,
+        "splitmix64_estado_zero": padrao,
+        "limiares": limiares,
+        "casos": casos,
+        "recusados": recusados,
+        "no_limite": {"tamanho": 100_000, "passos": 671, "parametros": [64, 10_000, 20_000, 100, 10_000]},
+    }
+
+
 def vec_usefulpow() -> dict:
     """Trabalho util no consenso: regra do tamanho, semente, prova e recusas."""
     tamanhos = []
@@ -1182,6 +1255,7 @@ FILES = {
     "utrax.json": vec_utrax,
     "usefulpow.json": vec_usefulpow,
     "ia.json": vec_ia,
+    "genetica.json": vec_genetica,
 }
 
 

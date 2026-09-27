@@ -36,6 +36,10 @@
       "bytes": 42014,
       "sha512_16": "55401ef72e90a8d65e4bb430a97dbdb5"
     },
+    "genetica.json": {
+      "bytes": 22109,
+      "sha512_16": "aa9d1cb3fbbe08ad20cc3d78377d417f"
+    },
     "hash.json": {
       "bytes": 1960,
       "sha512_16": "0d7d124ec8d41a20ce1e3ac253869f2f"
