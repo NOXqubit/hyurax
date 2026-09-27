@@ -26,7 +26,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 OUT_DIR = ROOT.parent / "vectors"
 
-from hyurax import argon2, codec, consensus, crypto, genetica, ia, identidade, job, melhoramento, usefulpow, utrax  # noqa: E402
+from hyurax import argon2, codec, consensus, crypto, genetica, ia, identidade, job, melhoramento, rotas, usefulpow, utrax  # noqa: E402
 from hyurax.block import BlockHeader  # noqa: E402
 from hyurax.chain import Chain, make_genesis  # noqa: E402
 from hyurax.consensus import MAINNET, REGTEST, TESTNET  # noqa: E402
@@ -1069,6 +1069,48 @@ def vec_melhoramento() -> dict:
     }
 
 
+def vec_rotas() -> dict:
+    """Rotas do ULTRAX (reference/hyurax/rotas.py): o gerador, a instância, a
+    partida, o 2-opt inteiro e os certificados, com adulterações recusadas."""
+    g = rotas.Gerador([1, 2, 3, 4])
+    xoshiro = [g.proximo() for _ in range(6)]
+    semente_partida = crypto.H(b"vetor rotas partida")
+    casos = []
+    for n, passos, instancia in ((4, 10, 1), (8, 50, 2), (12, 100, 3), (30, 200, 4), (60, 3, 5), (120, 1000, 6)):
+        semente = crypto.H(b"vetor rotas %d" % n)
+        resultado, ops = rotas.executar(n, passos, [instancia], semente)
+        otimo = resultado[24] == 1
+        casos.append({
+            "tamanho": n, "passos": passos, "instancia": instancia, "semente": h(semente),
+            "resultado": h(resultado), "operacoes": ops,
+            "comprimento": rotas.certificar(n, passos, instancia, resultado),
+            "otimo_local": otimo,
+        })
+    base = casos[3]
+    n, passos, inst = base["tamanho"], base["passos"], base["instancia"]
+    bom = bytes.fromhex(base["resultado"])
+    cab = rotas.CABECALHO
+    repetida = bytearray(bom)
+    repetida[cab + 2:cab + 4] = repetida[cab + 4:cab + 6]
+    mentirosa = bytearray(bom)
+    mentirosa[0:8] = (int.from_bytes(bom[0:8], "big") - 1).to_bytes(8, "big")
+    adulterados = []
+    for nome, dados in (("cidade repetida", bytes(repetida)), ("comprimento mentiroso", bytes(mentirosa)), ("curto", bom[:-1])):
+        try:
+            rotas.certificar(n, passos, inst, dados)
+            recusado = False
+        except rotas.Recusa:
+            recusado = True
+        adulterados.append({"nome": nome, "resultado": h(dados), "recusado": recusado})
+    return {
+        "xoshiro256ss_estado_1234": xoshiro,
+        "coordenadas_7_12": [list(c) for c in rotas.coordenadas(7, 12)],
+        "partida": {"semente": h(semente_partida), "n": 20, "rota": rotas.partida(semente_partida, 20)},
+        "casos": casos,
+        "adulterados": {"tamanho": n, "passos": passos, "instancia": inst, "casos": adulterados},
+    }
+
+
 def vec_usefulpow() -> dict:
     """Trabalho util no consenso: regra do tamanho, semente, prova e recusas."""
     tamanhos = []
@@ -1381,6 +1423,7 @@ FILES = {
     "job.json": vec_job,
     "genetica.json": vec_genetica,
     "melhoramento.json": vec_melhoramento,
+    "rotas.json": vec_rotas,
 }
 
 
