@@ -135,7 +135,7 @@ pub fn mostrar(endereco: &[u8; ADDRESS_LEN], nome_da_rede: &str) -> String {
 pub fn ler(texto: &str, nome_da_rede: &str) -> Result<[u8; ADDRESS_LEN], String> {
     let t = texto.trim();
     if t.len() == ADDRESS_LEN * 2 && t.bytes().all(|b| b.is_ascii_hexdigit()) {
-        return crate::de_hex(t).ok_or_else(|| "endereço hexadecimal inválido".into());
+        return crate::util::de_hex(t).ok_or_else(|| "endereço hexadecimal inválido".into());
     }
     let (hrp, dados) = ler_bech32m(t)?;
     let esperado = prefixo(nome_da_rede);

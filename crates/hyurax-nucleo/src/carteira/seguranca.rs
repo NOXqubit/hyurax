@@ -13,7 +13,7 @@
 
 use std::path::Path;
 
-use crate::totp;
+use crate::carteira::totp;
 
 /// Nome do arquivo dentro da pasta de dados.
 const ARQUIVO: &str = "seguranca.txt";

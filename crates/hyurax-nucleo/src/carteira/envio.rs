@@ -22,24 +22,25 @@ use hyurax_crypto::ADDRESS_LEN;
 use hyurax_net::Rede;
 use hyurax_tx::{HYX, Output, Transfer, Tx, sign_transfer_outputs};
 
-use crate::{carteira, endereco, hex, hyx, unidades_de_hyx};
+use crate::carteira::{arquivo as carteira, endereco};
+use crate::util::{hex, hyx, unidades_de_hyx};
 
 /// Taxa sugerida quando o dono não escreve nada: zero.
 ///
 /// A rede de teste não tem disputa por espaço no bloco, e cobrar taxa por
 /// enfeite só confundiria quem está aprendendo. Quem quiser, digita.
-pub(crate) const TAXA_PADRAO: u64 = 0;
+pub const TAXA_PADRAO: u64 = 0;
 
 /// Um envio já conferido, pronto para assinar.
 #[derive(Debug)]
-pub(crate) struct Pedido {
+pub struct Pedido {
     pub para: [u8; ADDRESS_LEN],
     pub valor: u64,
     pub taxa: u64,
 }
 
 /// O que aconteceu depois de assinar.
-pub(crate) struct Enviada {
+pub struct Enviada {
     pub txid: [u8; 64],
     pub nonce: u64,
     pub pares: usize,
@@ -50,7 +51,7 @@ pub(crate) struct Enviada {
 /// # Errors
 /// Endereço fora do formato, endereço igual ao próprio, valor zero ou soma que
 /// estoura.
-pub(crate) fn conferir(
+pub fn conferir(
     de: &[u8; ADDRESS_LEN],
     para_texto: &str,
     valor_texto: &str,
@@ -75,7 +76,7 @@ pub(crate) fn conferir(
 }
 
 /// Quanto dá para enviar agora, já descontando a taxa: o que o botão "tudo" usa.
-pub(crate) fn maximo(saldo: u64, taxa: u64) -> u64 {
+pub fn maximo(saldo: u64, taxa: u64) -> u64 {
     saldo.saturating_sub(taxa)
 }
 
@@ -84,7 +85,7 @@ pub(crate) fn maximo(saldo: u64, taxa: u64) -> u64 {
 /// # Errors
 /// Saldo insuficiente, senha errada, assinatura recusada pela própria validação
 /// ou nonce já ocupado no mempool.
-pub(crate) fn enviar(
+pub fn enviar(
     rede: &Arc<Rede>,
     magic: &[u8; 4],
     maturidade: u64,
@@ -124,7 +125,7 @@ pub(crate) fn enviar(
 }
 
 /// Uma linha do histórico da carteira.
-pub(crate) struct Movimento {
+pub struct Movimento {
     /// Horário do bloco; zero enquanto a transação está esperando.
     pub quando: u64,
     pub altura: u64,
@@ -156,7 +157,7 @@ fn primeiro_destino(t: &Transfer, rede: &str) -> String {
 
 /// Monta o histórico: o que está esperando no mempool primeiro, depois o que já
 /// entrou em bloco, do mais novo para o mais velho.
-pub(crate) fn historico(chain: &Chain, esperando: &[Transfer], meu: &[u8; ADDRESS_LEN], limite: usize) -> Vec<Movimento> {
+pub fn historico(chain: &Chain, esperando: &[Transfer], meu: &[u8; ADDRESS_LEN], limite: usize) -> Vec<Movimento> {
     let mut saida: Vec<Movimento> = Vec::new();
     for t in esperando {
         let recebido = soma_para(t, meu);

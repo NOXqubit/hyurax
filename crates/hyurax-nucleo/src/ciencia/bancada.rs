@@ -26,7 +26,7 @@ use hyurax_ultrax::job::{Dominio, EspecificacaoDeJob, Intervalos, Nivel, PedidoD
 use hyurax_ultrax::trabalho::{self, Especificacao, TipoDeTrabalho};
 
 use crate::ciencia::{Ciencia, EstadoDoJob};
-use crate::painel::texto_json;
+use crate::util::texto_json;
 use crate::ultrax::{self, Ultrax};
 
 /// Uma medida.
@@ -196,7 +196,7 @@ fn ponta_a_ponta(pasta: &Path, nucleos: u32) -> Result<(f64, f64), String> {
     let dir = pasta.join("benchmark-temporario");
     let _ = std::fs::remove_dir_all(&dir);
     std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
-    let identidade = crate::identidade_na_pasta(&dir)?;
+    let identidade = crate::identidade::na_pasta(&dir)?;
     let partida = ultrax::Partida {
         ligado: true,
         linhas: nucleos.max(1),
@@ -208,7 +208,7 @@ fn ponta_a_ponta(pasta: &Path, nucleos: u32) -> Result<(f64, f64), String> {
     };
     let u = Ultrax::abrir(&dir, identidade.segredo(), nucleos.max(1), &partida, Box::new(|_, _| {}));
     u.lab.store(false, Ordering::Relaxed);
-    let c = Ciencia::abrir(&dir, u.worker(), crate::painel::VERSAO)?;
+    let c = Ciencia::abrir(&dir, u.worker(), crate::VERSAO)?;
     c.ligar(&u);
     let unidades = 120u64;
     let id = c.submeter(PedidoDeJob {

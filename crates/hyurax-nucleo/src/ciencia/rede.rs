@@ -36,7 +36,7 @@ use hyurax_ultrax::trabalho::{self, Especificacao, TipoDeTrabalho, hash_da_entra
 use hyurax_ultrax::validador::{Desfecho, Parecer, compromisso, por_maioria, revelacao_confere};
 
 use super::{Ciencia, EmVoo, Evento, PRIORIDADE, agora_ms};
-use crate::hex;
+use crate::util::hex;
 use crate::ultrax::{DesfechoDeUnidade, PedidoDeUnidade};
 
 /// Uma oferta vale por isso depois de vista.
@@ -654,7 +654,7 @@ impl Ciencia {
                     self.emitir(ev);
                 }
                 if terminou_job {
-                    let _ = crate::relatorio::gravar(self, job_id);
+                    let _ = crate::ciencia::relatorio::gravar(self, job_id);
                 }
             }
             _ => self.voltar_para_a_fila(job_id, indice, tipo, format!("sem maioria entre workers de nós diferentes; {diagnostico}")),
@@ -694,7 +694,7 @@ impl Ciencia {
             self.emitir(ev);
         }
         if terminou_job {
-            let _ = crate::relatorio::gravar(self, job_id);
+            let _ = crate::ciencia::relatorio::gravar(self, job_id);
         }
     }
 

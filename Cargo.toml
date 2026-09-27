@@ -17,17 +17,21 @@ members = [
     "crates/hyurax-eter",
     "crates/hyurax-net",
     "crates/hyurax-ultrax",
+    "crates/hyurax-nucleo",
+    "crates/hyurax-interface",
     "crates/hyurax-no",
+    "crates/hyurax-app",
+    "crates/hyurax-instalador",
 ]
 
 [workspace.package]
-version = "0.4.0-teste.1"
+version = "1.0.0"
 edition = "2024"
 rust-version = "1.98"
 authors = ["Projeto Hyurax"]
 license = "MIT OR Apache-2.0"
-repository = "https://github.com/"
-description = "Hyurax — implementação de nó em Rust"
+repository = "https://github.com/NOXqubit/hyurax"
+description = "Hyurax / Ultrax — nó, carteira, mineração e computação científica verificável (rede de teste)"
 
 # ---------------------------------------------------------------------------
 # REGRA DO PROJETO: só dependência Rust pura.
@@ -66,6 +70,8 @@ hyurax-wire = { path = "crates/hyurax-wire" }
 hyurax-eter = { path = "crates/hyurax-eter" }
 hyurax-net = { path = "crates/hyurax-net" }
 hyurax-ultrax = { path = "crates/hyurax-ultrax" }
+hyurax-nucleo = { path = "crates/hyurax-nucleo" }
+hyurax-interface = { path = "crates/hyurax-interface" }
 
 # Vetores de teste. Rust puro.
 serde = { version = "1", features = ["derive"] }
@@ -106,13 +112,13 @@ argon2 = { version = "=0.6.0", default-features = false }
 # (crates/hyurax-net/src/entropia.rs).
 snow = { version = "=0.10.0", default-features = false, features = ["use-curve25519", "use-chacha20poly1305", "use-blake2"] }
 
-# Carteira com senha (crates/hyurax-no/src/carteira.rs). Rust puro, a mesma
+# Carteira com senha (crates/hyurax-nucleo/src/carteira/arquivo.rs). Rust puro, a mesma
 # que o snow já traz; sem `default-features` para não puxar o `getrandom`.
 chacha20poly1305 = { version = "0.10", default-features = false }
 
 # Sem crate de aleatoriedade: o `getrandom` 0.4 no Windows (alvo GNU) exige a
-# ferramenta `dlltool`, que não existe nesta máquina. O hyurax-no lê a entropia
-# do próprio sistema (ver `entropia_do_sistema` em crates/hyurax-no).
+# ferramenta `dlltool`, que não existe nesta máquina. O nó lê a entropia do
+# próprio sistema (ver `entropia_do_sistema` em crates/hyurax-net).
 
 [profile.dev]
 debug = 0

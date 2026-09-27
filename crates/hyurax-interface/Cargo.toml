@@ -1,0 +1,12 @@
+[package]
+name = "hyurax-interface"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+description = "Hyurax / Ultrax — a interface (HTML, CSS, JavaScript e WebGL 2), embutida no programa"
+
+[lints.rust]
+unsafe_code = "forbid"
+missing_docs = "warn"

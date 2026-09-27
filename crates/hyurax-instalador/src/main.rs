@@ -28,10 +28,11 @@ use tao::event_loop::{ControlFlow, EventLoopBuilder};
 use tao::window::{Theme, WindowBuilder};
 use wry::{WebContext, WebViewBuilder};
 
-use hyurax_no::termos;
+use hyurax_nucleo::pastas::Pastas;
+use hyurax_nucleo::termos;
 
-const PROGRAMA: &[u8] = include_bytes!(env!("HYURAX_CARGA_EXE"));
-const DLL: &[u8] = include_bytes!(env!("HYURAX_CARGA_DLL"));
+const PROGRAMA: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/Hyurax.exe"));
+const DLL: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/WebView2Loader.dll"));
 const VERSAO: &str = env!("CARGO_PKG_VERSION");
 const CHAVE: &str = r"HKCU\Software\Microsoft\Windows\CurrentVersion\Uninstall\Hyurax";
 /// Não mostra janela preta de console para os comandos que o instalador roda.
@@ -167,6 +168,9 @@ fn atalho(arquivo: &Path, alvo: &Path, pasta: &Path) -> Result<(), String> {
 }
 
 fn instalar(area_de_trabalho: bool, abrir: bool) -> Result<PathBuf, String> {
+    if PROGRAMA.is_empty() || DLL.is_empty() {
+        return Err("este instalador foi montado sem o programa dentro (faltou HYURAX_CARGA_EXE/HYURAX_CARGA_DLL no empacotamento)".into());
+    }
     let destino = pasta_de_instalacao()?;
     std::fs::create_dir_all(&destino).map_err(|e| format!("não consegui criar {}: {e}", destino.display()))?;
     let exe = destino.join("Hyurax.exe");
@@ -207,10 +211,10 @@ fn instalar(area_de_trabalho: bool, abrir: bool) -> Result<PathBuf, String> {
         rodar("reg.exe", &["add", CHAVE, "/v", nome, "/t", tipo, "/d", valor, "/f"])?;
     }
 
-    // O aceite fica na pasta de dados, e o programa não pergunta de novo.
-    if let Some(dados) = std::env::var_os("APPDATA").map(|a| PathBuf::from(a).join("Hyurax")) {
-        termos::aceitar(&dados, "instalador")?;
-    }
+    // o aceite fica na pasta de configuração, e o programa não pergunta de novo
+    let pastas = Pastas::do_sistema()?;
+    pastas.criar()?;
+    termos::aceitar(&pastas.config, "instalador")?;
     if abrir {
         use std::os::windows::process::CommandExt as _;
         let _ = Command::new(&exe).current_dir(&destino).creation_flags(SEM_JANELA).spawn();

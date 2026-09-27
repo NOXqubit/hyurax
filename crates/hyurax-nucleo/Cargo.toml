@@ -1,27 +1,28 @@
 [package]
-name = "hyurax-no"
+name = "hyurax-nucleo"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 authors.workspace = true
 license.workspace = true
-description = "Hyurax / Ultrax — o programa de terminal: nó, carteira, mineração, ULTRAX e JOBs científicos"
-
-[[bin]]
-name = "hyurax-no"
-path = "src/main.rs"
+description = "Hyurax — núcleo do programa: nó, carteira, mineração, ULTRAX, ciência, métricas, barramento de eventos e API local"
 
 [dependencies]
-hyurax-nucleo.workspace = true
-hyurax-interface.workspace = true
+hyurax-identidade.workspace = true
 hyurax-crypto.workspace = true
+hyurax-codec.workspace = true
+hyurax-tx.workspace = true
 hyurax-consensus.workspace = true
 hyurax-chain.workspace = true
+hyurax-store.workspace = true
 hyurax-net.workspace = true
 hyurax-pow.workspace = true
 hyurax-block.workspace = true
-hyurax-tx.workspace = true
 hyurax-ultrax.workspace = true
+argon2.workspace = true
+chacha20poly1305.workspace = true
+# JSON da API local. Já estava no projeto (vetores de teste); Rust puro.
+serde_json.workspace = true
 
 [lints.rust]
 unsafe_code = "forbid"

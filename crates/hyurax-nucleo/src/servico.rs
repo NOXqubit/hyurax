@@ -1,0 +1,314 @@
+//! O núcleo ligado: junta o nó, a carteira, a mineração, o ULTRAX, a ciência,
+//! as métricas e o barramento, e cuida do ciclo de vida (subir, vigiar,
+//! gravar e encerrar).
+
+use std::path::PathBuf;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::{Arc, Mutex};
+use std::time::{Duration, Instant};
+
+use hyurax_crypto::ADDRESS_LEN;
+use hyurax_net::Rede;
+
+use crate::ajustes::Ajustes;
+use crate::barramento::Barramento;
+use crate::cadeia::{self, Saida};
+use crate::carteira::servico::Carteira;
+use crate::ciencia::Ciencia;
+use crate::config::ConfigDoNo;
+use crate::maquinas::{self, Maquinas};
+use crate::metricas::Metricas;
+use crate::mineracao::Mineracao;
+use crate::pastas;
+use crate::ultrax::{self, Ultrax};
+use crate::util::{agora_unix, hex};
+use crate::{identidade, VERSAO};
+
+/// Quem está usando o núcleo.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Modo {
+    /// O programa com janela: ajustes gravados, carteira pela interface.
+    Janela,
+    /// O programa de terminal: registros no terminal, nada de ajustes gravados.
+    Terminal,
+}
+
+/// O que o núcleo precisa para ligar.
+pub struct Partida {
+    /// Janela ou terminal.
+    pub modo: Modo,
+    /// Rede, pastas, porta e sementes.
+    pub config: ConfigDoNo,
+    /// O arquivo da carteira (`None`: só recebe por endereço fixo).
+    pub arquivo_carteira: Option<PathBuf>,
+    /// Endereço de recompensa fixo (terminal, `--endereco`).
+    pub endereco_fixo: Option<[u8; ADDRESS_LEN]>,
+    /// Linhas da mineração quando não há ajuste gravado.
+    pub linhas_padrao: u32,
+    /// Pausa fixa entre tentativas (terminal, `--pausa-ms`); 0 = limite de CPU.
+    pub pausa_fixa_ms: u64,
+    /// Painel visível na rede local (só leitura).
+    pub painel_na_rede: bool,
+}
+
+/// O núcleo ligado.
+pub struct Nucleo {
+    /// Janela ou terminal.
+    pub modo: Modo,
+    /// Rede, pastas, porta e sementes.
+    pub config: ConfigDoNo,
+    /// O nó na rede.
+    pub rede: Arc<Rede>,
+    /// Os eventos.
+    pub barramento: Arc<Barramento>,
+    /// A carteira.
+    pub carteira: Carteira,
+    /// A mineração dos blocos.
+    pub mineracao: Arc<Mineracao>,
+    /// O worker de trabalho útil.
+    pub ultrax: Arc<Ultrax>,
+    /// Os JOBs científicos.
+    pub ciencia: Arc<Ciencia>,
+    /// CPU, RAM e GPU da máquina.
+    pub metricas: Arc<Metricas>,
+    /// As outras máquinas do dono.
+    pub maquinas: Maquinas,
+    /// Os ajustes (a parte que não mora em outro serviço).
+    pub ajustes: Mutex<Ajustes>,
+    /// Sementes do dono.
+    pub sementes: Mutex<Vec<String>>,
+    /// O painel responde a outros aparelhos da rede local (só leitura).
+    pub na_rede: AtomicBool,
+    /// Porta do nó para outros nós (0: não escuta).
+    pub porta_p2p: u16,
+    /// Quando o núcleo ligou.
+    pub inicio: Instant,
+    /// Núcleos lógicos da máquina.
+    pub nucleos: u32,
+    /// A trava da pasta de dados (solta quando o núcleo some).
+    _trava: std::fs::File,
+}
+
+impl Nucleo {
+    /// Liga tudo.
+    ///
+    /// # Errors
+    /// Pasta sem permissão, cadeia corrompida ou porta ocupada.
+    pub fn ligar(p: Partida) -> Result<Arc<Self>, String> {
+        let pastas = p.config.pastas.clone();
+        pastas.criar()?;
+        let trava = pastas.travar()?;
+        let terminal = p.modo == Modo::Terminal;
+        let barramento = Barramento::novo(Some(pastas.registros().join("hyurax.log")), terminal);
+        barramento.registrar("sistema", format!("Hyurax / Ultrax {VERSAO} · rede {}", p.config.rede.nome));
+        match pastas::migrar_da_0x(&pastas) {
+            Ok(m) => {
+                if !m.movidos.is_empty() {
+                    barramento.registrar("sistema", format!("dados da versão 0.x levados para {}: {}", pastas.dados.display(), m.movidos.join(", ")));
+                }
+                if !m.arquivados.is_empty() {
+                    barramento.registrar(
+                        "sistema",
+                        format!("histórico da 0.x guardado em arquivo-0.x (não confere mais com os rótulos da 1.0): {}", m.arquivados.join(", ")),
+                    );
+                }
+            }
+            Err(e) => barramento.registrar("erro", format!("migração dos dados da 0.x: {e}")),
+        }
+        let saida: Saida = {
+            let b = Arc::clone(&barramento);
+            Arc::new(move |t| b.registrar("no", t))
+        };
+        let rede = cadeia::subir(&p.config, &saida)?;
+        let ajustes = if p.modo == Modo::Janela { Ajustes::ler(&pastas.config) } else { Ajustes::default() };
+        let nucleos = u32::try_from(std::thread::available_parallelism().map_or(1, |n| n.get())).unwrap_or(1);
+        let id = identidade::na_pasta(&pastas.config)?;
+        let ultrax = {
+            let b = Arc::clone(&barramento);
+            Ultrax::abrir(
+                &pastas.dados,
+                id.segredo(),
+                nucleos,
+                &ultrax::Partida {
+                    ligado: ajustes.ultrax,
+                    linhas: ajustes.ultrax_linhas,
+                    uso_cpu: ajustes.ultrax_limite_cpu,
+                    memoria_mib: ajustes.ultrax_memoria_mib,
+                    debug: ajustes.ultrax_debug,
+                    gpu: ajustes.ultrax_gpu,
+                    gpu_uso: ajustes.ultrax_gpu_limite,
+                },
+                Box::new(move |tipo, texto| b.registrar(tipo, texto)),
+            )
+        };
+        let ciencia = Ciencia::abrir(&pastas.dados, ultrax.worker(), VERSAO)?;
+        ciencia.ligar(&ultrax);
+        {
+            let b = Arc::clone(&barramento);
+            ciencia.ao_emitir(Arc::new(move |linha: &str| {
+                b.publicar("ciencia", linha.to_string());
+            }));
+        }
+        ciencia.ligar_rede(&rede, hyurax_ultrax::prova::chave_do_worker(id.segredo()), ajustes.aceitar_rede);
+        let carteira = Carteira::abrir(p.arquivo_carteira.clone(), p.endereco_fixo, pastas.config.clone());
+        let mineracao = Mineracao::nova(nucleos, ajustes.linhas.unwrap_or(p.linhas_padrao), ajustes.limite_cpu);
+        let sementes = if p.modo == Modo::Janela { ajustes.sementes.clone() } else { p.config.sementes.clone() };
+        let maquinas = Maquinas::default();
+        if let Ok(mut l) = maquinas.lista.lock() {
+            l.clone_from(&ajustes.maquinas);
+        }
+        let n = Arc::new(Self {
+            modo: p.modo,
+            porta_p2p: p.config.porta,
+            config: p.config,
+            rede,
+            barramento,
+            carteira,
+            mineracao,
+            ultrax,
+            ciencia,
+            metricas: Metricas::iniciar(),
+            maquinas,
+            na_rede: AtomicBool::new(ajustes.na_rede || p.painel_na_rede),
+            sementes: Mutex::new(sementes),
+            ajustes: Mutex::new(ajustes.clone()),
+            inicio: Instant::now(),
+            nucleos,
+            _trava: trava,
+        });
+        if n.carteira.endereco().is_none() && n.modo == Modo::Janela {
+            n.barramento.registrar("carteira", "nenhuma carteira ainda: crie ou importe uma para minerar e receber HYX de teste");
+        }
+        if ajustes.minerar && n.carteira.endereco().is_some() {
+            n.mineracao.ligada.store(true, Ordering::Relaxed);
+        }
+        // a mineração
+        {
+            let (m, rede, config, b) = (Arc::clone(&n.mineracao), Arc::clone(&n.rede), n.config.clone(), Arc::clone(&n.barramento));
+            let fraco = Arc::downgrade(&n);
+            let endereco = Arc::new(move || fraco.upgrade().and_then(|n| n.carteira.endereco()));
+            let pausa = p.pausa_fixa_ms;
+            std::thread::spawn(move || m.laco(rede, config, endereco, b, pausa));
+        }
+        // o vigia: ritmo, gravação da cadeia, blocos de fora e pares
+        {
+            let fraco = Arc::downgrade(&n);
+            std::thread::spawn(move || vigiar(&fraco));
+        }
+        // as outras máquinas do dono
+        {
+            let fraco = Arc::downgrade(&n);
+            std::thread::spawn(move || {
+                while let Some(n) = fraco.upgrade() {
+                    n.maquinas.olhar_todas(agora_unix());
+                    drop(n);
+                    std::thread::sleep(maquinas::INTERVALO);
+                }
+            });
+        }
+        n.ultrax.iniciar();
+        Ok(n)
+    }
+
+    /// Grava os ajustes do dono (só no programa com janela).
+    pub fn gravar_ajustes(&self) {
+        if self.modo != Modo::Janela {
+            return;
+        }
+        let u = &self.ultrax;
+        let mut a = self.ajustes.lock().map(|a| a.clone()).unwrap_or_default();
+        a.minerar = self.mineracao.ligada.load(Ordering::Relaxed);
+        a.linhas = Some(self.mineracao.linhas.load(Ordering::Relaxed));
+        a.limite_cpu = self.mineracao.limite_cpu.load(Ordering::Relaxed);
+        a.na_rede = self.na_rede.load(Ordering::Relaxed);
+        a.ultrax = u.ligado.load(Ordering::Relaxed);
+        a.ultrax_linhas = u.linhas.load(Ordering::Relaxed);
+        a.ultrax_limite_cpu = u.uso_cpu.load(Ordering::Relaxed);
+        a.ultrax_memoria_mib = u.memoria_mib.load(Ordering::Relaxed);
+        a.ultrax_debug = u.debug.load(Ordering::Relaxed);
+        a.ultrax_gpu = u.gpu_ligada.load(Ordering::Relaxed);
+        a.ultrax_gpu_limite = u.gpu_uso.load(Ordering::Relaxed);
+        a.aceitar_rede = self.ciencia.aceita_da_rede();
+        a.sementes = self.sementes.lock().map(|s| s.clone()).unwrap_or_default();
+        a.maquinas = self.maquinas.lista.lock().map(|m| m.clone()).unwrap_or_default();
+        if let Ok(mut x) = self.ajustes.lock() {
+            x.clone_from(&a);
+        }
+        if let Err(e) = a.gravar(&self.config.pastas.config) {
+            self.barramento.registrar("erro", format!("não consegui gravar os ajustes: {e}"));
+        }
+    }
+
+    /// Troca as sementes e conecta nelas.
+    ///
+    /// # Errors
+    /// Endereço inválido ou lista grande demais.
+    pub fn trocar_sementes(&self, texto: &str) -> Result<Vec<String>, String> {
+        let novas: Vec<String> =
+            texto.split([',', '\n', ' ', ';']).map(str::trim).filter(|s| !s.is_empty()).map(String::from).collect();
+        if novas.len() > crate::sementes::MAXIMO {
+            return Err(format!("no máximo {} sementes", crate::sementes::MAXIMO));
+        }
+        if let Some(ruim) = novas.iter().find(|s| !crate::sementes::valida(s)) {
+            return Err(format!("\"{ruim}\" não é IP:PORTA (exemplo: 203.0.113.7:8790)"));
+        }
+        if let Ok(mut s) = self.sementes.lock() {
+            s.clone_from(&novas);
+        }
+        self.gravar_ajustes();
+        for s in &novas {
+            self.rede.semear(s);
+            match self.rede.conectar(s.as_str()) {
+                Ok(()) => self.barramento.registrar("rede", format!("conectando em {s}")),
+                Err(e) => self.barramento.registrar("rede", format!("não consegui conectar em {s}: {e}")),
+            }
+        }
+        Ok(novas)
+    }
+
+    /// Para a mineração e o ULTRAX e grava a cadeia: chamar antes de fechar.
+    pub fn encerrar(&self) {
+        self.mineracao.ligada.store(false, Ordering::Relaxed);
+        self.mineracao.interromper();
+        self.ultrax.ligar(false);
+        self.ultrax.gravar_placar();
+        if let Err(e) = cadeia::salvar(&self.rede, &self.config) {
+            self.barramento.registrar("erro", format!("não consegui gravar a cadeia ao fechar: {e}"));
+        }
+        self.barramento.registrar("sistema", "encerrado");
+    }
+}
+
+/// Laço de fundo: amostra o ritmo, grava a cadeia, percebe blocos de fora e
+/// conta os pares. Termina quando o núcleo some.
+fn vigiar(fraco: &std::sync::Weak<Nucleo>) {
+    let mut ultima_altura = u64::MAX;
+    let mut ultimos_pares = usize::MAX;
+    loop {
+        std::thread::sleep(Duration::from_secs(1));
+        let Some(n) = fraco.upgrade() else { return };
+        n.mineracao.amostrar();
+        let Ok((altura, ponta)) = n.rede.no.lock().map(|no| (no.chain.height(), no.chain.tip_hash())) else { continue };
+        let pares = n.rede.pares_conectados();
+        if altura != ultima_altura {
+            if ultima_altura != u64::MAX {
+                // um bloco que não foi deste nó já foi anunciado pela mineração
+                n.barramento.publicar("bloco", serde_json::json!({ "altura": altura, "hash": hex(&ponta) }).to_string());
+            }
+            // a rodada em curso minera em cima de ponta velha
+            if n.mineracao.rodada().is_some_and(|(_, a)| a <= altura) {
+                n.mineracao.interromper();
+            }
+            if let Err(e) = cadeia::salvar(&n.rede, &n.config) {
+                n.barramento.registrar("erro", format!("não consegui gravar a cadeia: {e}"));
+            }
+            ultima_altura = altura;
+        }
+        if pares != ultimos_pares {
+            if ultimos_pares != usize::MAX {
+                n.barramento.registrar("rede", format!("{pares} par(es) conectado(s)"));
+            }
+            ultimos_pares = pares;
+        }
+    }
+}

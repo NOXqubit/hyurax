@@ -20,8 +20,8 @@ use hyurax_ultrax::job::{DOMINIO_UNIDADE, Nivel};
 use hyurax_ultrax::trabalho::TipoDeTrabalho;
 
 use crate::ciencia::{Ciencia, EstadoDoJob, Job};
-use crate::painel::texto_json;
-use crate::{de_hex, hex};
+use crate::util::texto_json;
+use crate::util::{de_hex, hex};
 
 /// Grava `relatorio.json`, `relatorio.csv` e `relatorio.pdf` na pasta do JOB.
 pub fn gravar(c: &Ciencia, id: &[u8; HASH_LEN]) -> Result<(), String> {

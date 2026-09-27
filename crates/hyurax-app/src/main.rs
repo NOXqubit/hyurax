@@ -1,13 +1,17 @@
-// Hyurax: o programa com janela.
-//
-// Abre com dois cliques, sem terminal. Liga o nó na rede de teste, a
-// mineração e o painel, tudo guardado em %APPDATA%\Hyurax, e mostra o painel
-// numa janela própria (WebView2, que já vem no Windows 10 e 11). Fechar a
-// janela para a mineração e grava a cadeia antes de sair.
-//
-// Se o programa já estiver aberto, uma segunda cópia não liga outro motor na
-// mesma pasta (isso estragaria a cadeia gravada): só abre outra janela para o
-// que já está rodando.
+// ✝ Salmos 127:1 — “Se o Senhor não edificar a casa, em vão trabalham os que a edificam.”
+//! Hyurax / Ultrax 1.0: o programa com janela.
+//!
+//! Abre com dois cliques, sem terminal. Liga o núcleo (`hyurax-nucleo`) na
+//! rede de teste, abre a API local com a interface embutida
+//! (`hyurax-interface`) e mostra tudo numa janela própria (WebView2, que já
+//! vem no Windows 10 e 11). Fechar a janela para a mineração e o ULTRAX e
+//! grava a cadeia antes de sair.
+//!
+//! Configuração e carteira ficam em `%APPDATA%\Hyurax`; cadeia, ciência e
+//! registros, em `%LOCALAPPDATA%\Hyurax` (ver `hyurax_nucleo::pastas`).
+//!
+//! Se o programa já estiver aberto, uma segunda cópia não liga outro núcleo
+//! (a pasta de dados é travada): só abre outra janela para o que já roda.
 
 #![windows_subsystem = "windows"]
 
@@ -19,26 +23,53 @@ use tao::event_loop::{ControlFlow, EventLoopBuilder, EventLoopWindowTarget};
 use tao::window::{Icon, Theme, Window, WindowBuilder, WindowId};
 use wry::{WebContext, WebView, WebViewBuilder};
 
-use hyurax_no::painel::{self, JaAberto};
+use std::sync::Arc;
 
-const TITULO: &str = "Hyurax";
+use hyurax_nucleo::ajustes::Ajustes;
+use hyurax_nucleo::config::{self, ConfigDoNo};
+use hyurax_nucleo::pastas::Pastas;
+use hyurax_nucleo::servico::{Modo, Nucleo, Partida};
+
+const TITULO: &str = "Hyurax / Ultrax · rede de teste";
 
 fn main() {
     if std::env::args().any(|a| a == "--desinstalar") {
         desinstalar();
         return;
     }
-    let (url, motor) = match painel::ja_aberto() {
-        JaAberto::Sim(porta) => (Some(format!("http://127.0.0.1:{porta}/")), None),
-        JaAberto::Nao => match painel::app() {
-            Ok(pronto) => (Some(pronto.url()), Some(pronto)),
-            Err(erro) => {
-                abrir_janela(None, Some(&erro), None);
-                return;
-            }
-        },
+    if hyurax_nucleo::api::ja_aberto(config::PORTA_PAINEL) {
+        abrir_janela(Some(&format!("http://127.0.0.1:{}/", config::PORTA_PAINEL)), None, None);
+        return;
+    }
+    match ligar() {
+        Ok((url, n)) => abrir_janela(Some(&url), None, Some(n)),
+        Err(erro) => abrir_janela(None, Some(&erro), None),
+    }
+}
+
+/// Liga o núcleo e a API. Escuta os outros nós na porta padrão; se ela
+/// estiver ocupada, o nó funciona mesmo assim, só sem receber conexões.
+fn ligar() -> Result<(String, Arc<Nucleo>), String> {
+    let pastas = Pastas::do_sistema()?;
+    pastas.criar()?;
+    let ajustes = Ajustes::ler(&pastas.config);
+    let nucleos = u32::try_from(std::thread::available_parallelism().map_or(1, |n| n.get())).unwrap_or(1);
+    let partida = |porta: u16| Partida {
+        modo: Modo::Janela,
+        config: ConfigDoNo::nova(config::REDE_PADRAO, pastas.clone(), porta, ajustes.sementes.clone(), false),
+        arquivo_carteira: Some(pastas.carteira()),
+        endereco_fixo: None,
+        linhas_padrao: (nucleos / 2).max(1),
+        pausa_fixa_ms: 0,
+        painel_na_rede: false,
     };
-    abrir_janela(url.as_deref(), None, motor);
+    let n = match Nucleo::ligar(partida(config::PORTA_P2P)) {
+        Ok(n) => n,
+        Err(e) if e.contains("porta") => Nucleo::ligar(partida(0))?,
+        Err(e) => return Err(e),
+    };
+    let porta = hyurax_nucleo::api::abrir(&n, config::PORTA_PAINEL, hyurax_interface::ARQUIVOS)?;
+    Ok((format!("http://127.0.0.1:{porta}/"), n))
 }
 
 /// Pedido que vem de dentro da página para o programa.
@@ -103,14 +134,13 @@ fn montar_janela(
     Some((janela, visao))
 }
 
-fn abrir_janela(url: Option<&str>, erro: Option<&str>, motor: Option<painel::Pronto>) {
+fn abrir_janela(url: Option<&str>, erro: Option<&str>, motor: Option<Arc<Nucleo>>) {
     let laco = EventLoopBuilder::<Pedido>::with_user_event().build();
     let proxy = laco.create_proxy();
     let origem = url.map(|u| u.trim_end_matches('/').to_string()).unwrap_or_default();
-    // O motor do navegador guarda o cache na pasta de dados do usuário, e não ao
-    // lado do .exe: assim o programa roda de qualquer pasta, mesmo sem permissão
-    // de escrita (Arquivos de Programas, pendrive protegido).
-    let mut contexto = WebContext::new(painel::pasta_de_dados().ok().map(|d| d.join("navegador")));
+    // O navegador da janela guarda o cache na pasta de dados do usuário, e não
+    // ao lado do .exe: o programa nunca grava na pasta de instalação.
+    let mut contexto = WebContext::new(Pastas::do_sistema().ok().map(|p| p.navegador()));
     let conteudo = match (url, erro) {
         (Some(u), _) => Ok(u),
         (None, e) => Err(e.unwrap_or("erro desconhecido")),
@@ -132,10 +162,10 @@ fn abrir_janela(url: Option<&str>, erro: Option<&str>, motor: Option<painel::Pro
             }
             Event::WindowEvent { event: WindowEvent::CloseRequested, window_id, .. } => {
                 if window_id == id_principal {
-                    // Fechar a janela principal encerra o programa, e antes disso
-                    // a mineração para e a cadeia é gravada.
-                    if let Some(m) = &motor {
-                        m.encerrar();
+                    // fechar a janela principal encerra o programa: antes, a
+                    // mineração e o ULTRAX param e a cadeia é gravada
+                    if let Some(n) = &motor {
+                        n.encerrar();
                     }
                     *controle = ControlFlow::Exit;
                 } else {
@@ -156,13 +186,13 @@ fn abrir_no_navegador(destino: &str) {
     let _ = std::process::Command::new("explorer").arg(destino).spawn();
 }
 
-/// O "Adicionar ou remover programas" do Windows chama `Hyurax.exe --desinstalar`.
+/// O "Aplicativos" do Windows chama `Hyurax.exe --desinstalar`.
 ///
 /// Só age se o programa estiver na pasta onde o instalador põe
 /// (`%LOCALAPPDATA%\Programs\Hyurax`): nunca apaga outra pasta. Tira os
 /// atalhos e o registro, mostra onde ficaram os dados (a carteira!) e apaga a
-/// pasta do programa depois que este processo termina. Os dados em
-/// `%APPDATA%\Hyurax` ficam: são do dono.
+/// pasta do programa depois que este processo termina. Configuração, carteira
+/// e dados ficam: são do dono.
 fn desinstalar() {
     use std::os::windows::process::CommandExt as _;
     use std::path::PathBuf;
@@ -194,9 +224,9 @@ fn desinstalar() {
                 .args(["-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-Command", &script])
                 .creation_flags(SEM_JANELA)
                 .spawn();
-            r"desinstalar:O Hyurax foi desinstalado. Os seus dados continuam em %APPDATA%\Hyurax, inclusive a CARTEIRA: se for apagar essa pasta, guarde antes uma cópia do carteira.txt.".to_string()
+            r"desinstalar:O Hyurax foi desinstalado. A configuração e a CARTEIRA continuam em %APPDATA%\Hyurax, e a cadeia e os dados em %LOCALAPPDATA%\Hyurax. Se for apagar essas pastas, guarde antes uma cópia do carteira.txt.".to_string()
         }
-        _ => r"desinstalar:Esta cópia do Hyurax não foi instalada pelo instalador (ela não está em %LOCALAPPDATA%\Programs\Hyurax). Para remover, apague a pasta dela; os dados ficam em %APPDATA%\Hyurax.".to_string(),
+        _ => r"desinstalar:Esta cópia do Hyurax não foi instalada pelo instalador (ela não está em %LOCALAPPDATA%\Programs\Hyurax). Para remover, apague a pasta dela; a configuração e a carteira ficam em %APPDATA%\Hyurax.".to_string(),
     };
     abrir_janela(None, Some(&mensagem), None);
 }
@@ -209,7 +239,7 @@ fn pagina_de_erro(erro: &str) -> String {
         None => (
             "O Hyurax não conseguiu ligar",
             erro,
-            r"Feche esta janela e abra o programa de novo. Se continuar, a pasta de dados fica em %APPDATA%\Hyurax.",
+            r"Feche esta janela e abra o programa de novo. Se continuar, os registros ficam em %LOCALAPPDATA%\Hyurax\registros.",
         ),
     };
     let seguro: String = erro

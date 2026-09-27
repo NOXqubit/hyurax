@@ -1,0 +1,38 @@
+[package]
+name = "hyurax-app"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+description = "Hyurax / Ultrax — o programa com janela"
+
+[[bin]]
+name = "hyurax"
+path = "src/main.rs"
+
+[dependencies]
+hyurax-nucleo.workspace = true
+hyurax-interface.workspace = true
+
+# Janela nativa, Rust puro no Windows: conferido com cargo tree, sem `cc`,
+# `cmake`, `ring` nem `pkg-config`.
+#
+# Versões fixas de propósito. As ligações novas do Windows (`windows-link` 0.2,
+# usada pela wry 0.57 e pela tao 0.37) geram as bibliotecas de importação na
+# hora, com o `dlltool` e um montador que o Rust não traz. Estas versões usam o
+# `windows-targets` 0.52, que já vem com as bibliotecas prontas. Pelo mesmo
+# motivo o Cargo.lock trava `parking_lot_core` em 0.9.11 e `windows-version` em
+# 0.1.1: não rode `cargo update` sem conferir de novo.
+[target.'cfg(windows)'.dependencies]
+wry = { version = "=0.48.1", default-features = false, features = ["os-webview"] }
+tao = { version = "=0.31.1", default-features = false, features = ["rwh_06"] }
+
+[lints.rust]
+unsafe_code = "forbid"
+
+[lints.clippy]
+unwrap_used = "deny"
+expect_used = "deny"
+panic = "deny"
+indexing_slicing = "deny"
