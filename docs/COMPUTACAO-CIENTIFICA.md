@@ -69,7 +69,7 @@ implementado**.
 |---|---|---|
 | Molecular | **Triagem** de catálogo de moléculas reais: filtros de regra (Lipinski e afins, pelos descritores do catálogo) e solubilidade prevista pelo modelo de referência | a implementar (Etapa A) |
 | Genética / biologia | **Genética de populações** Wright-Fisher: deriva, seleção, dominância, mutação; réplicas independentes | a implementar (Etapa A) |
-| Agricultura | **Melhoramento de culturas**: QTL aditivos, ambiente (água, nitrogênio, solo) com interação G×E, seleção truncada e cruzamento | a implementar (Etapa A) |
+| Agricultura | **Melhoramento de culturas**: QTL aditivos, ambiente (água, nitrogênio, solo) pela lei do mínimo com interação G×E, seleção truncada e cruzamento | implementado (`melhoramento.py`, `melhoramento.rs`, `vectors/melhoramento.json`) |
 | Logística | **Rotas** (caixeiro-viajante): 2-opt a partir de partidas diferentes; a verificação confere a rota e o custo em O(n) | a implementar (Etapa A) |
 | Economia / alocação | Mochila 0/1 (ótimo exato) | existe |
 | IA / ML | Treino da rede de solubilidade; inferência em lote dentro da triagem | existe / Etapa A |
@@ -104,7 +104,7 @@ O parâmetro de cada motor está no módulo dele e no gabarito em Python.
 | Código | Tipo | `tamanho` | `passos` | parâmetros |
 |---|---|---|---|---|
 | 5 | Genética | indivíduos diploides N | gerações | loci, mutação (por 10⁶), seleção (+10⁴, deslocada), dominância (%), frequência inicial (por 10⁴) |
-| 6 | Melhoramento | indivíduos N | gerações | QTL, % selecionada, ruído ambiental, água, nitrogênio, solo, G×E |
+| 6 | Melhoramento | indivíduos N | gerações | QTL, arquitetura (sorteia os efeitos, igual em todo o JOB), % selecionada, ruído ambiental (% do desvio genético), água, nitrogênio, solo, G×E |
 | 7 | Rotas | cidades n | teto de passadas do 2-opt | instância |
 | 8 | Triagem | moléculas da faixa | 0 | catálogo, início da faixa, limites dos filtros |
 
