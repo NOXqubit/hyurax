@@ -26,7 +26,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 OUT_DIR = ROOT.parent / "vectors"
 
-from hyurax import argon2, codec, consensus, crypto, ia, identidade, usefulpow, utrax  # noqa: E402
+from hyurax import argon2, codec, consensus, crypto, ia, identidade, job, usefulpow, utrax  # noqa: E402
 from hyurax.block import BlockHeader  # noqa: E402
 from hyurax.chain import Chain, make_genesis  # noqa: E402
 from hyurax.consensus import MAINNET, REGTEST, TESTNET  # noqa: E402
@@ -873,6 +873,46 @@ def vec_ia() -> dict:
     }
 
 
+def vec_job() -> dict:
+    """JOB do ULTRAX: codificação, JOB_ID, semente das unidades, intervalos,
+    resumo aditivo e créditos v1 (reference/hyurax/job.py)."""
+    jobs = [
+        job.Job(7, 1, 64, 0, (), 1000, 2, 1, 0, 0, "matriz 64, mil unidades"),
+        job.Job(7, 3, 32, 50, (), 1 << 40, 3, 3, 86_400, 5_000_000, "difusão; concordância entre 3 nós"),
+        job.Job(5, 2, 40, 0, (), 12, 5, 2, 3600, 0, "alocação com orçamento livre\ne quebra de linha"),
+    ]
+    saida = []
+    for j in jobs:
+        j.validar()
+        jid = j.id()
+        saida.append({
+            "dominio": j.dominio, "tipo": j.tipo, "tamanho": j.tamanho, "passos": j.passos,
+            "unidades": j.unidades, "nivel": j.nivel, "redundancia": j.redundancia,
+            "prazo_s": j.prazo_s, "orcamento_milicreditos": j.orcamento_milicreditos,
+            "descricao": j.descricao,
+            "codificacao": h(j.codificar()), "id": h(jid),
+            "sementes": [{"indice": i, "semente": h(job.semente_da_unidade(jid, i))}
+                         for i in (0, 1, j.unidades - 1)],
+        })
+    pares = [(i, crypto.H(b"resultado %d" % i)) for i in range(20)]
+    intervalos = job.Intervalos()
+    insercoes = [(10, 20), (30, 40), (20, 30), (0, 5), (5, 6), (100, 101), (50, 60)]
+    for a, b in insercoes:
+        intervalos.inserir(a, b)
+    return {
+        "jobs": saida,
+        "resumo": {"pares": [{"indice": i, "hash": h(x)} for i, x in pares], "soma": h(job.resumo(pares))},
+        "intervalos": {
+            "insercoes": [list(x) for x in insercoes],
+            "faixas": [list(x) for x in intervalos.faixas],
+            "codificacao": h(intervalos.codificar()),
+            "concluidas": intervalos.concluidas(),
+            "primeira_faltante": [[d, 200, intervalos.primeira_faltante(d, 200)] for d in (0, 12, 45, 101, 150)],
+        },
+        "creditos": [[o, v, job.milicreditos(o, v)] for o, v in ((999_999, 0), (10**9, 10**9), (123_456_789, 987_654))],
+    }
+
+
 def vec_usefulpow() -> dict:
     """Trabalho util no consenso: regra do tamanho, semente, prova e recusas."""
     tamanhos = []
@@ -1182,6 +1222,7 @@ FILES = {
     "utrax.json": vec_utrax,
     "usefulpow.json": vec_usefulpow,
     "ia.json": vec_ia,
+    "job.json": vec_job,
 }
 
 

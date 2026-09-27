@@ -16,6 +16,8 @@
 //! - [`validador`]: compara resultados de workers diferentes e dá parecer;
 //! - [`reputacao`]: o histórico de cada worker;
 //! - [`pontuacao`]: o Work Score, uma medida de contribuição;
+//! - [`job`]: o pedido de computação científica, dividido em unidades
+//!   derivadas, com progresso, resumo e créditos;
 //! - os motores científicos, fora do rodízio LAB e só por JOB: [`genetica`],
 //!   [`melhoramento`], [`rotas`] e [`triagem`] (`docs/COMPUTACAO-CIENTIFICA.md`).
 //!
@@ -37,6 +39,7 @@ macro_rules! dominio {
 
 pub mod genetica;
 pub mod ia;
+pub mod job;
 pub mod melhoramento;
 pub mod pontuacao;
 pub mod prova;

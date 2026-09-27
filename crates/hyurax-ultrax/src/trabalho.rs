@@ -632,6 +632,27 @@ pub fn verificar_controlado(
     }
 }
 
+/// A especificação da unidade `indice` de um JOB, a partir do modelo.
+///
+/// Na maior parte dos tipos toda unidade usa o modelo, e o que muda é a
+/// semente (réplicas, partidas diferentes). Na triagem, a faixa de moléculas
+/// anda com o índice.
+pub fn derivar_unidade(modelo: &Especificacao, indice: u64) -> Result<Especificacao, ErroDeTrabalho> {
+    match modelo.tipo {
+        TipoDeTrabalho::Triagem => Err(ErroDeTrabalho::SemMotor("triagem molecular")),
+        TipoDeTrabalho::Matriz
+        | TipoDeTrabalho::Mochila
+        | TipoDeTrabalho::Difusao
+        | TipoDeTrabalho::Ia
+        | TipoDeTrabalho::Genetica
+        | TipoDeTrabalho::Melhoramento
+        | TipoDeTrabalho::Rotas => {
+            let _ = indice;
+            Ok(*modelo)
+        }
+    }
+}
+
 /// Operações que a verificação custa. A matriz é a única com prova curta.
 pub fn operacoes_de_verificacao(esp: &Especificacao) -> u64 {
     match esp.tipo {

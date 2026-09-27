@@ -44,6 +44,10 @@
       "bytes": 7824,
       "sha512_16": "57ef12f89c9c4d9f3634970ed23542bb"
     },
+    "job.json": {
+      "bytes": 9365,
+      "sha512_16": "c226e2a506ba917e7007ea4b9be42d9c"
+    },
     "state.json": {
       "bytes": 30480,
       "sha512_16": "b5f23581ea4f40981e100ded4a5a173e"

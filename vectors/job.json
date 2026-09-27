@@ -1,0 +1,273 @@
+{
+  "data": {
+    "creditos": [
+      [
+        999999,
+        0,
+        0
+      ],
+      [
+        1000000000,
+        1000000000,
+        2000
+      ],
+      [
+        123456789,
+        987654,
+        124
+      ]
+    ],
+    "intervalos": {
+      "codificacao": "0000000400000000000000000000000000000006000000000000000a00000000000000280000000000000032000000000000003c00000000000000640000000000000065",
+      "concluidas": 47,
+      "faixas": [
+        [
+          0,
+          6
+        ],
+        [
+          10,
+          40
+        ],
+        [
+          50,
+          60
+        ],
+        [
+          100,
+          101
+        ]
+      ],
+      "insercoes": [
+        [
+          10,
+          20
+        ],
+        [
+          30,
+          40
+        ],
+        [
+          20,
+          30
+        ],
+        [
+          0,
+          5
+        ],
+        [
+          5,
+          6
+        ],
+        [
+          100,
+          101
+        ],
+        [
+          50,
+          60
+        ]
+      ],
+      "primeira_faltante": [
+        [
+          0,
+          200,
+          6
+        ],
+        [
+          12,
+          200,
+          40
+        ],
+        [
+          45,
+          200,
+          45
+        ],
+        [
+          101,
+          200,
+          101
+        ],
+        [
+          150,
+          200,
+          150
+        ]
+      ]
+    },
+    "jobs": [
+      {
+        "codificacao": "010701000000400000000000000000000003e8020100000000000000000000000000000000000000176d617472697a2036342c206d696c20756e696461646573",
+        "descricao": "matriz 64, mil unidades",
+        "dominio": 7,
+        "id": "a43d549f8dd5916990f08a98149105e65fee3fdb0db3e74766561f6f5ccbffeaed5e1fe62e1587a4d627e3c31707e7dd4aac79b0b7cd9d8841770a8ee25cb7e4",
+        "nivel": 2,
+        "orcamento_milicreditos": 0,
+        "passos": 0,
+        "prazo_s": 0,
+        "redundancia": 1,
+        "sementes": [
+          {
+            "indice": 0,
+            "semente": "4fb1b56dd9951657c68cce1c9c1a68a88c09cc331d128f55b18e15276d12237492c5a3ec921e5347c410013736a385af7815074102b42fe414f5c6ae6b68fbb4"
+          },
+          {
+            "indice": 1,
+            "semente": "45530f24262e955b385d7e445a5104ae466cc86356e51776e3ff53343664f795918787706a20fae11df9b4b394f81ed268cd88cf3b55083ba32cf2adab3aa921"
+          },
+          {
+            "indice": 999,
+            "semente": "3c93ed1632f4faae05395af3e072a21b2b27b9ee7135764ca6597000d94c4e329fec5803380cef8ca32e992b6c9c11ae7f7cda2d211c3ef848589dd1ace9a9dd"
+          }
+        ],
+        "tamanho": 64,
+        "tipo": 1,
+        "unidades": 1000
+      },
+      {
+        "codificacao": "010703000000200000003200000100000000000303000000000001518000000000004c4b40000000246469667573c3a36f3b20636f6e636f7264c3a26e63696120656e7472652033206ec3b373",
+        "descricao": "difusão; concordância entre 3 nós",
+        "dominio": 7,
+        "id": "88a9f2e0487ac87e1f97b6c772f53c121fd36c22564b4fb7ce3c1aeaf5f2fa7417bf06c74d66b0f83c2f60b5547418b213aeb8c641279a16fd3a739167a5079e",
+        "nivel": 3,
+        "orcamento_milicreditos": 5000000,
+        "passos": 50,
+        "prazo_s": 86400,
+        "redundancia": 3,
+        "sementes": [
+          {
+            "indice": 0,
+            "semente": "2484b6bcfd2fda6f13b3c12086ecb872a496c621f01128405cb91dc80bac31ddb00657160de999a740580e7488b2bfb8c60c87fd16ca4fd2ff591249f1e77d2b"
+          },
+          {
+            "indice": 1,
+            "semente": "c55771cf77da276dfeac2e9b37b44320c8b30975f4407e8282e678b0a298326bb75d1440ddd2017c2e3ceeca9595fb8f409a546bc1e4301e7afeb52e653b7941"
+          },
+          {
+            "indice": 1099511627775,
+            "semente": "0041fab2607e0ec3d3d4d7990d6cf3fa87a1b2910b65522cc6eb247002c130f7a48b42f96118c8df24b05b9bd8aa8a08e2f735da65343826d1fd1a053d671f58"
+          }
+        ],
+        "tamanho": 32,
+        "tipo": 3,
+        "unidades": 1099511627776
+      },
+      {
+        "codificacao": "0105020000002800000000000000000000000c05020000000000000e10000000000000000000000031616c6f6361c3a7c3a36f20636f6d206f72c3a7616d656e746f206c697672650a6520717565627261206465206c696e6861",
+        "descricao": "alocação com orçamento livre\ne quebra de linha",
+        "dominio": 5,
+        "id": "7fea13029bb3094d36465e35d4798f7c68b0ef41102d5994ee48c668eb8d3d1b8ef9c16ece33037ff464ee90ef50b5bdfac8b33424dfac6280fe715ebd23db68",
+        "nivel": 5,
+        "orcamento_milicreditos": 0,
+        "passos": 0,
+        "prazo_s": 3600,
+        "redundancia": 2,
+        "sementes": [
+          {
+            "indice": 0,
+            "semente": "d245e68f4cf177e92fabbe57ddcdb7fec1b2f453f0b9ffb5de6619ca0390623929ee215649892613a46bb78c3d26292502d8f71d778367b149ba8f39e4bd87f4"
+          },
+          {
+            "indice": 1,
+            "semente": "1ea7522536b7757ab65563830e462e4c062828d435ff7dde415a74e69051e7c26c56f36b2f013bdc2cabd358fca78dfa2be29ef56c77e8aa790bb1ab340f4960"
+          },
+          {
+            "indice": 11,
+            "semente": "409d2553775611c9e38f10b13611383304dc1dc73d0349bf562caf9f95678afba5f992a57672606f3c1db6a04451d99720a7c7f524756c5dbbf5ae0f61e1d440"
+          }
+        ],
+        "tamanho": 40,
+        "tipo": 2,
+        "unidades": 12
+      }
+    ],
+    "resumo": {
+      "pares": [
+        {
+          "hash": "d72a90ee22e760045fc5d86d53e4702361c7db3854aad8f5b03e66e23e0d94498e0057ebf730df56c797a4aedd232c4c20d8e3febfc588160a738f2fb7f63cc9",
+          "indice": 0
+        },
+        {
+          "hash": "fb264f6ea0b39b60a8fe91d8ae66d1c9f03925be7aca386f243f2dc80c1af43b63ec060703f2849a652638adccba58556cb47a34590b7b25c039c8bd836a67fb",
+          "indice": 1
+        },
+        {
+          "hash": "13416878a798a0538725190b783a2059e7ce8e6d86a059d354a034a080e8dd8a5d436d1a1535255d938e0a6237fb81b69d38f05f800295de417c245e1456e6f3",
+          "indice": 2
+        },
+        {
+          "hash": "421a6e871ca3a535cfeb5b70cd1f83cacf834401f9fa8aaea6cad0b7382449ce6cb1356d8d50d8983f0216ee0a4f14c01ad395612251989d4d27003b47b66752",
+          "indice": 3
+        },
+        {
+          "hash": "3218084657dc4ac5e6a732dab548c14208bb5847c49a8aaeff1ee79fb4c2c5fefd7f5207db818b467e5e747011b888f6d0847856a9e0e585a524a47048de11f1",
+          "indice": 4
+        },
+        {
+          "hash": "d8ffe750ff2fc565ac54f6209c88907ceefd43822a85c9148e6c5bbf26e58176190bcfab2fc352cb06ac686e2aa7f4bd0dd97e19d474c36cb5f1daea171bf770",
+          "indice": 5
+        },
+        {
+          "hash": "8ee6850617b8870d3508412b37bd63be9d0655bb143a8e60e3b6ba2564620cde5a2543cd8ab7dfc329ab97c2c0fdd7f565c4e688b2e6f1c552c4ee10e13889d5",
+          "indice": 6
+        },
+        {
+          "hash": "2c0f2042ec2344fa1c92882cada5f6946338fa294ac45f0ae55493715b1a7997140b2e82082ba3342c8fcdd8062a4344815a75d2dd41a1350aa3d3f6ddf3f2e5",
+          "indice": 7
+        },
+        {
+          "hash": "3b15c069e9fd77c5e49b417dac5d66c30e2497954d9abb8bb20abea56e71790042e2b59739fb9ee149ff3d203236afcafeeabd7db356c44764cf78b16c84205e",
+          "indice": 8
+        },
+        {
+          "hash": "d1448a6a22bc79ae0fe9bfe653d0a869079d6159bbb95be84df7fd78d8dea5066d01aa331ee1b661f16810be21d78c64e43158e4b5a084416372a0a3ac3f60b5",
+          "indice": 9
+        },
+        {
+          "hash": "06dd79e71852ef99def058e16fc000d531b37867b0ece47470d2e9368d83cf3b603b7b56e1eff05ce96875490618077d8a333d8114f01af628208421b89ded83",
+          "indice": 10
+        },
+        {
+          "hash": "b7758b5c81c3b3c0218445c211bf9755b1708445aa30daa88e5f9c9eda8ee7ab1f1acb137812914988affab42a5bc3868b0977b037ddc178a8be9fe6517159f0",
+          "indice": 11
+        },
+        {
+          "hash": "9f29eaf71be67cf60d7108ef8222f6cee42d5f2cb2f87aacc642d23c79860a2c9c2d6e8d9388c2ed90a3b57cf29753753465c02580740e8eb0a75b975c3f33a6",
+          "indice": 12
+        },
+        {
+          "hash": "10ea464d794c63b9ddc6ecf66b6ef4d75d6025785eaa932eb8651ea87341264d7440602fda5808d7630059ad1bc69247a25c3d91fc1078c4c4eaf37548a871a0",
+          "indice": 13
+        },
+        {
+          "hash": "c438648aa5fd59981d7e7ddf56d50560e625882c157899f21566bd3abef86b2bc8b53e97b50d940e3e818f3df29c80405c94e4ad744b0a57a5264adfee2d2d7b",
+          "indice": 14
+        },
+        {
+          "hash": "7534e7c23963c786ecbfccbefdb9f92c4f2bf31a36e2222e3913f89ce352da3654e5e01830591021eacd3a7dee03b9d74d08de7678312b16f0f300683dc591e4",
+          "indice": 15
+        },
+        {
+          "hash": "72d84477ed8d528d3c7a736d67b89b70c7ae4e8df5af11ed6a694cd7cf07cb671e0b1f40c180a27ccc1ac7e10e1dca13257c36c7ff99a013efa1d5107c61d8f8",
+          "indice": 16
+        },
+        {
+          "hash": "dd4c79b35e7be799cf0187ac67d9d5278244674d504e1988965cfc1cfc9fbb575e0ba2063892cb2552903630ede382a376a2d43c244cc79a82c2ecdb78feffd0",
+          "indice": 17
+        },
+        {
+          "hash": "769cf43c03148697ab766ad3d21dcf21780bf1d938a3030943d6e564d1122619e0cac730db614432d6a7345009932b5ff8a92fc9f29e62af672b6a4998fe9d74",
+          "indice": 18
+        },
+        {
+          "hash": "b103251468d1cc34475f72320c5e15a07bfbcf6c0c7a3ffafdfcc05467b5e1fe5655cb73dbc6ca17c88960959334a74511fa489cd1b0e96e341ecdef2443e593",
+          "indice": 19
+        }
+      ],
+      "soma": "81d278122b934568a2cb3fd5717261d5770c30261c43710b34f523a1b181f66d329cbf585987aaca395de867307046592b6cef0c97029d455b8e8d66e8c9b4c6"
+    }
+  },
+  "generator": "reference/tools/gen_vectors.py",
+  "spec": "HYURAX-SPEC-01"
+}
