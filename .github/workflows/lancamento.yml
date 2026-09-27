@@ -1,8 +1,7 @@
 # Programas prontos para baixar, montados pelo próprio GitHub.
 #
 # Roda quando uma etiqueta `v*` é enviada (ou à mão, em Actions). Compila o
-# `hyurax-no` e o `hyurax-minerar` para cada sistema, monta o minerador com
-# janela para Windows, testa antes, e publica os pacotes numa Release com a
+# `hyurax-no` para cada sistema, monta o programa com janela para Windows, testa antes, e publica os pacotes numa Release com a
 # soma SHA-256 de cada arquivo.
 #
 # O código é Rust puro (sem compilador C), então a compilação cruzada para o
@@ -60,7 +59,7 @@ jobs:
           target: ${{ matrix.alvo }}
       - name: compilar
         shell: bash
-        run: cargo build --release --locked --target ${{ matrix.alvo }} -p hyurax-no -p hyurax-pow
+        run: cargo build --release --locked --target ${{ matrix.alvo }} -p hyurax-no
       - name: empacotar
         shell: bash
         run: |
@@ -71,7 +70,6 @@ jobs:
           ext=""
           [ "${{ runner.os }}" = "Windows" ] && ext=".exe"
           cp ".target/${{ matrix.alvo }}/release/hyurax-no${ext}" "$pasta/"
-          cp ".target/${{ matrix.alvo }}/release/hyurax-minerar${ext}" "$pasta/"
           cp LICENSE-MIT LICENSE-APACHE "$pasta/"
           cp docs/RODAR-UM-NO.md "$pasta/LEIA-ME.md"
           if [ "${{ runner.os }}" = "Windows" ]; then

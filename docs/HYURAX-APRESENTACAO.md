@@ -19,7 +19,7 @@ Technology**, que está construindo:
 
 - **uma moeda digital com rede própria**, com regras abertas e escritas,
   que qualquer pessoa pode conferir;
-- **um mercado de trabalho computacional**, o UTRAX: quem precisa de cálculo
+- **um mercado de trabalho computacional**, o ULTRAX: quem precisa de cálculo
   paga, e quem tem computador executa e recebe.
 
 **Dito com clareza:**
@@ -62,7 +62,7 @@ dela de verdade. Alguns exemplos do que se quer atender:
 - **Simulação e otimização em geral:** logística, clima, engenharia, qualquer
   área em que falta poder de cálculo.
 
-### Como funciona (o UTRAX)
+### Como funciona (o ULTRAX)
 
 1. Quem precisa de cálculo publica uma tarefa e **deposita o pagamento
    antes**. O valor fica travado, e ninguém trabalha de graça.
@@ -84,7 +84,7 @@ Para ninguém exagerar o que a tecnologia faz:
   tipo de tarefa tiver um defeito, isso não pode travar ou quebrar a moeda.
   Juntar as duas coisas com segurança é um problema em aberto na pesquisa, e
   o projeto trata isso como pesquisa, não como promessa.
-- **Hoje o protótipo do UTRAX tem três tipos de tarefa:** multiplicação de
+- **Hoje o protótipo do ULTRAX tem três tipos de tarefa:** multiplicação de
   matrizes, otimização de escolha (o "problema da mochila") e simulação de
   difusão. Aplicações como remédios e genética são o objetivo. Elas dependem
   de parcerias com quem tem os dados e os modelos científicos: laboratórios,
@@ -131,7 +131,7 @@ Por isso o Hyurax precisa de gente:
 - **Quem revisa e audita.** Programadores e especialistas em segurança
   procurando falhas que os criadores não viram. Olhar de fora é essencial.
 - **Quem tem problemas reais para resolver.** Pesquisadores, laboratórios e
-  empresas que precisam de poder de cálculo e podem testar o UTRAX com
+  empresas que precisam de poder de cálculo e podem testar o ULTRAX com
   tarefas de verdade.
 - **Quem dá opinião sincera**, inclusive dizendo o que está errado.
 
@@ -177,7 +177,7 @@ feito para que tudo possa ser conferido:
 | Programa de referência (Python) | completo, 119 testes passando |
 | Programa de produção (Rust) | começado: dinheiro, criptografia e codificação prontos, 40 testes |
 | Transação com vários ativos e vários destinatários | pronta no programa de referência |
-| UTRAX (trabalho útil) | protótipo com três tipos de tarefa |
+| ULTRAX (trabalho útil) | protótipo com três tipos de tarefa |
 | Revisão de segurança | feita; 6 falhas encontradas, correções em andamento |
 | Rede entre os computadores (P2P) | não começada |
 | Rede de teste pública | não existe |

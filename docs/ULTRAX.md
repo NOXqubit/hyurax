@@ -6,9 +6,11 @@ Escrito em 26/09/2026, a partir do pedido do autor de reestruturar a
 > Não prove que seu computador estava ligado. Prove que ele realizou um
 > trabalho verificável.
 
-**Nome.** ULTRAX é o nome do produto. Os rótulos de protocolo que já existem
-(`HYURAX-UTRAX-INSTANCE-v1` e outros) continuam como estão: entram em hash, e
-trocá-los mudaria vetores e a instância do trabalho útil do consenso.
+**Rótulos de domínio.** Os rótulos do ULTRAX são `HYURAX-ULTRAX-…` (JOB,
+unidade, oferta, compromisso, resultado e os dos motores). Um só guarda a
+grafia antiga, `HYURAX-UTRAX-INSTANCE-v1`: é o gerador das matrizes da prova
+útil de **cada bloco**. Trocá-lo muda a gênese e cria outra rede, então ele
+fica congelado até a próxima gênese da testnet.
 
 ## 1. O que existe hoje (análise de 26/09/2026)
 
@@ -16,8 +18,8 @@ trocá-los mudaria vetores e a instância do trabalho útil do consenso.
 |---|---|---|---|
 | Argon2id do consenso | `hyurax-pow` | Rust, testado | Continua: é a segurança da cadeia |
 | Trabalho útil do consenso (`MATRIX-FREIVALDS-V1`) | `hyurax-usefulpow`, spec §9A | Rust, igual ao gabarito | Gerador de matrizes e Freivalds |
-| Mercado Utrax: matriz, mochila, difusão, escrow | `reference/hyurax/utrax.py`, spec §18 | **só Python** | Os três trabalhos e as regras (executor entrega resultado, submissão inválida não trava tarefa) |
-| Vetores do Utrax | `vectors/utrax.json` | prontos | Conferir a tradução byte a byte |
+| Mercado Ultrax: matriz, mochila, difusão, escrow | `reference/hyurax/ultrax.py`, spec §18 | **só Python** | Os três trabalhos e as regras (executor entrega resultado, submissão inválida não trava tarefa) |
+| Vetores do Ultrax | `vectors/ultrax.json` | prontos | Conferir a tradução byte a byte |
 | Minerador com limite de CPU | `hyurax-no/src/painel.rs` | Rust | Linhas, pausa proporcional, medição por tentativa |
 | Identidade de nó (X25519, a chave da cifra) | `hyurax-net`, `PASTA/no.chave` | Rust | O `WORKER_ID` é derivado dela (ver o registro de prova) |
 | Rede cifrada entre nós | `hyurax-net`, spec §21 | Rust | Transporte do modo TESTNET |
@@ -198,7 +200,7 @@ medição é chute, e chute vestido de métrica é o que o princípio 3 proíbe.
 | Matemático | Difusão em ponto fixo | Recomputação | 1 |
 | Otimização | Mochila 0/1, exigindo o ótimo | Recomputação da programação dinâmica | 1 |
 | IA | Rede neural pequena, em inteiros de ponto fixo, prevendo solubilidade de moléculas reais (AqSolDB, domínio público CC0) | Recomputação da inferência; Freivalds nas camadas | 4 |
-| Verificação | Tarefas-desafio: casos de `vectors/utrax.json`, com a resposta calculada pelo gabarito em Python, fora desta máquina. Uma a cada 10 tarefas | Resultado esperado | 2 |
+| Verificação | Tarefas-desafio: casos de `vectors/ultrax.json`, com a resposta calculada pelo gabarito em Python, fora desta máquina. Uma a cada 10 tarefas | Resultado esperado | 2 |
 | Verificação | Reconferir provas de trabalho útil dos blocos já guardados | Resultado esperado: a cadeia já foi aceita | depois |
 | Rede | Latência e disponibilidade medidas contra os pares reais | Medida direta, sem prova forte (dito na tela) | 5, porque precisa de pares de verdade |
 | Matemático | Transformada NTT | Avaliação em ponto aleatório (Schwartz-Zippel) | depois |
@@ -216,7 +218,7 @@ começa com a anterior verde.
 | Etapa | Entrega | Pronta quando |
 |---|---|---|
 | 0 | Este documento | O autor leu |
-| 1 | Crate `hyurax-ultrax`: tipos de trabalho (matriz, mochila, difusão), especificação e `TASK_ID`, ciclo de vida, registro de prova, verificação, validador por maioria, reputação, Work Score v1 | Os três trabalhos batem byte a byte com `vectors/utrax.json`; transição inválida recusada; resultado adulterado recusado; divergência 2×1 detectada sem punir quem não tem evidência contra si |
+| 1 | Crate `hyurax-ultrax`: tipos de trabalho (matriz, mochila, difusão), especificação e `TASK_ID`, ciclo de vida, registro de prova, verificação, validador por maioria, reputação, Work Score v1 | Os três trabalhos batem byte a byte com `vectors/ultrax.json`; transição inválida recusada; resultado adulterado recusado; divergência 2×1 detectada sem punir quem não tem evidência contra si |
 | 2 | Worker LAB no `hyurax-no`: gerador de tarefas, fila, execução com limite de CPU e memória, prazo e cancelamento, tarefas-desafio, histórico em disco, telemetria com modo DEBUG, auditoria. **Pronta em 26/09/2026** | O programa executa e verifica tarefas sozinho, respeitando os limites, e o histórico sobrevive a reiniciar |
 | 3 | Painel ULTRAX no lugar da estação 3D: trabalho ativo, histórico, verificação, contribuição, nó e o selo do modo. **Pronta em 26/09/2026** | Um usuário responde às 7 perguntas do critério de sucesso olhando a tela |
 | 4 | Trabalho de IA: rede pequena em ponto fixo sobre a AqSolDB, com a molécula desenhada na tela. **Pronta em 26/09/2026** | Inferência verificada por recomputação; a curva de erro na tela sai do cálculo real |

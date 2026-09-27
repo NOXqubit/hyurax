@@ -54,5 +54,5 @@ precisa inverter as que vêm depois para manter a alternância.
 
 ## O que ficou de fora nesta versão
 
-O vídeo narrado do site antigo falava o nome Auron e foi retirado. Um vídeo novo
-precisa de narração nova.
+Não há vídeo narrado. Um vídeo precisa de roteiro e narração próprios
+(`docs/ROTEIRO-VIDEO.md`).

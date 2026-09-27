@@ -44,17 +44,17 @@ corrigidos, cada um com teste de regressão que falharia na versão antiga.
 
 | # | Bug do protótipo | Corrigido em | Teste de regressão |
 |---|---|---|---|
-| 1 | Freivalds sorteava vetores sem semente; nós honestos podiam discordar | `utrax.py` | `test_06::test_freivalds_is_deterministic` |
-| 2 | Mochila aceitava qualquer solução viável; 40 bytes de zeros passavam | `utrax.py` | `test_06::test_knapsack_rejects_all_zeros` |
+| 1 | Freivalds sorteava vetores sem semente; nós honestos podiam discordar | `ultrax.py` | `test_06::test_freivalds_is_deterministic` |
+| 2 | Mochila aceitava qualquer solução viável; 40 bytes de zeros passavam | `ultrax.py` | `test_06::test_knapsack_rejects_all_zeros` |
 | 3 | Dificuldade e tamanho do problema eram o mesmo número | `consensus.py` | `test_04::test_verification_cost_independent_of_difficulty` |
 | 4 | Não existia ajuste de dificuldade | `consensus.py` | `test_04::test_retarget_reacts_to_fast_and_slow_blocks` |
 | 5 | Nó aceitava bloco de peer sem verificar prova de trabalho | `chain.py` | `test_05::test_forged_block_without_pow_rejected` |
 | 6 | Cabeçalho não cobria as assinaturas | `block.py` | `test_05::test_merkle_root_covers_signatures` |
 | 7 | Duas definições incompatíveis de gênese | `chain.py` | `test_05::test_genesis_is_single_and_deterministic` |
-| 8 | Teste do marketplace passava por sorte | `utrax.py` | `test_06::test_knapsack_rejects_all_zeros` |
+| 8 | Teste do marketplace passava por sorte | `ultrax.py` | `test_06::test_knapsack_rejects_all_zeros` |
 | 9 | Sem Merkle, sem teto de emissão, sem persistência | `codec.py`, `consensus.py`, `store.py` | `test_02`, `test_04::test_emission_halves_and_respects_cap`, `test_07` |
 | 10 | Recompensa mobile amarrada ao topo exato da cadeia | mecanismo **removido** | ver abaixo |
-| 11 | Marketplace: o verificador fazia o trabalho; escrow burlava o estado | `utrax.py` | `test_06::test_invalid_submission_does_not_lock_task` |
+| 11 | Marketplace: o verificador fazia o trabalho; escrow burlava o estado | `ultrax.py` | `test_06::test_invalid_submission_does_not_lock_task` |
 | 12 | Brainpool P-512 em Python puro, dezenas de ms por verificação | `crypto.py` | `test_01::test_rfc8032_vectors` |
 
 ### Sobre o bug 10
@@ -94,7 +94,7 @@ oficiais publicados:
 | `block.py` | cabeçalho e bloco | sim |
 | `chain.py` | gênese, validação, reorg, escolha de ponta | sim |
 | `store.py` | persistência com revalidação | sim |
-| `utrax.py` | trabalho útil, marketplace | **não** |
+| `ultrax.py` | trabalho útil, marketplace | **não** |
 
 ## O que substituiu o quê
 

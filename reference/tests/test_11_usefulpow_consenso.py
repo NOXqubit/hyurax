@@ -26,7 +26,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from hyurax import codec, consensus, crypto, tx, usefulpow, utrax  # noqa: E402
+from hyurax import codec, consensus, crypto, tx, usefulpow, ultrax  # noqa: E402
 from hyurax.block import Block, BlockHeader  # noqa: E402
 from hyurax.chain import Chain, ChainError  # noqa: E402
 from hyurax.consensus import REGTEST, check_pow_target, compact_to_target  # noqa: E402
@@ -223,7 +223,7 @@ def test_dificuldade_do_trabalho_util_imposta():
     exigido = candidato.useful_proof.n
     menor = exigido - 1
     seed = usefulpow.task_seed(P, candidato.header.height, candidato.header.prev_hash, minerador)
-    a, b = utrax.generate_matrices(seed, menor)
+    a, b = ultrax.generate_matrices(seed, menor)
     pequena = usefulpow.UsefulWorkProof(family=usefulpow.FAMILY_MATRIX_FREIVALDS, n=menor,
                                         result=(a @ b).astype(">u4").tobytes())
     espera_recusa(chain, bloco_com_prova(chain, minerador, pequena, ts), "difere do exigido", ts)
@@ -316,7 +316,7 @@ def test_separacao_de_dominios():
     dominios = [
         tx.SIGNING_DOMAIN, consensus.POW_SALT.rstrip(b"\x00"),
         usefulpow.DOMAIN_TASK, usefulpow.DOMAIN_COMMIT, usefulpow.DOMAIN_CHALLENGE,
-        utrax.DOMAIN_INSTANCE, utrax.DOMAIN_FREIVALDS, utrax.DOMAIN_TASK_SEED,
+        ultrax.DOMAIN_INSTANCE, ultrax.DOMAIN_FREIVALDS, ultrax.DOMAIN_TASK_SEED,
     ]
     assert len(set(dominios)) == len(dominios), "dominio repetido"
     for a in dominios:

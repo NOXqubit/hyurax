@@ -40,8 +40,8 @@ PASSOS_MAX = 4096
 TAXA_BITS = 6  # taxa de aprendizado inicial = 1/64; cai para 1/128 e 1/256
 LIMITE = (1 << 31) - 1
 
-DOMINIO_PESOS = identidade.rotulo("UTRAX-IA-PESOS-v1")
-DOMINIO_LOTE = identidade.rotulo("UTRAX-IA-LOTE-v1")
+DOMINIO_PESOS = identidade.rotulo("ULTRAX-IA-PESOS-v1")
+DOMINIO_LOTE = identidade.rotulo("ULTRAX-IA-LOTE-v1")
 
 ARQUIVO = Path(__file__).resolve().parents[2] / "crates" / "hyurax-ultrax" / "dados" / "moleculas.tsv"
 

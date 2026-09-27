@@ -98,7 +98,7 @@ def test_wrong_network_rejected():
 def test_bad_magic_and_truncation_rejected():
     with tempfile.TemporaryDirectory() as tmp:
         path = Path(tmp) / "hyurax.db"
-        path.write_bytes(b"NAOEAURON" + b"\x00" * 40)
+        path.write_bytes(b"NAOEHYURAX" + b"\x00" * 40)
         try:
             store.load_chain(path)
             raise AssertionError("arquivo com magic errado foi aceito")

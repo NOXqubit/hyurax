@@ -25,9 +25,6 @@ use hyurax_crypto::{ADDRESS_LEN, SECRET_LEN, address_from_ed25519_pubkey, ed2551
 
 /// Nome do formato, na primeira linha útil do arquivo.
 pub const FORMATO: &str = concat!(hyurax_identidade::raiz!(), "-CARTEIRA-v2");
-/// Formato de antes da troca de nome do projeto. Continua abrindo, para
-/// ninguém perder uma carteira de teste; carteira nova sai sempre em [`FORMATO`].
-pub const FORMATO_AURON: &str = "AURON-CARTEIRA-v2";
 /// Menor senha aceita.
 pub const SENHA_MINIMA: usize = 10;
 
@@ -163,7 +160,7 @@ pub fn abrir(texto: &str, senha: &str) -> Result<[u8; SECRET_LEN], String> {
         return campo(texto, "segredo").and_then(de_hex).ok_or_else(|| "segredo inválido no arquivo".to_string());
     }
     let formato = match campo(texto, "formato") {
-        Some(f) if f == FORMATO || f == FORMATO_AURON => f,
+        Some(f) if f == FORMATO => f,
         _ => return Err("formato de carteira desconhecido".into()),
     };
     if campo(texto, "kdf") != Some("argon2id") {
@@ -252,19 +249,9 @@ mod testes {
     }
 
     #[test]
-    fn carteira_do_nome_antigo_do_projeto_continua_abrindo() {
-        let antiga = cifrar_como(FORMATO_AURON, &SEGREDO, SENHA, &ALEATORIO).unwrap();
-        assert!(antiga.contains(&format!("formato={FORMATO_AURON}")));
-        assert_eq!(abrir(&antiga, SENHA).unwrap(), SEGREDO);
-    }
-
-    #[test]
-    fn trocar_o_nome_do_formato_no_arquivo_nao_engana_a_cifra() {
-        if FORMATO == FORMATO_AURON {
-            return; // antes da troca de nome os dois são o mesmo texto
-        }
+    fn formato_desconhecido_e_recusado() {
         let nova = cifrar(&SEGREDO, SENHA, &ALEATORIO).unwrap();
-        let rebatizada = nova.replace(&format!("formato={FORMATO}"), &format!("formato={FORMATO_AURON}"));
-        assert!(abrir(&rebatizada, SENHA).is_err());
+        let trocada = nova.replace(&format!("formato={FORMATO}"), "formato=OUTRO-FORMATO-v2");
+        assert!(abrir(&trocada, SENHA).is_err());
     }
 }

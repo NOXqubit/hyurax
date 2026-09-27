@@ -13,7 +13,7 @@
 //! - **worker**: executa, assina o registro de prova, verifica, e passa por
 //!   cada estado do ciclo de vida com horário;
 //! - **tarefas-desafio**: a cada [`DESAFIO_A_CADA`] tarefas, uma cuja resposta
-//!   já se sabe, porque veio do gabarito em Python (`vectors/utrax.json`). Se
+//!   já se sabe, porque veio do gabarito em Python (`vectors/ultrax.json`). Se
 //!   esta máquina errar, a tela avisa: pode ser defeito de hardware ou programa
 //!   adulterado;
 //! - **histórico e placar** em `PASTA/ultrax/`, que sobrevivem a reiniciar;
@@ -97,8 +97,8 @@ const USO_MINIMO: f64 = 0.10;
 /// frações de milissegundo no Windows dorme bem mais que o pedido.
 const PAUSA_MINIMA: Duration = Duration::from_millis(15);
 const PAUSA_MAXIMA: Duration = Duration::from_secs(2);
-/// Semente dos vetores do gabarito (`gen_vectors.vec_utrax`).
-const SEMENTE_DOS_DESAFIOS: &[u8] = b"vetor utrax";
+/// Semente dos vetores do gabarito (`gen_vectors.vec_ultrax`).
+const SEMENTE_DOS_DESAFIOS: &[u8] = b"vetor ultrax";
 
 /// Uma tarefa de resposta conhecida.
 struct Desafio {
@@ -111,7 +111,7 @@ struct Desafio {
     esperado: &'static str,
 }
 
-/// Os maiores casos de `vectors/utrax.json` e de `vectors/ia.json`. O teste
+/// Os maiores casos de `vectors/ultrax.json` e de `vectors/ia.json`. O teste
 /// `desafios_batem_com_os_vetores` confere cada hash contra os arquivos.
 const DESAFIOS: [Desafio; 4] = [
     Desafio {
@@ -119,28 +119,28 @@ const DESAFIOS: [Desafio; 4] = [
         tipo: TipoDeTrabalho::Matriz,
         tamanho: 16,
         passos: 0,
-        esperado: "99c04ebd0b60b1f45a25db543baf9a711adc368c04bd546cf0d90b920268e32fd3cd7d3d4baa1c72f5a37cca20658163e30bd70567b9b824d16dd7f3b416a721",
+        esperado: "d1febe844db50e441a218ee2eeae042b9df13d0f60c612bfbf30d9d8b59f474700e91d805176c7ecaea42ce989b0a7213fe325e6dc6c71e065a4b81a7fd5f8e4",
     },
     Desafio {
         semente: SEMENTE_DOS_DESAFIOS,
         tipo: TipoDeTrabalho::Mochila,
         tamanho: 20,
         passos: 0,
-        esperado: "fab8cbd7ae0f02316570aecec412b23647cc04d188c4764544a389d67ed2a8ef7b202787f5bb1eda76ed92d52ac3da17610b24b1b41b5762323c62c2804450b5",
+        esperado: "067b6ac73dd2e7808e3041fcb1b22a5e13f3ae0ec7872d934287e4e57141554e3e7bc3f218e6b8bc04a67739b2473d573d3ce228488f00d50737af8d3f9f2675",
     },
     Desafio {
         semente: SEMENTE_DOS_DESAFIOS,
         tipo: TipoDeTrabalho::Difusao,
         tamanho: 16,
         passos: 10,
-        esperado: "8bf5147ea7293fe06e363b45cd40d27d1d5076187ab4cdbea5e936e5feb028a54f491be69c8ecff844df73a6928a87e9bbd4a84729e75a7f4be4f9acbb4984c9",
+        esperado: "869c21ae7546e98ab3e425bcb4ccc8465add4d9ce6add916cb2bb6b509363e5bf7e47bfc4471fcea578e5040abe19494bc253aefe4383b9dd95676eb937b4454",
     },
     Desafio {
         semente: b"vetor ia",
         tipo: TipoDeTrabalho::Ia,
         tamanho: 16,
         passos: 25,
-        esperado: "96dc8131d4839cff07f6cd34112e7508988a1b0dc15abb15df328337ed8068795157860565ed786891884b2835f43a345b4ab073d91f6e1ad92c7665b7beddee",
+        esperado: "d4ed6cdc8d654d42b1d9f61b6ee2a9b767f70547c0c40df71f4124040507b4e588c47e48e687fcf499f5e0e198eb1308e9e0c75e09f36a235a620a023c8d2313",
     },
 ];
 
@@ -2594,7 +2594,7 @@ mod testes {
             let caminho: PathBuf = [env!("CARGO_MANIFEST_DIR"), "..", "..", "vectors", nome].iter().collect();
             std::fs::read_to_string(caminho).unwrap()
         };
-        let texto = ler("utrax.json") + &ler("ia.json");
+        let texto = ler("ultrax.json") + &ler("ia.json");
         for d in &DESAFIOS {
             let esp = Especificacao::nova(d.tipo, d.tamanho, d.passos).unwrap();
             let exec = trabalho::executar(&esp, &semente_do_desafio(&esp), &mut |_| true).unwrap();

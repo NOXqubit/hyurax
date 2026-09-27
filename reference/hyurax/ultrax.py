@@ -1,12 +1,12 @@
 # ✝ Gênesis 41:35-36 — “Ajuntem toda a comida destes bons anos que vêm; e esta comida será para provimento da terra, para os sete anos de fome.”
-"""HYURAX — Utrax, camada de trabalho útil. FORA DO CONSENSO.
+"""HYURAX — Ultrax, camada de trabalho útil. FORA DO CONSENSO.
 
 Decisão híbrida: a segurança da cadeia vem do PoW convencional em
-`consensus.py`. O Utrax é uma camada econômica de tarefas verificáveis.
-A cadeia não precisa do Utrax para sobreviver; o Utrax tem espaço para
+`consensus.py`. O Ultrax é uma camada econômica de tarefas verificáveis.
+A cadeia não precisa do Ultrax para sobreviver; o Ultrax tem espaço para
 evoluir até, um dia, provar que merece função maior.
 
-Isso muda o cálculo de projeto de forma importante: como o Utrax não segura
+Isso muda o cálculo de projeto de forma importante: como o Ultrax não segura
 o consenso, quem paga a verificação é quem publicou a tarefa. Então uma
 verificação cara é uma decisão de negócio do publicador, não um vetor de
 negação de serviço contra a rede inteira.
@@ -75,8 +75,10 @@ from .units import checked_add, checked_sub
 # Geração determinística de instâncias — sem o gerador do numpy
 # ---------------------------------------------------------------------------
 
+# Congelado: é o gerador das matrizes da prova útil de cada bloco (consenso).
+# Mudar a grafia muda a gênese; fica assim até a próxima gênese da testnet.
 DOMAIN_INSTANCE = identidade.rotulo("UTRAX-INSTANCE-v1")
-DOMAIN_FREIVALDS = identidade.rotulo("UTRAX-FREIVALDS-v1")
+DOMAIN_FREIVALDS = identidade.rotulo("ULTRAX-FREIVALDS-v1")
 
 FREIVALDS_ROUNDS = 4
 FREIVALDS_BITS = 20          # vetores em [0, 2^20)
@@ -374,7 +376,7 @@ def verify_work(spec: WorkSpec, seed: bytes, result: bytes) -> bool:
 # Marketplace
 # ---------------------------------------------------------------------------
 
-DOMAIN_TASK_SEED = identidade.rotulo("UTRAX-TASK-v1")
+DOMAIN_TASK_SEED = identidade.rotulo("ULTRAX-TASK-v1")
 
 
 class TaskStatus(str, Enum):

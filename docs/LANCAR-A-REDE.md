@@ -41,18 +41,13 @@ versão antiga do programa.
 
 ## Passo 1 — publicar o código (você)
 
-O site e o programa já apontam para `NOXqubit/hyurax`, e hoje o repositório
-ainda se chama `auron`.
+O site e o programa apontam para `NOXqubit/hyurax`.
 
-1. No GitHub: *Settings → Repository name* → `hyurax`.
-2. Mande o trabalho que está aqui:
-
-```bash
-git push origin claude/aurora-project-setup-d7eb67
-```
-
-3. Junte na `main` (pelo site do GitHub, ou `git checkout main && git merge`).
-4. *Settings → Pages* → branch `gh-pages`, pasta `/`.
+1. No GitHub, confira em *Settings → Repository name* que o repositório se
+   chama `hyurax`.
+2. Mande o ramo de trabalho e junte na `main` (pelo site do GitHub, ou
+   `git checkout main && git merge <ramo>`).
+3. *Settings → Pages* → branch `gh-pages`, pasta `/`.
 
 Depois disso, três endereços passam a existir — e três coisas do programa
 dependem deles: o botão de baixar do site, a lista de sementes e o link do

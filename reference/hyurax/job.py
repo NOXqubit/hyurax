@@ -33,9 +33,9 @@ from dataclasses import dataclass, field
 
 from . import codec, crypto, identidade
 
-DOMINIO_JOB = identidade.rotulo("UTRAX-JOB-v1")
-DOMINIO_UNIDADE = identidade.rotulo("UTRAX-UNIDADE-v1")
-DOMINIO_RESUMO = identidade.rotulo("UTRAX-RESUMO-v1")
+DOMINIO_JOB = identidade.rotulo("ULTRAX-JOB-v1")
+DOMINIO_UNIDADE = identidade.rotulo("ULTRAX-UNIDADE-v1")
+DOMINIO_RESUMO = identidade.rotulo("ULTRAX-RESUMO-v1")
 
 VERSAO = 1
 DESCRICAO_MAX = 2000

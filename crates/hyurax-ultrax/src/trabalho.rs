@@ -1,10 +1,10 @@
 // ✝ Eclesiastes 9:10 — “Tudo quanto te vier à mão para fazer, faze-o conforme as tuas forças.”
 //! Os tipos de trabalho: executar, verificar e contar operações.
 //!
-//! Matriz, mochila e difusão são a tradução de `reference/hyurax/utrax.py`. O
+//! Matriz, mochila e difusão são a tradução de `reference/hyurax/ultrax.py`. O
 //! resultado sai nos mesmos bytes do Python (inteiros de 64 bits em
 //! little-endian, como o `tobytes` do numpy, e a mochila em big-endian), e a
-//! conferência é por `vectors/utrax.json`.
+//! conferência é por `vectors/ultrax.json`.
 //!
 //! Tudo em aritmética inteira. Dois workers honestos chegam no mesmo resultado
 //! bit a bit em qualquer máquina, que é o que a verificação redundante exige.
@@ -17,7 +17,7 @@ use hyurax_usefulpow::generate_matrices;
 
 use crate::ia;
 
-/// Domínio do desafio de Freivalds do mercado (`utrax.DOMAIN_FREIVALDS`).
+/// Domínio do desafio de Freivalds do mercado (`ultrax.DOMAIN_FREIVALDS`).
 pub const DOMINIO_FREIVALDS: &[u8] = dominio!("FREIVALDS-v1");
 /// Domínio da instância: o mesmo gerador do trabalho útil do consenso.
 pub const DOMINIO_INSTANCIA: &[u8] = hyurax_usefulpow::DOMAIN_INSTANCE;
@@ -559,7 +559,7 @@ pub fn hash_do_resultado(resultado: &[u8]) -> [u8; HASH_LEN] {
 }
 
 /// Inteiros determinísticos em `[0, modulo)`, 4 bytes big-endian cada
-/// (`utrax._ints_from_seed`).
+/// (`ultrax._ints_from_seed`).
 fn inteiros(semente: &[u8], quantos: usize, modulo: u32, dominio: &[u8]) -> Vec<u32> {
     xof(semente, quantos.saturating_mul(4), dominio)
         .as_chunks::<4>()
@@ -803,7 +803,7 @@ fn verificar_matriz(
 // Mochila
 // ---------------------------------------------------------------------------
 
-/// Uma instância da mochila (`utrax.generate_knapsack`).
+/// Uma instância da mochila (`ultrax.generate_knapsack`).
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct InstanciaMochila {
     /// Pesos, de 1 a 99.
@@ -936,7 +936,7 @@ fn verificar_mochila(
 // Difusão
 // ---------------------------------------------------------------------------
 
-/// Difusão em ponto fixo inteiro (`utrax.diffusion_work`).
+/// Difusão em ponto fixo inteiro (`ultrax.diffusion_work`).
 ///
 /// A cada passo, cada célula recebe `(soma dos 4 vizinhos − 4·ela) / 5`, com a
 /// divisão truncando para o zero (o `/` do Rust já faz isso; o gabarito

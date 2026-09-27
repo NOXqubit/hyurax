@@ -13,7 +13,7 @@
 | Estado | O que está nele hoje |
 |---|---|
 | **GREEN** — implementado e comprovado no Rust, contra os vetores do gabarito | Codificação canônica e árvore de Merkle (`hyurax-codec`). Assinatura Ed25519, endereço, SHA-512 e XOF (`hyurax-crypto`). Dinheiro inteiro (`hyurax-types`). |
-| **YELLOW** — testado só na referência em Python | Transação com nonce por conta e assinatura presa à rede. Estado, cadeia, prova de trabalho Argon2id. UsefulPoW híbrido no consenso (família matriz + Freivalds, todo bloco); mercado UTRAX fora do consenso. |
+| **YELLOW** — testado só na referência em Python | Transação com nonce por conta e assinatura presa à rede. Estado, cadeia, prova de trabalho Argon2id. UsefulPoW híbrido no consenso (família matriz + Freivalds, todo bloco); mercado ULTRAX fora do consenso. |
 | **RED** — hipótese | Tudo o que é próprio deste documento: Identity, Packet, ATAP, Bluetooth, Wi-Fi, Direct, Payment Intent, vouchers offline, Resonance, mesh, canais, pagamentos de máquinas. |
 
 ### Como o documento se encaixa no que já existe
@@ -69,7 +69,7 @@
 - O **Flux** (`docs/HYURAX-FLUX.md`) é o item 15 da ordem do §64: vem por
   último.
 - O **UsefulPoW** dos §49 e §51 entrou no consenso em 12/09/2026 (§9A da
-  HYURAX-SPEC-01): todo bloco prova trabalho útil. O mercado **UTRAX**, de
+  HYURAX-SPEC-01): todo bloco prova trabalho útil. O mercado **ULTRAX**, de
   tarefas de clientes, continua fora do consenso (§18).
 
 ---
@@ -204,7 +204,7 @@ monetárias.
 A identidade deve ser separada da carteira financeira.
 
 ```text
-AuronIdentity
+HyuraxIdentity
 ├── identity_id
 ├── communication_public_key
 ├── device_keys[]
@@ -215,7 +215,7 @@ AuronIdentity
 A carteira:
 
 ```text
-AuronWallet
+HyuraxWallet
 ├── wallet_id
 ├── account_keys
 ├── asset_balances
@@ -251,7 +251,7 @@ Nunca entregar a chave privada principal para Bluetooth.
 Toda comunicação entre peers deve utilizar um envelope comum.
 
 ```text
-AuronPacket
+HyuraxPacket
 {
     version,
     packet_type,
@@ -312,8 +312,8 @@ Interface conceitual:
 trait Transport {
     fn discover(&self) -> Result<Vec<Peer>>;
     fn connect(&self, peer: PeerId) -> Result<Session>;
-    fn send(&self, packet: AuronPacket) -> Result<()>;
-    fn receive(&self) -> Result<AuronPacket>;
+    fn send(&self, packet: HyuraxPacket) -> Result<()>;
+    fn receive(&self) -> Result<HyuraxPacket>;
     fn close(&self);
 }
 ```

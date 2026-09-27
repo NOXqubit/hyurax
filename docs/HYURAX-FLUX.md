@@ -15,8 +15,8 @@ sem teste.
 | Estado | O que significa | O que está nele hoje |
 |---|---|---|
 | **GREEN** | Implementado e comprovado no Rust, contra os vetores do gabarito em Python | Dinheiro inteiro (`hyurax-types`). Assinatura Ed25519, endereço, SHA-512 e XOF (`hyurax-crypto`). |
-| **YELLOW** | Testado só na referência em Python | Codificação canônica e árvore de Merkle com prova de inclusão. Transação com nonce por conta e assinatura presa à rede. Cadeia e prova de trabalho Argon2id. Escrow com contabilidade que fecha (UTRAX), que é o molde do invariante de supply do §25. |
-| **RED** | Hipótese | Tudo o que é próprio do Flux: stablecoins, padrão ASS, mint e burn, multisig, reserva, oráculo, Hyurax Pay e `AURONPAY://`, Market, POS, crédito, Synapse, MCP, multi-rail, tecnologias de privacidade e Fusion. |
+| **YELLOW** | Testado só na referência em Python | Codificação canônica e árvore de Merkle com prova de inclusão. Transação com nonce por conta e assinatura presa à rede. Cadeia e prova de trabalho Argon2id. Escrow com contabilidade que fecha (ULTRAX), que é o molde do invariante de supply do §25. |
+| **RED** | Hipótese | Tudo o que é próprio do Flux: stablecoins, padrão ASS, mint e burn, multisig, reserva, oráculo, Hyurax Pay e `HYURAXPAY://`, Market, POS, crédito, Synapse, MCP, multi-rail, tecnologias de privacidade e Fusion. |
 
 ### Nomes das fases
 
@@ -52,7 +52,7 @@ Medido no código em 10/09/2026:
   (circulante menor ou igual ao teto), não a igualdade que o §25 exige.
 - Stablecoin dentro da cadeia é mudança de consenso. Pela §20 da
   HYURAX-SPEC-01, isso significa publicar a HYURAX-SPEC-02.
-- Um simulador fora do consenso não depende de nada disso, assim como o UTRAX
+- Um simulador fora do consenso não depende de nada disso, assim como o ULTRAX
   (§18 da especificação).
 
 ### Riscos jurídicos
@@ -544,7 +544,7 @@ Funções:
 Criar um protocolo próprio:
 
 ```text
-AURONPAY://
+HYURAXPAY://
 ```
 
 Exemplo conceitual:

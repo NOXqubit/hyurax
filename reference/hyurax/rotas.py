@@ -135,8 +135,8 @@ BLOCO_CONTINUAR = 1 << 20
 CABECALHO = 25
 MASCARA64 = (1 << 64) - 1
 
-DOMINIO_INSTANCIA = identidade.rotulo("UTRAX-ROTAS-INSTANCIA-v1")
-DOMINIO_PARTIDA = identidade.rotulo("UTRAX-ROTAS-PARTIDA-v1")
+DOMINIO_INSTANCIA = identidade.rotulo("ULTRAX-ROTAS-INSTANCIA-v1")
+DOMINIO_PARTIDA = identidade.rotulo("ULTRAX-ROTAS-PARTIDA-v1")
 
 
 class Recusa(ValueError):

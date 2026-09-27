@@ -11,15 +11,13 @@ use std::io::Write;
 
 /// Nome da variável de ambiente com a senha, para scripts.
 pub const VARIAVEL: &str = concat!(hyurax_identidade::raiz!(), "_SENHA");
-/// Nome de antes da troca de nome do projeto, aceito para não quebrar scripts.
-const VARIAVEL_AURON: &str = "AURON_SENHA";
 
 /// Pede a senha ao usuário.
 ///
 /// # Errors
 /// Terminal indisponível ou leitura interrompida.
 pub fn ler(pergunta: &str) -> Result<String, String> {
-    if let Ok(senha) = std::env::var(VARIAVEL).or_else(|_| std::env::var(VARIAVEL_AURON)) {
+    if let Ok(senha) = std::env::var(VARIAVEL) {
         return Ok(senha);
     }
     ler_escondido(pergunta)

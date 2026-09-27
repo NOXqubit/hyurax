@@ -24,7 +24,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import numpy as np  # noqa: E402
 
-from hyurax import codec, consensus, crypto, store, utrax  # noqa: E402
+from hyurax import codec, consensus, crypto, store, ultrax  # noqa: E402
 from hyurax.block import Block  # noqa: E402
 from hyurax.chain import Chain, ChainError  # noqa: E402
 from hyurax.consensus import REGTEST, block_reward, check_pow_target  # noqa: E402
@@ -231,28 +231,28 @@ def test_arquivo_adulterado_vira_StoreError():
     print("PASS arquivo adulterado vira StoreError")
 
 
-# ------------------------------------------------------------------- 6. UTRAX
+# ------------------------------------------------------------------- 6. ULTRAX
 def test_freivalds_recusa_resultado_fora_da_faixa():
     """C perto de 2^63 fazia a conta estourar o int64 e dar a volta em silencio."""
     semente = b"ataque"
     tamanho = 8
-    a, b = utrax.generate_matrices(semente, tamanho)
+    a, b = ultrax.generate_matrices(semente, tamanho)
     certo = a @ b
 
     gigante = certo.copy()
     gigante[0, 0] = np.int64(2**62)
-    assert not utrax.verify_matrix(semente, tamanho, gigante.tobytes()), \
+    assert not ultrax.verify_matrix(semente, tamanho, gigante.tobytes()), \
         "resultado com entrada gigante foi aceito"
 
     negativo = certo.copy()
     negativo[1, 1] = np.int64(-1)
-    assert not utrax.verify_matrix(semente, tamanho, negativo.tobytes()), \
+    assert not ultrax.verify_matrix(semente, tamanho, negativo.tobytes()), \
         "resultado com entrada negativa foi aceito"
 
-    assert utrax.verify_matrix(semente, tamanho, certo.tobytes()), \
+    assert ultrax.verify_matrix(semente, tamanho, certo.tobytes()), \
         "resultado honesto foi recusado"
 
-    limite = tamanho * (utrax.MATRIX_ENTRY_MAX - 1) ** 2
+    limite = tamanho * (ultrax.MATRIX_ENTRY_MAX - 1) ** 2
     assert int(certo.max()) <= limite, "a faixa nao cobre o produto honesto"
     print("PASS Freivalds recusa C fora da faixa possivel")
 

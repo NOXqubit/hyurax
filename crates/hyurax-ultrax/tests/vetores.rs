@@ -1,6 +1,6 @@
 // ✝ Provérbios 11:1 — “Balança enganosa é abominação para o Senhor, mas o peso justo é o seu prazer.”
-//! Os trabalhos do ULTRAX conferidos byte a byte contra `vectors/utrax.json`,
-//! gerado pelo `reference/hyurax/utrax.py`.
+//! Os trabalhos do ULTRAX conferidos byte a byte contra `vectors/ultrax.json`,
+//! gerado pelo `reference/hyurax/ultrax.py`.
 
 #![allow(
     clippy::unwrap_used,
@@ -37,7 +37,7 @@ fn rodar(esp: &Especificacao, semente: &[u8]) -> Vec<u8> {
 
 #[test]
 fn matriz_igual_ao_gabarito() {
-    let doc = carregar("utrax.json");
+    let doc = carregar("ultrax.json");
     let casos = doc["matrix"].as_array().unwrap();
     assert!(!casos.is_empty());
     for caso in casos {
@@ -51,7 +51,7 @@ fn matriz_igual_ao_gabarito() {
 
 #[test]
 fn mochila_igual_ao_gabarito() {
-    let doc = carregar("utrax.json");
+    let doc = carregar("ultrax.json");
     let casos = doc["knapsack"].as_array().unwrap();
     assert!(!casos.is_empty());
     for caso in casos {
@@ -73,7 +73,7 @@ fn mochila_igual_ao_gabarito() {
 
 #[test]
 fn difusao_igual_ao_gabarito() {
-    let doc = carregar("utrax.json");
+    let doc = carregar("ultrax.json");
     let casos = doc["diffusion"].as_array().unwrap();
     assert!(!casos.is_empty());
     for caso in casos {

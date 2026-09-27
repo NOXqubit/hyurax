@@ -26,7 +26,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 OUT_DIR = ROOT.parent / "vectors"
 
-from hyurax import argon2, codec, consensus, crypto, genetica, ia, identidade, job, melhoramento, rede_ultrax, rotas, triagem, usefulpow, utrax  # noqa: E402
+from hyurax import argon2, codec, consensus, crypto, genetica, ia, identidade, job, melhoramento, rede_ultrax, rotas, triagem, usefulpow, ultrax  # noqa: E402
 from hyurax.block import BlockHeader  # noqa: E402
 from hyurax.chain import Chain, make_genesis  # noqa: E402
 from hyurax.consensus import MAINNET, REGTEST, TESTNET  # noqa: E402
@@ -816,30 +816,30 @@ def vec_chain() -> dict:
     }
 
 
-def vec_utrax() -> dict:
-    seed = crypto.H(b"vetor utrax")
+def vec_ultrax() -> dict:
+    seed = crypto.H(b"vetor ultrax")
     matrix = []
     for size in (4, 8, 16):
-        result = utrax.matrix_work(seed, size)
+        result = ultrax.matrix_work(seed, size)
         matrix.append({
             "seed": h(seed), "size": size,
-            "result": h(result), "verifies": utrax.verify_matrix(seed, size, result),
+            "result": h(result), "verifies": ultrax.verify_matrix(seed, size, result),
         })
 
     knapsack = []
     for n in (5, 12, 20):
-        weights, values, capacity = utrax.generate_knapsack(seed, n)
-        result = utrax.knapsack_work(seed, n)
+        weights, values, capacity = ultrax.generate_knapsack(seed, n)
+        result = ultrax.knapsack_work(seed, n)
         knapsack.append({
             "seed": h(seed), "n_items": n,
             "weights": weights, "values": values, "capacity": capacity,
-            "result": h(result), "verifies": utrax.verify_knapsack(seed, n, result),
-            "all_zeros_rejected": not utrax.verify_knapsack(seed, n, b"\x00" * 40),
+            "result": h(result), "verifies": ultrax.verify_knapsack(seed, n, result),
+            "all_zeros_rejected": not ultrax.verify_knapsack(seed, n, b"\x00" * 40),
         })
 
     diffusion = []
     for grid, steps in ((4, 2), (8, 5), (16, 10)):
-        result = utrax.diffusion_work(seed, grid, steps)
+        result = ultrax.diffusion_work(seed, grid, steps)
         diffusion.append({
             "seed": h(seed), "grid_size": grid, "steps": steps,
             "result": h(result),
@@ -1497,7 +1497,7 @@ FILES = {
     "chain_edge.json": vec_chain_edge,
     "wire.json": vec_wire,
     "chain.json": vec_chain,
-    "utrax.json": vec_utrax,
+    "ultrax.json": vec_ultrax,
     "usefulpow.json": vec_usefulpow,
     "ia.json": vec_ia,
     "job.json": vec_job,

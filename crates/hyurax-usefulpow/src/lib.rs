@@ -33,7 +33,11 @@ pub const DOMAIN_TASK: &[u8] = concat!(hyurax_identidade::raiz!(), "-UPOW-TASK-v
 pub const DOMAIN_COMMIT: &[u8] = concat!(hyurax_identidade::raiz!(), "-UPOW-PROOF-v1").as_bytes();
 /// Domínio do desafio de Freivalds.
 pub const DOMAIN_CHALLENGE: &[u8] = concat!(hyurax_identidade::raiz!(), "-UPOW-CHALLENGE-v1").as_bytes();
-/// Domínio das matrizes (o mesmo gerador do UTRAX, seção 18).
+/// Domínio das matrizes (o mesmo gerador do ULTRAX, seção 18).
+///
+/// Guarda a grafia antiga (`UTRAX`) de propósito: entra na prova útil de cada
+/// bloco, e mudar o texto muda a gênese. Fica congelado até a próxima gênese
+/// da testnet.
 pub const DOMAIN_INSTANCE: &[u8] = concat!(hyurax_identidade::raiz!(), "-UTRAX-INSTANCE-v1").as_bytes();
 
 /// Bytes por entrada do resultado.
@@ -42,7 +46,7 @@ pub const ENTRY_BYTES: usize = 4;
 pub const CHALLENGE_BITS: u32 = 20;
 /// Entradas de `A` e `B` ficam em `[0, MATRIX_ENTRY_MAX)`.
 pub const MATRIX_ENTRY_MAX: u32 = 1000;
-/// Maior lado que o gerador aceita (igual a `utrax.MATRIX_MAX_SIZE`).
+/// Maior lado que o gerador aceita (igual a `ultrax.MATRIX_MAX_SIZE`).
 pub const MATRIX_MAX_SIZE: u32 = 1024;
 
 /// 2^(k/3) para k = 0, 1, 2, em milésimos.
@@ -264,7 +268,7 @@ fn inteiros_da_semente(semente: &[u8], count: usize, modulo: u32, dominio: &[u8]
         .collect()
 }
 
-/// Matrizes `A` e `B`, linha a linha (`utrax.generate_matrices`).
+/// Matrizes `A` e `B`, linha a linha (`ultrax.generate_matrices`).
 pub fn generate_matrices(semente: &[u8], n: u32) -> Result<(Vec<u32>, Vec<u32>), UsefulWorkError> {
     if !(1..=MATRIX_MAX_SIZE).contains(&n) {
         return Err(UsefulWorkError::TamanhoDeMatriz(n));

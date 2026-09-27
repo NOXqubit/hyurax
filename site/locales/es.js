@@ -153,7 +153,6 @@ export default {
     codigo: "Código abierto en GitHub",
     spec: "Especificación",
     licenca: "Licencia MIT o Apache-2.0",
-    antes: "Hyurax se llamaba Auron hasta el 19/09/2026. La tecnología es la misma.",
     privacidade: "Privacidad y cookies",
     termos: "Términos de uso",
     seguranca: "Seguridad",

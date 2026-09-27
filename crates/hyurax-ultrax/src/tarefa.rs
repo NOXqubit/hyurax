@@ -22,7 +22,7 @@ use crate::trabalho::{ErroDeTrabalho, Especificacao, MetodoDeVerificacao};
 
 /// Domínio do identificador da tarefa.
 pub const DOMINIO_TAREFA: &[u8] = dominio!("TAREFA-v1");
-/// Domínio da semente que a tarefa dá a cada worker (`utrax.DOMAIN_TASK_SEED`).
+/// Domínio da semente que a tarefa dá a cada worker (`ultrax.DOMAIN_TASK_SEED`).
 pub const DOMINIO_SEMENTE: &[u8] = dominio!("TASK-v1");
 
 /// Onde a tarefa está.

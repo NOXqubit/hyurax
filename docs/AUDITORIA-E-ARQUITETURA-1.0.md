@@ -432,7 +432,7 @@ como foi verificado → impacto na rede.**
 |---|---|---|---|
 | 1 | GPU nativa (wgpu) na 1.0? | **Não na 1.0.** WebGL 2 como backend formal agora; o nativo fica como próximo backend | wgpu traz dependências grandes e exige o compilador MSVC. Nesta máquina (Atom, alvo GNU) o `windows-link` novo já quebrou o build uma vez |
 | 2 | Métricas pelo `typeperf` (processo externo) em vez de chamar a API do Windows direto | **Sim.** É real, não precisa de `unsafe` nem de biblioteca nova | uma leitura a cada 1 a 2 s |
-| 3 | Moléculas em 3D de verdade | **Sim, gerando coordenadas 3D uma vez**, no Python (RDKit, ETKDG), gravadas no catálogo com a origem | instalar o RDKit em `D:\auron\.toolchain` (~30 MB); o catálogo cresce uns 5 MB |
+| 3 | Moléculas em 3D de verdade | **Sim, gerando coordenadas 3D uma vez**, no Python (RDKit, ETKDG), gravadas no catálogo com a origem | instalar o RDKit na pasta `.toolchain` do projeto (~30 MB); o catálogo cresce uns 5 MB |
 | 4 | Nome da versão | **"Hyurax 1.0 · rede de TESTE"** | nenhum |
 
 ---

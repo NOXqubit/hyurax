@@ -101,7 +101,7 @@
         "codificacao": "010701000000400000000000000000000003e8020100000000000000000000000000000000000000176d617472697a2036342c206d696c20756e696461646573",
         "descricao": "matriz 64, mil unidades",
         "dominio": 7,
-        "id": "a43d549f8dd5916990f08a98149105e65fee3fdb0db3e74766561f6f5ccbffeaed5e1fe62e1587a4d627e3c31707e7dd4aac79b0b7cd9d8841770a8ee25cb7e4",
+        "id": "bf1552fbff5e01eeab9212f3e9d97f6e3ce87be3d61fae7af4921b763a81e367c2224d3ba63868041fe89ed3deb928e8fb7dfaa5173c3f7ca8cd971389bb7cab",
         "nivel": 2,
         "orcamento_milicreditos": 0,
         "passos": 0,
@@ -110,15 +110,15 @@
         "sementes": [
           {
             "indice": 0,
-            "semente": "4fb1b56dd9951657c68cce1c9c1a68a88c09cc331d128f55b18e15276d12237492c5a3ec921e5347c410013736a385af7815074102b42fe414f5c6ae6b68fbb4"
+            "semente": "f8670d8775042493066734e96d40cfae45a9ce32b451d019db699b1f12835d3090963a60992537b557d1a6eedebf30d48b373ff9b9abea07b659a76b67b5c0c2"
           },
           {
             "indice": 1,
-            "semente": "45530f24262e955b385d7e445a5104ae466cc86356e51776e3ff53343664f795918787706a20fae11df9b4b394f81ed268cd88cf3b55083ba32cf2adab3aa921"
+            "semente": "8f5993acdf95f828c63560c37cb39b91778cf81f5c942fc124855b4b0cee431883e48fac8fd0ad2a93cfe6cf0035445cc32e964d62a269610069eba8133e2e9f"
           },
           {
             "indice": 999,
-            "semente": "3c93ed1632f4faae05395af3e072a21b2b27b9ee7135764ca6597000d94c4e329fec5803380cef8ca32e992b6c9c11ae7f7cda2d211c3ef848589dd1ace9a9dd"
+            "semente": "3d14cefbed4d0bee785000649c8cacf3f045d8d3c000e2914880b9ddcf989178275d8a6560c60b1c6a859166ba6f42fbd8cb7b6dba8ce2046379755b93f150b0"
           }
         ],
         "tamanho": 64,
@@ -129,7 +129,7 @@
         "codificacao": "010703000000200000003200000100000000000303000000000001518000000000004c4b40000000246469667573c3a36f3b20636f6e636f7264c3a26e63696120656e7472652033206ec3b373",
         "descricao": "difusão; concordância entre 3 nós",
         "dominio": 7,
-        "id": "88a9f2e0487ac87e1f97b6c772f53c121fd36c22564b4fb7ce3c1aeaf5f2fa7417bf06c74d66b0f83c2f60b5547418b213aeb8c641279a16fd3a739167a5079e",
+        "id": "a11a7497f6ab72730ca3a781bdea8e1665ba5abf65661885f2e9aa8be1c1743998ee6351012d591fa3d7386b02a1f012c861e0129b3371a51c8c889fc9003294",
         "nivel": 3,
         "orcamento_milicreditos": 5000000,
         "passos": 50,
@@ -138,15 +138,15 @@
         "sementes": [
           {
             "indice": 0,
-            "semente": "2484b6bcfd2fda6f13b3c12086ecb872a496c621f01128405cb91dc80bac31ddb00657160de999a740580e7488b2bfb8c60c87fd16ca4fd2ff591249f1e77d2b"
+            "semente": "5bd72134454b39d99315f950d9e02f2aee0f5c584b6ec30344d8b1c6a0b18ca5e0b78e61e83d2d94b7df991e0b41a8c2799f72d0a68ee222bb553a1eb0a0a2d7"
           },
           {
             "indice": 1,
-            "semente": "c55771cf77da276dfeac2e9b37b44320c8b30975f4407e8282e678b0a298326bb75d1440ddd2017c2e3ceeca9595fb8f409a546bc1e4301e7afeb52e653b7941"
+            "semente": "67c1ac6a3f707a1c14fb80e7fb018e16354442fad84b5a436c43bed52db3cdafd3ee753da0b4ec613e52412eebdf1a53c935a671f8c8268c2c1fad9aad6325ad"
           },
           {
             "indice": 1099511627775,
-            "semente": "0041fab2607e0ec3d3d4d7990d6cf3fa87a1b2910b65522cc6eb247002c130f7a48b42f96118c8df24b05b9bd8aa8a08e2f735da65343826d1fd1a053d671f58"
+            "semente": "7aafaaf73cb01478c9b8306a83bb27e8b30b639646d4fc8651bef26505769d2227dd1b52c972367a9d01c36fb85bf7f3e53792e44dbf4a24b952d123c7f61edb"
           }
         ],
         "tamanho": 32,
@@ -157,7 +157,7 @@
         "codificacao": "0105020000002800000000000000000000000c05020000000000000e10000000000000000000000031616c6f6361c3a7c3a36f20636f6d206f72c3a7616d656e746f206c697672650a6520717565627261206465206c696e6861",
         "descricao": "alocação com orçamento livre\ne quebra de linha",
         "dominio": 5,
-        "id": "7fea13029bb3094d36465e35d4798f7c68b0ef41102d5994ee48c668eb8d3d1b8ef9c16ece33037ff464ee90ef50b5bdfac8b33424dfac6280fe715ebd23db68",
+        "id": "171b61731701b1529cd8f4e3fc72b24f93f4248952902b3eda2864cbbc8b37d76a70bf09bc852166ca00df2ab3c63e263fc732d1fb2d218a2c1e0e4934827cc4",
         "nivel": 5,
         "orcamento_milicreditos": 0,
         "passos": 0,
@@ -166,15 +166,15 @@
         "sementes": [
           {
             "indice": 0,
-            "semente": "d245e68f4cf177e92fabbe57ddcdb7fec1b2f453f0b9ffb5de6619ca0390623929ee215649892613a46bb78c3d26292502d8f71d778367b149ba8f39e4bd87f4"
+            "semente": "e514e51e2c0d87b5d8ee9acc44fe7fff52712ae49972fa3fdebd245cc8ad97ec88a35df294e25912545f5e04a6b8c77497d34665b938735167acc2f0e18c562b"
           },
           {
             "indice": 1,
-            "semente": "1ea7522536b7757ab65563830e462e4c062828d435ff7dde415a74e69051e7c26c56f36b2f013bdc2cabd358fca78dfa2be29ef56c77e8aa790bb1ab340f4960"
+            "semente": "aa1b908263d9ff7be4ef7a307a29c49f4a9c270d5fd60ccbe6bfb8509a265fb6d8f9444ceef40af227cf4ad5b77433c212b2809abfcde3887e4cbab7eb54f445"
           },
           {
             "indice": 11,
-            "semente": "409d2553775611c9e38f10b13611383304dc1dc73d0349bf562caf9f95678afba5f992a57672606f3c1db6a04451d99720a7c7f524756c5dbbf5ae0f61e1d440"
+            "semente": "600bdd708a2d08b13ccbd34801566ae5702f8db6a7efa072e1db997b2b8dfe907bbc0ca073cd9b609ec02be9d22a3fe4cc85594bf04c634065b54ac1412718ed"
           }
         ],
         "tamanho": 40,
@@ -265,7 +265,7 @@
           "indice": 19
         }
       ],
-      "soma": "81d278122b934568a2cb3fd5717261d5770c30261c43710b34f523a1b181f66d329cbf585987aaca395de867307046592b6cef0c97029d455b8e8d66e8c9b4c6"
+      "soma": "1018f9a5676652fa4d552fa8a88153f1fe467216162ed6cbc9c0845581dd30c6e575b912a85574b98ee58e4f9fafc498f004e3fd217ee13a6cb8d9ca239b0c74"
     }
   },
   "generator": "reference/tools/gen_vectors.py",

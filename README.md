@@ -5,15 +5,6 @@ Blockchain com prova de trabalho, em desenvolvimento.
 **Estado: pré-testnet. Não existe mainnet. Não existe token com valor.**
 Qualquer pessoa que disser o contrário está mentindo.
 
-> **O projeto se chamava Auron até 19/09/2026.** O nome mudou porque já havia
-> outros projetos com ele (inclusive o Apache Auron e o ticker AUR na bolsa),
-> e ninguém deveria confundir um com o outro. A tecnologia é a mesma. As
-> versões até `v0.1.0-teste.3` saíram com o nome antigo e falam uma rede
-> diferente (outra gênese): para testar, use a partir de `v0.2.0-teste.1`.
-
-> **O ticker mudou de HYUR para HYX em 26/09/2026.** Só o nome na tela: a
-> rede, a gênese e as carteiras continuam as mesmas.
-
 ## O que existe hoje
 
 | Parte | Estado |
@@ -138,7 +129,7 @@ minerador multiplicou matrizes do tamanho exigido (a mesma conta que sustenta
 IA), com instância derivada do bloco anterior e do minerador, conferida por
 Freivalds. O tamanho cresce com o trabalho validado da rede, separado do
 intervalo de bloco. O Argon2id continua como camada complementar. Tarefas de
-clientes de verdade ficam no mercado Utrax, fora do consenso: nenhum bloco
+clientes de verdade ficam no mercado Ultrax, fora do consenso: nenhum bloco
 depende de alguém publicar tarefa. Limite atual, na spec (§9A): a prova viaja
 no bloco, então o tamanho tem teto (n = 256).
 
@@ -169,7 +160,7 @@ publicados:
 ## Honestidade
 
 Este repositório declara o estado real da rede. Enquanto não houver mainnet,
-nenhum material do projeto vai dizer que há. Enquanto o Utrax estiver fora do
+nenhum material do projeto vai dizer que há. Enquanto o Ultrax estiver fora do
 consenso, nenhum material vai apresentá-lo como lastro econômico da moeda.
 
 ## Contribuir e atacar

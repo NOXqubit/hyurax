@@ -10,7 +10,7 @@
 //! - [`ia`]: o treino de rede neural sobre moléculas reais (AqSolDB);
 //! - [`trabalho`]: os tipos de trabalho. Cada um sabe executar, verificar e
 //!   contar as operações que fez. Matriz, mochila e difusão são a tradução de
-//!   `reference/hyurax/utrax.py`, conferida contra `vectors/utrax.json`;
+//!   `reference/hyurax/ultrax.py`, conferida contra `vectors/ultrax.json`;
 //! - [`tarefa`]: a tarefa e o ciclo de vida, só com transições permitidas;
 //! - [`prova`]: o registro de prova assinado pelo worker;
 //! - [`validador`]: compara resultados de workers diferentes e dá parecer;
@@ -27,13 +27,11 @@
 
 #![forbid(unsafe_code)]
 
-/// Monta um rótulo de domínio do ULTRAX na compilação: `HYURAX-UTRAX-<sufixo>`.
-///
-/// O prefixo `UTRAX` é o dos rótulos que já existem no gabarito; ULTRAX é o
-/// nome do produto, e trocar o rótulo mudaria os vetores.
+/// Monta um rótulo de domínio do ULTRAX na compilação: `HYURAX-ULTRAX-<sufixo>`,
+/// igual ao `identidade.rotulo("ULTRAX-…")` do gabarito.
 macro_rules! dominio {
     ($sufixo:literal) => {
-        concat!(hyurax_identidade::raiz!(), "-UTRAX-", $sufixo).as_bytes()
+        concat!(hyurax_identidade::raiz!(), "-ULTRAX-", $sufixo).as_bytes()
     };
 }
 

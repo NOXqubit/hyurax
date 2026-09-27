@@ -166,7 +166,7 @@ O mundo 3D passa a ser dirigido por **planos**. Cada seção declara `data-plano
 | 01 | `#visao` | I · O problema | Trilhões de cálculos. Jogados fora. | 220svh | fria, só no fim acende |
 | 02 | `#nucleo` | índice vivo | Uma regra. Nenhum dono. | 120svh | cheia |
 | — | *silêncio* | claquete `ATO II · O QUE JÁ FUNCIONA` | — | 70svh | — |
-| 03 | `#utrax` | II | Pegue a mentira sem refazer a conta. | 300svh | exposição 1,0 |
+| 03 | `#ultrax` | II | Pegue a mentira sem refazer a conta. | 300svh | exposição 1,0 |
 | 04 | `#cadeia` | II | Mexa num bloco antigo. | 260svh | 1,0 |
 | 05 | `#nos` | II | Uma rede que se levanta sozinha. | 260svh | 1,0 |
 | 06 | `#seguranca` | II | Atacamos o próprio código. | 200svh | 1,0 |
@@ -197,7 +197,7 @@ O mundo 3D passa a ser dirigido por **planos**. Cada seção declara `data-plano
 | Hoje | Agora |
 |---|---|
 | Cerca de 21 `.painel` de vidro com `backdrop-filter` | **Palco aberto sobre o preto**, com filetes de 1 px, como uma ficha técnica. No máximo **6 placas** na página, só onde há um objeto manipulável (QR, campo de texto, chave). Zero `backdrop-filter` no site. |
-| `.olho` Michroma + `h2` com `<em>` quente, 15 vezes | **Claquete**: Michroma 12 px `04 — CADEIA`, com um contador de ato `II · 2/5` à direita. Depois vem **um monumento ou um título, nunca os dois**. Cada capítulo escolhe **uma** escala: monumento em 5 capítulos (topo, visão, utrax, hyx, fim) e título nos demais. |
+| `.olho` Michroma + `h2` com `<em>` quente, 15 vezes | **Claquete**: Michroma 12 px `04 — CADEIA`, com um contador de ato `II · 2/5` à direita. Depois vem **um monumento ou um título, nunca os dois**. Cada capítulo escolhe **uma** escala: monumento em 5 capítulos (topo, visão, ultrax, hyx, fim) e título nos demais. |
 | Seis fileiras de chips `.etapas` com "→" | **Régua de máquina**: um filete horizontal com marcas de escala e rótulos mono 12 px embaixo. A etapa ativa é um **segmento de luz que corre pelo filete**. É um componente só, usado em no máximo 4 lugares (`#cadeia`, `#mercado`, `#direct`, `#fragmentacao`). No celular vira vertical. |
 | `.selo-sim` "SIMULATION" piscando 11 vezes (código de "AO VIVO") | **Dois rótulos fixos, sem pulso:** `CONTA REAL · neste aparelho · 0,38 ms` (ponto `--luz`) e `[dados de exemplo]` (colchetes `--chumbo`). A pessoa vê exatamente o que é cálculo de verdade e o que é cenário. |
 | Mosaicos de 1 px (`.fatos-hyx`, `.mecanismos`, `.onde`) | **Tabela de especificação**: linhas com filete e três colunas (afirmação · prova em mono · link). Nada de cartões iguais. |
@@ -218,7 +218,7 @@ Substitui a visão abstrata, os 6 pilares e os lemas em inglês.
 - **p 0–0,35:** monumento à esquerda, "Trilhões de cálculos.", em wdth 62, peso 250. Ao fundo, uma **chuva de hashes SHA-512 reais**: `crypto.subtle.digest` sobre nonces crescentes, com ritmo limitado. No 3D, são glifos hexadecimais em quads instanciados com um atlas de 16 caracteres em `CanvasTexture`, na cor `--chumbo`, caindo devagar.
 - **p 0,35–0,55:** "Jogados fora." em wdth 125, peso 780. A chuva esfria para `--aco`. Um contador mono **verdadeiro** mostra `hashes calculados nesta página: 18 402 · úteis: 0`. A própria página demonstra o desperdício.
 - **p 0,55–0,8:** a lâmina varre a tela na horizontal. Abaixo da linha, os glifos se encaixam numa **matriz 8×8 de números**. Aparece a frase "O Hyurax exige que a conta sirva."
-- **p 0,8–1:** a matriz se condensa **na letra A**. Esse A é a matriz A de `A · B = C`, e isso só é explicado em `#utrax`.
+- **p 0,8–1:** a matriz se condensa **na letra A**. Esse A é a matriz A de `A · B = C`, e isso só é explicado em `#ultrax`.
 - **Celular:** 400 glifos e 160svh.
 
 #### `#nucleo`: Índice vivo (120svh)
@@ -227,7 +227,7 @@ Substitui a visão abstrata, os 6 pilares e os lemas em inglês.
 - **Sai:** o organograma SVG.
 - **Corrigir:** alinhar os estados com `data.js`, porque a cadeia está implementada.
 
-#### `#utrax`: Pegue a mentira (300svh, a peça central)
+#### `#ultrax`: Pegue a mentira (300svh, a peça central)
 Só a parte de consenso. O mercado vai para `#mercado`.
 
 - **p 0:** o A se desdobra numa **placa 8×8**, a matriz A. Ao lado ficam as placas B e C. São `InstancedMesh` de cubos com alturas de 0 a 9 vindas de `engine.matriz()`, com o glifo "A" gravado na primeira placa.
@@ -287,7 +287,7 @@ Hoje o capítulo leva o selo "Planejado". Passa a ser **implementado · rede de 
 - **"O HYX não é":** marcadores de traço `--aco`, sem o × salmão.
 
 #### `#mercado` (novo): Em construção (120svh)
-- **O que vem de `#utrax`:** os 5 candidatos e as 7 etapas.
+- **O que vem de `#ultrax`:** os 5 candidatos e as 7 etapas.
 - **3D a meia luz:** 5 As pequenos instanciados. O escolhido acende, calcula, e **o pagamento só acende depois que a conferência passa**, com a referência "a mesma conferência do capítulo 03".
 - **Régua de máquina:** `TAREFA · MERCADO · ESCOLHA · CÁLCULO · CONFERÊNCIA · PROVA · PAGAMENTO`.
 - **Selo:** ◐ em desenvolvimento. O ◐ só aparece aqui, então o selo único deixa de esconder a parte pronta.
@@ -501,7 +501,7 @@ site/js/world/
 | `encaixar(id, elemento)` | Registra a âncora DOM que o 3D segue naquele plano ou pose |
 | `corte()` | Corte seco entre atos |
 | `golpe({ porTempo })` / `golpe({ p })` | Giro de 22° do A no `#topo`; ignora se não couber |
-| `pulso(nome, dados)` | `"utrax-recusa"`, `"cadeia-quebra"`, `"seguranca-risco"`, `"destaque"` |
+| `pulso(nome, dados)` | `"ultrax-recusa"`, `"cadeia-quebra"`, `"seguranca-risco"`, `"destaque"` |
 | `foco(indices)` | `#nos`: acende os nós do teste |
 | `recorte(x, y, w, h)` | Tesoura: no celular, desenha só a metade de cima |
 | `dormir(motivo)` / `acordar(motivo)` | Para ou retoma o rAF; os motivos se acumulam num `Set` |
@@ -685,7 +685,7 @@ Draw calls incluem pontos, linhas e pacotes quando visíveis (formato H / M / L)
 | 01 `#visao` (plano) | Oculto até p 0,8; depois se forma só com pontos | `chuva` → `placa6` (p 0,45) → `logo` (p 0,8), exposição 0,4 | `.espectrograma` | Morph na GPU, `uQueda` | 2 / 2 / 2 |
 | 02 `#nucleo` (pose) | Deitado (X −68°), FOV 22° | `nucleo` a 30% | `.nucleo-a`; âncoras projetadas | `Vector3.project` na convergência | 3 / 3 / 2 |
 | corte seco (ato II) | | | | | |
-| 03 `#utrax` (plano) | Desdobra na placa A; placas B e C; feixes | `poeira` a 15% | `.grade-a`, `.grade-b`, `.grade-c`; quadros-chave em p 0, 0,12, 0,45, 0,65, 0,8 | `InstancedMesh` (108 cubos; quadrados no LOW), quads instanciados | 4 / 4 / 3 |
+| 03 `#ultrax` (plano) | Desdobra na placa A; placas B e C; feixes | `poeira` a 15% | `.grade-a`, `.grade-b`, `.grade-c`; quadros-chave em p 0, 0,12, 0,45, 0,65, 0,8 | `InstancedMesh` (108 cubos; quadrados no LOW), quads instanciados | 4 / 4 / 3 |
 | 04 `#cadeia` (plano) | 7 réguas e 6 pinos | `cadeia` a 30% | `.corrente`; câmera numa `CatmullRomCurve3` de p 0 a 1 | `InstancedMesh` (56 segmentos), cilindros de 8 lados | 4 / 4 / 3 |
 | 05 `#nos` (plano) | Vira pó de p 0 a 0,1 | `rede` com `aPapel`: 4 nós acesos, o resto a 15% | `.rede-teste`; passos em 0,1 / 0,25 / 0,4 / 0,55 / 0,7 / 0,85 | Morph, `foco()`, linhas | 4 / 4 / 3 |
 | 06 `#seguranca` (pose) | Corpo de prova sob luz rasante; um risco por grupo | `rede` a 40% | `.corpo-de-prova` | Matcap com luz direcional; `LineSegments` (sem riscos no LOW) | 4 / 3 / 3 |
@@ -908,7 +908,7 @@ Conta de memória: HIGH a 4,5 MP ≈ 72 MB de MSAA + 18 de resolve + 7 de brilho
 |---|---|---|
 | `site/index.html` | Reescrito na ordem de 3.1: `data-ato`, `data-plano`, `data-pose`, textos pt-BR estáticos, ids antigos como âncoras, `<defs>` com os `clipPath` da fresta e os glifos de estado, `#mercado` e `#rodar` novos, zero `style=""`. | 635 → ~780 |
 | `site/styles/capitulos.css` (novo) | Layout de todos os capítulos, alturas de plano, recolhidos do ato IV. `styles/main.css` é removido. | ~850 / −508 |
-| `site/locales/*.js` (4) | Chaves novas: `placa.*`, `fonte.*`, `ato.*`, `capitulo.<id>.codigo`, `abertura.*`, `visao.*`, `utrax.*`, `mercado.*`, `rodar.*`, `hyx.*`, `escala.*`, `onde.*`, `fim.*`, `ajustes.*`, `barra.*`, `provas.<teste>`. Saem pilares, lemas, barras da IA e todo o inglês solto. Monumentos em spans de linha, com até 12 caracteres. | ~+220 / −160 cada |
+| `site/locales/*.js` (4) | Chaves novas: `placa.*`, `fonte.*`, `ato.*`, `capitulo.<id>.codigo`, `abertura.*`, `visao.*`, `ultrax.*`, `mercado.*`, `rodar.*`, `hyx.*`, `escala.*`, `onde.*`, `fim.*`, `ajustes.*`, `barra.*`, `provas.<teste>`. Saem pilares, lemas, barras da IA e todo o inglês solto. Monumentos em spans de linha, com até 12 caracteres. | ~+220 / −160 cada |
 | `site/locales/glossary.js` | Sai "Build the infrastructure."; entram `MATRIX-FREIVALDS-V1`, `HYURAX-UPOW-PROOF-v1`, `HYURAX-WIRE-v2`, `HYURAX-CARTEIRA-v2`, `Noise_XX_25519_ChaChaPoly_BLAKE2s`, `LWMA-1` e a regra dos 12 caracteres. | ~+14 / −2 |
 | `site/js/i18n.js` | Carrega Noto Sans JP para `ja`; remove `idioma-pendente` depois de `aplicar()`. | ~+30 |
 | `site/js/main.js` | Barra de status e progresso, menu na ordem nova, mecânica de 4.1. | ~+90 / −40 |
@@ -973,7 +973,7 @@ Conta de memória: HIGH a 4,5 MP ≈ 72 MB de MSAA + 18 de resolve + 7 de brilho
 |---|---|---|
 | `site/js/sections/visao.js` (novo) | Espectrograma, contadores, produtos conferidos, orçamento de 1,5 ms. | ~160 |
 | `site/js/sections/nucleo.js` | Âncoras projetadas, escada dos atos, versão 2D. | 28 → ~110 |
-| `site/js/sections/utrax.js` | Prova oficial, sequência por p, vernier, régua de custo, mentir e valor impossível, "demonstra / não demonstra". A parte de mercado sai. | 80 → ~280 |
+| `site/js/sections/ultrax.js` | Prova oficial, sequência por p, vernier, régua de custo, mentir e valor impossível, "demonstra / não demonstra". A parte de mercado sai. | 80 → ~280 |
 | `site/js/world/props/placas.js` (novo) | Placas A, B e C e os feixes. | ~200 |
 | `site/js/sections/cadeia.js` | Gênese real, régua de 222 bytes, adulteração, pino, cascata, relógio de batidas. | 130 → ~300 |
 | `site/js/world/props/corrente.js` (novo) | Réguas, pinos, curva da câmera. | ~170 |
@@ -987,8 +987,8 @@ Conta de memória: HIGH a 4,5 MP ≈ 72 MB de MSAA + 18 de resolve + 7 de brilho
 **Pronto quando:**
 - **Honestidade:** `teste_fontes.html` retorna zero faltas.
 - **Hashes:** no `#cadeia`, o hash do bloco 0 é igual a `block_hash` do vetor; trocar 1 byte mostra "não confere mais".
-- **Recusa:** a mensagem do `#utrax` é idêntica ao vetor `resultado_alterado`.
-- **Desempenho:** critérios de FPS da Etapa 5 valendo em `visao`, `utrax`, `cadeia` e `nos`.
+- **Recusa:** a mensagem do `#ultrax` é idêntica ao vetor `resultado_alterado`.
+- **Desempenho:** critérios de FPS da Etapa 5 valendo em `visao`, `ultrax`, `cadeia` e `nos`.
 - **Celular:** a 390×844, nenhuma rolagem horizontal, e o palco 3D fica na metade de cima.
 
 ### Etapa 7: atos III e IV
@@ -1062,7 +1062,7 @@ Conta de memória: HIGH a 4,5 MP ≈ 72 MB de MSAA + 18 de resolve + 7 de brilho
    - nível "2D";
    - nenhuma tarefa acima de 200 ms;
    - no máximo 3 quadros seguidos acima de 50 ms durante a abertura.
-5. **Celular real:** Android intermediário com perfil detectado; mediana de 33 ms em `utrax` e `cadeia`; nenhuma rolagem horizontal; alvos de toque de 44 px ou mais.
+5. **Celular real:** Android intermediário com perfil detectado; mediana de 33 ms em `ultrax` e `cadeia`; nenhuma rolagem horizontal; alvos de toque de 44 px ou mais.
 6. **Movimento reduzido:** critério de 4.7.
 7. **Honestidade (as duas buscas precisam voltar vazias):**
    - `git grep -n -i -E "#e0806b|ff5e4d|9cc4ff|6fe3a5|93b6cc|9fd6b4|f2b865|efcb92" site`;

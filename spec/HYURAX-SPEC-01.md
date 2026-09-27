@@ -483,7 +483,7 @@ treino e inferência de IA.
 **O que ela NÃO demonstra.** Utilidade externa. A instância é gerada pela rede,
 não trazida por um cliente, porque nenhum bloco pode depender de alguém de fora
 aparecer com uma tarefa na hora certa. Problemas reais de terceiros continuam no
-mercado UTRAX da seção 18.
+mercado ULTRAX da seção 18.
 
 **Limite conhecido, dito com todas as letras.** A prova viaja inteira no bloco:
 n = 48 ocupa 9,2 KB; n = 256 ocupa 262 KB, um quarto de `max_block_bytes`. Na
@@ -683,13 +683,13 @@ A memória menor no regtest existe porque a implementação Python leva dezenas 
 segundos em 32 MiB. O algoritmo é o mesmo; só o `WORK_SIZE` muda. É exatamente
 por isso que `WORK_SIZE` precisava estar separado da dificuldade.
 
-## 18. Utrax — mercado de trabalho útil
+## 18. Ultrax — mercado de trabalho útil
 
 Duas coisas diferentes, que não se confundem:
 
 - **Dentro do consenso:** a família `MATRIX-FREIVALDS-V1` da seção 9A. Instância
   gerada pela rede, exigida em todo bloco.
-- **Fora do consenso (esta seção):** o mercado UTRAX, onde alguém publica uma
+- **Fora do consenso (esta seção):** o mercado ULTRAX, onde alguém publica uma
   tarefa de verdade e paga por ela. Nenhum bloco depende de haver tarefa
   publicada.
 
@@ -861,7 +861,7 @@ Não é consenso, mas é o que protege o saldo de quem testa:
 - chave = Argon2id(senha, sal de 16 bytes, 64 MiB, 3 passadas, 1 faixa),
   32 bytes; parâmetros gravados no arquivo; ao abrir, mais de 1 GiB é recusado;
 - segredo Ed25519 cifrado com ChaCha20-Poly1305, nonce de 12 bytes;
-- dado associado = `"AURON-CARTEIRA-v2" || endereço`: trocar o endereço do
+- dado associado = `"HYURAX-CARTEIRA-v2" || endereço`: trocar o endereço do
   arquivo faz a abertura falhar;
 - senha mínima de 10 caracteres; senha errada e arquivo alterado dão a mesma
   mensagem.

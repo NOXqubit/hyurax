@@ -3,7 +3,7 @@
 //!
 //! - `usefulpow.json`: regra do tamanho nas três redes, semente, prova,
 //!   compromisso, e as recusas com o motivo exato.
-//! - `utrax.json`: o gerador de matrizes é o mesmo do UTRAX; o produto
+//! - `ultrax.json`: o gerador de matrizes é o mesmo do ULTRAX; o produto
 //!   calculado aqui precisa bater com o `matrix_work` do Python.
 
 #![allow(
@@ -99,8 +99,8 @@ fn recusas_pelo_mesmo_motivo_do_gabarito() {
 }
 
 #[test]
-fn gerador_de_matrizes_igual_ao_utrax() {
-    let doc = carregar("utrax.json");
+fn gerador_de_matrizes_igual_ao_ultrax() {
+    let doc = carregar("ultrax.json");
     for caso in doc["matrix"].as_array().unwrap() {
         let n = caso["size"].as_u64().unwrap() as u32;
         let (a, b) = generate_matrices(&bytes(&caso["seed"]), n).unwrap();

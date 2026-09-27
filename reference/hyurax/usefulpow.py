@@ -34,7 +34,7 @@ O QUE ESTA PROVA DEMONSTRA E O QUE NÃO DEMONSTRA — dito com todas as letras:
   para aquele bloco, que é o mesmo tipo de conta que sustenta treino de IA.
   NÃO demonstra utilidade externa: a instância é gerada pela rede, não trazida
   por um cliente. Problemas de fora (remédio, genética, logística) continuam no
-  mercado UTRAX, fora do consenso, porque nenhum bloco pode depender de alguém
+  mercado ULTRAX, fora do consenso, porque nenhum bloco pode depender de alguém
   de fora aparecer com uma tarefa na hora certa.
 """
 
@@ -45,7 +45,7 @@ from dataclasses import dataclass
 import numpy as np
 
 from . import codec, crypto, identidade
-from .utrax import MATRIX_ENTRY_MAX, generate_matrices
+from .ultrax import MATRIX_ENTRY_MAX, generate_matrices
 
 FAMILY_MATRIX_FREIVALDS = 1
 PROOF_VERSION = 1

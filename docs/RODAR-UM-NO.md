@@ -45,7 +45,7 @@ Prefere compilar? Com Rust 1.98 ou mais novo:
 `cargo build --release -p hyurax-no -p hyurax-pow` (os programas ficam em
 `.target/release/`).
 
-**Celular (Termux):** depois de descompactar, rode `chmod +x hyurax-no hyurax-minerar`.
+**Celular (Termux):** depois de descompactar, rode `chmod +x hyurax-no`.
 Se o sistema recusar o programa, compile no próprio aparelho, como está em
 [MINERAR-NO-CELULAR.md](https://github.com/NOXqubit/hyurax/blob/main/docs/MINERAR-NO-CELULAR.md).
 

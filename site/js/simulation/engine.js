@@ -119,7 +119,7 @@ export class SimulationEngine {
     };
   }
 
-  // ---------- UTRAX: Freivalds com desafio tirado do próprio resultado ----------
+  // ---------- ULTRAX: Freivalds com desafio tirado do próprio resultado ----------
   matriz(n, max = 9) { return Array.from({ length: n }, () => Array.from({ length: n }, () => this.int(max + 1))); }
   static multiplica(A, B) { return A.map((l) => B[0].map((_, j) => l.reduce((s, x, k) => s + x * B[k][j], 0))); }
   static vezes(M, v) { return M.map((l) => l.reduce((s, x, j) => s + x * v[j], 0)); }

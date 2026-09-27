@@ -40,8 +40,8 @@ from . import codec, crypto, identidade, job
 
 TIPO_ULTRAX = 0x5558
 VERSAO = 1
-DOMINIO_OFERTA = identidade.rotulo("UTRAX-OFERTA-v1")
-DOMINIO_COMPROMISSO = identidade.rotulo("UTRAX-COMPROMISSO-v1")
+DOMINIO_OFERTA = identidade.rotulo("ULTRAX-OFERTA-v1")
+DOMINIO_COMPROMISSO = identidade.rotulo("ULTRAX-COMPROMISSO-v1")
 RESULTADO_MAX = 1 << 20
 MOTIVO_MAX = 500
 REGISTRO_MAX = 4096

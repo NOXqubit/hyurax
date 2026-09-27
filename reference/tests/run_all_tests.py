@@ -27,7 +27,7 @@ MODULES = [
     ("test_03_argon2.py", "Argon2id (RFC 9106)"),
     ("test_04_consensus.py", "alvo, retarget LWMA, emissao"),
     ("test_05_chain.py", "transacoes, estado, cadeia, ataques"),
-    ("test_06_utrax.py", "trabalho util fora do consenso"),
+    ("test_06_ultrax.py", "trabalho util fora do consenso"),
     ("test_07_store.py", "persistencia"),
     ("test_08_vectors.py", "vetores: manifesto e casos de borda"),
     ("test_09_multiativo.py", "transferencia v2: varios ativos e varias saidas"),

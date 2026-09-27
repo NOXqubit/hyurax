@@ -1,5 +1,5 @@
 # ✝ Isaías 26:20 — “Vai, pois, povo meu, entra nos teus quartos e fecha as tuas portas sobre ti; esconde-te só por um momento, até que passe a ira.”
-"""Utrax: trabalho util fora do consenso.
+"""Ultrax: trabalho util fora do consenso.
 
 Testes de regressao para os bugs 1, 2, 8 e 11 do prototipo.
 """
@@ -13,8 +13,8 @@ import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from hyurax import crypto, utrax  # noqa: E402
-from hyurax.utrax import (  # noqa: E402
+from hyurax import crypto, ultrax  # noqa: E402
+from hyurax.ultrax import (  # noqa: E402
     Marketplace,
     TaskStatus,
     WorkSpec,
@@ -34,15 +34,15 @@ def test_freivalds_is_deterministic():
     No prototipo, `np.random.default_rng()` sem semente fazia cada no sortear
     vetores diferentes.
     """
-    result = utrax.matrix_work(SEED, 16)
-    verdicts = {utrax.verify_matrix(SEED, 16, result) for _ in range(20)}
+    result = ultrax.matrix_work(SEED, 16)
+    verdicts = {ultrax.verify_matrix(SEED, 16, result) for _ in range(20)}
     assert verdicts == {True}, "verificacao nao e determinista"
 
     # e um resultado errado precisa ser rejeitado sempre, nao as vezes
-    a, b = utrax.generate_matrices(SEED, 16)
+    a, b = ultrax.generate_matrices(SEED, 16)
     wrong = (a @ b)
     wrong[0, 0] += 1
-    verdicts = {utrax.verify_matrix(SEED, 16, wrong.tobytes()) for _ in range(20)}
+    verdicts = {ultrax.verify_matrix(SEED, 16, wrong.tobytes()) for _ in range(20)}
     assert verdicts == {False}, "resultado errado passou em alguma execucao"
     print("PASS Freivalds determinista em 20 execucoes")
 
@@ -50,7 +50,7 @@ def test_freivalds_is_deterministic():
 def test_freivalds_does_not_use_numpy_rng():
     """O fluxo de bits do numpy e dependencia de versao. Nada de consenso pode usar."""
     import inspect
-    src = inspect.getsource(utrax.freivalds_verify) + inspect.getsource(utrax._ints_from_seed)
+    src = inspect.getsource(ultrax.freivalds_verify) + inspect.getsource(ultrax._ints_from_seed)
     for banned in ("default_rng", "np.random", "RandomState"):
         assert banned not in src, f"{banned} presente no caminho de verificacao"
     print("PASS verificacao nao depende do gerador do numpy")
@@ -58,8 +58,8 @@ def test_freivalds_does_not_use_numpy_rng():
 
 def test_freivalds_challenge_depends_on_claimed_result():
     """O desafio precisa mudar quando o resultado muda, senao da para fazer grinding."""
-    good = utrax.matrix_work(SEED, 8)
-    a, b = utrax.generate_matrices(SEED, 8)
+    good = ultrax.matrix_work(SEED, 8)
+    a, b = ultrax.generate_matrices(SEED, 8)
     bad = (a @ b)
     bad[3, 3] += 7
     bad_bytes = bad.tobytes()
@@ -67,28 +67,28 @@ def test_freivalds_challenge_depends_on_claimed_result():
     s1 = crypto.H(SEED + (8).to_bytes(4, "big") + good)
     s2 = crypto.H(SEED + (8).to_bytes(4, "big") + bad_bytes)
     assert s1 != s2, "desafio nao depende do resultado alegado"
-    assert utrax.verify_matrix(SEED, 8, good)
-    assert not utrax.verify_matrix(SEED, 8, bad_bytes)
+    assert ultrax.verify_matrix(SEED, 8, good)
+    assert not ultrax.verify_matrix(SEED, 8, bad_bytes)
     print("PASS desafio derivado do proprio resultado")
 
 
 def test_freivalds_catches_every_single_cell_error():
     size = 12
-    a, b = utrax.generate_matrices(SEED, size)
+    a, b = ultrax.generate_matrices(SEED, size)
     c = a @ b
     for i in range(size):
         for j in range(size):
             bad = c.copy()
             bad[i, j] += 1
-            assert not utrax.verify_matrix(SEED, size, bad.tobytes()), \
+            assert not ultrax.verify_matrix(SEED, size, bad.tobytes()), \
                 f"erro em ({i},{j}) passou"
-    assert utrax.verify_matrix(SEED, size, c.tobytes())
+    assert ultrax.verify_matrix(SEED, size, c.tobytes())
     print(f"PASS Freivalds pega os {size * size} erros de celula unica")
 
 
 def test_matrix_rejects_wrong_length():
-    assert not utrax.verify_matrix(SEED, 8, b"")
-    assert not utrax.verify_matrix(SEED, 8, b"\x00" * 10)
+    assert not ultrax.verify_matrix(SEED, 8, b"")
+    assert not ultrax.verify_matrix(SEED, 8, b"\x00" * 10)
     print("PASS matriz de tamanho errado rejeitada")
 
 
@@ -104,7 +104,7 @@ def test_knapsack_rejects_all_zeros():
     """
     zeros = b"\x00" * 40
     for n in (5, 12, 20, 40):
-        assert not utrax.verify_knapsack(SEED, n, zeros), \
+        assert not ultrax.verify_knapsack(SEED, n, zeros), \
             f"40 bytes de zeros aceitos com n={n}"
     print("PASS mochila rejeita 40 bytes de zeros")
 
@@ -112,8 +112,8 @@ def test_knapsack_rejects_all_zeros():
 def test_knapsack_rejects_feasible_but_not_optimal():
     """Solucao viavel qualquer nao e trabalho. So o otimo conta."""
     n = 16
-    weights, values, capacity = utrax.generate_knapsack(SEED, n)
-    best, best_mask = utrax.solve_knapsack(weights, values, capacity)
+    weights, values, capacity = ultrax.generate_knapsack(SEED, n)
+    best, best_mask = ultrax.solve_knapsack(weights, values, capacity)
 
     # constroi uma solucao viavel pior: tira um item da mascara otima
     for i in range(n):
@@ -126,34 +126,34 @@ def test_knapsack_rejects_feasible_but_not_optimal():
     worse_value = sum(values[i] for i in range(n) if worse_mask & (1 << i))
     assert worse_value < best
     forged = worse_value.to_bytes(8, "big") + worse_mask.to_bytes(32, "big")
-    assert not utrax.verify_knapsack(SEED, n, forged), \
+    assert not ultrax.verify_knapsack(SEED, n, forged), \
         "solucao viavel porem sub-otima foi aceita"
 
-    honest = utrax.knapsack_work(SEED, n)
-    assert utrax.verify_knapsack(SEED, n, honest)
+    honest = ultrax.knapsack_work(SEED, n)
+    assert ultrax.verify_knapsack(SEED, n, honest)
     print("PASS mochila exige o otimo, nao so viabilidade")
 
 
 def test_knapsack_rejects_infeasible_and_lying_value():
     n = 14
-    weights, values, capacity = utrax.generate_knapsack(SEED, n)
-    best, _ = utrax.solve_knapsack(weights, values, capacity)
+    weights, values, capacity = ultrax.generate_knapsack(SEED, n)
+    best, _ = ultrax.solve_knapsack(weights, values, capacity)
 
     # todos os itens: quase certamente estoura a capacidade
     full_mask = (1 << n) - 1
     total_v = sum(values)
     infeasible = total_v.to_bytes(8, "big") + full_mask.to_bytes(32, "big")
-    assert not utrax.verify_knapsack(SEED, n, infeasible), "solucao inviavel aceita"
+    assert not ultrax.verify_knapsack(SEED, n, infeasible), "solucao inviavel aceita"
 
     # valor declarado maior que o otimo, com mascara otima
-    honest = utrax.knapsack_work(SEED, n)
+    honest = ultrax.knapsack_work(SEED, n)
     lying = (best + 1).to_bytes(8, "big") + honest[8:]
-    assert not utrax.verify_knapsack(SEED, n, lying), "valor inflado aceito"
+    assert not ultrax.verify_knapsack(SEED, n, lying), "valor inflado aceito"
 
     # bits acima do numero de itens
     overflow_mask = 1 << (n + 3)
     bogus = (0).to_bytes(8, "big") + overflow_mask.to_bytes(32, "big")
-    assert not utrax.verify_knapsack(SEED, n, bogus), "mascara fora da faixa aceita"
+    assert not ultrax.verify_knapsack(SEED, n, bogus), "mascara fora da faixa aceita"
     print("PASS mochila rejeita inviavel, valor inflado e mascara fora da faixa")
 
 
@@ -172,7 +172,7 @@ def test_diffusion_is_integer_only():
     import inspect
     import textwrap
 
-    for fn in (utrax.diffusion_work, utrax._trunc_div):
+    for fn in (ultrax.diffusion_work, ultrax._trunc_div):
         tree = ast.parse(textwrap.dedent(inspect.getsource(fn)))
         for node in ast.walk(tree):
             assert not isinstance(node, ast.Div), \
@@ -182,7 +182,7 @@ def test_diffusion_is_integer_only():
                     f"{fn.__name__} tem literal float: {node.value}"
 
     # e o resultado tem que sair inteiro de verdade
-    out = utrax.diffusion_work(SEED, 8, 5)
+    out = ultrax.diffusion_work(SEED, 8, 5)
     grid = np.frombuffer(out, dtype=np.int64)
     assert grid.dtype == np.int64
     assert len(out) == 8 * 8 * 8
@@ -190,18 +190,18 @@ def test_diffusion_is_integer_only():
 
 
 def test_diffusion_deterministic_and_verified():
-    a = utrax.diffusion_work(SEED, 10, 7)
-    b = utrax.diffusion_work(SEED, 10, 7)
+    a = ultrax.diffusion_work(SEED, 10, 7)
+    b = ultrax.diffusion_work(SEED, 10, 7)
     assert a == b, "difusao nao e determinista"
-    assert utrax.verify_diffusion(SEED, 10, 7, a)
-    assert not utrax.verify_diffusion(SEED, 10, 7, b"\x00" * len(a))
-    assert not utrax.verify_diffusion(SEED, 10, 8, a), "passos diferentes bateram"
+    assert ultrax.verify_diffusion(SEED, 10, 7, a)
+    assert not ultrax.verify_diffusion(SEED, 10, 7, b"\x00" * len(a))
+    assert not ultrax.verify_diffusion(SEED, 10, 8, a), "passos diferentes bateram"
     print("PASS difusao determinista e verificavel")
 
 
 def test_trunc_div_rounds_toward_zero():
     values = np.array([-7, -5, -3, -1, 0, 1, 3, 5, 7], dtype=np.int64)
-    got = utrax._trunc_div(values, 5)
+    got = ultrax._trunc_div(values, 5)
     expected = np.array([-1, -1, 0, 0, 0, 0, 0, 1, 1], dtype=np.int64)
     assert np.array_equal(got, expected), f"{got} != {expected}"
     # `//` do numpy arredondaria para baixo e daria -2 no primeiro
@@ -347,4 +347,4 @@ if __name__ == "__main__":
     test_cannot_post_without_funds()
     test_settled_task_cannot_be_paid_twice()
     test_workspec_declares_costs()
-    print("=== UTRAX OK ===")
+    print("=== ULTRAX OK ===")

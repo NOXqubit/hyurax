@@ -52,14 +52,3 @@ desktop.ini
 #   .cargo/      a configuração de build é a mesma nas três máquinas.
 #   spec/        a especificação é o projeto.
 # ---------------------------------------------------------------------------
-
-# ---------------------------------------------------------------------------
-# Site: pacote de downloads gerado por site/tools/build_downloads.py
-# ---------------------------------------------------------------------------
-site/downloads/
-
-# Narracao gerada por site/tools/build_narracao.py
-site/assets/voz/
-
-# Pasta de build da prova da janela (wry/tao), criada em 19/09/2026.
-.target-prova/

@@ -5,21 +5,15 @@ edition.workspace = true
 rust-version.workspace = true
 authors.workspace = true
 license.workspace = true
-description = "Hyurax — prova de trabalho Argon2id e minerador que roda no celular"
+description = "Hyurax — prova de trabalho Argon2id"
 
 [dependencies]
 hyurax-identidade.workspace = true
 argon2.workspace = true
-# só o programa hyurax-minerar usa, para medir o trabalho útil no aparelho
-hyurax-usefulpow.workspace = true
 
 [dev-dependencies]
 serde_json.workspace = true
 hex.workspace = true
-
-[[bin]]
-name = "hyurax-minerar"
-path = "src/bin/hyurax-minerar.rs"
 
 [lints.rust]
 unsafe_code = "forbid"
