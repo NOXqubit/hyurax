@@ -26,7 +26,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 OUT_DIR = ROOT.parent / "vectors"
 
-from hyurax import argon2, codec, consensus, crypto, genetica, ia, identidade, job, melhoramento, rotas, triagem, usefulpow, utrax  # noqa: E402
+from hyurax import argon2, codec, consensus, crypto, genetica, ia, identidade, job, melhoramento, rede_ultrax, rotas, triagem, usefulpow, utrax  # noqa: E402
 from hyurax.block import BlockHeader  # noqa: E402
 from hyurax.chain import Chain, make_genesis  # noqa: E402
 from hyurax.consensus import MAINNET, REGTEST, TESTNET  # noqa: E402
@@ -1148,6 +1148,49 @@ def vec_triagem() -> dict:
     }
 
 
+def vec_rede_ultrax() -> dict:
+    """Mensagens do ULTRAX entre nós (reference/hyurax/rede_ultrax.py): uma
+    de cada subtipo, a oferta assinada, e corpos recusados na leitura."""
+    segredo = bytes(range(1, 33))
+    worker = crypto.ed25519_public_key(segredo)
+    esp_matriz = rede_ultrax.especificacao(1, 64, 0, [])
+    esp_genetica = rede_ultrax.especificacao(5, 100, 20, [4, 0, 10100, 50, 1000])
+    resultado_hash = crypto.H(b"resultado")
+    mensagens = [
+        ("oferta", rede_ultrax.oferta(segredo, 0b11111111, 2, 256, 1_790_000_000_000)),
+        ("pedido matriz", rede_ultrax.pedido(7, crypto.H(b"job"), 3, esp_matriz, crypto.H(b"semente"), 1_790_000_060_000, True)),
+        ("pedido genetica", rede_ultrax.pedido(8, crypto.H(b"job 2"), 2**40 - 1, esp_genetica, crypto.H(b"s2"), 5, False)),
+        ("recusa", rede_ultrax.recusa(7, "memória acima do teto deste worker")),
+        ("compromisso", rede_ultrax.compromisso(7, worker, rede_ultrax.compromisso_de(resultado_hash, worker))),
+        ("revelar", rede_ultrax.revelar(7)),
+        ("resultado", rede_ultrax.resultado(7, b"registro de prova codificado", bytes(64), b"\x01\x02\x03")),
+        ("cancelar", rede_ultrax.cancelar(7)),
+    ]
+    casos = []
+    for nome, corpo in mensagens:
+        m = rede_ultrax.ler(corpo)
+        casos.append({"nome": nome, "corpo": h(corpo), "subtipo": m["subtipo"],
+                      "assinatura_confere": m.get("assinatura_confere")})
+    oferta = bytearray(mensagens[0][1])
+    oferta[2 + 32 + 2 + 1] ^= 1  # a memória muda: a assinatura não confere mais
+    recusados = [
+        ("versao", bytes([2]) + mensagens[5][1][1:]),
+        ("subtipo", bytes([1, 9]) + bytes(8)),
+        ("sobra", mensagens[5][1] + b"\x00"),
+        ("curto", mensagens[1][1][:-1]),
+        ("marca de compromisso", mensagens[1][1][:-1] + b"\x02"),
+    ]
+    return {
+        "tipo_ultrax": rede_ultrax.TIPO_ULTRAX,
+        "worker": h(worker),
+        "compromisso": h(rede_ultrax.compromisso_de(resultado_hash, worker)),
+        "resultado_hash": h(resultado_hash),
+        "mensagens": casos,
+        "oferta_adulterada": {"corpo": h(bytes(oferta)), "assinatura_confere": rede_ultrax.ler(bytes(oferta))["assinatura_confere"]},
+        "recusados": [{"nome": n, "corpo": h(c)} for n, c in recusados],
+    }
+
+
 def vec_usefulpow() -> dict:
     """Trabalho util no consenso: regra do tamanho, semente, prova e recusas."""
     tamanhos = []
@@ -1462,6 +1505,7 @@ FILES = {
     "melhoramento.json": vec_melhoramento,
     "rotas.json": vec_rotas,
     "triagem.json": vec_triagem,
+    "rede_ultrax.json": vec_rede_ultrax,
 }
 
 

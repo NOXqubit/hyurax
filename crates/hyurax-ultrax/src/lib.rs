@@ -43,6 +43,7 @@ pub mod ia;
 pub mod job;
 pub mod melhoramento;
 pub mod pontuacao;
+pub mod rede;
 pub mod prova;
 pub mod reputacao;
 pub mod rotas;
