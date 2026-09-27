@@ -181,13 +181,19 @@ Antes de migrar, a versão anterior é copiada para `PASTA/ciencia/backup-vN/`.
 Conteúdo da pasta:
 
 - `jobs/<JOB_ID>/job.bin`: a especificação;
-- `jobs/<JOB_ID>/checkpoint.bin`: intervalos, agregador e tentativas;
+- `jobs/<JOB_ID>/checkpoint.bin` (e `checkpoint.anterior`): intervalos,
+  agregador, tentativas e consumo (os créditos do JOB), com SHA-512 de
+  integridade;
 - `jobs/<JOB_ID>/eventos.jsonl`: só-acréscimo, é o que permite a
   reprodução;
+- `jobs/<JOB_ID>/unidades.jsonl`: uma linha por unidade conferida, com os
+  hashes e o tempo; é dela que sai o "reproduzir" da tela;
 - `jobs/<JOB_ID>/relatorio.{json,csv,pdf}`;
-- `creditos.jsonl`;
-- `benchmarks.jsonl`;
-- `nos.txt`: reputação por WORKER_ID.
+- `benchmarks.jsonl`.
+
+A reputação por WORKER_ID fica **na memória** do nó que pediu, enquanto ele
+roda: é o que este nó viu, não consenso de rede, e recomeça do zero ao
+reabrir. Guardar em disco fica para depois da testnet.
 
 Usuários, créditos e transações **na cadeia** continuam sendo da cadeia. O
 programa não tem cadastro de usuário: o pedido de "users" vira "quem enviou o
@@ -281,9 +287,81 @@ Cada etapa termina com testes, clippy limpo e commit.
 - **Uma máquina, até agora.** A redundância entre nós só é real com nós
   reais. O teste da Etapa D usa três processos com identidades separadas
   numa máquina. Entre máquinas diferentes, fica para a testnet pública.
+- **Reputação só na memória.** Recomeça do zero quando o nó reabre.
+- **Bytes pela rede não medidos.** A tela conta mensagens, não bytes.
+- **Medidas de uma rodada só.** Nesta máquina, o mesmo motor varia de
+  0,7× a 1,3× entre duas rodadas sem mudança de código. Ganho abaixo
+  disso é ruído.
 - **Escala:** a arquitetura descreve bilhões de unidades sem materializá-las,
   e o teste de estresse mede o agendador com milhões. Calcular um bilhão de
   unidades de verdade num Atom não cabe no tempo, e o documento não vai dizer
   que coube.
 - **GPU:** só WebGL2, só matriz. Os outros motores são CPU.
 - **PDF:** texto simples, sem gráficos.
+
+## 5. Estado em 27/09/2026 (medido)
+
+Máquina: Intel Atom, 4 núcleos lógicos, 3,4 GB de RAM, projeto num HD
+externo USB. Programa em release.
+
+**Etapas:** A, B, C, D e E prontas, com testes. F: revisão, medições e este
+documento.
+
+**Testes:**
+
+- Python: 177;
+- Rust: `hyurax-ultrax` 85, `hyurax-no` 80, contra os vetores;
+- clippy sem avisos.
+
+**Verificação entre nós.** Testes com workers simulados, usando chaves de
+verdade:
+
+| Caso | O que acontece |
+|---|---|
+| 3 honestos | CONSENSUS 3/3 |
+| 1 adultera o resultado | CONSENSUS 2/3; ele fica com 1 divergência |
+| 2 combinam o mesmo resultado falso | é maioria, mas a conferência daqui recusa; a unidade volta para a fila, os dois levam recusa, e a cópia honesta não é punida |
+| Revela algo diferente do compromisso | falha e recusa |
+
+**Ensaio com 3 processos** (dois workers aceitando trabalho e um nó
+pedindo). JOB de genética com 30 unidades, nível 3, redundância 3:
+
+- 30/30 unidades em CONSENSUS 3/3, em cerca de 15 s depois que os nós se
+  acharam (a descoberta leva uns 10 s);
+- 124 mensagens recebidas e 120 enviadas pelo nó que pediu.
+
+**ULTRA BENCHMARK.** A base é a primeira medida em release; o atual é
+depois da troca da espera fixa por sinal na fila:
+
+| Métrica | Base | Atual | Ganho |
+|---|---|---|---|
+| Unidades verificadas por segundo, ponta a ponta (JOB de 120 unidades, matriz 48) | 5,0 | 77,3 | **15,6×** |
+| Agendador: unidades marcadas por segundo (5 milhões fora de ordem) | 2,33 mi | 2,36 mi | 1,01× |
+| Agendador: memória de pico por milhão de unidades | 56,6 kB | 56,6 kB | 1,00× |
+| Derivação de unidades por segundo (JOB de 2^40) | 253 mil | 255 mil | 1,01× |
+| Matriz na CPU, todas as linhas | 497 mi ops/s | 668 mi ops/s | 1,35× (dentro do ruído) |
+
+**O gargalo ponta a ponta:**
+
+- **Causa:** o gerador repunha a fila uma vez por segundo, com no máximo
+  `linhas + 1` tarefas, e a linha sem tarefa dormia 200 ms. Com unidade
+  curta, a máquina ficava parada esperando o relógio.
+- **Correção:** a fila acorda a linha, e cada tarefa pega ou terminada
+  acorda o gerador.
+- **O que não mudou:** a conta dos motores. Nenhum motor ficou 10× mais
+  rápido, e a tabela mostra isso.
+
+**Resultados científicos** dos JOBs rodados. Cada unidade foi refeita bit a
+bit por `hyurax-no ciencia refazer`, e a auditoria está limpa.
+
+- **Genética:** a frequência de A vai de 0,10 a cerca de 0,21–0,23 em 200
+  gerações, com s = 0,01. É coerente com a conta determinística (≈ 0,23).
+- **Melhoramento:** a variância genética cai com a seleção, como se
+  espera.
+- **Rotas:** melhor rota de 115.237.
+- **Triagem:** 8.289 moléculas, 5.621 passam no filtro.
+  - A de nota mais alta, nitreto de silício, é inorgânica, e o modelo erra
+    feio nela: previsão de +2,96 contra −5,67 medido. O modelo foi treinado
+    em moléculas orgânicas, e isso fica escrito no relatório.
+  - Marcar o que está fora do domínio do modelo é a melhoria seguinte.
+

@@ -11,8 +11,8 @@
 //! - **GANHO REAL**: atual ÷ base. Se der 2×, aparece 2×.
 //!
 //! O que não se mede aqui aparece como tal: a GPU só se mede pela janela do
-//! programa (WebGL2), e o número de nós simultâneos só existe com a rede de
-//! JOBs entre nós (Etapa D).
+//! programa (WebGL2), e os nós simultâneos se medem com vários nós de
+//! verdade (`hyurax-no ciencia no`), não numa bancada de um processo só.
 
 use std::fmt::Write as _;
 use std::io::Write as _;
@@ -292,7 +292,7 @@ pub fn rodar(ciencia: &Arc<Ciencia>, nucleos: u32, aviso: &mut dyn FnMut(&str)) 
         );
     }
     linha.push_str("]}");
-    saida.push_str("],\"gpu\":\"medida pela janela do programa (WebGL2); não entra no benchmark de terminal\",\"nos\":\"só com a rede de JOBs entre nós (Etapa D)\"}");
+    saida.push_str("],\"gpu\":\"medida pela janela do programa (WebGL2); não entra no benchmark de terminal\",\"nos\":\"medidos com vários nós (hyurax-no ciencia no), não nesta bancada\"}");
     if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open(&arquivo) {
         let _ = writeln!(f, "{linha}");
     }

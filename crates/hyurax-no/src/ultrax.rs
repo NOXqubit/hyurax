@@ -42,7 +42,7 @@ use std::fmt::Write as _;
 use std::io::Write as _;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, AtomicU32, AtomicU64, Ordering};
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Condvar, Mutex};
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 use hyurax_crypto::{HASH_LEN, PUBKEY_LEN, SECRET_LEN, ed25519_public_key, sha512};
@@ -568,6 +568,12 @@ pub struct Ultrax {
     /// Uma escrita de cada vez nos arquivos, para linhas não se misturarem.
     escrita: Mutex<()>,
     fila: Mutex<VecDeque<NaFila>>,
+    /// Acorda uma linha parada quando algo entra na fila.
+    tem_na_fila: Condvar,
+    /// Acorda o gerador quando a fila anda (uma linha pegou ou terminou
+    /// uma tarefa), em vez de esperar o próximo segundo.
+    pede_mais: Mutex<bool>,
+    pede_mais_cv: Condvar,
     ativas: Mutex<Vec<Ativa>>,
     placar: Mutex<Placar>,
     historico: Mutex<VecDeque<Lembranca>>,
@@ -629,6 +635,9 @@ impl Ultrax {
             finais: AtomicU64::new(0),
             escrita: Mutex::new(()),
             fila: Mutex::new(VecDeque::new()),
+            tem_na_fila: Condvar::new(),
+            pede_mais: Mutex::new(false),
+            pede_mais_cv: Condvar::new(),
             ativas: Mutex::new(Vec::new()),
             placar: Mutex::new(placar),
             historico: Mutex::new(VecDeque::new()),
@@ -794,15 +803,34 @@ impl Ultrax {
 
     fn orquestrar(self: Arc<Self>) {
         let mut ultimo_gravado = Instant::now();
+        let mut proximo_segundo = Instant::now().checked_add(Duration::from_secs(1)).unwrap_or_else(Instant::now);
         loop {
-            std::thread::sleep(Duration::from_secs(1));
-            if self.ligado.load(Ordering::Relaxed) {
-                if let Ok(mut p) = self.placar.lock() {
-                    p.segundos_ligado = p.segundos_ligado.saturating_add(1);
-                    p.reputacao.segundos_ativo = p.reputacao.segundos_ativo.saturating_add(1);
+            // espera o próximo segundo, ou uma linha pedindo mais trabalho:
+            // com tarefa curta, esperar o segundo inteiro deixava as linhas paradas
+            let restante = proximo_segundo.saturating_duration_since(Instant::now());
+            if let Ok(pedido) = self.pede_mais.lock()
+                && let Ok((mut pedido, _)) = self.pede_mais_cv.wait_timeout_while(pedido, restante, |p| !*p)
+            {
+                *pedido = false;
+            }
+            let agora = Instant::now();
+            let virou_o_segundo = agora >= proximo_segundo;
+            if virou_o_segundo {
+                proximo_segundo = proximo_segundo.checked_add(Duration::from_secs(1)).unwrap_or(agora);
+                if proximo_segundo < agora {
+                    // ficou para trás (máquina travada): não conta segundos que não viu
+                    proximo_segundo = agora.checked_add(Duration::from_secs(1)).unwrap_or(agora);
                 }
-                self.expirar_na_fila();
-                self.expirar_na_gpu();
+            }
+            if self.ligado.load(Ordering::Relaxed) {
+                if virou_o_segundo {
+                    if let Ok(mut p) = self.placar.lock() {
+                        p.segundos_ligado = p.segundos_ligado.saturating_add(1);
+                        p.reputacao.segundos_ativo = p.reputacao.segundos_ativo.saturating_add(1);
+                    }
+                    self.expirar_na_fila();
+                    self.expirar_na_gpu();
+                }
                 let quer = (self.linhas.load(Ordering::Relaxed) as usize).saturating_add(FILA_EXTRA);
                 while self.ligado.load(Ordering::Relaxed) && self.fila.lock().map_or(usize::MAX, |f| f.len()) < quer {
                     // unidade de JOB primeiro; a LAB só preenche o que sobra
@@ -843,6 +871,7 @@ impl Ultrax {
                 } else {
                     f.push_back(item);
                 }
+                self.tem_na_fila.notify_one();
                 None
             }
             _ => Some(item),
@@ -1041,10 +1070,23 @@ impl Ultrax {
                 std::thread::sleep(Duration::from_millis(300));
                 continue;
             }
-            let item = self.fila.lock().ok().and_then(|mut f| f.pop_front());
-            match item {
-                Some(item) => self.processar(i, item),
-                None => std::thread::sleep(Duration::from_millis(200)),
+            let item = match self.fila.lock() {
+                Ok(mut f) => match f.pop_front() {
+                    Some(item) => Some(item),
+                    None => {
+                        // espera algo entrar; o tempo máximo cobre desligar e mudar o número de linhas
+                        let _ = self.tem_na_fila.wait_timeout(f, Duration::from_millis(200));
+                        None
+                    }
+                },
+                Err(_) => None,
+            };
+            if let Some(item) = item {
+                // a fila andou: o gerador repõe enquanto esta linha calcula
+                self.pedir_mais();
+                self.processar(i, item);
+                // e ao terminar, a unidade seguinte do JOB pode ter ficado livre
+                self.pedir_mais();
             }
         }
     }
@@ -1059,6 +1101,14 @@ impl Ultrax {
 
     fn liberar(&self, bytes: u64) {
         let _ = self.reservada.fetch_update(Ordering::AcqRel, Ordering::Acquire, |r| Some(r.saturating_sub(bytes)));
+    }
+
+    /// Acorda o gerador para repor a fila.
+    fn pedir_mais(&self) {
+        if let Ok(mut p) = self.pede_mais.lock() {
+            *p = true;
+        }
+        self.pede_mais_cv.notify_one();
     }
 
     /// Leva uma tarefa da fila até o fim do ciclo, ou até ser interrompida.
