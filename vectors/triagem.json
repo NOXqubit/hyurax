@@ -1,0 +1,189 @@
+{
+  "data": {
+    "adulterado": {
+      "motivo": "a molécula 3 do catálogo difere da recomputação",
+      "parametros": [
+        0,
+        0,
+        500000,
+        25000,
+        5,
+        10,
+        10,
+        140000,
+        16000
+      ],
+      "resultado": "0000000000000040000000277ffffff6e1000b68917ffffff4d5000b66857ffffffcc7000b6e773ffffeed240009d8343fffffecfe0009d80e3fffffec9c0009d7ac7ffffff542000b66f23fffffecae0009d7be5ffffff5990009e0a97ffffff90d000b6abd7ffffff0c1000b62717ffffffa1d000b6bcd2cffffe068000537987ffffffa9b000b6c4b7ffffffa89000b6c397ffffff7fd000b69ad3fffffeb670009d6777ffffff698000b68483dffffe4ff0008496f3dffffe8c500084d353dffffe76800084bd83fffffefed0009dafd7ffffff422000b65d23dffffe4ff0008496f7ffffffa37000b6be77ffffffa5e000b6c0e7ffffff400000b65b07ffffff7d2000b69823dffffe459000848c97ffffff146000b62f65ffffffa790009e5897ffffffa40000b6bf03fffffed230009d8333fffffe9940009d4a43fffffe9940009d4a47ffffffa1d000b6bcd3dffffe76d00084bdd3dffffe9fe00084e6e3fffffecaf0009d7bf7ffffffb1d000b6ccd7ffffff0c1000b62713fffffed850009d8957f00000049000b71f97ffffffcf1000b6ea17ffffff764000b69147ffffff202000b63b27ffffff69b000b684b7ffffff959000b6b093fffffef080009da187ffffffcb8000b6e683fffffec670009d7773fffffec670009d7777ffffffeb0000b70607f000002df000b748f7ffffff874000b6a247ffffff922000b6ad27ffffffaec000b6c9c7ffffff900000b6ab07ffffff2c2000b64727ffffffaec000b6c9c7ffffffe22000b6fd25bfffffc50000860c07ffffff1ec000b639c7ffffff9ea000b6b9a",
+      "tamanho": 64
+    },
+    "casos": [
+      {
+        "operacoes": 11712,
+        "parametros": [
+          0,
+          0,
+          500000,
+          25000,
+          5,
+          10,
+          10,
+          140000,
+          16000
+        ],
+        "resultado": "0000000000000040000000277ffffff6e1000b68917ffffff4d5000b66857ffffffcc7000b6e773fffffed240009d8343fffffecfe0009d80e3fffffec9c0009d7ac7ffffff542000b66f23fffffecae0009d7be5ffffff5990009e0a97ffffff90d000b6abd7ffffff0c1000b62717ffffffa1d000b6bcd2cffffe068000537987ffffffa9b000b6c4b7ffffffa89000b6c397ffffff7fd000b69ad3fffffeb670009d6777ffffff698000b68483dffffe4ff0008496f3dffffe8c500084d353dffffe76800084bd83fffffefed0009dafd7ffffff422000b65d23dffffe4ff0008496f7ffffffa37000b6be77ffffffa5e000b6c0e7ffffff400000b65b07ffffff7d2000b69823dffffe459000848c97ffffff146000b62f65ffffffa790009e5897ffffffa40000b6bf03fffffed230009d8333fffffe9940009d4a43fffffe9940009d4a47ffffffa1d000b6bcd3dffffe76d00084bdd3dffffe9fe00084e6e3fffffecaf0009d7bf7ffffffb1d000b6ccd7ffffff0c1000b62713fffffed850009d8957f00000049000b71f97ffffffcf1000b6ea17ffffff764000b69147ffffff202000b63b27ffffff69b000b684b7ffffff959000b6b093fffffef080009da187ffffffcb8000b6e683fffffec670009d7773fffffec670009d7777ffffffeb0000b70607f000002df000b748f7ffffff874000b6a247ffffff922000b6ad27ffffffaec000b6c9c7ffffff900000b6ab07ffffff2c2000b64727ffffffaec000b6c9c7ffffffe22000b6fd25bfffffc50000860c07ffffff1ec000b639c7ffffff9ea000b6b9a",
+        "tamanho": 64
+      },
+      {
+        "operacoes": 36600,
+        "parametros": [
+          0,
+          1500,
+          500000,
+          25000,
+          5,
+          10,
+          10,
+          140000,
+          16000
+        ],
+        "resultado": "000005dc000000c80000008a7ffffffad4000b6c847ffffff771000b69217ffffff861000b6a117ffffff81c000b69cc7ffffff99d000b6b4d2dffffec100006c9e07ffffff495000b66457ffffff5c9000b67797ffffffaf4000b6ca47ffffff5b7000b67673dffffe6d100084b417ffffff642000b67f27ffffff5c5000b67757ffffff78d000b693d7ffffff3eb000b659b7ffffffb9d000b6d4d7ffffff490000b66407ffffff5eb000b679b7ffffffc4d000b6dfd3fffffed510009d8613fffffed510009d86157fffff48a000858fa3fffffec480009d7583fffffeca70009d7b73dffffe6e700084b577ffffff6c8000b68787ffffff98b000b6b3b7ffffffa39000b6be93dffffe64f00084abf7ffffff35e000b650e3fffffef540009da645bfffff3c4000858347ffffffc6f000b6e1f7ffffff9c4000b6b743ffffff04c0009db5c7ffffffd89000b6f397ffffff13d000b62ed7ffffffa4c000b6bfc7ffffff7cf000b697f7ffffff941000b6af13fffffe9e60009d4f67ffffff4ff000b66af7ffffff6f7000b68a77ffffff52d000b66dd7ffffffa89000b6c397ffffff1ae000b635e7ffffff40e000b65be3fffffeff10009db017ffffffa75000b6c257ffffffb59000b6d093fffffea5c0009d56c7ffffffb54000b6d043dffffddda0008424a3cffffd9000006b6d03fffffedf00009d9007ffffff48c000b663c3dffffe4ff0008496f3fffffec9e0009d7ae3fffffef560009da667ffffff7c3000b69737ffffff732000b68e23fffffee960009d9a63dffffdd7f000841ef7ffffffae3000b6c937ffffffa28000b6bd87fffffff02000b70b27ffffff363000b65137ffffffab5000b6c653fffffed3a0009d84a7ffffffb9f000b6d4f2dffffe9410006c7117ffffff926000b6ad67ffffffbc4000b6d747ffffffae1000b6c917ffffff96c000b6b1c7ffffff96c000b6b1c7ffffffa9a000b6c4a7ffffff374000b65247ffffff337000b64e77ffffff1e2000b63923fffffe8a30009d3b37ffffffaab000b6c5b7ffffff4a2000b66527ffffffbbb000b6d6b7ffffff38c000b653c7ffffff36e000b651e7ffffff6ff000b68af3fffffe9390009d4491effffeb620006c9327ffffffae3000b6c937ffffff1fd000b63ad7ffffff1fd000b63ad7ffffffb81000b6d313dffffe64100084ab17ffffff996000b6b467ffffffad9000b6c892cffffe53400053c646efffffa1800085e887ffffffa47000b6bf77ffffff446000b65f67ffffff8e0000b6a903fffffe7270009d2377ffffff233000b63e36ffffff0a60009dbb67ffffff244000b63f43dffffe4a9000849193fffffed830009d8931fffffeee8000853587ffffff90f000b6abf3dffffe8c000084d303fffffee810009d9917ffffff862000b6a123fffffecf50009d8057ffffff295000b64453fffffe8150009d3257ffffffdab000b6f5b3dffffe42d0008489d7ffffff3b8000b65687ffffff856000b6a067ffffffb5d000b6d0d3fffffefaa0009daba7ffffffa07000b6bb73ffffff0210009db317ffffffe48000b6ff87ffffffbfa000b6daa3fffffef010009da113fffffee8e0009d99e7ffffff22f000b63df7ffffffac1000b6c717ffffffbf0000b6da03dffffe79100084c013fffffeb280009d6383dffffe87400084ce47ffffffa25000b6bd53fffffe9aa0009d4ba7ffffff3a3000b65537ffffff457000b66077ffffff3e6000b65967ffffff67d000b682d7ffffffb1f000b6ccf7ffffff4f4000b66a47ffffffd29000b6ed97ffffffc80000b6e303fffffee390009d9497ffffff723000b68d37ffffffb49000b6cf97ffffffc67000b6e177ffffffcd7000b6e877ffffff786000b69367ffffff697000b68477ffffff820000b69d02dffffeb1d0006c8ed3dffffe87500084ce57ffffffd87000b6f377ffffffa50000b6c007ffffffcbe000b6e6e7ffffffcb9000b6e697ffffffae5000b6c957ffffffcdf000b6e8f3fffffe9770009d4877ffffff5f9000b67a93dffffe7d300084c437ffffffa30000b6be07ffffff17e000b632e7ffffff786000b69367ffffff9a7000b6b573fffffec270009d7377ffffff558000b67087ffffff5bf000b676f7ffffff579000b67297ffffffaeb000b6c9b7ffffffa21000b6bd17ffffffa45000b6bf57ffffff38a000b653a7ffffff989000b6b397ffffff77e000b692e7ffffff177000b63277ffffffae3000b6c937ffffff98c000b6b3c7ffffffdc5000b6f753fffffecdc0009d7ec7ffffff9f6000b6ba67ffffff756000b69063fffffeed10009d9e13fffffec100009d7207ffffff55d000b670d7ffffffea4000b70543fffffe7620009d2727ffffff402000b65b23fffffeab70009d5c77ffffff0dd000b628d7ffffffc39000b6de97ffffffa80000b6c307ffffffcbf000b6e6f7ffffffa36000b6be63dffffe3da0008484a7ffffff9de000b6b8e7ffffff122000b62d27ffffff5f4000b67a46ffffffdb30009e8c3",
+        "tamanho": 200
+      },
+      {
+        "operacoes": 6771,
+        "parametros": [
+          0,
+          8252,
+          500000,
+          25000,
+          5,
+          10,
+          10,
+          140000,
+          16000
+        ],
+        "resultado": "0000203c00000025000000197ffffffbe7000b6d973fffffed3a0009d84a3ffffff02d0009db3d7ffffff7fa000b69aa7ffffffbbd000b6d6d7ffffffae9000b6c997ffffff723000b68d33dffffe269000846d93dffffe269000846d96dfffff460000858d03dffffe35d000847cd7ffffffb81000b6d313fffffec930009d7a37ffffff574000b67247ffffff0ea000b629a3fffffec6b0009d77b7ffffff7d5000b69857ffffff7aa000b695a3fffffe8880009d3987ffffff833000b69e37ffffffa5f000b6c0f7ffffffdd1000b6f817ffffffad0000b6c807ffffff288000b64387ffffff1f1000b63a13fffffef400009da507ffffff648000b67f87ffffff280000b64307ffffffb30000b6ce07ffffff9c3000b6b737ffffff35a000b650a7ffffff4f1000b66a17ffffff1c3000b63733dffffe4c1000849317ffffff9e4000b6b943fffffeba30009d6b37ffffffe31000b6fe1",
+        "tamanho": 37
+      },
+      {
+        "operacoes": 18300,
+        "parametros": [
+          0,
+          4000,
+          2000000,
+          40000,
+          100,
+          100,
+          100,
+          1000000,
+          0
+        ],
+        "resultado": "00000fa000000064000000647ffffff575000b67257ffffffba5000b6d557ffffffc5c000b6e0c7ffffffb64000b6d147ffffff706000b68b67ffffff53d000b66ed7fffffecd1000b5e817fffffe9e2000b5b927ffffff9ce000b6b7e7fffffe311000b54c17fffffef84000b61347ffffff9c7000b6b777ffffff036000b61e67ffffffa5b000b6c0b7ffffff96f000b6b1f7ffffff927000b6ad77ffffff8bb000b6a6b7fffffea0c000b5bbc7fffffea86000b5c367fffffea86000b5c367fffffefd2000b61827fffffeacf000b5c7f7fffffeacf000b5c7f7ffffffa39000b6be97ffffff9ab000b6b5b7ffffffd8c000b6f3c7fffffeb15000b5cc57ffffff4a6000b66567ffffff7e1000b69917ffffffc25000b6dd57ffffffa25000b6bd57fffffefdd000b618d7fffffe492000b56427ffffff0d8000b62887fffffe5f7000b57a77ffffff439000b65e97ffffff9a0000b6b507fffffdfcd000b517d7ffffffb04000b6cb47ffffff9ba000b6b6a7ffffffc6d000b6e1d7fffffee9e000b604e7ffffff52b000b66db7ffffff9f4000b6ba47fffffebfb000b5dab7ffffff5b6000b67667fffffef51000b61017fffffe9ce000b5b7e7ffffff839000b69e97ffffff623000b67d37ffffff14d000b62fd7ffffffe5e000b700e7ffffffa48000b6bf87fffffefc5000b61757fffffefe1000b61917fffffeb59000b5d097fffffeb59000b5d097ffffffb48000b6cf87fffffebaf000b5d5f7fffffebaf000b5d5f7ffffff6f4000b68a47ffffff6f4000b68a47ffffffcae000b6e5e7ffffffcd7000b6e877ffffff934000b6ae47fffffe996000b5b467ffffff311000b64c17ffffffc42000b6df27ffffff9c3000b6b737fffffef11000b60c17ffffff851000b6a017ffffffabf000b6c6f7f000000ac000b725c7f000000ac000b725c7ffffff5ee000b679e7fffffef49000b60f97ffffff87d000b6a2d7ffffff8f8000b6aa87fffffe24d000b53fd7ffffff625000b67d57fffffebdb000b5d8b7fffffefee000b619e7ffffffa1d000b6bcd7fffffeafa000b5caa7ffffff777000b69277ffffffb7e000b6d2e7ffffff1b7000b63677ffffff2ef000b649f7ffffff9e5000b6b957ffffffa88000b6c387fffffe65f000b580f7ffffffd9f000b6f4f7ffffff479000b66297ffffff135000b62e57ffffff159000b63097ffffff9f0000b6ba07ffffffd25000b6ed57ffffffc08000b6db87fffffeb3f000b5cef7ffffff521000b66d1",
+        "tamanho": 100
+      },
+      {
+        "operacoes": 18300,
+        "parametros": [
+          0,
+          6000,
+          150000,
+          20000,
+          1,
+          2,
+          2,
+          20000,
+          20000
+        ],
+        "resultado": "0000177000000064000000001bfffffb790006d94904fffff4c500023eb510fffffa720002446242000000b40003d14400fffff1b60000b50604fffff0db00023acb3cffffe1fa0006bfca1dfffff9a40006d7741bfffffe1d0006dbed04fffff14400023b3400fffff9ce0000bd1e04fffff7b5000241a504fffff7b5000241a510fffffa870002447704fffffa1c0002440c1cfffff34300054a7304ffffee5e0002384e3cffffe6510006c4210cfffff1fa0003c28a02fffffd330002472304fffff06300023a5304fffff7e4000241d43dfffffacc00085f3c1dfffffa130006d7e33cfffff2ae0006d07e04fffff9c5000243b51cffffefae000546de0dfffffab0000551e004ffffeeea000238da3cffffe4ab0006c27b06fffff2c80003c3583cfffff5710006d34110fffff976000243661dfffffac10006d89110fffff35d00023d4d13fffffeb9000555e93cffffe4ab0006c27b1dfffffa3c0006d80c1dfffffbde0006d9ae1dfffff9970006d76704ffffe7bc000231ac3dfffffbbe0008602e00fffffd6e0000c0be00fffff9ee0000bd3e14fffff0170003c0a71cffffec580005438804ffffec650002365518fffff1470003c1d718ffffe9060003b99605fffffb700003cc0000fffff8500000bba019fffffc9e000553ce14fffff1280003c1b81cfffff66300054d933dfffff82c00085c9c04fffff7ee000241de14ffffec1a0003bcaa13fffffc33000553632cfffff4fd00054c2d00fffff4070000b75704ffffe7e6000231d63cfffff5630006d33304fffff8c6000242b614fffff5310003c5c104ffffea460002343604fffff06400023a541bfffffc980006da6814fffffa330003cac31dfffffb7c0006d94c09fffffd690003cdf90cfffff45a0003c4ea12fffffb5b0003cbeb3cffffe5790006c3491bfffffe1b0006dbeb10fffff6ca000240ba2cfffff86c00054f9c1dfffffaf80006d8c83cfffff1e70006cfb704ffffe4b300022ea31cfffff139000548693cffffe4ab0006c27b14fffff6e50003c77508fffff8710002426108fffff31800023d083dfffffa1700085e8714fffffbd90003cc6908fffffc840002467404fffff5f400023fe43cfffff8fc0006d6cc00fffffd360000c08600fffffd360000c0861cfffff6b900054de915fffffeec0005561c00fffffc100000bf6000fffff52b0000b87b0cffffee210003beb104fffff56100023f513dfffffa8900085ef914fffff1950003c22516fffff66900054d99",
+        "tamanho": 100
+      },
+      {
+        "operacoes": 183,
+        "parametros": [
+          0,
+          8000,
+          500000,
+          25000,
+          5,
+          10,
+          10,
+          140000,
+          16000
+        ],
+        "resultado": "00001f4000000001000000017ffffff2c2000b6472",
+        "tamanho": 1
+      }
+    ],
+    "catalogo_sha512": "2f2959eb776fb7a4e0f21afb643a320241661851942b7e346ea0b83f67c438477e634a91b380ae8f1323e249b33fc65d09da8809464e8b19e429d0c2c977d7d9",
+    "modelo_sha512": "f32282c36a78080d2b67250e78785dfe4ac75790f5a6a87016fd927237990eba32fbcad8abe5157f6c1462d8e7a8b1f8df601a845a1918126cf0d5a00f18ed1f",
+    "moleculas": 8289,
+    "normalizacao": [
+      -2954,
+      2255
+    ],
+    "unidades_do_job": {
+      "depois_do_fim": 9,
+      "parametros": [
+        0,
+        0,
+        500000,
+        25000,
+        5,
+        10,
+        10,
+        140000,
+        16000
+      ],
+      "tamanho": 1000,
+      "unidades": [
+        {
+          "indice": 0,
+          "parametros": [
+            0,
+            0,
+            500000,
+            25000,
+            5,
+            10,
+            10,
+            140000,
+            16000
+          ],
+          "tamanho": 1000
+        },
+        {
+          "indice": 3,
+          "parametros": [
+            0,
+            3000,
+            500000,
+            25000,
+            5,
+            10,
+            10,
+            140000,
+            16000
+          ],
+          "tamanho": 1000
+        },
+        {
+          "indice": 8,
+          "parametros": [
+            0,
+            8000,
+            500000,
+            25000,
+            5,
+            10,
+            10,
+            140000,
+            16000
+          ],
+          "tamanho": 289
+        }
+      ]
+    }
+  },
+  "generator": "reference/tools/gen_vectors.py",
+  "spec": "HYURAX-SPEC-01"
+}

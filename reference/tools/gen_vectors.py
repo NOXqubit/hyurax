@@ -26,7 +26,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 OUT_DIR = ROOT.parent / "vectors"
 
-from hyurax import argon2, codec, consensus, crypto, genetica, ia, identidade, job, melhoramento, rotas, usefulpow, utrax  # noqa: E402
+from hyurax import argon2, codec, consensus, crypto, genetica, ia, identidade, job, melhoramento, rotas, triagem, usefulpow, utrax  # noqa: E402
 from hyurax.block import BlockHeader  # noqa: E402
 from hyurax.chain import Chain, make_genesis  # noqa: E402
 from hyurax.consensus import MAINNET, REGTEST, TESTNET  # noqa: E402
@@ -1111,6 +1111,43 @@ def vec_rotas() -> dict:
     }
 
 
+def vec_triagem() -> dict:
+    """Triagem de moléculas reais do ULTRAX (reference/hyurax/triagem.py): o
+    catálogo e o modelo travados por hash, faixas com filtros diferentes (a
+    borda do catálogo inclusive), adulteração e as unidades de um JOB."""
+    cat = triagem.catalogo_embutido()
+    n = len(cat.moleculas)
+    lipinski_veber = [0, 0, 500_000, 25_000, 5, 10, 10, 140_000, 16_000]
+    aberto = [0, 0, triagem.MASSA_MAX, triagem.LOGP_MAX, 100, 100, 100, triagem.TPSA_MAX, 0]
+    fechado = [0, 0, 150_000, 20_000, 1, 2, 2, 20_000, 20_000]
+    casos = []
+    for tamanho, inicio, limites in ((64, 0, lipinski_veber), (200, 1500, lipinski_veber), (37, n - 37, lipinski_veber),
+                                     (100, 4000, aberto), (100, 6000, fechado), (1, 8000, lipinski_veber)):
+        parametros = list(limites)
+        parametros[1] = inicio
+        resultado, ops = triagem.executar(tamanho, 0, parametros)
+        casos.append({"tamanho": tamanho, "parametros": parametros, "resultado": h(resultado), "operacoes": ops})
+    base = casos[0]
+    bom = bytes.fromhex(base["resultado"])
+    ruim = bytearray(bom)
+    ruim[triagem.BYTES_CABECALHO + 3 * triagem.BYTES_POR_MOLECULA + 2] ^= 1
+    unidades = []
+    for indice in (0, 3, (n - 1) // 1000):
+        tamanho, parametros = triagem.derivar_unidade(1000, lipinski_veber, indice)
+        unidades.append({"indice": indice, "tamanho": tamanho, "parametros": parametros})
+    return {
+        "catalogo_sha512": crypto.H(triagem.CATALOGO_ARQUIVO.read_bytes()).hex(),
+        "modelo_sha512": crypto.H(triagem.MODELO_ARQUIVO.read_bytes()).hex(),
+        "moleculas": n,
+        "normalizacao": [cat.media_mili, cat.desvio_mili],
+        "casos": casos,
+        "adulterado": {"tamanho": base["tamanho"], "parametros": base["parametros"], "resultado": h(bytes(ruim)),
+                       "motivo": triagem.verificar(base["tamanho"], 0, base["parametros"], bytes(ruim))},
+        "unidades_do_job": {"tamanho": 1000, "parametros": lipinski_veber, "unidades": unidades,
+                            "depois_do_fim": (n - 1) // 1000 + 1},
+    }
+
+
 def vec_usefulpow() -> dict:
     """Trabalho util no consenso: regra do tamanho, semente, prova e recusas."""
     tamanhos = []
@@ -1424,6 +1461,7 @@ FILES = {
     "genetica.json": vec_genetica,
     "melhoramento.json": vec_melhoramento,
     "rotas.json": vec_rotas,
+    "triagem.json": vec_triagem,
 }
 
 

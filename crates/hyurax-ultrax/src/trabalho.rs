@@ -639,7 +639,7 @@ pub fn verificar_controlado(
 /// anda com o índice.
 pub fn derivar_unidade(modelo: &Especificacao, indice: u64) -> Result<Especificacao, ErroDeTrabalho> {
     match modelo.tipo {
-        TipoDeTrabalho::Triagem => Err(ErroDeTrabalho::SemMotor("triagem molecular")),
+        TipoDeTrabalho::Triagem => crate::triagem::derivar_unidade(modelo, indice),
         TipoDeTrabalho::Matriz
         | TipoDeTrabalho::Mochila
         | TipoDeTrabalho::Difusao

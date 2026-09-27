@@ -1,0 +1,35 @@
+# Modelo de referência da triagem do ULTRAX: a rede 10 -> 16 -> 1 de reference/hyurax/ia.py, pesos em Q12 (1,0 = 4096).
+# Gerado por reference/tools/treinar_modelo_referencia.py. Não editar à mão.
+# Treino: ia.treinar(semente, 64, 4096) sobre as 2048 moléculas de moleculas.tsv (1638 de treino, 410 de validação).
+# Semente: H("hyurax triagem modelo de referencia 1").
+# Erro de validação do treino: 1244 em Q12 (erro quadrático médio do alvo normalizado).
+# Erro contra o log S medido da AqSolDB, em log S: raiz do erro quadrático médio | erro absoluto médio | raiz de quem prevê sempre a média
+#   treino (1638): 1,243 | 0,947 | 2,252
+#   validação (410): 1,243 | 0,965 | 2,268
+#   fora da base (nunca vistas) (6241): 1,233 | 0,937 | 2,262
+#   catálogo inteiro (8289): 1,235 | 0,940 | 2,260
+# É um modelo estatístico pequeno sobre 10 descritores: ordena candidatos, não substitui a medida.
+# Não prevê afinidade com alvo, estabilidade, toxicidade nem atividade biológica.
+#semente	847188c2415921b18508bfcd9fdd63dc71b7d22f7445ea8b1150ef167e9c9bdf762fc6d6e459834173f8e49d2760abfd15b234391b1290a0f26205346931f48e
+#lote	64
+#passos	4096
+#erro_validacao_q12	1244
+w1	2084	1676	2453	2146	743	2284	2508	1915	2715	1984
+w1	-144	147	-48	199	646	427	1071	754	1444	189
+w1	248	-429	-1061	-762	582	668	713	543	-14	-57
+w1	1268	1398	1423	1848	2812	2620	867	2775	2154	4038
+w1	876	2180	1353	1564	1659	1727	1447	1166	1402	1034
+w1	2368	2555	2788	1289	1398	1032	1120	1321	2894	943
+w1	1686	2508	2780	2349	2412	1031	2402	2849	1062	2963
+w1	1902	1889	1503	1077	2444	2341	1664	2178	1435	1285
+w1	2816	2526	2444	2981	1308	2726	1393	1215	2938	1784
+w1	1421	2507	2193	2692	3005	3215	3116	1096	2440	2920
+w1	2721	2144	2069	1023	1972	3124	416	2505	2708	2504
+w1	1778	3915	1473	2174	440	2233	1170	632	1946	690
+w1	1371	2044	2999	2513	954	2147	1379	1939	2050	1417
+w1	2133	1316	615	984	725	2325	1285	1194	833	1122
+w1	1227	944	301	17	1288	1302	801	746	769	510
+w1	708	4459	131	1500	63	-73	1491	1791	424	340
+b1	1443	1696	1848	3086	1566	2246	1751	1548	1688	2581	2748	3590	1603	1621	1638	4277
+w2	1308	2912	3870	-2093	962	134	277	380	254	-807	-1194	-1606	974	1596	2066	-2530
+b2	574

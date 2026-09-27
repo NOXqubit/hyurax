@@ -67,12 +67,12 @@ implementado**.
 
 | Domínio | Motor | Estado |
 |---|---|---|
-| Molecular | **Triagem** de catálogo de moléculas reais: filtros de regra (Lipinski e afins, pelos descritores do catálogo) e solubilidade prevista pelo modelo de referência | a implementar (Etapa A) |
-| Genética / biologia | **Genética de populações** Wright-Fisher: deriva, seleção, dominância, mutação; réplicas independentes | a implementar (Etapa A) |
+| Molecular | **Triagem** de catálogo de moléculas reais: filtros de regra (Lipinski e afins, pelos descritores do catálogo) e solubilidade prevista pelo modelo de referência (erro de 1,233 log S nas 6.241 moléculas que o treino nunca viu, contra 2,262 de quem prevê a média) | implementado (`triagem.py`, `triagem.rs`, `vectors/triagem.json`; 8.289 moléculas) |
+| Genética / biologia | **Genética de populações** Wright-Fisher: deriva, seleção, dominância, mutação; réplicas independentes | implementado (`genetica.py`, `genetica.rs`, `vectors/genetica.json`) |
 | Agricultura | **Melhoramento de culturas**: QTL aditivos, ambiente (água, nitrogênio, solo) pela lei do mínimo com interação G×E, seleção truncada e cruzamento | implementado (`melhoramento.py`, `melhoramento.rs`, `vectors/melhoramento.json`) |
-| Logística | **Rotas** (caixeiro-viajante): 2-opt a partir de partidas diferentes; a verificação confere a rota e o custo em O(n) | a implementar (Etapa A) |
+| Logística | **Rotas** (caixeiro-viajante): 2-opt a partir de partidas diferentes; a verificação confere a rota e o custo em O(n) | implementado (`rotas.py`, `rotas.rs`, `vectors/rotas.json`) |
 | Economia / alocação | Mochila 0/1 (ótimo exato) | existe |
-| IA / ML | Treino da rede de solubilidade; inferência em lote dentro da triagem | existe / Etapa A |
+| IA / ML | Treino da rede de solubilidade; inferência em lote dentro da triagem | existe |
 | Matemática / física | Matrizes (CPU e GPU), difusão de calor | existe |
 | Materiais, energia, meio ambiente | — | **não implementado**: o JOB é recusado com "domínio sem motor" |
 | Regeneração de tecidos | — | **não implementado**: não há modelo biológico no programa. O caminho de hipóteses, simulação, ranking e relatório é o do JOB, e vale para qualquer motor que um dia exista |
