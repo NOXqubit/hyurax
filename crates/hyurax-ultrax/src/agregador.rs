@@ -502,8 +502,7 @@ impl Agregador {
                 let dp = if *unidades > 1 { ((*soma_quadrados_ganho as f64 - u * ganho * ganho) / (u - 1.0)).max(0.0).sqrt() } else { 0.0 };
                 let recurso = melhoramento::NOMES_DOS_RECURSOS.get(usize::from(*limitante)).copied().unwrap_or("?");
                 format!(
-                    "{unidades} réplica(s): ganho genético médio {ganho:.1} ({:.2} ± {:.2} erro-padrão entre réplicas) em {} geração(ões); fenótipo médio {:.1} → {:.1}; variância genética {:.1} → {:.1}; fator ambiental {:.3} (limitado por {recurso})",
-                    ganho,
+                    "{unidades} réplica(s): ganho genético médio {ganho:.1} ± {:.1} (erro-padrão entre réplicas) em {} geração(ões); fenótipo médio {:.1} → {:.1}; variância genética {:.1} → {:.1}; fator ambiental {:.3} (limitado por {recurso})",
                     dp / u.sqrt(),
                     soma_media_g.len().saturating_sub(1),
                     soma_media_p.first().map_or(0.0, |s| *s as f64 / u),
