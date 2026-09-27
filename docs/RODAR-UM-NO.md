@@ -10,6 +10,11 @@ com outros nós por uma **conexão cifrada** (Noise XX). A carteira fica
 
 ## 1. Baixar
 
+> **Quer só o programa com janela no Windows, sem terminal?** Baixe o
+> `hyurax-instalador-windows-x86_64.exe`, leia e aceite os termos e clique em
+> *Instalar*. Não pede administrador. Este guia é para quem quer o nó de
+> terminal.
+
 Na página de [Releases do GitHub](https://github.com/NOXqubit/hyurax/releases),
 baixe o pacote do seu sistema:
 

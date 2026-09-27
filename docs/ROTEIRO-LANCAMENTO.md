@@ -42,6 +42,11 @@ não é.
 | 26/09/2026 | ULTRAX, etapa 2: worker LAB no programa (`hyurax-no ultrax lab` e `/api/ultrax`), com limite de CPU e memória, prazo, cancelamento, tarefas-desafio contra o gabarito, histórico assinado, telemetria e `hyurax-no ultrax auditar`; revisado por cinco lentes, com os achados corrigidos |
 | 26/09/2026 | ULTRAX, etapa 3: a tela do ULTRAX no lugar da estação 3D (trabalho ativo com o progresso real, ciclo de vida, verificação, Work Score, reputação, histórico, telemetria e o selo LAB fixo); mineração com painel próprio |
 | 26/09/2026 | ULTRAX, etapa 4: treino de rede neural sobre 2.048 moléculas reais (AqSolDB, CC0), especificado em Python e igual no Rust por vetor; painel com a molécula desenhada do SMILES, solubilidade medida × prevista e a curva do treino |
+| 26/09/2026 | A GPU trabalha no ULTRAX, inclusive a integrada, pelo WebGL2 da janela e com limitador próprio; a CPU confere cada resultado (Freivalds) antes de contar |
+| 26/09/2026 | Endereço com dígito verificador (Bech32m, `thyx1…`); painel sem a espera de 300 ms por resposta |
+| 26/09/2026 | Redesign do programa (navegação por seção, visão geral, fontes da marca); instalador com os termos de uso, sem administrador e com desinstalação pelo Windows; termos também na primeira abertura |
+| 26/09/2026 | Redesign do site (capítulos ULTRAX e IA com moléculas reais); fontes servidas pelo próprio site, sem nenhum terceiro; política de privacidade e cookies (LGPD), termos de uso, `security.txt` e CSP em todas as páginas |
+| 26/09/2026 | Versão `v0.3.0-teste.1` preparada: instalador na Release, notas em `docs/NOTAS-v0.3.0-teste.1.md` |
 
 Próximo: **o primeiro nó respondendo de fora**. O PC do autor serve para começar (`scripts/no-sempre-ligado.ps1` + porta 8790 no roteador + teste pelo 4G do celular). Os passos 1, 2 e 3 de `docs/LANCAR-A-REDE.md` são do autor: renomear e publicar o repositório, criar a etiqueta, e deixar o nó ligado.
 

@@ -141,7 +141,17 @@ jobs:
           -------
           O programa com janela do Hyurax (HYX): cria a carteira, minera,
           mostra o saldo e envia HYX, sem precisar de terminal. É só abrir o
-          "Hyurax.exe".
+          "Hyurax.exe". Na primeira vez ele mostra os termos de uso
+          (TERMOS-DE-USO.md no repositório), que precisam ser aceitos.
+
+          Trabalho útil (ULTRAX)
+          ----------------------
+          Na seção Trabalho, o computador faz contas conferíveis: matrizes,
+          otimização, simulação e o treino de uma IA sobre moléculas reais
+          (base AqSolDB). A CPU e a placa de vídeo, inclusive a integrada,
+          têm cada uma o seu limitador de uso. Cada resultado é conferido
+          antes de contar. O Work Score mede a contribuição: não é dinheiro
+          e não é HYX.
 
           Segundo fator (opcional)
           ------------------------
@@ -185,12 +195,28 @@ jobs:
           7z l "$arquivo"
           sha256sum "$arquivo" > "${arquivo}.sha256"
           echo "ARQUIVO=$arquivo" >> "$GITHUB_ENV"
+      # O instalador leva dentro o mesmo Hyurax.exe e a mesma DLL do zip,
+      # mostra os termos de uso e instala sem pedir administrador. O nome
+      # também é fixo: o botão principal do site aponta para ele.
+      - name: instalador
+        shell: bash
+        run: |
+          set -euo pipefail
+          export HYURAX_CARGA_EXE="$(cygpath -w "$PWD/Hyurax/Hyurax.exe")"
+          export HYURAX_CARGA_DLL="$(cygpath -w "$PWD/Hyurax/WebView2Loader.dll")"
+          cargo build --release --locked --target x86_64-pc-windows-msvc -p hyurax-no --features instalador --bin hyurax-instalador
+          instalador="hyurax-instalador-windows-x86_64.exe"
+          cp ".target/x86_64-pc-windows-msvc/release/hyurax-instalador.exe" "$instalador"
+          sha256sum "$instalador" > "${instalador}.sha256"
+          echo "INSTALADOR=$instalador" >> "$GITHUB_ENV"
       - uses: actions/upload-artifact@v4
         with:
           name: programa-windows-x86_64
           path: |
             ${{ env.ARQUIVO }}
             ${{ env.ARQUIVO }}.sha256
+            ${{ env.INSTALADOR }}
+            ${{ env.INSTALADOR }}.sha256
 
   publicar:
     name: publicar a Release
@@ -215,11 +241,14 @@ jobs:
             **Rede de TESTE.** A rede pública não existe e o HYX não tem valor.
             Não há venda, pré-venda nem promessa de lucro.
 
-            Como usar: o minerador com janela traz um `LEIA-ME.txt`; os pacotes de terminal trazem o `LEIA-ME.md` (é o `docs/RODAR-UM-NO.md`).
+            Ao instalar ou abrir o programa pela primeira vez, você lê e aceita os [termos de uso](https://github.com/NOXqubit/hyurax/blob/main/docs/TERMOS-DE-USO.md): software experimental, sem garantia, e cada pessoa responde pelo uso que faz.
+
+            Como usar: o programa com janela traz um `LEIA-ME.txt`; os pacotes de terminal trazem o `LEIA-ME.md` (é o `docs/RODAR-UM-NO.md`).
 
             | Pacote | Para |
             |---|---|
-            | `hyurax-windows-x86_64.zip` | Programa com janela, para Windows 10 e 11 |
+            | `hyurax-instalador-windows-x86_64.exe` | **Instalador** do programa com janela, para Windows 10 e 11 (sem administrador) |
+            | `hyurax-windows-x86_64.zip` | O mesmo programa, sem instalar: descompacte e abra o `Hyurax.exe` |
             | `linux-x86_64` | PC com Linux |
             | `linux-arm64-e-celular` | Linux em ARM e celular Android pelo Termux |
             | `windows-x86_64` | Windows 10 ou 11 |
