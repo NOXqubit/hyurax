@@ -342,7 +342,7 @@
       <div><dt>GPU</dt><dd id="ct-gpu">—</dd><small id="ct-gpu-nota"></small></div>
       <div><dt>VRAM</dt><dd id="ct-vram">—</dd><small>o WebGL não informa memória de vídeo</small></div>
       <div><dt>RAM</dt><dd id="ct-ram" class="num">—</dd><small id="ct-ram-nota"></small></div>
-      <div><dt>Rede</dt><dd id="ct-rede">—</dd><small>unidades entre nós: Etapa D</small></div>
+      <div><dt>Rede</dt><dd id="ct-rede">—</dd><small>mensagens do ULTRAX entre nós (bytes: não medidos)</small></div>
       <div><dt>Vazão</dt><dd id="ct-vazao" class="num">—</dd><small>operações conferidas, último minuto</small></div>
       <div><dt>Operações</dt><dd id="ct-ops" class="num">—</dd><small>executadas nas unidades conferidas</small></div>
       <div><dt>Candidatos</dt><dd id="ct-candidatos" class="num">—</dd><small>moléculas reais triadas</small></div>
@@ -353,6 +353,10 @@
       <div><dt>Tempo de execução</dt><dd id="ct-tempo" class="num">—</dd><small>cálculo e conferência</small></div>
       <div><dt>Créditos</dt><dd id="ct-creditos" class="num">—</dd><small>v1: 1 = 10⁹ operações; não é HYX</small></div>
     </dl>
+    <div class="cj-rede">
+      <label class="chave-liga" for="cj-aceitar"><input type="checkbox" id="cj-aceitar" autocomplete="off"><span>Calcular unidades que outros nós pedirem</span></label>
+      <small id="cj-rede-texto">—</small>
+    </div>
     <div class="cj-lista" id="cj-lista" aria-live="polite"></div>
     <p class="nota nota-painel" id="cj-vazio">Nenhum JOB ainda. Um JOB divide um problema em unidades, calcula cada uma no ULTRAX (que precisa estar ligado), confere e consolida. Peça um em “Novo JOB”.</p>
   </section>

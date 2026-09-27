@@ -25,7 +25,9 @@ const USO: &str = "use: hyurax-no ciencia rodar|listar|relatorio|refazer|benchma
              [--nivel 2] [--redundancia 1] [--prazo-s 0] [--orcamento 0] [--descricao TEXTO]\n\
              [--linhas L] [--uso-cpu 100] [--memoria-mib 256]\n\
   relatorio: --job JOB_ID [--formato json|csv|pdf]\n\
-  refazer:   --job JOB_ID --unidade I";
+  refazer:   --job JOB_ID --unidade I\n\
+  no:        nó com rede: --porta P [--semente host:porta]... [--rede regtest|testnet]\n\
+             [--aceitar-rede] [--segundos S] [e os campos de rodar, para pedir um JOB]";
 
 /// `hyurax-no ciencia ...`
 pub fn comando(args: &[String]) -> Result<(), String> {
@@ -35,6 +37,9 @@ pub fn comando(args: &[String]) -> Result<(), String> {
     let mut job_texto = String::new();
     let mut formato = "json".to_string();
     let mut indice: Option<u64> = None;
+    let mut rede_args: Vec<String> = Vec::new();
+    let mut aceitar_rede = false;
+    let mut segundos: Option<u64> = None;
     let nucleos = u32::try_from(std::thread::available_parallelism().map_or(1, |n| n.get())).unwrap_or(1);
     let mut partida = ultrax::Partida {
         ligado: true,
@@ -47,6 +52,10 @@ pub fn comando(args: &[String]) -> Result<(), String> {
     };
     let mut it = resto.iter();
     while let Some(nome) = it.next() {
+        if nome == "--aceitar-rede" {
+            aceitar_rede = true;
+            continue;
+        }
         let valor = it.next().ok_or_else(|| format!("{nome} precisa de um valor"))?;
         let numero = || valor.parse::<u64>().map_err(|_| format!("{nome} precisa ser número"));
         match nome.as_str() {
@@ -60,6 +69,8 @@ pub fn comando(args: &[String]) -> Result<(), String> {
             "--dominio" | "--tipo" | "--tamanho" | "--passos" | "--parametros" | "--unidades" | "--nivel" | "--redundancia"
             | "--descricao" => campos.push((nome.trim_start_matches("--").to_string(), valor.clone())),
             "--prazo-s" => campos.push(("prazo_s".into(), valor.clone())),
+            "--porta" | "--semente" | "--rede" => rede_args.extend([nome.clone(), valor.clone()]),
+            "--segundos" => segundos = Some(numero()?),
             "--orcamento" => campos.push(("orcamento_milicreditos".into(), valor.clone())),
             _ => return Err(format!("opção desconhecida: {nome}\n{USO}")),
         }
@@ -117,6 +128,7 @@ pub fn comando(args: &[String]) -> Result<(), String> {
                 }
             }
         }
+        "no" => no_com_rede(&pasta, &campos, &rede_args, aceitar_rede, segundos, nucleos, partida, &identidade),
         "listar" => {
             let c = Ciencia::abrir(&pasta, crate::ultrax_worker(&identidade), crate::painel::VERSAO)?;
             let jobs = c.jobs.lock().map_err(|_| "trava quebrada")?;
@@ -189,6 +201,77 @@ pub fn comando(args: &[String]) -> Result<(), String> {
             Ok(())
         }
         outro => Err(format!("subcomando desconhecido: {outro}\n{USO}")),
+    }
+}
+
+/// Um nó com rede, worker e agendador. Pede um JOB (se vierem os campos) e
+/// espera o fim; senão, trabalha para os outros (com `--aceitar-rede`) até
+/// `--segundos`.
+#[allow(clippy::too_many_arguments)]
+fn no_com_rede(
+    pasta: &std::path::Path,
+    campos: &[(String, String)],
+    rede_args: &[String],
+    aceitar: bool,
+    segundos: Option<u64>,
+    nucleos: u32,
+    partida: ultrax::Partida,
+    identidade: &hyurax_net::Identidade,
+) -> Result<(), String> {
+    let mut args: Vec<String> = vec!["--pasta".into(), pasta.display().to_string(), "--sem-sementes-padrao".into()];
+    if !rede_args.iter().any(|a| a == "--rede") {
+        args.extend(["--rede".into(), "regtest".into()]);
+    }
+    args.extend(rede_args.iter().cloned());
+    let o = crate::ler_opcoes(&args)?;
+    let rede = crate::subir_rede(&o)?;
+    let u = Ultrax::abrir(pasta, identidade.segredo(), nucleos, &partida, Box::new(|tipo, texto| println!("  [{tipo}] {texto}")));
+    u.lab.store(false, Ordering::Relaxed);
+    let c = Ciencia::abrir(pasta, u.worker(), crate::painel::VERSAO)?;
+    c.ligar(&u);
+    c.ligar_rede(&rede, hyurax_ultrax::prova::chave_do_worker(identidade.segredo()), aceitar);
+    u.iniciar();
+    println!("worker {} · aceita trabalho da rede: {}", hex(&u.worker()), if aceitar { "sim" } else { "não" });
+    let id = if campos.is_empty() {
+        None
+    } else {
+        let pedido = pedido_do_formulario(campos)?;
+        let id = c.submeter(pedido)?;
+        println!("JOB {}", hex(&id));
+        Some(id)
+    };
+    let inicio = Instant::now();
+    let limite = segundos.map(Duration::from_secs);
+    let mut ultimo = String::new();
+    loop {
+        std::thread::sleep(Duration::from_millis(1000));
+        let rede_json = c.json_rede();
+        if let Some(id) = id {
+            let Some((estado, feitas, falhas, total, agregado)) = c.jobs.lock().ok().and_then(|j| {
+                j.iter().find(|x| x.id == id).map(|x| (x.estado, x.feitas.concluidas(), x.abandonadas.concluidas(), x.esp.unidades(), x.agregador.texto()))
+            }) else {
+                return Err("JOB sumiu".into());
+            };
+            let linha = format!("{:>7.1} s  {} {feitas}/{total} conferidas  {falhas} falha(s)  pares {}  {agregado}", inicio.elapsed().as_secs_f64(), estado.nome(), rede.pares_conectados());
+            if linha.split("  ").skip(1).collect::<Vec<_>>() != ultimo.split("  ").skip(1).collect::<Vec<_>>() {
+                println!("{linha}");
+                ultimo = linha;
+            }
+            if estado.e_final() {
+                println!("rede: {rede_json}");
+                let _ = crate::relatorio::gravar(&c, &id);
+                println!("Relatório: {}", c.pasta_do_job(&id).join("relatorio.json").display());
+                u.ligar(false);
+                return if estado == EstadoDoJob::Concluido { Ok(()) } else { Err(format!("o JOB parou em {}", estado.nome())) };
+            }
+        } else if inicio.elapsed().as_secs().is_multiple_of(10) {
+            println!("{:>7.1} s  pares {}  {rede_json}", inicio.elapsed().as_secs_f64(), rede.pares_conectados());
+        }
+        if limite.is_some_and(|l| inicio.elapsed() > l) {
+            println!("rede: {rede_json}");
+            u.ligar(false);
+            return if id.is_some() { Err("tempo esgotado antes do fim do JOB".into()) } else { Ok(()) };
+        }
     }
 }
 

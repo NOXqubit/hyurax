@@ -246,6 +246,21 @@ async function lerLista() {
   if (!est.selecionado && l.jobs.length) est.selecionado = l.jobs[0].id;
   desenharLista();
   desenharPainelTecnico();
+  desenharRede();
+}
+
+function desenharRede() {
+  const r = est.lista?.rede;
+  if (!r) return;
+  const caixa = $("cj-aceitar");
+  if (caixa && document.activeElement !== caixa) caixa.checked = !!r.aceitar;
+  const reps = (r.reputacao || []).map((x) => `${x.worker.slice(0, 8)}… nota ${x.nota} (${x.verificadas} aceitas, ${x.divergentes} divergentes, ${x.recusadas} recusadas)`);
+  texto(
+    "cj-rede-texto",
+    `${r.ofertas.length} worker(s) de outros nós oferecendo agora · ${r.remotas_executando} unidade(s) de outros nós rodando aqui, ${r.remotas_na_fila} na fila · ` +
+      `${r.redundantes} unidade(s) nossas esperando outros nós · mensagens ${r.mensagens_recebidas} recebidas, ${r.mensagens_enviadas} enviadas` +
+      (reps.length ? ` · reputação medida aqui: ${reps.join("; ")}` : ""),
+  );
 }
 
 async function lerDetalhe() {
@@ -289,8 +304,9 @@ function desenharPainelTecnico() {
   const u = e?.ultrax;
   const soma = (f) => jobs.reduce((s, j) => s + (f(j) || 0), 0);
   const pares = Number(e?.pares) || 0;
+  const ofertas = est.lista?.rede?.ofertas?.length || 0;
   texto("ct-nos", `${1 + pares}`);
-  texto("ct-nos-nota", pares ? `este nó e ${pares} par(es) conectado(s); os pares ainda não recebem unidades (Etapa D)` : "só este nó");
+  texto("ct-nos-nota", pares ? `este nó e ${pares} par(es) conectado(s); ${ofertas} oferecendo trabalho` : "só este nó");
   texto("ct-jobs", fmt(jobs.filter((j) => j.estado === "RUNNING").length));
   texto("ct-jobs-nota", `${jobs.length} no total; ${jobs.filter((j) => j.estado === "WAITING FOR NODES").length} esperando outros nós`);
   texto("ct-unidades", `${fmt(soma((j) => j.feitas))} / ${fmt(soma((j) => j.unidades))}`);
@@ -304,7 +320,8 @@ function desenharPainelTecnico() {
   texto("ct-vram", "não medida");
   texto("ct-ram", u ? `${fmt(u.reservada_mib ?? 0, 1)} MiB` : "—");
   texto("ct-ram-nota", u ? `reservada pelo ULTRAX, teto ${u.memoria_mib} MiB` : "");
-  texto("ct-rede", "não medida");
+  const rd = est.lista?.rede;
+  texto("ct-rede", rd ? `${fmt(rd.mensagens_recebidas)} ↓ · ${fmt(rd.mensagens_enviadas)} ↑` : "—");
   // vazão real: operações das unidades conferidas no último minuto
   const agora = Date.now();
   est.vazaoOps = est.vazaoOps.filter(([t]) => agora - t < 60000);
@@ -515,6 +532,7 @@ function iniciar3D() {
   canvas.addEventListener("pointerdown", (e) => { V.arrastando = [e.clientX, e.clientY, false]; canvas.setPointerCapture(e.pointerId); });
   canvas.addEventListener("pointermove", (e) => {
     if (!V.arrastando) return;
+    // (arrastar gira a câmera; nada gira sozinho)
     const [x, y] = V.arrastando;
     if (Math.abs(e.clientX - x) + Math.abs(e.clientY - y) > 3) V.arrastando[2] = true;
     V.yaw += (e.clientX - x) * 0.008;
@@ -964,6 +982,14 @@ function ligar() {
     submeter();
   });
   $("b-rodar").addEventListener("click", rodarBenchmark);
+  $("cj-aceitar").addEventListener("change", async (e) => {
+    const r = await postar("/api/ciencia/rede", { aceitar: e.target.checked ? "1" : "0" });
+    if (!r.ok) {
+      e.target.checked = !e.target.checked;
+      alert(erroDe(r, "Não deu para mudar."));
+    }
+    lerLista();
+  });
   $("v3-vel").addEventListener("change", () => est.reproducao && (est.reproducao.vel = Number($("v3-vel").value) || 1));
   $("v3-ao-vivo").addEventListener("click", () => est.selecionado && escolher(est.selecionado));
   $("v3-inspecao-fechar").addEventListener("click", () => ($("v3-inspecao-caixa").hidden = true));

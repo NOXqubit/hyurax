@@ -30,7 +30,7 @@ use std::collections::{BTreeMap, BTreeSet, VecDeque};
 use std::fmt::Write as _;
 use std::io::Write as _;
 use std::path::{Path, PathBuf};
-use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, Mutex, Weak};
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
@@ -44,6 +44,9 @@ use hyurax_ultrax::trabalho::{self, TipoDeTrabalho};
 use crate::painel::texto_json;
 use crate::ultrax::{Agendador, DesfechoDeUnidade, PedidoDeUnidade, Ultrax};
 use crate::{de_hex, hex};
+
+#[path = "ciencia_rede.rs"]
+mod rede;
 
 /// Versão do esquema da pasta `PASTA/ciencia/`.
 pub const VERSAO_DA_PASTA: u32 = 1;
@@ -320,6 +323,10 @@ pub struct Ciencia {
     somente_leitura: Option<String>,
     /// ULTRA BENCHMARK pedido pela tela: rodando agora, e o último resultado.
     pub(crate) benchmark: Mutex<(bool, String)>,
+    /// A computação entre nós: ofertas, pedidos, redundância e reputação.
+    rede: Mutex<rede::EstadoDaRede>,
+    /// Este nó calcula unidades que outros nós pedem.
+    aceitar_rede: AtomicBool,
 }
 
 /// Lê um arquivo inteiro, se existir.
@@ -358,6 +365,8 @@ impl Ciencia {
             ultrax: Mutex::new(Weak::new()),
             somente_leitura,
             benchmark: Mutex::new((false, String::new())),
+            rede: Mutex::new(rede::EstadoDaRede::default()),
+            aceitar_rede: AtomicBool::new(false),
         });
         c.carregar();
         Ok(c)
@@ -657,6 +666,7 @@ impl Ciencia {
     /// Prazo dos JOBs e checkpoint dos que mudaram.
     pub(crate) fn manutencao(&self, agora: u64) {
         self.esvaziar(false);
+        self.manutencao_rede(agora);
         {
             let mut vencidos = Vec::new();
             if let Ok(mut jobs) = self.jobs.lock() {
@@ -750,9 +760,10 @@ impl Ciencia {
         }
         let _ = write!(
             j,
-            "],\"versao_da_pasta\":{VERSAO_DA_PASTA},\"somente_leitura\":{},\"no\":\"{}\",\"dominios\":[",
+            "],\"versao_da_pasta\":{VERSAO_DA_PASTA},\"somente_leitura\":{},\"no\":\"{}\",\"rede\":{},\"dominios\":[",
             self.somente_leitura.as_deref().map_or("null".to_string(), texto_json),
-            hex(&self.no)
+            hex(&self.no),
+            self.json_rede()
         );
         for (k, d) in hyurax_ultrax::job::Dominio::TODOS.iter().enumerate() {
             if k > 0 {
@@ -874,6 +885,149 @@ fn json_do_job(job: &Job, completo: bool) -> String {
     j
 }
 
+impl Ciencia {
+    /// Se todas as unidades têm desfecho, fecha o JOB (checkpoint e evento).
+    /// Devolve `true` quando fechou agora; aí o relatório vai para o disco.
+    fn fechar_se_acabou(&self, job: &mut Job, eventos: &mut Vec<Evento>) -> bool {
+        if job.estado != EstadoDoJob::Rodando || job.resolvidas() < job.esp.unidades() {
+            return false;
+        }
+        job.estado = EstadoDoJob::Concluido;
+        job.fim_ms = agora_ms();
+        job.motivo = if job.abandonadas.concluidas() > 0 {
+            format!("{} unidade(s) registradas como falha", job.abandonadas.concluidas())
+        } else {
+            String::new()
+        };
+        let _ = self.gravar_checkpoint(job);
+        job.sujo = false;
+        eventos.push(Evento {
+            evento: "JOB_COMPLETED",
+            job: Some(job.id),
+            no: Some(self.no),
+            tipo: Some(job.esp.modelo().tipo()),
+            operacao: job.agregador.texto(),
+            progresso: Some(job.progresso()),
+            resultado: Some(job.resumo.bytes()),
+            verificacao: Some(if job.abandonadas.concluidas() > 0 { "FAILED" } else { "PASSED" }),
+            ..Evento::default()
+        });
+        true
+    }
+
+    /// Soma ao JOB uma unidade conferida: agregador, resumo, intervalos,
+    /// consumo, registro por unidade e o evento. `verificacao` diz como foi
+    /// conferida (PASSED numa máquina; CONSENSUS k/n entre nós), e
+    /// `outros_workers` são os que concordaram além de quem entregou.
+    fn consolidar(
+        &self,
+        job: &mut Job,
+        d: &DesfechoDeUnidade,
+        voo: Option<EmVoo>,
+        verificacao: &'static str,
+        outros_workers: &[[u8; PUBKEY_LEN]],
+        eventos: &mut Vec<Evento>,
+    ) {
+        let base = Evento {
+            job: Some(d.job),
+            unidade: Some(d.indice),
+            no: Some(d.registro.as_ref().map_or(self.no, |r| r.worker)),
+            tipo: Some(job.esp.modelo().tipo()),
+            entrada: d.registro.as_ref().map(|r| r.entrada),
+            resultado: d.registro.as_ref().map(|r| r.resultado),
+            ms_execucao: Some(d.ms_calculo),
+            ram: Some(d.memoria),
+            ..Evento::default()
+        };
+            if job.feitas.contem(d.indice) {
+                eventos.push(Evento {
+                    evento: "WORK_UNIT_DUPLICATE",
+                    operacao: "unidade já conferida; o segundo resultado não entra".into(),
+                    ..base
+                });
+            } else {
+                let resultado = d.resultado.as_deref().unwrap_or_default();
+                // sem registro de prova não há o que somar; com ele, o agregador decide
+                let somado = match d.registro.as_ref() {
+                    Some(r) => job.agregador.somar(d.indice, resultado).map(|()| r),
+                    None => Err(hyurax_ultrax::job::ErroDeJob::Faixa("unidade liquidada sem registro de prova")),
+                };
+                match somado {
+                    Ok(r) => {
+                        job.resumo.somar(d.indice, &r.resultado);
+                        job.feitas.inserir_um(d.indice);
+                        job.workers.insert(r.worker);
+                    for w in outros_workers {
+                        job.workers.insert(*w);
+                    }
+                        let ms_total = d.ms_calculo.saturating_add(d.ms_verificacao);
+                        job.consumo.somar(&Consumo {
+                            unidades: 1,
+                            operacoes: r.operacoes,
+                            operacoes_verificacao: d.operacoes_verificacao,
+                            cpu_ms: if d.gpu.is_some() { d.ms_verificacao } else { ms_total },
+                            gpu_ms: if d.gpu.is_some() { d.ms_calculo } else { 0 },
+                            memoria_mib_s: d.memoria.saturating_mul(ms_total) / (1024 * 1024 * 1000),
+                            bytes_rede: 0,
+                        });
+                        let relogio = r.fim_ms.saturating_sub(r.inicio_ms).max(1);
+                        let vazao = r.operacoes as f64 / (d.ms_calculo.max(1) as f64 / 1000.0);
+                        let registro_linha = format!(
+                            "{{\"indice\":{},\"tarefa\":\"{}\",\"worker\":\"{}\",\"linha\":{},\"despachada\":{},\"inicio\":{},\"fim\":{},\
+                             \"verificada\":{},\"entrada\":\"{}\",\"resultado\":\"{}\",\"operacoes\":{},\"operacoes_verificacao\":{},\
+                             \"ms_calculo\":{},\"ms_verificacao\":{},\"memoria\":{},\"gpu\":{},\"verificacao\":\"{verificacao}\",\"metodo\":{}}}",
+                            d.indice,
+                            hex(&d.tarefa),
+                            hex(&r.worker),
+                            voo.and_then(|v| v.linha).map_or("null".to_string(), |l| l.to_string()),
+                            voo.map_or(0, |v| v.despachada_ms),
+                            r.inicio_ms,
+                            r.fim_ms,
+                            agora_ms(),
+                            hex(&r.entrada),
+                            hex(&r.resultado),
+                            r.operacoes,
+                            d.operacoes_verificacao,
+                            d.ms_calculo,
+                            d.ms_verificacao,
+                            d.memoria,
+                            d.gpu.as_deref().map_or("null".to_string(), texto_json),
+                            texto_json(r.metodo.nome()),
+                        );
+                        if !job.registro_cortado {
+                            let caminho = self.pasta_do_job(&job.id).join("unidades.jsonl");
+                            if self.acrescentar(&caminho, &registro_linha, Some(REGISTRO_MAX_BYTES)) {
+                                job.registros = job.registros.saturating_add(1);
+                            } else {
+                                job.registro_cortado = true;
+                            }
+                        }
+                        eventos.push(Evento {
+                            evento: "WORK_UNIT_VERIFIED",
+                            operacao: format!("{} · {} operações conferidas", r.metodo.nome(), r.operacoes),
+                            progresso: Some(job.progresso()),
+                            cpu: Some(d.ms_calculo as f64 * 100.0 / relogio as f64).map(|c| c.min(100.0)),
+                            vazao: Some(vazao),
+                            verificacao: Some("PASSED"),
+                            ..base
+                        });
+                    }
+                    Err(e) => {
+                        // o worker conferiu, mas o consolidador não entende o resultado: é defeito, não sucesso
+                        *job.falhas.entry(d.indice).or_insert(0) = FALHAS_POR_UNIDADE;
+                        job.abandonadas.inserir_um(d.indice);
+                        eventos.push(Evento {
+                            evento: "WORK_UNIT_FAILED",
+                            operacao: format!("resultado conferido que o consolidador recusou: {e}"),
+                            verificacao: Some("FAILED"),
+                            ..base
+                        });
+                    }
+                }
+            }
+    }
+}
+
 // ---------------------------------------------------------------------------
 // O worker pede e devolve unidades
 // ---------------------------------------------------------------------------
@@ -883,11 +1037,33 @@ impl Agendador for Ciencia {
         if self.somente_leitura.is_some() {
             return None;
         }
+        // primeiro o que outros nós pediram e este aceitou: tem prazo
+        if let Some(remota) = self.proxima_remota(agora) {
+            return Some(remota);
+        }
         let ritmo = |t| self.ultrax().map_or(20.0e6, |u| u.ritmo_de(t)).max(1.0);
         let mut despachada = None;
         let mut sem_orcamento = Vec::new();
+        let mut mudou_para: Vec<([u8; HASH_LEN], &'static str, String)> = Vec::new();
+        let mut envios = Vec::new();
         {
             let mut jobs = self.jobs.lock().ok()?;
+            // JOB que pede outros nós volta a rodar quando há workers de fora bastante (e para, quando some)
+            for job in jobs.iter_mut().filter(|j| rede::pede_outros_nos(j.esp.nivel())) {
+                let precisa = usize::from(job.esp.redundancia().saturating_sub(1));
+                let de_fora = self.workers_de_fora(job.esp.modelo(), agora);
+                if job.estado == EstadoDoJob::AguardandoNos && de_fora >= precisa {
+                    job.estado = EstadoDoJob::Rodando;
+                    job.motivo = String::new();
+                    job.sujo = true;
+                    mudou_para.push((job.id, "JOB_RESUMED", format!("{de_fora} worker(s) de outros nós oferecem trabalho")));
+                } else if job.estado == EstadoDoJob::Rodando && de_fora < precisa && job.em_voo.is_empty() {
+                    job.estado = EstadoDoJob::AguardandoNos;
+                    job.motivo = format!("precisa de {precisa} worker(s) de outros nós; há {de_fora}");
+                    job.sujo = true;
+                    mudou_para.push((job.id, "JOB_WAITING_FOR_NODES", job.motivo.clone()));
+                }
+            }
             for job in jobs.iter_mut().filter(|j| j.estado == EstadoDoJob::Rodando) {
                 let orcamento = job.esp.orcamento_milicreditos();
                 if orcamento > 0 && job.consumo.milicreditos() >= orcamento {
@@ -907,6 +1083,13 @@ impl Agendador for Ciencia {
                     / ritmo(u.especificacao.tipo());
                 // prazo folgado: o limite de CPU pode ir a 10%, e a fila pode esperar
                 let prazo_ms = agora.saturating_add(PRAZO_MINIMO_MS.max((segundos * 30.0 * 1000.0) as u64));
+                if rede::pede_outros_nos(job.esp.nivel()) {
+                    // a mesma unidade vai para workers de outros nós; a cópia daqui também conta
+                    match self.despachar_redundante(job.id, i, u.especificacao, u.semente, job.esp.redundancia(), prazo_ms, agora) {
+                        Some(e) => envios.extend(e),
+                        None => continue,
+                    }
+                }
                 job.em_voo.insert(i, EmVoo { despachada_ms: agora, inicio_ms: 0, linha: None, entrada: None });
                 job.cursor = i.saturating_add(1);
                 if job.inicio_ms == 0 {
@@ -931,6 +1114,12 @@ impl Agendador for Ciencia {
         for (id, motivo) in sem_orcamento {
             self.emitir(Evento { evento: "JOB_OUT_OF_BUDGET", job: Some(id), operacao: motivo, ..Evento::default() });
         }
+        for (id, evento, motivo) in mudou_para {
+            self.emitir(Evento { evento, job: Some(id), no: Some(self.no), operacao: motivo, ..Evento::default() });
+        }
+        for (par, m) in envios {
+            self.enviar(par, &m);
+        }
         let (pedido, progresso) = despachada?;
         self.emitir(Evento {
             evento: "WORK_UNIT_ASSIGNED",
@@ -948,6 +1137,9 @@ impl Agendador for Ciencia {
     }
 
     fn tem_trabalho(&self) -> bool {
+        if self.rede.lock().is_ok_and(|r| !r.fila.is_empty()) {
+            return true;
+        }
         self.jobs.lock().is_ok_and(|jobs| {
             jobs.iter().any(|j| {
                 j.estado == EstadoDoJob::Rodando
@@ -980,8 +1172,16 @@ impl Agendador for Ciencia {
     }
 
     fn terminou(&self, d: DesfechoDeUnidade) {
+        // unidade de outro nó: a resposta vai para ele, não para um JOB daqui
+        if self.terminou_remota(&d) {
+            return;
+        }
+        // cópia local de uma unidade redundante: espera os outros workers
+        if self.terminou_redundante(&d) {
+            return;
+        }
         let mut eventos: Vec<Evento> = Vec::new();
-        let mut terminou_job = false;
+        let terminou_job;
         {
             let Ok(mut jobs) = self.jobs.lock() else { return };
             let Some(job) = jobs.iter_mut().find(|j| j.id == d.job) else { return };
@@ -1001,89 +1201,7 @@ impl Agendador for Ciencia {
             match d.estado {
                 Estado::Liquidada => {
                     job.em_voo.remove(&d.indice);
-                    if job.feitas.contem(d.indice) {
-                        eventos.push(Evento {
-                            evento: "WORK_UNIT_DUPLICATE",
-                            operacao: "unidade já conferida; o segundo resultado não entra".into(),
-                            ..base
-                        });
-                    } else {
-                        let resultado = d.resultado.as_deref().unwrap_or_default();
-                        // sem registro de prova não há o que somar; com ele, o agregador decide
-                        let somado = match d.registro.as_ref() {
-                            Some(r) => job.agregador.somar(d.indice, resultado).map(|()| r),
-                            None => Err(hyurax_ultrax::job::ErroDeJob::Faixa("unidade liquidada sem registro de prova")),
-                        };
-                        match somado {
-                            Ok(r) => {
-                                job.resumo.somar(d.indice, &r.resultado);
-                                job.feitas.inserir_um(d.indice);
-                                job.workers.insert(r.worker);
-                                let ms_total = d.ms_calculo.saturating_add(d.ms_verificacao);
-                                job.consumo.somar(&Consumo {
-                                    unidades: 1,
-                                    operacoes: r.operacoes,
-                                    operacoes_verificacao: d.operacoes_verificacao,
-                                    cpu_ms: if d.gpu.is_some() { d.ms_verificacao } else { ms_total },
-                                    gpu_ms: if d.gpu.is_some() { d.ms_calculo } else { 0 },
-                                    memoria_mib_s: d.memoria.saturating_mul(ms_total) / (1024 * 1024 * 1000),
-                                    bytes_rede: 0,
-                                });
-                                let relogio = r.fim_ms.saturating_sub(r.inicio_ms).max(1);
-                                let vazao = r.operacoes as f64 / (d.ms_calculo.max(1) as f64 / 1000.0);
-                                let registro_linha = format!(
-                                    "{{\"indice\":{},\"tarefa\":\"{}\",\"worker\":\"{}\",\"linha\":{},\"despachada\":{},\"inicio\":{},\"fim\":{},\
-                                     \"verificada\":{},\"entrada\":\"{}\",\"resultado\":\"{}\",\"operacoes\":{},\"operacoes_verificacao\":{},\
-                                     \"ms_calculo\":{},\"ms_verificacao\":{},\"memoria\":{},\"gpu\":{},\"verificacao\":\"PASSED\",\"metodo\":{}}}",
-                                    d.indice,
-                                    hex(&d.tarefa),
-                                    hex(&r.worker),
-                                    voo.and_then(|v| v.linha).map_or("null".to_string(), |l| l.to_string()),
-                                    voo.map_or(0, |v| v.despachada_ms),
-                                    r.inicio_ms,
-                                    r.fim_ms,
-                                    agora_ms(),
-                                    hex(&r.entrada),
-                                    hex(&r.resultado),
-                                    r.operacoes,
-                                    d.operacoes_verificacao,
-                                    d.ms_calculo,
-                                    d.ms_verificacao,
-                                    d.memoria,
-                                    d.gpu.as_deref().map_or("null".to_string(), texto_json),
-                                    texto_json(r.metodo.nome()),
-                                );
-                                if !job.registro_cortado {
-                                    let caminho = self.pasta_do_job(&job.id).join("unidades.jsonl");
-                                    if self.acrescentar(&caminho, &registro_linha, Some(REGISTRO_MAX_BYTES)) {
-                                        job.registros = job.registros.saturating_add(1);
-                                    } else {
-                                        job.registro_cortado = true;
-                                    }
-                                }
-                                eventos.push(Evento {
-                                    evento: "WORK_UNIT_VERIFIED",
-                                    operacao: format!("{} · {} operações conferidas", r.metodo.nome(), r.operacoes),
-                                    progresso: Some(job.progresso()),
-                                    cpu: Some(d.ms_calculo as f64 * 100.0 / relogio as f64).map(|c| c.min(100.0)),
-                                    vazao: Some(vazao),
-                                    verificacao: Some("PASSED"),
-                                    ..base
-                                });
-                            }
-                            Err(e) => {
-                                // o worker conferiu, mas o consolidador não entende o resultado: é defeito, não sucesso
-                                *job.falhas.entry(d.indice).or_insert(0) = FALHAS_POR_UNIDADE;
-                                job.abandonadas.inserir_um(d.indice);
-                                eventos.push(Evento {
-                                    evento: "WORK_UNIT_FAILED",
-                                    operacao: format!("resultado conferido que o consolidador recusou: {e}"),
-                                    verificacao: Some("FAILED"),
-                                    ..base
-                                });
-                            }
-                        }
-                    }
+                    self.consolidar(job, &d, voo, "PASSED", &[], &mut eventos);
                 }
                 Estado::Recusada => {
                     job.recusas = job.recusas.saturating_add(1);
@@ -1130,29 +1248,7 @@ impl Agendador for Ciencia {
                 _ => {}
             }
             job.sujo = true;
-            if job.estado == EstadoDoJob::Rodando && job.resolvidas() >= job.esp.unidades() {
-                job.estado = EstadoDoJob::Concluido;
-                job.fim_ms = agora_ms();
-                job.motivo = if job.abandonadas.concluidas() > 0 {
-                    format!("{} unidade(s) registradas como falha", job.abandonadas.concluidas())
-                } else {
-                    String::new()
-                };
-                let _ = self.gravar_checkpoint(job);
-                job.sujo = false;
-                terminou_job = true;
-                eventos.push(Evento {
-                    evento: "JOB_COMPLETED",
-                    job: Some(job.id),
-                    no: Some(self.no),
-                    tipo: Some(tipo),
-                    operacao: job.agregador.texto(),
-                    progresso: Some(job.progresso()),
-                    resultado: Some(job.resumo.bytes()),
-                    verificacao: Some(if job.abandonadas.concluidas() > 0 { "FAILED" } else { "PASSED" }),
-                    ..Evento::default()
-                });
-            }
+            terminou_job = self.fechar_se_acabou(job, &mut eventos);
         }
         for e in eventos {
             self.emitir(e);
@@ -1386,6 +1482,7 @@ mod testes {
             tarefa: sha512(&indice.to_be_bytes()),
             estado: Estado::Liquidada,
             resultado: Some(vec![1, 2, 3]),
+            assinatura: None,
             registro: Some(RegistroDeProva {
                 tarefa: [0; 64],
                 entrada: [1; 64],

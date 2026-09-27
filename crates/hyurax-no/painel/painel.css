@@ -1339,3 +1339,5 @@ body.destacado .bloco.ia { grid-column: span 1; grid-row: span 1; }
   .v3-corpo { grid-template-columns: minmax(0, 1fr); }
   .v3-canvas { height: 280px; }
 }
+.cj-rede { display: grid; gap: 4px; padding: 10px 12px; border-bottom: 1px solid var(--fio); }
+.cj-rede small { overflow-wrap: anywhere; }

@@ -68,6 +68,14 @@ fn endereco_para_str(e: &EnderecoDeRede) -> Option<String> {
     }
 }
 
+/// Tipo de mensagem de rede que leva o ULTRAX (trabalho útil entre nós, fora
+/// do consenso). Quem não registrou tratador ignora, como toda mensagem de
+/// tipo desconhecido.
+pub const TIPO_ULTRAX: u16 = 0x5558;
+
+/// Quem recebe as mensagens do ULTRAX: `(id do par, identidade do par, corpo)`.
+pub type TratadorUltrax = Arc<dyn Fn(u64, [u8; 32], &[u8]) + Send + Sync>;
+
 /// A rede vista por um nó: o estado compartilhado, os pares conectados e o
 /// livro de endereços conhecidos.
 pub struct Rede {
@@ -89,6 +97,10 @@ pub struct Rede {
     identidades_conectadas: Mutex<BTreeMap<[u8; 32], ()>>,
     /// Maior trabalho acumulado que algum par anunciou no aperto de mão.
     maior_trabalho_visto: Mutex<[u8; 32]>,
+    /// Quem trata as mensagens do ULTRAX, se alguém registrou.
+    ultrax: Mutex<Option<TratadorUltrax>>,
+    /// Identidade (chave estática da cifra) de cada par conectado, pelo id.
+    identidade_do_par: Mutex<HashMap<u64, [u8; 32]>>,
 }
 
 impl Rede {
@@ -117,7 +129,37 @@ impl Rede {
             identidade,
             identidades_conectadas: Mutex::new(BTreeMap::new()),
             maior_trabalho_visto: Mutex::new([0u8; 32]),
+            ultrax: Mutex::new(None),
+            identidade_do_par: Mutex::new(HashMap::new()),
         })
+    }
+
+    /// Registra quem trata as mensagens do ULTRAX.
+    pub fn ao_receber_ultrax(&self, tratador: TratadorUltrax) {
+        if let Ok(mut t) = self.ultrax.lock() {
+            *t = Some(tratador);
+        }
+    }
+
+    /// Manda uma mensagem do ULTRAX a um par. `false` se ele não está mais
+    /// conectado.
+    pub fn enviar_ultrax(&self, par: u64, corpo: Vec<u8>) -> bool {
+        self.pares
+            .lock()
+            .ok()
+            .and_then(|p| p.get(&par).map(|s| s.send(Message::Desconhecida { tipo: TIPO_ULTRAX, corpo }).is_ok()))
+            .unwrap_or(false)
+    }
+
+    /// Manda uma mensagem do ULTRAX a todos os pares. Devolve a quantos.
+    pub fn difundir_ultrax(&self, corpo: &[u8]) -> usize {
+        let msg = Message::Desconhecida { tipo: TIPO_ULTRAX, corpo: corpo.to_vec() };
+        self.pares.lock().map_or(0, |p| p.values().filter(|s| s.send(msg.clone()).is_ok()).count())
+    }
+
+    /// Os ids dos pares conectados agora, com a identidade de cada um.
+    pub fn pares_com_identidade(&self) -> Vec<(u64, [u8; 32])> {
+        self.identidade_do_par.lock().map(|m| m.iter().map(|(k, v)| (*k, *v)).collect()).unwrap_or_default()
     }
 
     /// Se a cadeia deste nó já tem pelo menos o trabalho que os pares
@@ -371,7 +413,7 @@ impl Rede {
                 return Err(NetError::Handshake("já existe conexão com este nó".into()));
             }
         }
-        let resultado = self.servir_cifrado(&mut conexao, papel, ip_par);
+        let resultado = self.servir_cifrado(&mut conexao, papel, ip_par, chave_do_par);
         if let Ok(mut ids) = self.identidades_conectadas.lock() {
             ids.remove(&chave_do_par);
         }
@@ -385,6 +427,7 @@ impl Rede {
         conexao: &mut Conexao,
         papel: Papel,
         ip_par: Option<std::net::IpAddr>,
+        chave_do_par: [u8; 32],
     ) -> Result<(), NetError> {
         let par_ponta = self.aperto_de_mao(conexao, papel)?;
         if let Ok(mut visto) = self.maior_trabalho_visto.lock()
@@ -409,6 +452,9 @@ impl Rede {
         let escritor = conexao.escritor()?;
         let (saida, entrada) = channel::<Message>();
         let id = self.registrar(saida.clone());
+        if let Ok(mut m) = self.identidade_do_par.lock() {
+            m.insert(id, chave_do_par);
+        }
 
         if let Ok(no) = self.no.lock() {
             let meu = no.chain.total_work().to_be32().unwrap_or([0xff; 32]);
@@ -435,6 +481,9 @@ impl Rede {
         let resultado = self.ler_laco(conexao, id, &saida);
 
         self.remover(id);
+        if let Ok(mut m) = self.identidade_do_par.lock() {
+            m.remove(&id);
+        }
         if let (Some(a), Ok(mut c)) = (&addr_str, self.conectados.lock()) {
             c.remove(a);
         }
@@ -511,6 +560,15 @@ impl Rede {
                         if let Some(a) = endereco_para_str(e) {
                             self.aprender(a);
                         }
+                    }
+                    continue;
+                }
+                // O ULTRAX também é transporte: vai para quem registrou, fora do nó.
+                Message::Desconhecida { tipo: TIPO_ULTRAX, corpo } => {
+                    let tratador = self.ultrax.lock().ok().and_then(|t| t.clone());
+                    let par = self.identidade_do_par.lock().ok().and_then(|m| m.get(&id).copied()).unwrap_or([0; 32]);
+                    if let Some(t) = tratador {
+                        t(id, par, &corpo);
                     }
                     continue;
                 }

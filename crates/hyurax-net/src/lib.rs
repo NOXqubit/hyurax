@@ -23,4 +23,4 @@ mod servidor;
 pub use cifra::{Identidade, PADRAO_NOISE, Papel};
 pub use conexao::{Conexao, Escritor, NetError};
 pub use no::{Malicia, No, Reacao};
-pub use servidor::Rede;
+pub use servidor::{Rede, TIPO_ULTRAX, TratadorUltrax};

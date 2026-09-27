@@ -287,6 +287,8 @@ pub struct DesfechoDeUnidade {
     pub resultado: Option<Vec<u8>>,
     /// O registro de prova assinado, quando houve execução.
     pub registro: Option<RegistroDeProva>,
+    /// A assinatura do registro pelo worker.
+    pub assinatura: Option<[u8; 64]>,
     /// Operações gastas conferindo.
     pub operacoes_verificacao: u64,
     /// Cálculo puro da execução, em ms.
@@ -1292,6 +1294,7 @@ impl Ultrax {
                         estado: Estado::Liquidada,
                         resultado: Some(std::mem::take(&mut exec.resultado)),
                         registro: Some(registro.clone()),
+                        assinatura,
                         operacoes_verificacao: total_verificacao,
                         ms_calculo,
                         ms_verificacao,
@@ -1324,6 +1327,7 @@ impl Ultrax {
                         estado: Estado::Recusada,
                         resultado: None,
                         registro: Some(registro.clone()),
+                        assinatura,
                         operacoes_verificacao: total_verificacao,
                         ms_calculo,
                         ms_verificacao,
@@ -1523,6 +1527,7 @@ impl Ultrax {
                 estado: t.estado,
                 resultado: None,
                 registro: registro.map(|(r, _)| r.clone()),
+                assinatura: registro.and_then(|(_, a)| a),
                 operacoes_verificacao: 0,
                 ms_calculo,
                 ms_verificacao: 0,

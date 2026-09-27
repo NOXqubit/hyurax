@@ -320,6 +320,7 @@ impl Painel {
         let _ = writeln!(texto, "ultrax_debug={}", u8::from(u.debug.load(Ordering::Relaxed)));
         let _ = writeln!(texto, "ultrax_gpu={}", u8::from(u.gpu_ligada.load(Ordering::Relaxed)));
         let _ = writeln!(texto, "ultrax_gpu_uso={}", u.gpu_uso.load(Ordering::Relaxed));
+        let _ = writeln!(texto, "aceitar_rede={}", u8::from(self.ciencia.aceita_da_rede()));
         if let Ok(s) = self.sementes.lock() {
             for semente in s.iter() {
                 let _ = writeln!(texto, "semente={semente}");
@@ -360,6 +361,8 @@ struct Ajustes {
     ultrax_debug: bool,
     ultrax_gpu: bool,
     ultrax_gpu_uso: Option<u32>,
+    /// Calcular unidades que outros nós pedirem (computação científica).
+    aceitar_rede: bool,
 }
 
 fn ler_ajustes(dados: &Path) -> Ajustes {
@@ -392,6 +395,7 @@ fn ler_ajustes(dados: &Path) -> Ajustes {
             Some(("ultrax_debug", v)) => a.ultrax_debug = v.trim() == "1",
             Some(("ultrax_gpu", v)) => a.ultrax_gpu = v.trim() == "1",
             Some(("ultrax_gpu_uso", v)) => a.ultrax_gpu_uso = v.trim().parse().ok().filter(|n| (10..=100).contains(n)),
+            Some(("aceitar_rede", v)) => a.aceitar_rede = v.trim() == "1",
             Some(("semente", v)) if semente_valida(v.trim()) && a.sementes.len() < SEMENTES_MAX => {
                 a.sementes.push(v.trim().to_string());
             }
@@ -682,6 +686,8 @@ fn ligar(o: Opcoes, rede: Arc<Rede>, partida: Partida, ajustes: &Ajustes) -> Res
     );
     let ciencia = Ciencia::abrir(&ambiente.dados, ultrax.worker(), VERSAO)?;
     ciencia.ligar(&ultrax);
+    // a computação entre nós usa a mesma rede P2P; aceitar trabalho de fora é escolha do dono
+    ciencia.ligar_rede(&rede, hyurax_ultrax::prova::chave_do_worker(identidade.segredo()), ajustes.aceitar_rede);
     let painel = Arc::new(Painel {
         ambiente,
         endereco: Mutex::new(endereco),
@@ -1699,6 +1705,16 @@ fn atender(mut s: TcpStream, porta: u16, painel: &Painel, rede: &Arc<Rede>, o: &
             responder_json(&mut s, r)
         }
         "/api/enviar" => responder_json(&mut s, enviar_do_painel(painel, rede, o, &campos)),
+        "/api/ciencia/rede" => {
+            let aceitar = campo(&campos, "aceitar").as_deref() == Some("1");
+            painel.ciencia.aceitar_da_rede(aceitar);
+            painel.gravar_ajustes();
+            painel.registrar(
+                "ciencia",
+                if aceitar { "este nó passa a calcular unidades que outros nós pedirem (dentro dos limites do ULTRAX)".into() } else { "este nó não aceita mais trabalho de outros nós".into() },
+            );
+            responder_json(&mut s, Ok(format!("{{\"aceitar\":{aceitar}}}")))
+        }
         "/api/ciencia/benchmark" => {
             let ja = painel.ciencia.benchmark.lock().map(|mut b| std::mem::replace(&mut b.0, true)).unwrap_or(true);
             if !ja {

@@ -653,6 +653,23 @@ pub fn derivar_unidade(modelo: &Especificacao, indice: u64) -> Result<Especifica
     }
 }
 
+/// Teto do tamanho do resultado, em bytes, sem executar. Serve para quem
+/// pede decidir o que pode viajar pela rede (ver [`crate::rede::RESULTADO_MAX`]).
+pub fn tamanho_maximo_do_resultado(esp: &Especificacao) -> u64 {
+    let t = u64::from(esp.tamanho);
+    let para = |v: usize| u64::try_from(v).unwrap_or(u64::MAX);
+    match esp.tipo {
+        TipoDeTrabalho::Matriz | TipoDeTrabalho::Difusao => t.saturating_mul(t).saturating_mul(8),
+        TipoDeTrabalho::Mochila => para(MOCHILA_RESULTADO_LEN),
+        // pesos (10·16 + 16 + 16 + 1) em i64 e o erro: bem abaixo de 4 KiB
+        TipoDeTrabalho::Ia => 4096,
+        TipoDeTrabalho::Genetica => para(crate::genetica::tamanho_do_resultado(esp.passos, esp.parametros().first().copied().unwrap_or(0))),
+        TipoDeTrabalho::Melhoramento => para(crate::melhoramento::tamanho_do_resultado(esp.passos, esp.parametros().first().copied().unwrap_or(0))),
+        TipoDeTrabalho::Rotas => para(crate::rotas::CABECALHO).saturating_add(t.saturating_mul(2)),
+        TipoDeTrabalho::Triagem => para(crate::triagem::tamanho_do_resultado(esp.tamanho)),
+    }
+}
+
 /// Operações que a verificação custa. A matriz é a única com prova curta.
 pub fn operacoes_de_verificacao(esp: &Especificacao) -> u64 {
     match esp.tipo {
