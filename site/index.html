@@ -25,9 +25,12 @@
 <meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
 <link rel="manifest" href="site.webmanifest">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,250..800&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<!-- Segurança e privacidade na própria página: o GitHub Pages não lê o
+     arquivo _headers. Tudo vem deste site; nenhuma fonte, script ou imagem de
+     terceiros, então nenhum dado do visitante vai para outra empresa. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob:; connect-src 'self'; worker-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'; upgrade-insecure-requests">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<link rel="preload" href="assets/fontes/archivo.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="styles/main.css">
 </head>
 <body>
@@ -40,6 +43,8 @@
     <span class="marca-nome">HYURAX</span>
   </a>
   <nav class="menu" id="menu" aria-label="Seções" data-i18n-attr="aria-label:nav.rotulo">
+    <a href="#ultrax" data-i18n="nav.ultrax">ULTRAX</a>
+    <a href="#ia" data-i18n="nav.ia">IA</a>
     <a href="#laco" data-i18n="nav.laco">Provado</a>
     <a href="#trabalho" data-i18n="nav.trabalho">Trabalho útil</a>
     <a href="#confira" data-i18n="nav.confira">Confira</a>
@@ -87,6 +92,91 @@
     <ol id="blocos-vivos-eco" aria-hidden="true"></ol>
   </div>
 </div>
+
+<!-- ============================ O QUE FAZ ============================ -->
+<section class="faixa claro faz" id="faz" aria-labelledby="t-faz">
+  <div class="capitulo">
+    <header class="cabeca faz-cabeca">
+      <p class="rotulo" data-i18n="faz.rotulo">O que o programa faz</p>
+      <h2 id="t-faz" data-i18n="faz.titulo">Três trabalhos, um programa, cada um com o seu limite.</h2>
+    </header>
+    <ol class="faz-lista">
+      <li>
+        <span class="faz-marca" aria-hidden="true">◆</span>
+        <h3 data-i18n="faz.ultrax_t">ULTRAX</h3>
+        <p data-i18n="faz.ultrax">Trabalho útil de verdade (matrizes, otimização, simulação) na CPU e na GPU. Cada resultado é conferido antes de contar.</p>
+      </li>
+      <li>
+        <span class="faz-marca" aria-hidden="true">⬡</span>
+        <h3 data-i18n="faz.ia_t">IA com moléculas</h3>
+        <p data-i18n="faz.ia">Uma rede neural aprende a solubilidade de 2.048 moléculas reais, e a tela mostra a previsão ao lado da medida de laboratório.</p>
+      </li>
+      <li>
+        <span class="faz-marca" aria-hidden="true">▣</span>
+        <h3 data-i18n="faz.minerar_t">Mineração</h3>
+        <p data-i18n="faz.minerar">Protege a cadeia e rende HYX de teste. Separada do ULTRAX: os dois rodam juntos, e você escolhe quanto da máquina cada um usa.</p>
+      </li>
+    </ol>
+  </div>
+</section>
+
+<!-- ============================ ULTRAX ============================ -->
+<section class="faixa escuro" id="ultrax" aria-labelledby="t-ultrax">
+  <div class="capitulo">
+    <p class="grito" data-i18n-html="ultrax.grito">Não prove que ligou. <em>Prove que trabalhou.</em></p>
+    <div class="corpo">
+      <header class="cabeca">
+        <p class="rotulo" data-i18n="ultrax.rotulo">ULTRAX · motor de trabalho útil</p>
+        <h2 id="t-ultrax" data-i18n="ultrax.titulo">Trabalho de verdade, conferido antes de contar.</h2>
+        <p class="lide" data-i18n="ultrax.lide">Cada tarefa passa por um ciclo com horário: criada, atribuída, executada, entregue, conferida e liquidada. Resultado que não passa na conferência não conta, e a máquina que errou fica registrada.</p>
+      </header>
+      <div class="ultrax-caixa">
+        <ol class="ciclo" aria-label="Ciclo de vida de uma tarefa" data-i18n-attr="aria-label:ultrax.ciclo">
+          <li>CREATED</li><li>QUEUED</li><li>ASSIGNED</li><li>EXECUTING</li><li>SUBMITTED</li><li class="agora">VERIFYING</li><li>VERIFIED</li><li>SETTLED</li>
+        </ol>
+        <p class="nota" data-i18n="ultrax.ciclo_nota">A tarefa em destaque está sendo conferida. A GPU faz a conta; a CPU confere com outro algoritmo, e só então credita.</p>
+        <ul class="ultrax-pontos">
+          <li data-i18n-html="ultrax.p1"><b>CPU e GPU</b>, integrada ou placa de vídeo, cada uma com o seu limitador de uso.</li>
+          <li data-i18n-html="ultrax.p2"><b>Conferência matemática</b> (Freivalds), por recomputação, e tarefas-desafio com resposta calculada fora da sua máquina.</li>
+          <li data-i18n-html="ultrax.p3"><b>Registro assinado</b> de cada tarefa, que um comando refaz e audita.</li>
+          <li data-i18n-html="ultrax.p4"><b>Work Score</b> mede a contribuição: não é dinheiro, não é HYX.</li>
+        </ul>
+      </div>
+    </div>
+    <dl class="numeros">
+      <div><dt data-i18n="ultrax.n_gpu">GPU integrada de um Atom (Intel HD)</dt><dd class="mono">426<small>M/s</small></dd></div>
+      <div><dt data-i18n="ultrax.n_cpu">um núcleo do mesmo Atom</dt><dd class="mono">250<small>M/s</small></dd></div>
+      <div><dt data-i18n="ultrax.n_erro">chance de uma conta errada passar na conferência</dt><dd class="mono">2<sup>−80</sup></dd></div>
+      <div><dt data-i18n="ultrax.n_limite">fatias de uso para CPU e GPU</dt><dd class="mono">25–100<small>%</small></dd></div>
+    </dl>
+    <p class="nota" data-i18n="ultrax.nota">Medido numa matriz 1024 × 1024, em multiplicações com soma por segundo. Hoje o ULTRAX roda em modo LAB: as tarefas nascem no seu próprio computador, e ninguém de fora encomenda nem paga por elas.</p>
+  </div>
+</section>
+
+<!-- ============================ IA ============================ -->
+<section class="faixa claro" id="ia" aria-labelledby="t-ia">
+  <div class="capitulo">
+    <p class="grito" data-i18n-html="ia.grito">Contas de IA. <em>Moléculas reais.</em></p>
+    <div class="corpo">
+      <header class="cabeca">
+        <p class="rotulo" data-i18n="ia.rotulo">IA · Moléculas</p>
+        <h2 id="t-ia" data-i18n="ia.titulo">Uma rede neural aprende a solubilidade de moléculas de verdade.</h2>
+        <p class="lide" data-i18n="ia.lide">São 2.048 moléculas da AqSolDB, uma base pública de laboratório. O programa treina a rede, confere o treino refazendo a conta e mostra a previsão ao lado da medida.</p>
+        <p class="nota" data-i18n="ia.nota">Prever solubilidade é uma etapa de triagem na pesquisa de remédios. Não é descoberta de remédio, e o programa não diz que é.</p>
+      </header>
+      <figure class="molecula">
+        <canvas id="mol-desenho" role="img" aria-label="Estrutura da molécula"></canvas>
+        <figcaption>
+          <b id="mol-nome">—</b>
+          <span class="mono" id="mol-formula">—</span>
+          <span class="mono" id="mol-medida">—</span>
+          <button class="botao botao-linha botao-pequeno" type="button" id="mol-outra" data-i18n="ia.outra">Outra molécula</button>
+        </figcaption>
+        <p class="rotulo-real"><span class="ponto"></span><span data-i18n="ia.real">Estrutura desenhada do SMILES da base · solubilidade medida em laboratório</span></p>
+      </figure>
+    </div>
+  </div>
+</section>
 
 <!-- ============================ O LAÇO ============================ -->
 <section class="faixa claro" id="laco" aria-labelledby="t-laco">
@@ -240,10 +330,12 @@
         <p class="lide" data-i18n="baixar.lide">Um programa só: liga o nó, minera, envia HYX e mostra num painel a sua carteira e cada bloco que entra na cadeia. Sem instalar nada.</p>
       </header>
       <div class="baixar-caixa">
-        <a class="botao botao-luz botao-baixar" href="https://github.com/NOXqubit/hyurax/releases/latest/download/hyurax-windows-x86_64.zip" rel="noopener">
-          <span class="botao-baixar-texto"><span data-i18n="baixar.botao">Baixar para Windows</span><small data-i18n="baixar.sistema">Windows 10 e 11 · 64 bits</small></span>
+        <a class="botao botao-luz botao-baixar" href="https://github.com/NOXqubit/hyurax/releases/latest/download/hyurax-instalador-windows-x86_64.exe" rel="noopener">
+          <span class="botao-baixar-texto"><span data-i18n="baixar.botao">Baixar o instalador</span><small data-i18n="baixar.sistema">Windows 10 e 11 · 64 bits</small></span>
         </a>
         <ul class="baixar-links">
+          <li><a href="https://github.com/NOXqubit/hyurax/releases/latest/download/hyurax-windows-x86_64.zip" rel="noopener" data-i18n="baixar.zip">Prefere sem instalar? A versão .zip</a></li>
+          <li><a href="termos.html" data-i18n="baixar.termos">Leia os termos de uso antes</a></li>
           <li><a href="https://github.com/NOXqubit/hyurax/releases" rel="noopener" data-i18n="baixar.versoes">Todas as versões e as somas SHA-256</a></li>
           <li><a href="#rodar" data-i18n="baixar.outros">Linux, Mac ou Android? Rode o nó pelo terminal</a></li>
         </ul>
@@ -348,11 +440,24 @@
         <li><a href="https://github.com/NOXqubit/hyurax" rel="noopener" data-i18n="rodape.codigo">Código aberto no GitHub</a></li>
         <li><a href="https://github.com/NOXqubit/hyurax/blob/main/spec/HYURAX-SPEC-01.md" rel="noopener" data-i18n="rodape.spec">Especificação</a></li>
         <li><span data-i18n="rodape.licenca">Licença MIT ou Apache-2.0</span></li>
+        <li><a href="privacidade.html" data-i18n="rodape.privacidade">Privacidade e cookies</a></li>
+        <li><a href="termos.html" data-i18n="rodape.termos">Termos de uso</a></li>
+        <li><a href="https://github.com/NOXqubit/hyurax/blob/main/SECURITY.md" rel="noopener" data-i18n="rodape.seguranca">Segurança</a></li>
       </ul>
     </div>
     <p class="rodape-nota" data-i18n="rodape.antes">O Hyurax se chamava Auron até 19/09/2026. A tecnologia é a mesma.</p>
   </div>
 </footer>
+
+<!-- Aviso de privacidade: informa, não pede consentimento, porque não há nada
+     para consentir (sem cookies, sem rastreamento, sem terceiros). -->
+<aside class="aviso-privacidade" id="aviso-privacidade" aria-label="Privacidade" data-i18n-attr="aria-label:aviso.rotulo" hidden>
+  <p data-i18n="aviso.texto">Este site não usa cookies nem rastreamento, e nenhum dado seu vai para outra empresa. No seu navegador fica só a escolha de idioma.</p>
+  <div class="aviso-acoes">
+    <a href="privacidade.html" data-i18n="aviso.mais">Política de privacidade</a>
+    <button type="button" class="botao botao-luz botao-pequeno" id="aviso-ok" data-i18n="aviso.ok">Entendi</button>
+  </div>
+</aside>
 
 <script src="vendor/qrcode.min.js" defer></script>
 <script type="module" src="js/main.js"></script>

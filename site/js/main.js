@@ -6,6 +6,7 @@ import { Escritor, sha512, hex } from "./simulation/engine.js";
 import { iniciarTrabalho } from "./secoes/trabalho.js";
 import { iniciarConfira } from "./secoes/confira.js";
 import { iniciarEter } from "./secoes/eter.js";
+import { iniciarIa } from "./secoes/ia.js";
 
 const BITCOIN = "bc1qkp7d90t9tnmuv2rwq742pwc8pnet28a59zdzt7";
 document.documentElement.classList.add("js");
@@ -48,6 +49,22 @@ async function trocarIdioma(codigo) {
   secoes.forEach((s) => s.redesenhar());
   // Os blocos que já estavam na fita também mudam de língua.
   document.querySelectorAll("#fita-trilho li").forEach(textoDoBloco);
+}
+
+// ---------- aviso de privacidade ----------
+// Informa uma vez e sai. Não pede consentimento porque não há o que consentir:
+// sem cookies, sem rastreamento, sem terceiros. O "já vi" fica no navegador,
+// junto da escolha de idioma, e nada disso sai dele.
+function mostrarAvisoDePrivacidade() {
+  const aviso = document.getElementById("aviso-privacidade");
+  if (!aviso) return;
+  let visto = false;
+  try { visto = localStorage.getItem("hyurax-aviso-privacidade") === "1"; } catch { /* sem armazenamento: mostra */ }
+  aviso.hidden = visto;
+  document.getElementById("aviso-ok")?.addEventListener("click", () => {
+    aviso.hidden = true;
+    try { localStorage.setItem("hyurax-aviso-privacidade", "1"); } catch { /* segue */ }
+  });
 }
 
 // ---------- menu no celular ----------
@@ -213,7 +230,8 @@ function animarLaco() {
   montarDoacao();
   animarLaco();
   const ctx = { t, idioma: idiomaAtual, calmo };
-  secoes.push(iniciarTrabalho(ctx), iniciarConfira(ctx), iniciarEter(ctx));
+  secoes.push(iniciarTrabalho(ctx), iniciarConfira(ctx), iniciarEter(ctx), iniciarIa(ctx));
+  mostrarAvisoDePrivacidade();
   // A fita já nasce cheia: a gênese e os primeiros blocos, antes de o 3D carregar.
   const TIPOS = ["celular", "computador", "celular", "servidor", "celular", "computador"];
   for (let a = 0; a < 10; a++) await blocoVivo({ altura: a, tipo: a ? TIPOS[a % TIPOS.length] : "genese" });

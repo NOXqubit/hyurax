@@ -1,0 +1,7 @@
+# Canal para relatar falhas de segurança do Hyurax (site e programa).
+# Formato: RFC 9116.
+Contact: https://github.com/NOXqubit/hyurax/security/advisories/new
+Policy: https://github.com/NOXqubit/hyurax/blob/main/SECURITY.md
+Preferred-Languages: pt, en
+Canonical: https://noxqubit.github.io/hyurax/.well-known/security.txt
+Expires: 2027-09-26T00:00:00.000Z
