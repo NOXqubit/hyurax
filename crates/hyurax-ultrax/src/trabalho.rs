@@ -49,6 +49,8 @@ const DIFUSAO_TAXA_DEN: i64 = 5;
 
 /// Bytes do resultado da mochila: `u64` do valor ótimo e 32 bytes de máscara.
 pub const MOCHILA_RESULTADO_LEN: usize = 40;
+/// Mais parâmetros extras que isso, nenhum tipo leva.
+pub const PARAMETROS_MAX: usize = 12;
 
 /// O que o trabalho é, para quem olha a tela.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -63,6 +65,10 @@ pub enum Categoria {
     Verificacao,
     /// Medir e testar a rede.
     Rede,
+    /// Biologia computacional: genética de populações, melhoramento.
+    Biologia,
+    /// Química computacional: triagem de moléculas.
+    Quimica,
 }
 
 impl Categoria {
@@ -74,6 +80,8 @@ impl Categoria {
             Self::Ia => "AI WORK",
             Self::Verificacao => "VERIFICATION WORK",
             Self::Rede => "NETWORK WORK",
+            Self::Biologia => "COMPUTATIONAL BIOLOGY",
+            Self::Quimica => "COMPUTATIONAL CHEMISTRY",
         }
     }
 }
@@ -138,11 +146,37 @@ pub enum TipoDeTrabalho {
     /// Treino de uma rede neural que prevê a solubilidade de moléculas reais.
     /// `tamanho` é o lote; `passos`, os passos de descida do gradiente.
     Ia,
+    /// Genética de populações (Wright-Fisher). `tamanho` = indivíduos
+    /// diploides, `passos` = gerações; parâmetros em [`crate::genetica`].
+    Genetica,
+    /// Melhoramento de culturas: QTL aditivos, ambiente e seleção.
+    /// `tamanho` = indivíduos, `passos` = gerações; parâmetros em
+    /// [`crate::melhoramento`].
+    Melhoramento,
+    /// Rotas (caixeiro-viajante) por 2-opt. `tamanho` = cidades, `passos` =
+    /// teto de passadas; parâmetros em [`crate::rotas`].
+    Rotas,
+    /// Triagem de moléculas reais de um catálogo. `tamanho` = moléculas da
+    /// faixa; parâmetros em [`crate::triagem`].
+    Triagem,
 }
 
 impl TipoDeTrabalho {
     /// Todos, na ordem do código.
-    pub const TODOS: [Self; 4] = [Self::Matriz, Self::Mochila, Self::Difusao, Self::Ia];
+    pub const TODOS: [Self; 8] = [
+        Self::Matriz,
+        Self::Mochila,
+        Self::Difusao,
+        Self::Ia,
+        Self::Genetica,
+        Self::Melhoramento,
+        Self::Rotas,
+        Self::Triagem,
+    ];
+
+    /// Os que o worker LAB gera sozinho, em rodízio. Os científicos só rodam
+    /// quando um JOB pede, com os parâmetros de quem pediu.
+    pub const ROTACAO_LAB: [Self; 4] = [Self::Matriz, Self::Mochila, Self::Difusao, Self::Ia];
 
     /// Código na codificação canônica.
     pub fn codigo(self) -> u8 {
@@ -151,6 +185,22 @@ impl TipoDeTrabalho {
             Self::Mochila => 2,
             Self::Difusao => 3,
             Self::Ia => 4,
+            Self::Genetica => 5,
+            Self::Melhoramento => 6,
+            Self::Rotas => 7,
+            Self::Triagem => 8,
+        }
+    }
+
+    /// Quantos parâmetros extras o tipo leva na especificação. Os quatro
+    /// primeiros não levam nenhum, e a codificação deles não muda.
+    pub fn parametros(self) -> usize {
+        match self {
+            Self::Matriz | Self::Mochila | Self::Difusao | Self::Ia => 0,
+            Self::Genetica => crate::genetica::PARAMETROS,
+            Self::Melhoramento => crate::melhoramento::PARAMETROS,
+            Self::Rotas => crate::rotas::PARAMETROS,
+            Self::Triagem => crate::triagem::PARAMETROS,
         }
     }
 
@@ -166,6 +216,10 @@ impl TipoDeTrabalho {
             Self::Mochila => "knapsack",
             Self::Difusao => "diffusion",
             Self::Ia => "ai-training",
+            Self::Genetica => "population-genetics",
+            Self::Melhoramento => "crop-breeding",
+            Self::Rotas => "routing",
+            Self::Triagem => "molecular-screening",
         }
     }
 
@@ -176,6 +230,10 @@ impl TipoDeTrabalho {
             Self::Mochila => "otimização da mochila",
             Self::Difusao => "simulação de difusão de calor",
             Self::Ia => "treino de rede neural (solubilidade de moléculas)",
+            Self::Genetica => "genética de populações (Wright-Fisher)",
+            Self::Melhoramento => "melhoramento de culturas (QTL e ambiente)",
+            Self::Rotas => "otimização de rotas (2-opt)",
+            Self::Triagem => "triagem de moléculas reais",
         }
     }
 
@@ -183,8 +241,10 @@ impl TipoDeTrabalho {
     pub fn categoria(self) -> Categoria {
         match self {
             Self::Matriz | Self::Difusao => Categoria::Matematico,
-            Self::Mochila => Categoria::Otimizacao,
+            Self::Mochila | Self::Rotas => Categoria::Otimizacao,
             Self::Ia => Categoria::Ia,
+            Self::Genetica | Self::Melhoramento => Categoria::Biologia,
+            Self::Triagem => Categoria::Quimica,
         }
     }
 
@@ -192,7 +252,9 @@ impl TipoDeTrabalho {
     pub fn metodo(self) -> MetodoDeVerificacao {
         match self {
             Self::Matriz => MetodoDeVerificacao::Freivalds,
-            Self::Mochila | Self::Difusao | Self::Ia => MetodoDeVerificacao::Recomputacao,
+            Self::Mochila | Self::Difusao | Self::Ia | Self::Genetica | Self::Melhoramento | Self::Rotas | Self::Triagem => {
+                MetodoDeVerificacao::Recomputacao
+            }
         }
     }
 }
@@ -221,6 +283,10 @@ pub enum ErroDeTrabalho {
     Cancelado,
     /// Método de verificação e forma de instância que não combinam.
     Combinacao(&'static str),
+    /// Parâmetros de um tipo científico fora da faixa, ou em número errado.
+    Parametros(String),
+    /// O tipo existe na codificação, mas o motor dele não está pronto.
+    SemMotor(&'static str),
 }
 
 impl fmt::Display for ErroDeTrabalho {
@@ -234,6 +300,8 @@ impl fmt::Display for ErroDeTrabalho {
             Self::Codec(e) => write!(f, "{e}"),
             Self::Cancelado => write!(f, "execução cancelada"),
             Self::Combinacao(motivo) => write!(f, "combinação inválida: {motivo}"),
+            Self::Parametros(motivo) => write!(f, "parâmetros inválidos: {motivo}"),
+            Self::SemMotor(motor) => write!(f, "o motor de {motor} ainda não está implementado"),
         }
     }
 }
@@ -262,16 +330,40 @@ pub struct Especificacao {
     tipo: TipoDeTrabalho,
     tamanho: u32,
     passos: u32,
+    /// Parâmetros extras dos tipos científicos; só os `n_parametros`
+    /// primeiros valem, o resto é zero.
+    parametros: [u32; PARAMETROS_MAX],
+    n_parametros: u8,
 }
 
 impl Especificacao {
-    /// Monta e valida. `passos` só vale para a difusão; nos outros tipos é 0.
+    /// Monta e valida um tipo sem parâmetros extras. `passos` só vale para a
+    /// difusão e a IA; na matriz e na mochila é 0.
     pub fn nova(tipo: TipoDeTrabalho, tamanho: u32, passos: u32) -> Result<Self, ErroDeTrabalho> {
+        Self::nova_com(tipo, tamanho, passos, &[])
+    }
+
+    /// Monta e valida com parâmetros extras. Cada tipo exige exatamente
+    /// [`TipoDeTrabalho::parametros`] deles, e o motor do tipo confere as
+    /// faixas.
+    pub fn nova_com(tipo: TipoDeTrabalho, tamanho: u32, passos: u32, parametros: &[u32]) -> Result<Self, ErroDeTrabalho> {
+        if parametros.len() != tipo.parametros() {
+            return Err(ErroDeTrabalho::Parametros(format!(
+                "{} leva {} parâmetro(s), vieram {}",
+                tipo.nome(),
+                tipo.parametros(),
+                parametros.len()
+            )));
+        }
         let (minimo, maximo) = match tipo {
             TipoDeTrabalho::Matriz => (1, MATRIZ_LADO_MAX),
             TipoDeTrabalho::Mochila => (1, MOCHILA_ITENS_MAX),
             TipoDeTrabalho::Difusao => (2, DIFUSAO_GRADE_MAX),
             TipoDeTrabalho::Ia => (1, ia::LOTE_MAX),
+            TipoDeTrabalho::Genetica => crate::genetica::TAMANHO,
+            TipoDeTrabalho::Melhoramento => crate::melhoramento::TAMANHO,
+            TipoDeTrabalho::Rotas => crate::rotas::TAMANHO,
+            TipoDeTrabalho::Triagem => crate::triagem::TAMANHO,
         };
         if !(minimo..=maximo).contains(&tamanho) {
             return Err(ErroDeTrabalho::Tamanho { tipo, valor: tamanho, minimo, maximo });
@@ -280,11 +372,32 @@ impl Especificacao {
             TipoDeTrabalho::Difusao => (1..=DIFUSAO_PASSOS_MAX).contains(&passos),
             TipoDeTrabalho::Ia => (1..=ia::PASSOS_MAX).contains(&passos),
             TipoDeTrabalho::Matriz | TipoDeTrabalho::Mochila => passos == 0,
+            TipoDeTrabalho::Genetica => (crate::genetica::PASSOS.0..=crate::genetica::PASSOS.1).contains(&passos),
+            TipoDeTrabalho::Melhoramento => (crate::melhoramento::PASSOS.0..=crate::melhoramento::PASSOS.1).contains(&passos),
+            TipoDeTrabalho::Rotas => (crate::rotas::PASSOS.0..=crate::rotas::PASSOS.1).contains(&passos),
+            TipoDeTrabalho::Triagem => (crate::triagem::PASSOS.0..=crate::triagem::PASSOS.1).contains(&passos),
         };
         if !passos_ok {
             return Err(ErroDeTrabalho::Passos(passos));
         }
-        Ok(Self { tipo, tamanho, passos })
+        match tipo {
+            TipoDeTrabalho::Matriz | TipoDeTrabalho::Mochila | TipoDeTrabalho::Difusao | TipoDeTrabalho::Ia => {}
+            TipoDeTrabalho::Genetica => crate::genetica::validar(tamanho, passos, parametros)?,
+            TipoDeTrabalho::Melhoramento => crate::melhoramento::validar(tamanho, passos, parametros)?,
+            TipoDeTrabalho::Rotas => crate::rotas::validar(tamanho, passos, parametros)?,
+            TipoDeTrabalho::Triagem => crate::triagem::validar(tamanho, passos, parametros)?,
+        }
+        let mut fixos = [0u32; PARAMETROS_MAX];
+        for (destino, valor) in fixos.iter_mut().zip(parametros) {
+            *destino = *valor;
+        }
+        let n_parametros = u8::try_from(parametros.len()).map_err(|_| ErroDeTrabalho::Parametros("parâmetros demais".into()))?;
+        Ok(Self { tipo, tamanho, passos, parametros: fixos, n_parametros })
+    }
+
+    /// Os parâmetros extras (vazio nos tipos antigos).
+    pub fn parametros(&self) -> &[u32] {
+        self.parametros.get(..usize::from(self.n_parametros)).unwrap_or(&[])
     }
 
     /// O tipo.
@@ -302,11 +415,19 @@ impl Especificacao {
         self.passos
     }
 
-    /// `u8 tipo || u32 tamanho || u32 passos`.
+    /// `u8 tipo || u32 tamanho || u32 passos`, e nos tipos com parâmetros
+    /// extras `|| u8 n || n × u32`. Os tipos antigos não ganham nada: o
+    /// TASK_ID deles continua o mesmo.
     pub fn codificar(&self, w: &mut Writer) {
         w.u8(self.tipo.codigo());
         w.u32(self.tamanho);
         w.u32(self.passos);
+        if self.tipo.parametros() > 0 {
+            w.u8(self.n_parametros);
+            for p in self.parametros() {
+                w.u32(*p);
+            }
+        }
     }
 
     /// O inverso de [`Self::codificar`], validando de novo.
@@ -315,7 +436,18 @@ impl Especificacao {
         let tipo = TipoDeTrabalho::de_codigo(codigo).ok_or(ErroDeTrabalho::TipoDesconhecido(codigo))?;
         let tamanho = r.u32()?;
         let passos = r.u32()?;
-        Self::nova(tipo, tamanho, passos)
+        if tipo.parametros() == 0 {
+            return Self::nova(tipo, tamanho, passos);
+        }
+        let n = usize::from(r.u8()?);
+        if n != tipo.parametros() {
+            return Err(ErroDeTrabalho::Parametros(format!("{} leva {} parâmetro(s), vieram {n}", tipo.nome(), tipo.parametros())));
+        }
+        let mut parametros = Vec::with_capacity(n);
+        for _ in 0..n {
+            parametros.push(r.u32()?);
+        }
+        Self::nova_com(tipo, tamanho, passos, &parametros)
     }
 
     /// Texto curto para o painel: `1024 × 1024`, `200 itens`, `64 × 64, 500 passos`.
@@ -325,6 +457,10 @@ impl Especificacao {
             TipoDeTrabalho::Mochila => format!("{} itens", self.tamanho),
             TipoDeTrabalho::Difusao => format!("grade {0} × {0}, {1} passos", self.tamanho, self.passos),
             TipoDeTrabalho::Ia => format!("lote de {}, {} passos", self.tamanho, self.passos),
+            TipoDeTrabalho::Genetica => crate::genetica::resumo(self),
+            TipoDeTrabalho::Melhoramento => crate::melhoramento::resumo(self),
+            TipoDeTrabalho::Rotas => crate::rotas::resumo(self),
+            TipoDeTrabalho::Triagem => crate::triagem::resumo(self),
         }
     }
 
@@ -345,6 +481,10 @@ impl Especificacao {
             TipoDeTrabalho::Matriz => Some(t.saturating_mul(t).saturating_mul(t)),
             TipoDeTrabalho::Difusao => Some(t.saturating_mul(t).saturating_mul(u64::from(self.passos))),
             TipoDeTrabalho::Mochila => None,
+            TipoDeTrabalho::Genetica => Some(crate::genetica::operacoes(self)),
+            TipoDeTrabalho::Melhoramento => Some(crate::melhoramento::operacoes(self)),
+            TipoDeTrabalho::Rotas => Some(crate::rotas::operacoes(self)),
+            TipoDeTrabalho::Triagem => Some(crate::triagem::operacoes(self)),
         }
     }
 
@@ -377,6 +517,10 @@ impl Especificacao {
                 .saturating_mul(u64::from(self.passos))
                 .saturating_mul(8)
                 .saturating_add(64 * 1024),
+            TipoDeTrabalho::Genetica => crate::genetica::memoria_bytes(self),
+            TipoDeTrabalho::Melhoramento => crate::melhoramento::memoria_bytes(self),
+            TipoDeTrabalho::Rotas => crate::rotas::memoria_bytes(self),
+            TipoDeTrabalho::Triagem => crate::triagem::memoria_bytes(self),
         }
     }
 }
@@ -441,6 +585,10 @@ pub fn executar(
         TipoDeTrabalho::Mochila => executar_mochila(esp.tamanho, semente, continuar),
         TipoDeTrabalho::Difusao => executar_difusao(esp.tamanho, esp.passos, semente, continuar),
         TipoDeTrabalho::Ia => executar_ia(esp, semente, continuar),
+        TipoDeTrabalho::Genetica => crate::genetica::executar(esp, semente, continuar),
+        TipoDeTrabalho::Melhoramento => crate::melhoramento::executar(esp, semente, continuar),
+        TipoDeTrabalho::Rotas => crate::rotas::executar(esp, semente, continuar),
+        TipoDeTrabalho::Triagem => crate::triagem::executar(esp, semente, continuar),
     }
 }
 
@@ -477,6 +625,10 @@ pub fn verificar_controlado(
                 Err(Recusa("os pesos treinados diferem da recomputação".into()))
             })
         }
+        TipoDeTrabalho::Genetica => crate::genetica::verificar(esp, semente, resultado, continuar),
+        TipoDeTrabalho::Melhoramento => crate::melhoramento::verificar(esp, semente, resultado, continuar),
+        TipoDeTrabalho::Rotas => crate::rotas::verificar(esp, semente, resultado, continuar),
+        TipoDeTrabalho::Triagem => crate::triagem::verificar(esp, semente, resultado, continuar),
     }
 }
 
@@ -489,6 +641,10 @@ pub fn operacoes_de_verificacao(esp: &Especificacao) -> u64 {
             t.saturating_mul(t).saturating_mul(3).saturating_mul(RODADAS_FREIVALDS as u64)
         }
         TipoDeTrabalho::Mochila | TipoDeTrabalho::Difusao | TipoDeTrabalho::Ia => esp.operacoes_maximas(),
+        TipoDeTrabalho::Genetica => crate::genetica::operacoes_de_verificacao(esp),
+        TipoDeTrabalho::Melhoramento => crate::melhoramento::operacoes_de_verificacao(esp),
+        TipoDeTrabalho::Rotas => crate::rotas::operacoes_de_verificacao(esp),
+        TipoDeTrabalho::Triagem => crate::triagem::operacoes_de_verificacao(esp),
     }
 }
 

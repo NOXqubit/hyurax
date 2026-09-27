@@ -15,7 +15,9 @@
 //! - [`prova`]: o registro de prova assinado pelo worker;
 //! - [`validador`]: compara resultados de workers diferentes e dá parecer;
 //! - [`reputacao`]: o histórico de cada worker;
-//! - [`pontuacao`]: o Work Score, uma medida de contribuição.
+//! - [`pontuacao`]: o Work Score, uma medida de contribuição;
+//! - os motores científicos, fora do rodízio LAB e só por JOB: [`genetica`],
+//!   [`melhoramento`], [`rotas`] e [`triagem`] (`docs/COMPUTACAO-CIENTIFICA.md`).
 //!
 //! **Work Score não é dinheiro.** Nada aqui converte operação em HYX. Uma
 //! recompensa, se um dia existir, depende de regra econômica publicada, fora
@@ -33,10 +35,14 @@ macro_rules! dominio {
     };
 }
 
+pub mod genetica;
 pub mod ia;
+pub mod melhoramento;
 pub mod pontuacao;
 pub mod prova;
 pub mod reputacao;
+pub mod rotas;
 pub mod tarefa;
 pub mod trabalho;
+pub mod triagem;
 pub mod validador;

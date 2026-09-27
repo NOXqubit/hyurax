@@ -163,6 +163,11 @@ fn indice(tipo: TipoDeTrabalho) -> usize {
         TipoDeTrabalho::Mochila => 1,
         TipoDeTrabalho::Difusao => 2,
         TipoDeTrabalho::Ia => 3,
+        // os científicos têm ritmo e contagem próprios, fora dos quatro do LAB
+        TipoDeTrabalho::Genetica => 4,
+        TipoDeTrabalho::Melhoramento => 5,
+        TipoDeTrabalho::Rotas => 6,
+        TipoDeTrabalho::Triagem => 7,
     }
 }
 
@@ -703,8 +708,8 @@ impl Ultrax {
         } else {
             // os desafios não tiram a vez de ninguém: a rotação conta só as normais
             let normais = k.saturating_sub(k / DESAFIO_A_CADA);
-            let tipo = TipoDeTrabalho::TODOS
-                .get(usize::try_from(normais % TipoDeTrabalho::TODOS.len() as u64).unwrap_or(0))
+            let tipo = TipoDeTrabalho::ROTACAO_LAB
+                .get(usize::try_from(normais % TipoDeTrabalho::ROTACAO_LAB.len() as u64).unwrap_or(0))
                 .copied()
                 .unwrap_or(TipoDeTrabalho::Matriz);
             let esp = self.dimensionar(tipo)?;
@@ -801,6 +806,10 @@ impl Ultrax {
                     }
                     g = g.saturating_mul(3) / 4;
                 }
+            }
+            // os tipos científicos só rodam por JOB, com os parâmetros de quem pediu
+            TipoDeTrabalho::Genetica | TipoDeTrabalho::Melhoramento | TipoDeTrabalho::Rotas | TipoDeTrabalho::Triagem => {
+                return Err(format!("{} só roda por JOB, não no rodízio LAB", tipo.nome()));
             }
         };
         if cabe(&esp) {
