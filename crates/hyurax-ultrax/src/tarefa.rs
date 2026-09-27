@@ -139,6 +139,29 @@ pub enum Instancia {
     /// Todos os workers recebem a mesma instância, para comparar resultados.
     /// É o modo da verificação por redundância.
     Compartilhada,
+    /// Unidade de um JOB: a semente é a da unidade, `H(DOMINIO_UNIDADE ||
+    /// JOB_ID || i)` (ver [`crate::job::semente_da_unidade`]), e vai inteira
+    /// na `origem`, então o `TASK_ID` fica preso a ela. O resultado depende
+    /// só do JOB e do índice: quem pediu refaz e confere, e dois nós
+    /// comparam o mesmo cálculo. Contra cópia entre workers da mesma
+    /// unidade, a redundância usa compromisso antes de revelar.
+    DeJob,
+}
+
+impl Instancia {
+    /// Código na codificação do `TASK_ID` e no histórico.
+    pub fn codigo(self) -> u8 {
+        match self {
+            Self::PorWorker => 1,
+            Self::Compartilhada => 2,
+            Self::DeJob => 3,
+        }
+    }
+
+    /// O inverso de [`Self::codigo`].
+    pub fn de_codigo(codigo: u8) -> Option<Self> {
+        [Self::PorWorker, Self::Compartilhada, Self::DeJob].into_iter().find(|i| i.codigo() == codigo)
+    }
 }
 
 /// Método e forma de instância precisam combinar, senão a verificação não
@@ -166,6 +189,9 @@ pub fn validar_combinacao(
         }
         (Instancia::PorWorker, m) if m == esp.tipo().metodo() => Ok(()),
         (Instancia::PorWorker, _) => Err(ErroDeTrabalho::Combinacao("o método não é o do tipo de trabalho")),
+        (Instancia::DeJob, Redundancia) => Ok(()),
+        (Instancia::DeJob, m) if m == esp.tipo().metodo() => Ok(()),
+        (Instancia::DeJob, _) => Err(ErroDeTrabalho::Combinacao("o método não é o do tipo de trabalho")),
     }
 }
 
@@ -190,6 +216,9 @@ pub struct Tarefa {
     pub estado: Estado,
     /// Todas as transições, na ordem.
     pub eventos: Vec<Evento>,
+    /// Em [`Instancia::DeJob`], a semente da unidade (que também é a
+    /// `origem`); `None` nas outras formas.
+    pub semente_fixa: Option<[u8; HASH_LEN]>,
 }
 
 impl Tarefa {
@@ -208,14 +237,18 @@ impl Tarefa {
         prazo_ms: u64,
     ) -> Result<Self, ErroDeTrabalho> {
         validar_combinacao(&especificacao, metodo, instancia)?;
+        let semente_fixa = match instancia {
+            Instancia::DeJob => Some(
+                <[u8; HASH_LEN]>::try_from(origem)
+                    .map_err(|_| ErroDeTrabalho::Combinacao("unidade de JOB precisa da semente de 64 bytes como origem"))?,
+            ),
+            Instancia::PorWorker | Instancia::Compartilhada => None,
+        };
         let mut w = Writer::new();
         w.raw(DOMINIO_TAREFA);
         especificacao.codificar(&mut w);
         w.u8(metodo.codigo());
-        w.u8(match instancia {
-            Instancia::PorWorker => 1,
-            Instancia::Compartilhada => 2,
-        });
+        w.u8(instancia.codigo());
         w.var_bytes(origem)?;
         w.u8(prioridade);
         w.u64(criada_ms);
@@ -231,6 +264,7 @@ impl Tarefa {
             prazo_ms,
             estado: Estado::Criada,
             eventos: vec![Evento { estado: Estado::Criada, instante_ms: criada_ms, nota: String::new() }],
+            semente_fixa,
         })
     }
 
@@ -262,6 +296,9 @@ impl Tarefa {
     /// entra, e a cópia se combate com compromisso antes de revelar (ver
     /// [`crate::validador::compromisso`]).
     pub fn semente_para(&self, worker: &[u8]) -> [u8; HASH_LEN] {
+        if let Some(semente) = self.semente_fixa {
+            return semente;
+        }
         let mut dados = DOMINIO_SEMENTE.to_vec();
         dados.extend_from_slice(&self.id);
         if self.instancia == Instancia::PorWorker {
@@ -281,10 +318,11 @@ mod testes {
     fn tarefa(instancia: Instancia) -> Tarefa {
         let esp = Especificacao::nova(TipoDeTrabalho::Matriz, 8, 0).unwrap();
         let metodo = match instancia {
-            Instancia::PorWorker => MetodoDeVerificacao::Freivalds,
+            Instancia::PorWorker | Instancia::DeJob => MetodoDeVerificacao::Freivalds,
             Instancia::Compartilhada => MetodoDeVerificacao::Redundancia,
         };
-        Tarefa::nova(esp, metodo, instancia, b"origem", 5, 1_000, 61_000).unwrap()
+        let origem: &[u8] = if instancia == Instancia::DeJob { &[7u8; 64] } else { b"origem" };
+        Tarefa::nova(esp, metodo, instancia, origem, 5, 1_000, 61_000).unwrap()
     }
 
     #[test]
@@ -346,6 +384,23 @@ mod testes {
         let c = tarefa(Instancia::Compartilhada);
         assert_eq!(c.semente_para(b"worker A"), c.semente_para(b"worker B"));
         assert_ne!(t.id, c.id, "a forma da instância faz parte do id");
+    }
+
+    #[test]
+    fn unidade_de_job_usa_a_semente_do_job_para_qualquer_worker() {
+        let j = tarefa(Instancia::DeJob);
+        assert_eq!(j.semente_para(b"worker A"), [7u8; 64]);
+        assert_eq!(j.semente_para(b"worker B"), [7u8; 64]);
+        let esp = Especificacao::nova(TipoDeTrabalho::Matriz, 8, 0).unwrap();
+        assert!(
+            Tarefa::nova(esp, MetodoDeVerificacao::Freivalds, Instancia::DeJob, b"curta", 0, 0, 1).is_err(),
+            "a origem de uma unidade de JOB é a semente inteira"
+        );
+        assert!(Tarefa::nova(esp, MetodoDeVerificacao::Redundancia, Instancia::DeJob, &[1u8; 64], 0, 0, 1).is_ok());
+        assert!(Tarefa::nova(esp, MetodoDeVerificacao::Recomputacao, Instancia::DeJob, &[1u8; 64], 0, 0, 1).is_err());
+        for i in [Instancia::PorWorker, Instancia::Compartilhada, Instancia::DeJob] {
+            assert_eq!(Instancia::de_codigo(i.codigo()), Some(i));
+        }
     }
 
     #[test]

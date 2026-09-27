@@ -487,8 +487,13 @@ impl Intervalos {
 
     /// `i` já foi concluída?
     pub fn contem(&self, i: u64) -> bool {
+        self.fim_da_faixa(i).is_some()
+    }
+
+    /// Se `i` está numa faixa, onde ela termina.
+    pub fn fim_da_faixa(&self, i: u64) -> Option<u64> {
         let k = self.faixas.partition_point(|&(_, y)| y <= i);
-        self.faixas.get(k).is_some_and(|&(x, _)| x <= i)
+        self.faixas.get(k).filter(|&&(x, _)| x <= i).map(|&(_, y)| y)
     }
 
     /// Quantas unidades concluídas.

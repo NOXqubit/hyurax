@@ -37,6 +37,7 @@ use hyurax_net::Rede;
 use hyurax_pow::ConfigMineracao;
 use hyurax_tx::{HYX, Tx};
 
+use crate::ciencia::Ciencia;
 use crate::seguranca::Seguranca;
 use crate::ultrax::{self, Ultrax};
 use crate::{Opcoes, carteira, envio, hex, hyx, maquinas, salvar, subir_rede, totp};
@@ -166,6 +167,8 @@ struct Painel {
     /// protege a cadeia e rende HYX; ele executa trabalho verificável e rende
     /// Work Score, sem conversão entre os dois.
     ultrax: Arc<Ultrax>,
+    /// O agendador de JOBs científicos, que entrega unidades ao ULTRAX.
+    ciencia: Arc<Ciencia>,
 }
 
 struct Evento {
@@ -661,6 +664,8 @@ fn ligar(o: Opcoes, rede: Arc<Rede>, partida: Partida, ajustes: &Ajustes) -> Res
             let _ = avisos.send((tipo, texto));
         }),
     );
+    let ciencia = Ciencia::abrir(&ambiente.dados, ultrax.worker(), VERSAO)?;
+    ciencia.ligar(&ultrax);
     let painel = Arc::new(Painel {
         ambiente,
         endereco: Mutex::new(endereco),
@@ -693,6 +698,7 @@ fn ligar(o: Opcoes, rede: Arc<Rede>, partida: Partida, ajustes: &Ajustes) -> Res
         maquinas: Mutex::new(ajustes.maquinas.clone()),
         maquinas_vistas: Mutex::new(Vec::new()),
         ultrax,
+        ciencia,
     });
     {
         let painel = Arc::clone(&painel);
@@ -1505,6 +1511,12 @@ fn responder_json(s: &mut TcpStream, resultado: Result<String, String>) -> std::
     }
 }
 
+/// Um parâmetro da parte `?a=1&b=2` do caminho, sem decodificar (só números e
+/// hexadecimal passam por aqui).
+fn parametro_da_url<'a>(caminho: &'a str, nome: &str) -> Option<&'a str> {
+    caminho.split_once('?')?.1.split('&').find_map(|par| par.split_once('=').filter(|(k, _)| *k == nome).map(|(_, v)| v))
+}
+
 fn atender(mut s: TcpStream, porta: u16, painel: &Painel, rede: &Arc<Rede>, o: &Opcoes) -> std::io::Result<()> {
     let Some(p) = ler_pedido(&mut s) else {
         return responder(&mut s, "400 Bad Request", "text/plain", b"pedido invalido");
@@ -1536,6 +1548,45 @@ fn atender(mut s: TcpStream, porta: u16, painel: &Painel, rede: &Arc<Rede>, o: &
                 responder(&mut s, "200 OK", "application/json; charset=utf-8", json.as_bytes())
             }
             "/api/termos" => responder(&mut s, "200 OK", "text/html; charset=utf-8", crate::termos::html().as_bytes()),
+            // Computação científica: só leitura, e nada com o programa trancado.
+            r if r.starts_with("/api/ciencia") && painel.trancado() => {
+                responder(&mut s, "403 Forbidden", "text/plain", b"programa trancado")
+            }
+            "/api/ciencia" => responder(&mut s, "200 OK", "application/json; charset=utf-8", painel.ciencia.json().as_bytes()),
+            "/api/ciencia/benchmarks" => {
+                let (rodando, ultimo) = painel.ciencia.benchmark.lock().map(|b| b.clone()).unwrap_or_default();
+                let json = format!(
+                    "{{\"rodando\":{rodando},\"ultimo\":{},\"registradas\":{}}}",
+                    if ultimo.is_empty() { "null".to_string() } else { ultimo },
+                    crate::bancada::registradas(&painel.ciencia)
+                );
+                responder(&mut s, "200 OK", "application/json; charset=utf-8", json.as_bytes())
+            }
+            "/api/ciencia/eventos" => {
+                let desde = parametro_da_url(&p.caminho, "desde").and_then(|v| v.parse::<u64>().ok()).unwrap_or(0);
+                responder(&mut s, "200 OK", "application/json; charset=utf-8", painel.ciencia.eventos_desde(desde).as_bytes())
+            }
+            r if r.starts_with("/api/ciencia/job/") => {
+                let resto = r.trim_start_matches("/api/ciencia/job/");
+                let (id_texto, sub) = resto.split_once('/').unwrap_or((resto, ""));
+                match (crate::ciencia::id_de_hex(id_texto), sub) {
+                    (Some(id), "") => match painel.ciencia.json_job(&id) {
+                        Some(j) => responder(&mut s, "200 OK", "application/json; charset=utf-8", j.as_bytes()),
+                        None => responder(&mut s, "404 Not Found", "text/plain", b"JOB desconhecido"),
+                    },
+                    (Some(id), "historico") => match painel.ciencia.historico_do_job(&id) {
+                        Some(j) => responder(&mut s, "200 OK", "application/json; charset=utf-8", j.as_bytes()),
+                        None => responder(&mut s, "404 Not Found", "text/plain", b"sem historico"),
+                    },
+                    (Some(id), arquivo) if arquivo.starts_with("relatorio.") => {
+                        match crate::relatorio::gerar(&painel.ciencia, &id, arquivo.trim_start_matches("relatorio.")) {
+                            Some((bytes, tipo)) => responder(&mut s, "200 OK", tipo, &bytes),
+                            None => responder(&mut s, "404 Not Found", "text/plain", b"relatorio desconhecido"),
+                        }
+                    }
+                    _ => responder(&mut s, "404 Not Found", "text/plain", b"nao existe"),
+                }
+            }
             // As matrizes da tarefa da GPU: só para a janela deste computador.
             r if r.starts_with("/api/ultrax/gpu/entrada/") => {
                 let numero = r.trim_start_matches("/api/ultrax/gpu/entrada/").parse::<u32>().ok();
@@ -1597,6 +1648,44 @@ fn atender(mut s: TcpStream, porta: u16, painel: &Painel, rede: &Arc<Rede>, o: &
             responder_json(&mut s, r)
         }
         "/api/enviar" => responder_json(&mut s, enviar_do_painel(painel, rede, o, &campos)),
+        "/api/ciencia/benchmark" => {
+            let ja = painel.ciencia.benchmark.lock().map(|mut b| std::mem::replace(&mut b.0, true)).unwrap_or(true);
+            if !ja {
+                let (ciencia, nucleos) = (Arc::clone(&painel.ciencia), painel.nucleos);
+                painel.registrar("ciencia", "ULTRA BENCHMARK começou: mede agendador, motores, escala e um JOB de ponta a ponta".into());
+                std::thread::spawn(move || {
+                    let r = crate::bancada::rodar(&ciencia, nucleos, &mut |_| {});
+                    if let Ok(mut b) = ciencia.benchmark.lock() {
+                        *b = (false, r.unwrap_or_else(|e| format!("{{\"erro\":{}}}", texto_json(&e))));
+                    }
+                });
+            }
+            responder_json(&mut s, Ok(format!("{{\"rodando\":true,\"ja_estava\":{ja}}}")))
+        }
+        "/api/ciencia/estimar" => {
+            let r = crate::ciencia::pedido_do_formulario(&campos).and_then(|pedido| painel.ciencia.estimar(pedido));
+            responder_json(&mut s, r)
+        }
+        "/api/ciencia/submeter" => {
+            let r = crate::ciencia::pedido_do_formulario(&campos)
+                .and_then(|pedido| painel.ciencia.submeter(pedido))
+                .map(|id| format!("{{\"id\":\"{}\"}}", hex(&id)));
+            if let Ok(j) = &r {
+                painel.registrar("ciencia", format!("JOB submetido: {j}"));
+            }
+            responder_json(&mut s, r)
+        }
+        r if r.starts_with("/api/ciencia/job/") => {
+            let resto = r.trim_start_matches("/api/ciencia/job/");
+            let r = match resto.split_once('/') {
+                Some((id_texto, acao)) => crate::ciencia::id_de_hex(id_texto)
+                    .ok_or_else(|| "JOB_ID inválido".to_string())
+                    .and_then(|id| painel.ciencia.mudar(&id, acao))
+                    .map(|()| "{\"ok\":true}".to_string()),
+                None => Err("falta a ação: pausar, retomar ou cancelar".into()),
+            };
+            responder_json(&mut s, r)
+        }
         "/api/seguranca/comecar" => responder_json(&mut s, seguranca_comecar(painel)),
         "/api/seguranca/confirmar" => responder_json(&mut s, seguranca_confirmar(painel, &campos)),
         "/api/seguranca/mudar" => responder_json(&mut s, seguranca_mudar(painel, &campos)),

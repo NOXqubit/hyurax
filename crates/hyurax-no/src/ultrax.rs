@@ -47,6 +47,7 @@ use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 use hyurax_crypto::{HASH_LEN, PUBKEY_LEN, SECRET_LEN, ed25519_public_key, sha512};
 use hyurax_ultrax::ia;
+use hyurax_ultrax::job::semente_da_unidade;
 use hyurax_ultrax::pontuacao::WorkScore;
 use hyurax_ultrax::prova::{RegistroDeProva, chave_do_worker};
 use hyurax_ultrax::reputacao::Reputacao;
@@ -253,6 +254,84 @@ fn mib(bytes: u64) -> f64 {
     bytes as f64 / (1024.0 * 1024.0)
 }
 
+/// Uma unidade de JOB que o agendador entrega ao worker.
+#[derive(Clone, Copy, Debug)]
+pub struct PedidoDeUnidade {
+    /// `JOB_ID`.
+    pub job: [u8; HASH_LEN],
+    /// Índice da unidade no JOB.
+    pub indice: u64,
+    /// A especificação da unidade, já derivada.
+    pub especificacao: Especificacao,
+    /// A semente da unidade, `H(DOMINIO_UNIDADE || JOB_ID || i)`.
+    pub semente: [u8; HASH_LEN],
+    /// Prioridade na fila (a LAB usa 100).
+    pub prioridade: u8,
+    /// Prazo da unidade, em milissegundos desde 1970.
+    pub prazo_ms: u64,
+}
+
+/// Como uma unidade de JOB saiu do worker.
+#[derive(Clone, Debug)]
+pub struct DesfechoDeUnidade {
+    /// `JOB_ID`.
+    pub job: [u8; HASH_LEN],
+    /// Índice da unidade.
+    pub indice: u64,
+    /// `TASK_ID` da tarefa que levou a unidade.
+    pub tarefa: [u8; HASH_LEN],
+    /// Estado em que ela parou. [`Estado::Recusada`] não é final: o worker
+    /// repete uma vez antes de desistir.
+    pub estado: Estado,
+    /// Os bytes do resultado, só quando liquidada.
+    pub resultado: Option<Vec<u8>>,
+    /// O registro de prova assinado, quando houve execução.
+    pub registro: Option<RegistroDeProva>,
+    /// Operações gastas conferindo.
+    pub operacoes_verificacao: u64,
+    /// Cálculo puro da execução, em ms.
+    pub ms_calculo: u64,
+    /// Cálculo puro da conferência, em ms.
+    pub ms_verificacao: u64,
+    /// Memória reservada, em bytes.
+    pub memoria: u64,
+    /// O nome da GPU, quando a conta foi feita nela.
+    pub gpu: Option<String>,
+    /// O motivo, quando não foi liquidada.
+    pub nota: String,
+    /// Recusada duas vezes: o worker desistiu por erro que se repete.
+    pub abandonada: bool,
+}
+
+/// Uma unidade de JOB rodando agora, com o progresso da fase atual.
+#[derive(Clone, Copy, Debug)]
+pub struct UnidadeAtiva {
+    /// `JOB_ID`.
+    pub job: [u8; HASH_LEN],
+    /// Índice da unidade.
+    pub indice: u64,
+    /// Linha de CPU.
+    pub linha: u32,
+    /// Operações feitas na fase atual (execução ou verificação).
+    pub feitas: u64,
+    /// Total da fase atual.
+    pub total: u64,
+    /// Estado (executando ou verificando).
+    pub estado: Estado,
+    /// Quando começou, em ms desde 1970.
+    pub inicio_ms: u64,
+}
+
+/// Quem entrega unidades de JOB ao worker e recebe como terminaram.
+pub trait Agendador: Send + Sync {
+    /// A próxima unidade para a fila, se houver.
+    fn proxima(&self, agora_ms: u64) -> Option<PedidoDeUnidade>;
+    /// A unidade começou a executar nesta linha.
+    fn comecou(&self, job: &[u8; HASH_LEN], indice: u64, linha: u32, entrada: Option<[u8; HASH_LEN]>);
+    /// A unidade terminou, foi recusada uma vez, cancelada ou venceu.
+    fn terminou(&self, desfecho: DesfechoDeUnidade);
+}
+
 /// Uma tarefa na fila, com o que o worker precisa saber além dela.
 struct NaFila {
     tarefa: Tarefa,
@@ -261,8 +340,11 @@ struct NaFila {
     /// Quantas vezes já foi recusada. Uma recusa volta para a fila uma vez,
     /// para separar defeito passageiro de erro que se repete.
     recusas: u8,
-    /// A origem que entrou no `TASK_ID`, guardada para a auditoria refazer.
-    origem: [u8; 32],
+    /// A origem que entrou no `TASK_ID`, guardada para a auditoria refazer:
+    /// 32 bytes sorteados na LAB, a semente inteira (64) numa unidade de JOB.
+    origem: Vec<u8>,
+    /// `(JOB_ID, índice)` quando é unidade de JOB.
+    job: Option<([u8; HASH_LEN], u64)>,
 }
 
 /// O que a execução deixa para a conferência.
@@ -311,6 +393,8 @@ struct Ativa {
     inicio_ms: u64,
     memoria: u64,
     entrada: Option<[u8; HASH_LEN]>,
+    /// `(JOB_ID, índice)` quando é unidade de JOB.
+    job: Option<([u8; HASH_LEN], u64)>,
 }
 
 /// Os números acumulados, gravados em `PASTA/ultrax/placar.txt`.
@@ -452,6 +536,9 @@ pub struct Ultrax {
     nucleos: u32,
     /// O dono ligou o ULTRAX.
     pub ligado: AtomicBool,
+    /// Gera trabalho LAB quando não há unidade de JOB. Desligado, a fila só
+    /// recebe unidades de JOB (é o que `hyurax-no ciencia rodar` usa).
+    pub lab: AtomicBool,
     /// Quantas linhas trabalham ao mesmo tempo.
     pub linhas: AtomicU32,
     /// Fatia da CPU de cada linha, de 10 a 100 por cento.
@@ -481,7 +568,9 @@ pub struct Ultrax {
     historico: Mutex<VecDeque<Lembranca>>,
     telemetria: Mutex<VecDeque<Marca>>,
     /// Operações por segundo de cálculo puro, por tipo (média que esquece devagar).
-    ritmo: Mutex<[f64; 4]>,
+    ritmo: Mutex<[f64; 8]>,
+    /// Quem entrega unidades de JOB, quando há.
+    agendador: Mutex<Option<Arc<dyn Agendador>>>,
     /// O melhor modelo de IA e o último treino, gravados em `modelo.txt`.
     modelo: Mutex<Modelo>,
     aviso: Aviso,
@@ -519,6 +608,7 @@ impl Ultrax {
             segredo,
             nucleos,
             ligado: AtomicBool::new(partida.ligado),
+            lab: AtomicBool::new(true),
             linhas: AtomicU32::new(partida.linhas.clamp(1, nucleos)),
             uso_cpu: AtomicU32::new(partida.uso_cpu.clamp(10, 100)),
             memoria_mib: AtomicU32::new(partida.memoria_mib.clamp(MEMORIA_MIN_MIB, MEMORIA_MAX_MIB)),
@@ -538,7 +628,8 @@ impl Ultrax {
             placar: Mutex::new(placar),
             historico: Mutex::new(VecDeque::new()),
             telemetria: Mutex::new(VecDeque::new()),
-            ritmo: Mutex::new([RITMO_INICIAL; 4]),
+            ritmo: Mutex::new([RITMO_INICIAL; 8]),
+            agendador: Mutex::new(None),
             modelo: Mutex::new(Modelo::default()),
             aviso,
             pasta,
@@ -564,6 +655,56 @@ impl Ultrax {
             let u = Arc::clone(self);
             std::thread::spawn(move || u.linha(i));
         }
+    }
+
+    /// Liga o agendador de JOBs: dali em diante, a fila pede unidades a ele
+    /// antes de gerar trabalho LAB.
+    pub fn ligar_agendador(&self, agendador: Arc<dyn Agendador>) {
+        if let Ok(mut a) = self.agendador.lock() {
+            *a = Some(agendador);
+        }
+    }
+
+    fn agendador(&self) -> Option<Arc<dyn Agendador>> {
+        self.agendador.lock().ok().and_then(|a| a.clone())
+    }
+
+    /// Tarefas na fila ou rodando (para esperar tudo terminar).
+    pub fn ocupado(&self) -> bool {
+        self.fila.lock().is_ok_and(|f| !f.is_empty()) || self.ativas.lock().is_ok_and(|a| !a.is_empty())
+    }
+
+    /// As unidades de JOB rodando agora. É o que a tela usa para mostrar o
+    /// progresso real de cada unidade.
+    pub fn unidades_ativas(&self) -> Vec<UnidadeAtiva> {
+        self.ativas.lock().map_or_else(
+            |_| Vec::new(),
+            |a| {
+                a.iter()
+                    .filter_map(|x| {
+                        x.job.map(|(job, indice)| UnidadeAtiva {
+                            job,
+                            indice,
+                            linha: x.linha,
+                            feitas: x.feitas.load(Ordering::Relaxed).min(x.total),
+                            total: x.total,
+                            estado: x.estado,
+                            inicio_ms: x.inicio_ms,
+                        })
+                    })
+                    .collect()
+            },
+        )
+    }
+
+    /// Fatia da CPU de cada linha, em %.
+    pub fn uso_cpu(&self) -> u32 {
+        self.uso_cpu.load(Ordering::Relaxed)
+    }
+
+    /// Ritmo medido (operações por segundo de cálculo puro) de um tipo.
+    pub fn ritmo_de(&self, tipo: TipoDeTrabalho) -> f64 {
+        self.ritmo.lock().map_or(RITMO_INICIAL, |r| r.get(indice(tipo)).copied().unwrap_or(RITMO_INICIAL))
     }
 
     /// `WORKER_ID`: a chave pública Ed25519 deste worker.
@@ -653,7 +794,14 @@ impl Ultrax {
                 self.expirar_na_gpu();
                 let quer = (self.linhas.load(Ordering::Relaxed) as usize).saturating_add(FILA_EXTRA);
                 while self.ligado.load(Ordering::Relaxed) && self.fila.lock().map_or(usize::MAX, |f| f.len()) < quer {
-                    match self.gerar(agora_ms()) {
+                    // unidade de JOB primeiro; a LAB só preenche o que sobra
+                    let proxima = self.agendador().and_then(|a| a.proxima(agora_ms()));
+                    let item = match proxima {
+                        Some(pedido) => self.unidade_de_job(pedido),
+                        None if self.lab.load(Ordering::Relaxed) => self.gerar(agora_ms()),
+                        None => break,
+                    };
+                    match item {
                         Ok(item) => self.enfileirar(item, false),
                         Err(e) => {
                             self.marcar(0, "GENERATOR ERROR", e);
@@ -734,7 +882,33 @@ impl Ultrax {
         );
         tarefa.avancar(Estado::NaFila, agora_ms(), "").map_err(|e| e.to_string())?;
         self.marcar(numero, "TASK QUEUED", String::new());
-        Ok(NaFila { tarefa, desafio, recusas: 0, origem })
+        Ok(NaFila { tarefa, desafio, recusas: 0, origem: origem.to_vec(), job: None })
+    }
+
+    /// Transforma uma unidade de JOB numa tarefa, já em QUEUED. A semente é a
+    /// da unidade ([`Instancia::DeJob`]), e o método é o do tipo.
+    fn unidade_de_job(&self, p: PedidoDeUnidade) -> Result<NaFila, String> {
+        let agora = agora_ms();
+        let metodo = p.especificacao.tipo().metodo();
+        let mut tarefa = Tarefa::nova(p.especificacao, metodo, Instancia::DeJob, &p.semente, p.prioridade, agora, p.prazo_ms)
+            .map_err(|e| e.to_string())?;
+        let numero = tarefa.numero();
+        self.marcar(
+            numero,
+            "TASK CREATED",
+            format!(
+                "JOB {}… unidade {} · {} {} · {} · verificação: {}",
+                curto(&p.job),
+                p.indice,
+                p.especificacao.tipo().descricao(),
+                p.especificacao.resumo(),
+                p.especificacao.tipo().categoria().nome(),
+                metodo.nome()
+            ),
+        );
+        tarefa.avancar(Estado::NaFila, agora_ms(), "").map_err(|e| e.to_string())?;
+        self.marcar(numero, "TASK QUEUED", String::new());
+        Ok(NaFila { tarefa, desafio: None, recusas: 0, origem: p.semente.to_vec(), job: Some((p.job, p.indice)) })
     }
 
     /// Execução e verificação, com a CPU inteira, no ritmo medido.
@@ -939,10 +1113,14 @@ impl Ultrax {
                 inicio_ms: agora_ms(),
                 memoria,
                 entrada,
+                job: item.job,
             });
         }
         let _ = item.tarefa.avancar(Estado::Executando, agora_ms(), "");
         self.marcar(numero, "WORK STARTED", format!("{} {}", esp.tipo().descricao(), esp.resumo()));
+        if let (Some((job, i)), Some(a)) = (item.job, self.agendador()) {
+            a.comecou(&job, i, linha, entrada);
+        }
 
         let inicio_ms = agora_ms();
         let mut controle = Controle::novo(self, linha, item.tarefa.prazo_ms, &feitas);
@@ -965,7 +1143,7 @@ impl Ultrax {
     /// Depois da execução, na CPU ou na GPU: assinar, conferir e liquidar.
     #[allow(clippy::too_many_lines)]
     fn concluir(&self, c: Conclusao) {
-        let Conclusao { linha, mut item, esp, semente, entrada, exec, inicio_ms, ms_calculo, memoria, total, feitas, gpu } = c;
+        let Conclusao { linha, mut item, esp, semente, entrada, mut exec, inicio_ms, ms_calculo, memoria, total, feitas, gpu } = c;
         let numero = item.tarefa.numero();
         let fim_ms = agora_ms();
         if ms_calculo > 50 {
@@ -1090,10 +1268,27 @@ impl Ultrax {
                 let pontos = WorkScore { operacoes_verificadas: exec.operacoes, operacoes_sem_credito: 0 }.texto();
                 let _ = item.tarefa.avancar(Estado::Liquidada, agora_ms(), format!("+{pontos} de Work Score"));
                 self.marcar(numero, "SETTLEMENT COMPLETED", format!("+{pontos} de Work Score · medida de contribuição, sem valor em HYX"));
-                if esp.tipo() == TipoDeTrabalho::Ia && item.desafio.is_none() {
+                if esp.tipo() == TipoDeTrabalho::Ia && item.desafio.is_none() && item.job.is_none() {
                     self.guardar_modelo(numero, &exec);
                 }
                 self.encerrar(&item, Some((&registro, assinatura)), ms_calculo, "");
+                if let (Some((job, indice)), Some(a)) = (item.job, self.agendador()) {
+                    a.terminou(DesfechoDeUnidade {
+                        job,
+                        indice,
+                        tarefa: item.tarefa.id,
+                        estado: Estado::Liquidada,
+                        resultado: Some(std::mem::take(&mut exec.resultado)),
+                        registro: Some(registro.clone()),
+                        operacoes_verificacao: total_verificacao,
+                        ms_calculo,
+                        ms_verificacao,
+                        memoria,
+                        gpu: gpu.clone(),
+                        nota: String::new(),
+                        abandonada: false,
+                    });
+                }
             }
             Parecer::Recusado(recusa) => {
                 let _ = item.tarefa.avancar(Estado::Recusada, agora_ms(), recusa.0.clone());
@@ -1109,6 +1304,23 @@ impl Ultrax {
                 }
                 (self.aviso)("ultrax", format!("tarefa #{numero} recusada na conferência: {recusa}"));
                 self.encerrar(&item, Some((&registro, assinatura)), ms_calculo, &recusa.0);
+                if let (Some((job, indice)), Some(a)) = (item.job, self.agendador()) {
+                    a.terminou(DesfechoDeUnidade {
+                        job,
+                        indice,
+                        tarefa: item.tarefa.id,
+                        estado: Estado::Recusada,
+                        resultado: None,
+                        registro: Some(registro.clone()),
+                        operacoes_verificacao: total_verificacao,
+                        ms_calculo,
+                        ms_verificacao,
+                        memoria,
+                        gpu: gpu.clone(),
+                        nota: recusa.0.clone(),
+                        abandonada: false,
+                    });
+                }
                 item.recusas = item.recusas.saturating_add(1);
                 if segunda {
                     let _ = item.tarefa.avancar(Estado::Cancelada, agora_ms(), "recusada duas vezes");
@@ -1288,6 +1500,26 @@ impl Ultrax {
             self.finais.fetch_add(1, Ordering::Relaxed);
         }
         self.gravar_placar();
+        // liquidada e recusada avisam em concluir(), com o resultado na mão
+        if matches!(t.estado, Estado::Cancelada | Estado::Expirada)
+            && let (Some((job, indice)), Some(a)) = (item.job, self.agendador())
+        {
+            a.terminou(DesfechoDeUnidade {
+                job,
+                indice,
+                tarefa: t.id,
+                estado: t.estado,
+                resultado: None,
+                registro: registro.map(|(r, _)| r.clone()),
+                operacoes_verificacao: 0,
+                ms_calculo,
+                ms_verificacao: 0,
+                memoria: 0,
+                gpu: None,
+                nota: nota.to_string(),
+                abandonada: item.recusas >= 2,
+            });
+        }
     }
 
     // -----------------------------------------------------------------------
@@ -1368,9 +1600,10 @@ impl Ultrax {
                 inicio_ms: agora_ms(),
                 memoria,
                 entrada,
+                job: None,
             });
         }
-        let item = NaFila { tarefa, desafio: None, recusas: 0, origem };
+        let item = NaFila { tarefa, desafio: None, recusas: 0, origem: origem.to_vec(), job: None };
         if let Ok(mut g) = self.gpu.lock() {
             g.push(NaGpu { item, semente, entrada, memoria, inicio_ms: agora_ms(), feitas, nome });
         }
@@ -1577,7 +1810,7 @@ impl Ultrax {
                     j,
                     "{{\"linha\":{},\"dispositivo\":{},\"numero\":{},\"id\":\"{}\",\"categoria\":\"{}\",\"tipo\":\"{}\",\"descricao\":{},\
                      \"tamanho\":{},\"passos\":{},\"resumo\":{},\"metodo\":{},\"desafio\":{},\"estado\":\"{}\",\"feitas\":{feitas},\"total\":{},\
-                     \"operacoes\":{},\"inicio\":{},\"memoria_mib\":{:.1},\"entrada\":\"{}\"}}",
+                     \"operacoes\":{},\"inicio\":{},\"memoria_mib\":{:.1},\"entrada\":\"{}\",\"job\":{},\"indice\":{}}}",
                     x.linha,
                     texto_json(x.gpu.as_deref().map_or("CPU", |_| "GPU")),
                     x.numero,
@@ -1596,6 +1829,8 @@ impl Ultrax {
                     x.inicio_ms,
                     mib(x.memoria),
                     x.entrada.map(|e| hex(&e)).unwrap_or_default(),
+                    x.job.map_or("null".to_string(), |(j, _)| format!("\"{}\"", hex(&j))),
+                    x.job.map_or("null".to_string(), |(_, i)| i.to_string()),
                 );
             }
         }
@@ -1806,16 +2041,20 @@ fn linha_do_historico(
         esp.tamanho(),
         esp.passos(),
         t.metodo.codigo(),
-        match t.instancia {
-            Instancia::PorWorker => 1,
-            Instancia::Compartilhada => 2,
-        },
+        t.instancia.codigo(),
         u8::from(item.desafio.is_some()),
         hex(&item.origem),
         t.prioridade,
         t.criada_ms,
         t.prazo_ms,
     );
+    if !esp.parametros().is_empty() {
+        let lista: Vec<String> = esp.parametros().iter().map(u32::to_string).collect();
+        let _ = write!(l, " parametros={}", lista.join(","));
+    }
+    if let Some((job, indice)) = item.job {
+        let _ = write!(l, " job={} indice={indice}", hex(&job));
+    }
     if let Some((r, assinatura)) = registro {
         let _ = write!(
             l,
@@ -1844,7 +2083,7 @@ struct Registro {
     metodo: MetodoDeVerificacao,
     instancia: Instancia,
     desafio: bool,
-    origem: [u8; 32],
+    origem: Vec<u8>,
     prioridade: u8,
     criada_ms: u64,
     prazo_ms: u64,
@@ -1858,6 +2097,8 @@ struct Registro {
     veredito: Option<[u8; 64]>,
     ms_calculo: u64,
     nota: String,
+    job: Option<[u8; HASH_LEN]>,
+    indice: Option<u64>,
 }
 
 fn estado_de_nome(nome: &str) -> Option<Estado> {
@@ -1877,10 +2118,15 @@ impl Registro {
             return None;
         }
         let tipo = TipoDeTrabalho::de_codigo(u8::try_from(num("tipo")?).ok()?)?;
-        let especificacao = Especificacao::nova(
+        let parametros: Vec<u32> = match campo("parametros") {
+            Some(lista) => lista.split(',').map(|v| v.parse::<u32>().ok()).collect::<Option<Vec<u32>>>()?,
+            None => Vec::new(),
+        };
+        let especificacao = Especificacao::nova_com(
             tipo,
             u32::try_from(num("tamanho")?).ok()?,
             u32::try_from(num("passos")?).ok()?,
+            &parametros,
         )
         .ok()?;
         Some(Self {
@@ -1888,13 +2134,9 @@ impl Registro {
             estado: estado_de_nome(campo("estado")?)?,
             especificacao,
             metodo: MetodoDeVerificacao::de_codigo(u8::try_from(num("metodo")?).ok()?)?,
-            instancia: match num("instancia")? {
-                1 => Instancia::PorWorker,
-                2 => Instancia::Compartilhada,
-                _ => return None,
-            },
+            instancia: Instancia::de_codigo(u8::try_from(num("instancia")?).ok()?)?,
             desafio: num("desafio")? == 1,
-            origem: de_hex(campo("origem")?)?,
+            origem: decodificar_hex(campo("origem")?)?,
             prioridade: u8::try_from(num("prioridade")?).ok()?,
             criada_ms: num("criada")?,
             prazo_ms: num("prazo")?,
@@ -1908,6 +2150,8 @@ impl Registro {
             veredito: campo("veredito").and_then(de_hex),
             ms_calculo: num("ms_calculo").unwrap_or(0),
             nota: campo("nota").map(desescapar).unwrap_or_default(),
+            job: campo("job").and_then(de_hex),
+            indice: num("indice"),
         })
     }
 
@@ -1990,6 +2234,15 @@ fn conferir_linha(r: &Registro, t: Option<&Tarefa>, esperado: Option<[u8; PUBKEY
     if r.desafio {
         if desafio.is_none() || r.metodo != MetodoDeVerificacao::ResultadoEsperado || r.instancia != Instancia::Compartilhada {
             a.problemas.push(format!("#{n:08}: marcada como desafio, mas não é um desafio do gabarito"));
+        }
+    } else if r.instancia == Instancia::DeJob {
+        // a semente de uma unidade de JOB é função do JOB e do índice, e só dele
+        let presa = match (r.job, r.indice) {
+            (Some(job), Some(i)) => r.origem == semente_da_unidade(&job, i).to_vec(),
+            _ => false,
+        };
+        if !presa {
+            a.problemas.push(format!("#{n:08}: unidade de JOB cuja semente não é a do JOB e índice gravados"));
         }
     } else if r.instancia != Instancia::PorWorker {
         a.problemas.push(format!("#{n:08}: tarefa normal com instância compartilhada (copiável)"));
@@ -2231,7 +2484,7 @@ mod testes {
         let p = pasta(nome);
         let u = Ultrax::abrir(&p, &[9; 32], 2, partida, Box::new(|_, _| {}));
         // ritmo baixo: o gerador faz tarefas pequenas, que o modo debug roda rápido
-        *u.ritmo.lock().unwrap() = [1.0e5; 4];
+        *u.ritmo.lock().unwrap() = [1.0e5; 8];
         (u, p)
     }
 
@@ -2328,7 +2581,7 @@ mod testes {
         let esp = Especificacao::nova(TipoDeTrabalho::Matriz, 1024, 0).unwrap();
         let mut tarefa = Tarefa::nova(esp, MetodoDeVerificacao::Freivalds, Instancia::PorWorker, b"x", 0, agora_ms(), agora_ms() + 60_000).unwrap();
         tarefa.avancar(Estado::NaFila, agora_ms(), "").unwrap();
-        u.processar(0, NaFila { tarefa, desafio: None, recusas: 0, origem: [0; 32] });
+        u.processar(0, NaFila { tarefa, desafio: None, recusas: 0, origem: vec![0; 32], job: None });
         let placar = u.placar();
         assert_eq!((placar.canceladas, placar.liquidadas), (1, 0));
         assert_eq!(u.reservada.load(Ordering::Relaxed), 0, "nada fica reservado");
@@ -2345,7 +2598,7 @@ mod testes {
         let mut tarefa = Tarefa::nova(esp, MetodoDeVerificacao::Freivalds, Instancia::PorWorker, b"y", 0, agora_ms(), agora_ms() + 60_000).unwrap();
         tarefa.avancar(Estado::NaFila, agora_ms(), "").unwrap();
         u.ligado.store(false, Ordering::Relaxed);
-        u.processar(0, NaFila { tarefa, desafio: None, recusas: 0, origem: [0; 32] });
+        u.processar(0, NaFila { tarefa, desafio: None, recusas: 0, origem: vec![0; 32], job: None });
         let placar = u.placar();
         assert_eq!((placar.canceladas, placar.recusadas, placar.reputacao.recusadas), (1, 0, 0), "parar não é errar");
         let _ = std::fs::remove_dir_all(p);
@@ -2377,7 +2630,7 @@ mod testes {
         let partida = Partida { memoria_mib: MEMORIA_MIN_MIB, linhas: 16, ..partida() };
         let u = Ultrax::abrir(&p, &[9; 32], 16, &partida, Box::new(|_, _| {}));
         // máquina rápida: os passos batem no máximo, e 2 MiB por linha não cabem a grade 256
-        *u.ritmo.lock().unwrap() = [1.0e10; 4];
+        *u.ritmo.lock().unwrap() = [1.0e10; 8];
         let esp = u.dimensionar(TipoDeTrabalho::Difusao).unwrap();
         assert!(esp.memoria_bytes() <= u64::from(MEMORIA_MIN_MIB) * 1024 * 1024 / 16, "{}", esp.resumo());
         let _ = std::fs::remove_dir_all(p);
@@ -2447,7 +2700,7 @@ mod testes {
         let mut tarefa = Tarefa::nova(esp, MetodoDeVerificacao::ResultadoEsperado, Instancia::Compartilhada, b"z", 0, agora_ms(), agora_ms() + 60_000).unwrap();
         tarefa.avancar(Estado::NaFila, agora_ms(), "").unwrap();
         // desafio de índice 0 é a matriz 16; esta tarefa é 8, então a resposta nunca bate
-        u.processar(0, NaFila { tarefa, desafio: Some(0), recusas: 0, origem: [0; 32] });
+        u.processar(0, NaFila { tarefa, desafio: Some(0), recusas: 0, origem: vec![0; 32], job: None });
         let item = u.fila.lock().unwrap().pop_front().expect("volta para a fila uma vez");
         u.processar(0, item);
         let placar = u.placar();

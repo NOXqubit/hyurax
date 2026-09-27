@@ -36,6 +36,7 @@ instalador = ["janela"]
 [dependencies]
 hyurax-identidade.workspace = true
 hyurax-crypto.workspace = true
+hyurax-codec.workspace = true
 hyurax-tx.workspace = true
 hyurax-consensus.workspace = true
 hyurax-chain.workspace = true

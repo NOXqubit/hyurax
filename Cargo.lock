@@ -1175,6 +1175,7 @@ dependencies = [
  "chacha20poly1305",
  "hyurax-block",
  "hyurax-chain",
+ "hyurax-codec",
  "hyurax-consensus",
  "hyurax-crypto",
  "hyurax-identidade",

@@ -37,6 +37,7 @@ macro_rules! dominio {
     };
 }
 
+pub mod agregador;
 pub mod genetica;
 pub mod ia;
 pub mod job;

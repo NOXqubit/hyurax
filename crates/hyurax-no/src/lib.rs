@@ -19,11 +19,15 @@
 //! gravada no disco a cada mudança. A conexão entre nós é cifrada (Noise XX), e
 //! o nó guarda a própria identidade em `PASTA/no.chave`.
 
+mod bancada;
 pub mod carteira;
+mod ciencia;
+mod ciencia_terminal;
 pub mod endereco;
 mod envio;
 mod maquinas;
 pub mod painel;
+mod relatorio;
 mod seguranca;
 pub mod sementes;
 pub mod termos;
@@ -82,6 +86,15 @@ hyurax-no — nó do Hyurax (rede de TESTE)
 
   hyurax-no estado --rede testnet --pasta dados [--endereco HEX]
       Mostra a altura da cadeia e, com --endereco, o saldo.
+
+  hyurax-no ciencia rodar --pasta dados --dominio D --tipo T --tamanho N
+                         [--passos P] [--parametros a,b] --unidades U [--linhas L]
+      Computação científica: submete um JOB (domínio e motor pelos códigos de
+      docs/COMPUTACAO-CIENTIFICA.md), divide em unidades, calcula, confere cada
+      uma e grava o relatório (JSON, CSV e PDF). Retoma de onde parou.
+  hyurax-no ciencia listar|relatorio|refazer|benchmark --pasta dados [--job ID]
+      Lista os JOBs, mostra o relatório, refaz uma unidade do zero e compara
+      com o registro (--unidade I), ou roda o ULTRA BENCHMARK.
 
   hyurax-no ultrax lab --pasta dados [--tarefas N] [--linhas L] [--uso-cpu P]
                       [--memoria-mib M] [--debug]
@@ -330,6 +343,12 @@ fn abrir_cadeia(o: &Opcoes) -> Result<Chain, String> {
 
 /// A identidade do nó na cifra da rede: `PASTA/no.chave`. Criada na primeira
 /// vez; depois, a mesma a cada execução. Apagar o arquivo dá identidade nova.
+/// `WORKER_ID` do ULTRAX para a identidade do nó: a chave pública da chave
+/// de assinatura derivada do segredo do nó.
+fn ultrax_worker(identidade: &Identidade) -> [u8; hyurax_crypto::PUBKEY_LEN] {
+    hyurax_crypto::ed25519_public_key(&hyurax_ultrax::prova::chave_do_worker(identidade.segredo()))
+}
+
 fn identidade_do_no(o: &Opcoes) -> Result<Identidade, String> {
     identidade_na_pasta(&o.pasta)
 }
@@ -692,6 +711,7 @@ pub fn principal(args: &[String]) -> Result<(), String> {
         "no" => servir_no(resto),
         "estado" => estado(resto),
         "ultrax" => ultrax::comando(resto),
+        "ciencia" => ciencia_terminal::comando(resto),
         "ajuda" | "--ajuda" | "-h" => {
             print!("{AJUDA}");
             Ok(())
