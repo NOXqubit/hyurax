@@ -23,7 +23,7 @@ use crate::trabalho::{Especificacao, MOCHILA_RESULTADO_LEN, TipoDeTrabalho};
 use crate::{genetica, ia, melhoramento, rotas, triagem};
 
 /// Versão da codificação do agregador.
-pub const VERSAO: u8 = 2;
+pub const VERSAO: u8 = 3;
 /// Quantas moléculas a triagem guarda no topo.
 pub const TOPO_TRIAGEM: usize = 50;
 
@@ -106,6 +106,8 @@ pub enum Agregador {
         soma_quadrados: u128,
         /// Partidas que terminaram em ótimo local do 2-opt.
         otimos_locais: u64,
+        /// A rota da melhor, canônica (cidades em ordem).
+        rota: Vec<u16>,
     },
     /// Triagem: as melhores moléculas e as contagens por filtro.
     Triagem {
@@ -153,7 +155,7 @@ impl Agregador {
                 soma_quadrados_ganho: 0,
                 soma_var_g: (0, 0),
             },
-            TipoDeTrabalho::Rotas => Self::Rotas { unidades: 0, melhor: None, soma: 0, soma_quadrados: 0, otimos_locais: 0 },
+            TipoDeTrabalho::Rotas => Self::Rotas { unidades: 0, melhor: None, soma: 0, soma_quadrados: 0, otimos_locais: 0, rota: Vec::new() },
             TipoDeTrabalho::Triagem => Self::Triagem {
                 unidades: 0,
                 moleculas: 0,
@@ -246,7 +248,7 @@ impl Agregador {
                 *limitante = r.limitante;
                 *unidades = unidades.saturating_add(1);
             }
-            Self::Rotas { unidades, melhor, soma, soma_quadrados, otimos_locais } => {
+            Self::Rotas { unidades, melhor, soma, soma_quadrados, otimos_locais, rota } => {
                 let comprimento = resultado
                     .first_chunk::<8>()
                     .map(|b| u64::from_be_bytes(*b))
@@ -261,6 +263,7 @@ impl Agregador {
                 }
                 if melhor.is_none_or(|(c, i)| comprimento < c || (comprimento == c && indice < i)) {
                     *melhor = Some((comprimento, indice));
+                    *rota = resultado.get(rotas::CABECALHO..).unwrap_or(&[]).as_chunks::<2>().0.iter().map(|c| u16::from_be_bytes(*c)).collect();
                 }
             }
             Self::Triagem { unidades, moleculas, aprovadas, por_filtro, topo, erro_abs, erro_quad } => {
@@ -352,13 +355,17 @@ impl Agregador {
                 grande(w, soma_var_g.0);
                 grande(w, soma_var_g.1);
             }
-            Self::Rotas { unidades, melhor, soma, soma_quadrados, otimos_locais } => {
+            Self::Rotas { unidades, melhor, soma, soma_quadrados, otimos_locais, rota } => {
                 w.u8(6);
                 w.u64(*unidades);
                 opcional(w, melhor);
                 grande(w, *soma);
                 grande(w, *soma_quadrados);
                 w.u64(*otimos_locais);
+                w.u32(u32::try_from(rota.len()).unwrap_or(u32::MAX));
+                for c in rota {
+                    w.u16(*c);
+                }
             }
             Self::Triagem { unidades, moleculas, aprovadas, por_filtro, topo, erro_abs, erro_quad } => {
                 w.u8(7);
@@ -426,13 +433,18 @@ impl Agregador {
                 soma_quadrados_ganho: grande(r)?,
                 soma_var_g: (grande(r)?, grande(r)?),
             },
-            6 => Self::Rotas {
-                unidades: r.u64()?,
-                melhor: opcional(r)?,
-                soma: grande(r)?,
-                soma_quadrados: grande(r)?,
-                otimos_locais: r.u64()?,
-            },
+            6 => {
+                let (unidades, melhor, soma, soma_quadrados, otimos_locais) = (r.u64()?, opcional(r)?, grande(r)?, grande(r)?, r.u64()?);
+                let n = r.u32()?;
+                if n > rotas::TAMANHO.1 {
+                    return Err(ErroDeJob::Faixa("rota do agregador maior que o limite de cidades"));
+                }
+                let mut rota = Vec::new();
+                for _ in 0..n {
+                    rota.push(r.u16()?);
+                }
+                Self::Rotas { unidades, melhor, soma, soma_quadrados, otimos_locais, rota }
+            }
             7 => {
                 let (unidades, moleculas, aprovadas) = (r.u64()?, r.u64()?, r.u64()?);
                 let mut por_filtro = [0u64; 7];
@@ -512,7 +524,7 @@ impl Agregador {
                     *fator as f64 / f64::from(melhoramento::Q16)
                 )
             }
-            Self::Rotas { unidades, melhor, soma, soma_quadrados, otimos_locais } => match melhor {
+            Self::Rotas { unidades, melhor, soma, soma_quadrados, otimos_locais, .. } => match melhor {
                 Some((c, i)) => format!(
                     "{unidades} partida(s): melhor rota {c} (unidade {i}); média {:.1} ± {:.1}; {otimos_locais} em ótimo local do 2-opt (não é o ótimo global)",
                     media(*soma, *unidades),
@@ -538,6 +550,102 @@ impl Agregador {
             }
         }
     }
+}
+
+impl Agregador {
+    /// Os números do agregador para a tela desenhar, em JSON. São os mesmos
+    /// do relatório; as médias viram decimal só aqui, para mostrar.
+    pub fn json(&self) -> String {
+        let lista = |v: &[f64]| v.iter().map(|x| if x.is_finite() { format!("{x:.4}") } else { "null".into() }).collect::<Vec<_>>().join(",");
+        match self {
+            Self::Contagem { unidades } => format!("{{\"tipo\":\"contagem\",\"unidades\":{unidades}}}"),
+            Self::Mochila { unidades, melhor, soma } => format!(
+                "{{\"tipo\":\"mochila\",\"unidades\":{unidades},\"melhor\":{},\"indice\":{},\"media\":{:.3}}}",
+                melhor.map_or("null".into(), |m| m.0.to_string()),
+                melhor.map_or("null".into(), |m| m.1.to_string()),
+                media(*soma, *unidades)
+            ),
+            Self::Ia { unidades, melhor, soma, soma_quadrados } => format!(
+                "{{\"tipo\":\"ia\",\"unidades\":{unidades},\"melhor_erro_q12\":{},\"indice\":{},\"media_q12\":{:.3},\"desvio_q12\":{:.3}}}",
+                melhor.map_or("null".into(), |m| m.0.to_string()),
+                melhor.map_or("null".into(), |m| m.1.to_string()),
+                media(*soma, *unidades),
+                desvio(*soma, *soma_quadrados, *unidades)
+            ),
+            Self::Genetica { unidades, copias, loci, fixados, perdidos, soma, soma_quadrados } => {
+                let n = (*loci).max(1) as f64;
+                let m = (*copias).max(1) as f64;
+                let freq: Vec<f64> = soma.iter().map(|s| *s as f64 / (n * m)).collect();
+                // heterozigosidade esperada média, 2p(1-p) nos loci: (2·M·S1 − 2·S2)/(L·M²)
+                let het: Vec<f64> = soma.iter().zip(soma_quadrados).map(|(s1, s2)| (2.0 * m * *s1 as f64 - 2.0 * *s2 as f64) / (n * m * m)).collect();
+                format!(
+                    "{{\"tipo\":\"genetica\",\"unidades\":{unidades},\"loci\":{loci},\"fixados\":{fixados},\"perdidos\":{perdidos},\"frequencia\":[{}],\"heterozigosidade\":[{}]}}",
+                    lista(&freq),
+                    lista(&het)
+                )
+            }
+            Self::Melhoramento { unidades, fator, limitante, soma_media_g, soma_media_p, .. } => {
+                let u = (*unidades).max(1) as f64;
+                let g: Vec<f64> = soma_media_g.iter().map(|s| *s as f64 / u).collect();
+                let p: Vec<f64> = soma_media_p.iter().map(|s| *s as f64 / u).collect();
+                format!(
+                    "{{\"tipo\":\"melhoramento\",\"unidades\":{unidades},\"fator\":{:.4},\"limitante\":\"{}\",\"media_g\":[{}],\"media_p\":[{}]}}",
+                    f64::from(*fator) / f64::from(melhoramento::Q16),
+                    melhoramento::NOMES_DOS_RECURSOS.get(usize::from(*limitante)).copied().unwrap_or("?"),
+                    lista(&g),
+                    lista(&p)
+                )
+            }
+            Self::Rotas { unidades, melhor, soma, soma_quadrados, otimos_locais, rota } => format!(
+                "{{\"tipo\":\"rotas\",\"unidades\":{unidades},\"melhor\":{},\"indice\":{},\"media\":{:.3},\"desvio\":{:.3},\"otimos_locais\":{otimos_locais},\"rota\":[{}]}}",
+                melhor.map_or("null".into(), |m| m.0.to_string()),
+                melhor.map_or("null".into(), |m| m.1.to_string()),
+                media(*soma, *unidades),
+                desvio(*soma, *soma_quadrados, *unidades),
+                rota.iter().map(u16::to_string).collect::<Vec<_>>().join(",")
+            ),
+            Self::Triagem { unidades, moleculas, aprovadas, por_filtro, topo, erro_abs, erro_quad } => {
+                let catalogo = triagem::catalogo();
+                let topo_json: Vec<String> = topo
+                    .iter()
+                    .map(|(nota, i, previsto)| {
+                        let m = usize::try_from(*i).ok().and_then(|k| catalogo.moleculas.get(k));
+                        format!(
+                            "{{\"indice\":{i},\"nota\":{nota},\"previsto_mili\":{previsto},\"medido_mili\":{},\"id\":{},\"nome\":{}}}",
+                            m.map_or("null".into(), |m| m.logs_mili.to_string()),
+                            m.map_or("null".into(), |m| texto_json(&m.id)),
+                            m.map_or("null".into(), |m| texto_json(&m.nome))
+                        )
+                    })
+                    .collect();
+                let n = (*moleculas).max(1) as f64;
+                format!(
+                    "{{\"tipo\":\"triagem\",\"unidades\":{unidades},\"moleculas\":{moleculas},\"aprovadas\":{aprovadas},\"por_filtro\":[{}],\"filtros\":[{}],\"rmse_log_s\":{:.4},\"mae_log_s\":{:.4},\"topo\":[{}]}}",
+                    por_filtro.iter().map(u64::to_string).collect::<Vec<_>>().join(","),
+                    triagem::FILTROS.iter().map(|f| texto_json(f)).collect::<Vec<_>>().join(","),
+                    ((*erro_quad as f64) / n).sqrt() / 1000.0,
+                    (*erro_abs as f64) / n / 1000.0,
+                    topo_json.join(",")
+                )
+            }
+        }
+    }
+}
+
+/// Texto como string JSON, com aspas e escapes.
+fn texto_json(s: &str) -> String {
+    let mut saida = String::with_capacity(s.len().saturating_add(2));
+    saida.push('"');
+    for c in s.chars() {
+        match c {
+            '"' => saida.push_str("\\\""),
+            '\\' => saida.push_str("\\\\"),
+            c if u32::from(c) < 0x20 => saida.push_str(&format!("\\u{:04x}", u32::from(c))),
+            c => saida.push(c),
+        }
+    }
+    saida.push('"');
+    saida
 }
 
 fn somar_vetor(destino: &mut Vec<u128>, valores: &[u64]) {
@@ -605,6 +713,7 @@ mod testes {
         assert_eq!(a, b, "{:?}", esp.tipo());
         vai_e_volta(&a);
         assert!(!a.texto().is_empty());
+        assert!(a.json().starts_with("{\"tipo\":") && a.json().ends_with('}'));
         a
     }
 
@@ -627,7 +736,7 @@ mod testes {
 
         let r = Especificacao::nova_com(TipoDeTrabalho::Rotas, 30, 100, &[3]).unwrap();
         let a = nas_duas_ordens(&r, &resultados(&r, 5));
-        assert!(matches!(a, Agregador::Rotas { otimos_locais: 5, .. }), "{a:?}");
+        assert!(matches!(&a, Agregador::Rotas { otimos_locais: 5, rota, .. } if rota.len() == 30), "{a:?}");
 
         let t = Especificacao::nova_com(TipoDeTrabalho::Triagem, 200, 0, &[0, 0, 500_000, 25_000, 5, 10, 10, 140_000, 16_000]).unwrap();
         let faixas: Vec<Vec<u8>> = (0u64..4)

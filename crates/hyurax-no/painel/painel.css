@@ -1276,3 +1276,66 @@ body.destacado .bloco.ia { grid-column: span 1; grid-row: span 1; }
 .selo-modo { border-radius: 999px; padding: 2px 9px; font: 600 10px/1.4 var(--mono); }
 .fita { font-family: var(--mono); }
 .u-titulo, .ia-molecula figcaption b, .v-grade b, .ia-erro b, .saldo span { font-family: var(--display); }
+
+/* ---------- Ciência: JOBs, painel técnico, visão 3D, eventos e benchmark ---------- */
+/* blocos de altura fixa, como os outros, com rolagem por dentro */
+.bloco.ciencia { grid-column: 1 / -1; grid-row: span 3; overflow-y: auto; }
+.bloco.visao3d { grid-column: 1 / -1; grid-row: span 3; overflow-y: auto; }
+.bloco.novojob { grid-column: span 2; grid-row: span 3; overflow-y: auto; }
+.bloco.eventos { grid-column: span 2; grid-row: span 3; }
+.bloco.eventos .ev-lista { flex: 1; max-height: none; }
+.bloco.bancada { grid-column: 1 / -1; grid-row: span 2; overflow-y: auto; }
+.ct-grade { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); margin: 0; border-bottom: 1px solid var(--fio); }
+.ct-grade div { padding: 9px 12px; display: grid; gap: 2px; min-width: 0; border-right: 1px solid var(--fio); border-bottom: 1px solid var(--fio); }
+.ct-grade dt { font-size: 9.5px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--tinta-3); }
+.ct-grade dd { margin: 0; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ct-grade small { line-height: 1.3; }
+.cj-lista { display: grid; }
+.cj-job { padding: 12px; border-bottom: 1px solid var(--fio); display: grid; gap: 6px; }
+.cj-job.escolhido { background: var(--painel-2); }
+.cj-job header { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; }
+.cj-job header b { font-weight: 600; overflow-wrap: anywhere; }
+.cj-estado { font-family: var(--mono); font-size: 11px; letter-spacing: 0.12em; color: var(--tinta-2); white-space: nowrap; }
+.cj-barra { height: 4px; background: var(--fio); border-radius: 2px; overflow: hidden; }
+.cj-barra i { display: block; height: 100%; background: var(--tinta); }
+.cj-fatos, .cj-agregado, .cj-descricao { margin: 0; font-size: 12.5px; color: var(--tinta-2); overflow-wrap: anywhere; }
+.cj-agregado { color: var(--tinta); }
+.cj-descricao { font-style: italic; }
+.cj-acoes { display: flex; flex-wrap: wrap; gap: 4px 14px; }
+.v3-job { margin: 8px 12px 0; color: var(--tinta-2); font-size: 12.5px; }
+.v3-corpo { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 12px; padding: 8px 12px; }
+.v3-canvas { width: 100%; height: 470px; display: block; border: 1px solid var(--fio); border-radius: var(--r-p); cursor: grab; touch-action: none; }
+.v3-canvas:active { cursor: grabbing; }
+.v3-lado { display: grid; grid-template-rows: 340px auto; gap: 8px; min-width: 0; }
+.v3-detalhe { width: 100%; height: 340px; display: block; border: 1px solid var(--fio); border-radius: var(--r-p); }
+.v3-detalhe-texto { margin: 0; font-size: 12.5px; color: var(--tinta-2); }
+.v3-controles { display: flex; gap: 16px; align-items: end; padding: 0 12px 12px; }
+.v3-controles label { display: grid; gap: 2px; }
+.v3-inspecao { margin: 0 12px 12px; border: 1px solid var(--fio-forte); border-radius: var(--r-p); }
+.v3-inspecao dl { margin: 0; display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 4px 14px; padding: 10px 12px; font-family: var(--mono); font-size: 11.5px; }
+.v3-inspecao dt { color: var(--tinta-3); letter-spacing: 0.08em; }
+.v3-inspecao dd { margin: 0; overflow-wrap: anywhere; }
+.nj-form { display: grid; gap: 10px; padding: 12px; }
+.nj-campos { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 8px 12px; }
+.nj-campo { display: grid; gap: 3px; min-width: 0; }
+.nj-campo input, .nj-campo select, .nj-campo textarea { width: 100%; background: var(--painel-2); color: var(--tinta); border: 1px solid var(--fio-forte); border-radius: var(--r-p); padding: 6px 8px; font: inherit; }
+.nj-largo textarea { resize: vertical; }
+.nj-botoes { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
+.bancada .nj-botoes { padding: 0 12px 12px; }
+.nj-saida { margin: 0; font-size: 12.5px; color: var(--tinta); min-height: 1.2em; }
+.ev-lista { font-family: var(--mono); font-size: 11px; padding: 6px 12px; max-height: 360px; overflow-y: auto; }
+.ev-linha { padding: 3px 0; border-bottom: 1px solid var(--fio); color: var(--tinta-2); overflow-wrap: anywhere; }
+.ev-linha[data-tipo="WORK_UNIT_VERIFIED"], .ev-linha[data-tipo="JOB_COMPLETED"] { color: var(--tinta); }
+.ev-linha[data-tipo="WORK_UNIT_FAILED"], .ev-linha[data-tipo="WORK_UNIT_REJECTED"] { color: #e8736a; }
+.b-rolar { overflow-x: auto; padding: 8px 12px; }
+.b-tabela { width: 100%; border-collapse: collapse; font-size: 12px; }
+.b-tabela th, .b-tabela td { text-align: right; padding: 5px 8px; border-bottom: 1px solid var(--fio); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.b-tabela th:first-child, .b-tabela td:first-child { text-align: left; }
+.b-tabela th { font-size: 9.5px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--tinta-3); font-weight: 500; }
+.b-primeira td { color: var(--tinta-2); }
+@media (max-width: 760px) {
+  .bloco.novojob, .bloco.eventos { grid-column: 1 / -1; }
+  .bloco.ciencia, .bloco.visao3d, .bloco.novojob { grid-row: span 4; }
+  .v3-corpo { grid-template-columns: minmax(0, 1fr); }
+  .v3-canvas { height: 280px; }
+}

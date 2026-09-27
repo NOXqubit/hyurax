@@ -407,18 +407,20 @@ impl Ciencia {
 
     pub(crate) fn json_estimativa(&self, esp: &EspecificacaoDeJob) -> String {
         let e = esp.estimativa();
+        let medido = self.ultrax().and_then(|u| u.ritmo_medido(esp.modelo().tipo()));
         let ritmo = self.ultrax().map_or(20.0e6, |u| u.ritmo_de(esp.modelo().tipo())).max(1.0);
         let linhas = self.ultrax().map_or(1, |u| u.linhas.load(Ordering::Relaxed).max(1));
         let segundos = e.operacoes.saturating_add(e.operacoes_verificacao) as f64 / ritmo;
         format!(
             "{{\"operacoes\":{},\"operacoes_verificacao\":{},\"milicreditos\":{},\"memoria_por_unidade\":{},\
-             \"segundos_uma_linha\":{segundos:.1},\"segundos_estimados\":{:.1},\"linhas\":{linhas},\"ritmo_medido\":{ritmo:.0},\
-             \"nota\":\"teto do modelo de custo de cada motor, no ritmo medido nesta máquina; sem contar pausas do limite de CPU\"}}",
+             \"segundos_uma_linha\":{segundos:.1},\"segundos_estimados\":{:.1},\"linhas\":{linhas},\"ritmo\":{ritmo:.0},\"ritmo_medido\":{},\
+             \"nota\":\"teto do modelo de custo de cada motor; sem contar pausas do limite de CPU\"}}",
             e.operacoes,
             e.operacoes_verificacao,
             e.milicreditos,
             e.memoria_por_unidade,
             segundos / f64::from(linhas),
+            medido.is_some(),
         )
     }
 
@@ -855,14 +857,17 @@ fn json_do_job(job: &Job, completo: bool) -> String {
             .collect();
         let faixas: Vec<String> = job.feitas.faixas().iter().take(200).map(|(a, b)| format!("[{a},{b}]")).collect();
         let workers: Vec<String> = job.workers.iter().map(|w| format!("\"{}\"", hex(w))).collect();
+        let falhas: Vec<String> = job.abandonadas.faixas().iter().take(200).map(|(a, b)| format!("[{a},{b}]")).collect();
         let _ = write!(
             j,
-            ",\"em_voo_lista\":[{}],\"faixas_feitas\":[{}],\"faixas_total\":{},\"workers\":[{}],\"registro_cortado\":{}",
+            ",\"em_voo_lista\":[{}],\"faixas_feitas\":[{}],\"faixas_total\":{},\"faixas_falhas\":[{}],\"workers\":[{}],\"registro_cortado\":{},\"dados\":{}",
             em_voo.join(","),
             faixas.join(","),
             job.feitas.faixas().len(),
+            falhas.join(","),
             workers.join(","),
-            job.registro_cortado
+            job.registro_cortado,
+            job.agregador.json()
         );
     }
     j.push('}');
@@ -940,6 +945,15 @@ impl Agendador for Ciencia {
             ..Evento::default()
         });
         Some(pedido)
+    }
+
+    fn tem_trabalho(&self) -> bool {
+        self.jobs.lock().is_ok_and(|jobs| {
+            jobs.iter().any(|j| {
+                j.estado == EstadoDoJob::Rodando
+                    && j.resolvidas().saturating_add(u64::try_from(j.em_voo.len()).unwrap_or(u64::MAX)) < j.esp.unidades()
+            })
+        })
     }
 
     fn comecou(&self, job: &[u8; HASH_LEN], indice: u64, linha: u32, entrada: Option<[u8; HASH_LEN]>) {

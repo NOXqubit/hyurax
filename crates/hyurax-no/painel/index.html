@@ -13,6 +13,7 @@
 <link rel="stylesheet" href="/painel.css">
 <script src="/qrcode.min.js" defer></script>
 <script type="module" src="/painel.js"></script>
+<script type="module" src="/ciencia.js"></script>
 </head>
 <body>
 <!-- A casca do programa: navegação à esquerda, e a seção aberta à direita. -->
@@ -26,6 +27,7 @@
     <button type="button" class="vista" data-vista="inicio" aria-current="page"><span class="vista-icone" aria-hidden="true">◎</span><span class="vista-nome">Visão geral</span></button>
     <button type="button" class="vista" data-vista="ultrax"><span class="vista-icone" aria-hidden="true">◆</span><span class="vista-nome">ULTRAX</span><span class="vista-estado" id="n-ultrax"></span></button>
     <button type="button" class="vista" data-vista="ia"><span class="vista-icone" aria-hidden="true">⬡</span><span class="vista-nome">IA · Moléculas</span><span class="vista-estado" id="n-ia"></span></button>
+    <button type="button" class="vista" data-vista="ciencia"><span class="vista-icone" aria-hidden="true">✦</span><span class="vista-nome">Ciência</span><span class="vista-estado" id="n-ciencia"></span></button>
     <button type="button" class="vista" data-vista="mineracao"><span class="vista-icone" aria-hidden="true">▣</span><span class="vista-nome">Mineração</span><span class="vista-estado" id="n-mineracao"></span></button>
     <button type="button" class="vista" data-vista="carteira"><span class="vista-icone" aria-hidden="true">◈</span><span class="vista-nome">Carteira</span></button>
     <button type="button" class="vista" data-vista="rede"><span class="vista-icone" aria-hidden="true">⌖</span><span class="vista-nome">Rede</span><span class="vista-estado" id="n-rede"></span></button>
@@ -324,6 +326,107 @@
     <p class="nota nota-painel" id="mq-aviso">Some as suas outras máquinas aqui: em cada uma, ligue “ver no celular” nos Ajustes e anote o endereço dela. Depois escreva os endereços em Ajustes › Minhas máquinas. Este painel só lê; cada máquina continua sendo comandada nela mesma.</p>
   </section>
 
+
+  <!-- ================================================================== -->
+  <!-- Ciência: JOBs de computação científica. Tudo que aparece aqui vem  -->
+  <!-- de /api/ciencia e dos eventos do nó (ciencia.js); nada é simulado. -->
+  <!-- ================================================================== -->
+  <section class="bloco ciencia" id="painel-ciencia" data-painel="ciencia" aria-label="Computação científica: painel técnico e JOBs">
+    <header class="rotulo"><span>Computação científica · painel técnico</span><span class="rotulo-fim"><span id="cj-total">—</span></span></header>
+    <dl class="ct-grade" aria-label="Métricas medidas">
+      <div><dt>Nós ativos</dt><dd id="ct-nos" class="num">—</dd><small id="ct-nos-nota"></small></div>
+      <div><dt>JOBs rodando</dt><dd id="ct-jobs" class="num">—</dd><small id="ct-jobs-nota"></small></div>
+      <div><dt>Unidades conferidas</dt><dd id="ct-unidades" class="num">—</dd><small>de todas as unidades pedidas</small></div>
+      <div><dt>Em voo · fila</dt><dd class="num"><span id="ct-voo">—</span> · <span id="ct-fila">—</span></dd><small>despachadas · na fila do worker</small></div>
+      <div><dt>CPU</dt><dd id="ct-cpu" class="num">—</dd><small id="ct-cpu-nota"></small></div>
+      <div><dt>GPU</dt><dd id="ct-gpu">—</dd><small id="ct-gpu-nota"></small></div>
+      <div><dt>VRAM</dt><dd id="ct-vram">—</dd><small>o WebGL não informa memória de vídeo</small></div>
+      <div><dt>RAM</dt><dd id="ct-ram" class="num">—</dd><small id="ct-ram-nota"></small></div>
+      <div><dt>Rede</dt><dd id="ct-rede">—</dd><small>unidades entre nós: Etapa D</small></div>
+      <div><dt>Vazão</dt><dd id="ct-vazao" class="num">—</dd><small>operações conferidas, último minuto</small></div>
+      <div><dt>Operações</dt><dd id="ct-ops" class="num">—</dd><small>executadas nas unidades conferidas</small></div>
+      <div><dt>Candidatos</dt><dd id="ct-candidatos" class="num">—</dd><small>moléculas reais triadas</small></div>
+      <div><dt>Verificadas</dt><dd id="ct-verificadas" class="num">—</dd><small>unidades conferidas</small></div>
+      <div><dt>Falhas</dt><dd id="ct-falhas" class="num">—</dd><small>recusadas quatro vezes</small></div>
+      <div><dt>Repetidas</dt><dd id="ct-repetidas" class="num">—</dd><small>recusas e reenvios</small></div>
+      <div><dt>Energia</dt><dd id="ct-energia">—</dd><small>pelo consumo estimado dos núcleos</small></div>
+      <div><dt>Tempo de execução</dt><dd id="ct-tempo" class="num">—</dd><small>cálculo e conferência</small></div>
+      <div><dt>Créditos</dt><dd id="ct-creditos" class="num">—</dd><small>v1: 1 = 10⁹ operações; não é HYX</small></div>
+    </dl>
+    <div class="cj-lista" id="cj-lista" aria-live="polite"></div>
+    <p class="nota nota-painel" id="cj-vazio">Nenhum JOB ainda. Um JOB divide um problema em unidades, calcula cada uma no ULTRAX (que precisa estar ligado), confere e consolida. Peça um em “Novo JOB”.</p>
+  </section>
+
+  <section class="bloco visao3d" id="painel-visao3d" data-painel="visao3d" aria-label="Visão 3D do cálculo">
+    <header class="rotulo"><span>Visão 3D do cálculo</span><span class="rotulo-fim"><span id="v3-modo">AO VIVO</span></span></header>
+    <p class="v3-job" id="v3-job">Escolha um JOB na lista (“ver na 3D”).</p>
+    <div class="v3-corpo">
+      <canvas id="v3-canvas" class="v3-canvas" aria-label="Unidades do JOB em 3D"></canvas>
+      <div class="v3-lado">
+        <canvas id="v3-detalhe" class="v3-detalhe" aria-label="O que a unidade está calculando"></canvas>
+        <p class="v3-detalhe-texto" id="v3-detalhe-texto"></p>
+      </div>
+    </div>
+    <p class="nota nota-painel" id="v3-legenda">Branco: conferida · âmbar: executando · azul: conferindo · cinza: na fila · vermelho: falha.</p>
+    <div class="v3-controles">
+      <label for="v3-vel"><small>Reprodução</small>
+        <select id="v3-vel" autocomplete="off"><option value="1">1×</option><option value="10" selected>10×</option><option value="100">100×</option><option value="1000">1000×</option></select>
+      </label>
+      <button type="button" id="v3-ao-vivo" class="link">voltar ao vivo</button>
+    </div>
+    <div class="v3-inspecao" id="v3-inspecao-caixa" hidden>
+      <header class="rotulo"><span id="v3-inspecao-titulo">Inspecionar cálculo</span><span class="rotulo-fim"><button type="button" class="link" id="v3-inspecao-fechar">fechar</button></span></header>
+      <dl id="v3-inspecao"></dl>
+    </div>
+  </section>
+
+  <section class="bloco novojob" id="painel-novojob" data-painel="novojob" aria-label="Novo JOB">
+    <header class="rotulo"><span>Novo JOB</span><span class="rotulo-fim"><span>pedido deste computador</span></span></header>
+    <form id="nj-form" class="nj-form">
+      <label class="nj-campo" for="nj-dominio"><small>Área</small><select id="nj-dominio" autocomplete="off"></select></label>
+      <label class="nj-campo" for="nj-motor"><small>Motor</small><select id="nj-motor" autocomplete="off"></select></label>
+      <div class="nj-campos" id="nj-campos"></div>
+      <div class="nj-campos">
+        <label class="nj-campo" for="nj-unidades"><small>Unidades (réplicas, partidas ou faixas)</small><input type="number" id="nj-unidades" min="1" value="12" autocomplete="off"></label>
+        <label class="nj-campo" for="nj-nivel"><small>Verificação</small>
+          <select id="nj-nivel" autocomplete="off">
+            <option value="1">1 · integridade</option>
+            <option value="2" selected>2 · reexecução</option>
+            <option value="3">3 · concordância entre nós (espera outros nós)</option>
+            <option value="4">4 · independente (espera outros nós)</option>
+            <option value="5">5 · reprodutibilidade (espera outros nós)</option>
+          </select>
+        </label>
+        <label class="nj-campo" for="nj-redundancia"><small>Redundância (workers por unidade)</small><input type="number" id="nj-redundancia" min="1" max="7" value="1" autocomplete="off"></label>
+        <label class="nj-campo" for="nj-prazo"><small>Prazo (s; 0 = sem)</small><input type="number" id="nj-prazo" min="0" value="0" autocomplete="off"></label>
+        <label class="nj-campo" for="nj-orcamento"><small>Orçamento (créditos; 0 = sem teto)</small><input type="number" id="nj-orcamento" min="0" step="0.001" value="0" autocomplete="off"></label>
+      </div>
+      <label class="nj-campo nj-largo" for="nj-descricao"><small>O que se quer descobrir</small><textarea id="nj-descricao" rows="2" maxlength="2000" autocomplete="off"></textarea></label>
+      <div class="nj-botoes">
+        <button type="button" id="nj-estimar" class="link">estimar custo e tempo</button>
+        <button type="submit" id="nj-submeter" class="acao">Submeter o JOB</button>
+      </div>
+      <p class="nj-saida" id="nj-saida" aria-live="polite"></p>
+      <p class="nota">Só motores compilados no programa rodam; nenhum código vem de fora. Áreas sem motor (materiais, energia, meio ambiente, regeneração) aparecem para ficar claro que ainda não calculam nada. Resultado computacional precisa de validação científica.</p>
+    </form>
+  </section>
+
+  <section class="bloco eventos" id="painel-eventos" data-painel="eventos" aria-label="Eventos da computação científica">
+    <header class="rotulo"><span>Eventos · JOBs</span><span class="rotulo-fim"><span>os mesmos do registro gravado</span></span></header>
+    <div class="ev-lista rolar" id="ev-lista" aria-live="off"></div>
+  </section>
+
+  <section class="bloco bancada" id="painel-bancada" data-painel="bancada" aria-label="ULTRA BENCHMARK">
+    <header class="rotulo"><span>ULTRA BENCHMARK</span><span class="rotulo-fim"><span id="b-estado">—</span></span></header>
+    <div class="b-rolar">
+      <table class="b-tabela">
+        <thead><tr><th>Métrica</th><th>Base</th><th>Atual</th><th>Alvo (10×)</th><th>Ganho real</th><th>Unidade</th></tr></thead>
+        <tbody id="b-tabela"></tbody>
+      </table>
+    </div>
+    <p class="nota nota-painel" id="b-nota">A base é a primeira medida desta métrica nesta máquina. Se o ganho for 2×, aparece 2×.</p>
+    <div class="nj-botoes"><button type="button" id="b-rodar" class="acao">Rodar o benchmark</button></div>
+  </section>
 </main>
 
 <footer class="fita" aria-hidden="true"><div id="fita-trilho"></div></footer>

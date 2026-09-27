@@ -1265,6 +1265,7 @@ const VISTAS = {
   inicio: { titulo: "Visão geral", paineis: ["inicio", "fluxo"] },
   ultrax: { titulo: "ULTRAX", paineis: ["ultrax", "verificacao", "historico", "telemetria"] },
   ia: { titulo: "IA · Moléculas", paineis: ["ia"] },
+  ciencia: { titulo: "Ciência", paineis: ["ciencia", "visao3d", "novojob", "eventos", "bancada"] },
   mineracao: { titulo: "Mineração", paineis: ["mineracao", "ritmo", "livro"] },
   carteira: { titulo: "Carteira", paineis: ["carteira"] },
   rede: { titulo: "Rede", paineis: ["rede", "maquinas", "mercado"] },
@@ -1310,8 +1311,13 @@ const NOMES_PAINEIS = {
   fluxo: "Fluxo de eventos",
   mercado: "Mercado",
   maquinas: "Minhas máquinas",
+  ciencia: "Ciência · painel técnico e JOBs",
+  visao3d: "Visão 3D do cálculo",
+  novojob: "Novo JOB",
+  eventos: "Eventos dos JOBs",
+  bancada: "ULTRA BENCHMARK",
 };
-const PAINEIS_PADRAO = "inicio,ultrax,ia,verificacao,carteira,mineracao,historico,telemetria,livro,fluxo,rede,ritmo,-mercado,-maquinas";
+const PAINEIS_PADRAO = "inicio,ultrax,ia,verificacao,carteira,mineracao,historico,telemetria,livro,fluxo,rede,ritmo,-mercado,-maquinas,ciencia,visao3d,novojob,eventos,bancada";
 const destacado = new URLSearchParams(location.search).get("so");
 let listaPaineis = PAINEIS_PADRAO;
 
@@ -1838,6 +1844,8 @@ async function ler() {
     const r = await fetch("/api/estado", { cache: "no-store" });
     const e = await r.json();
     ultimo = e;
+    // a seção Ciência (ciencia.js) usa o mesmo estado, sem perguntar de novo
+    dispatchEvent(new CustomEvent("hyurax:estado", { detail: e }));
     $("desligado").hidden = true;
     texto("boot-versao", e.versao ? `Hyurax ${e.versao}` : "Hyurax");
     desenharBoot(e);

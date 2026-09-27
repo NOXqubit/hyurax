@@ -330,6 +330,9 @@ pub trait Agendador: Send + Sync {
     fn comecou(&self, job: &[u8; HASH_LEN], indice: u64, linha: u32, entrada: Option<[u8; HASH_LEN]>);
     /// A unidade terminou, foi recusada uma vez, cancelada ou venceu.
     fn terminou(&self, desfecho: DesfechoDeUnidade);
+    /// Há JOB com unidade esperando a vez. Enquanto houver, a LAB (carga de
+    /// teste) não gera nada: o trabalho pedido vem primeiro.
+    fn tem_trabalho(&self) -> bool;
 }
 
 /// Uma tarefa na fila, com o que o worker precisa saber além dela.
@@ -702,6 +705,12 @@ impl Ultrax {
         self.uso_cpu.load(Ordering::Relaxed)
     }
 
+    /// O ritmo de um tipo, só se já foi medido nesta abertura (senão, `None`:
+    /// o valor inicial é um chute, e a tela não o chama de medido).
+    pub fn ritmo_medido(&self, tipo: TipoDeTrabalho) -> Option<f64> {
+        Some(self.ritmo_de(tipo)).filter(|r| (*r - RITMO_INICIAL).abs() > f64::EPSILON)
+    }
+
     /// Ritmo medido (operações por segundo de cálculo puro) de um tipo.
     pub fn ritmo_de(&self, tipo: TipoDeTrabalho) -> f64 {
         self.ritmo.lock().map_or(RITMO_INICIAL, |r| r.get(indice(tipo)).copied().unwrap_or(RITMO_INICIAL))
@@ -795,14 +804,17 @@ impl Ultrax {
                 let quer = (self.linhas.load(Ordering::Relaxed) as usize).saturating_add(FILA_EXTRA);
                 while self.ligado.load(Ordering::Relaxed) && self.fila.lock().map_or(usize::MAX, |f| f.len()) < quer {
                     // unidade de JOB primeiro; a LAB só preenche o que sobra
-                    let proxima = self.agendador().and_then(|a| a.proxima(agora_ms()));
+                    let agendador = self.agendador();
+                    let proxima = agendador.as_ref().and_then(|a| a.proxima(agora_ms()));
+                    let pedido_de_job = proxima.is_some();
                     let item = match proxima {
                         Some(pedido) => self.unidade_de_job(pedido),
-                        None if self.lab.load(Ordering::Relaxed) => self.gerar(agora_ms()),
+                        None if self.lab.load(Ordering::Relaxed) && !agendador.is_some_and(|a| a.tem_trabalho()) => self.gerar(agora_ms()),
                         None => break,
                     };
                     match item {
-                        Ok(item) => self.enfileirar(item, false),
+                        // unidade de JOB passa na frente da carga LAB que já estava na fila
+                        Ok(item) => self.enfileirar(item, pedido_de_job),
                         Err(e) => {
                             self.marcar(0, "GENERATOR ERROR", e);
                             break;

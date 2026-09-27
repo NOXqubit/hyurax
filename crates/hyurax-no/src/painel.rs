@@ -46,6 +46,7 @@ const INDEX: &str = include_str!("../painel/index.html");
 const CSS: &str = include_str!("../painel/painel.css");
 const JS: &str = include_str!("../painel/painel.js");
 const MOLECULAS: &str = include_str!("../painel/moleculas.js");
+const CIENCIA_JS: &str = include_str!("../painel/ciencia.js");
 const GPU: &str = include_str!("../painel/gpu.js");
 const GPU_TRABALHADOR: &str = include_str!("../painel/gpu-trabalhador.js");
 /// As fontes da marca, embutidas (licença OFL, textos em `painel/fontes`): o
@@ -71,9 +72,12 @@ const PORTA_P2P: u16 = 8790;
 /// Quanto um núcleo minerando gasta, em watts, e o preço do kWh em centavos.
 /// São estimativas honestas, e o usuário ajusta as duas nos Ajustes.
 /// Painéis que existem, na ordem de fábrica. Um "-" na frente quer dizer fechado.
-const PAINEIS_PADRAO: &str =
-    "inicio,ultrax,ia,verificacao,carteira,mineracao,historico,telemetria,livro,fluxo,rede,ritmo,-mercado,-maquinas";
-const PAINEIS_CONHECIDOS: [&str; 14] = [
+const PAINEIS_PADRAO: &str = "inicio,ultrax,ia,verificacao,carteira,mineracao,historico,telemetria,livro,fluxo,rede,ritmo,-mercado,-maquinas,\
+     ciencia,visao3d,novojob,eventos,bancada";
+/// Os painéis da seção Ciência (computação científica), que entram abertos
+/// na lista de quem já tinha uma lista salva.
+const PAINEIS_CIENCIA: [&str; 5] = ["ciencia", "visao3d", "novojob", "eventos", "bancada"];
+const PAINEIS_CONHECIDOS: [&str; 19] = [
     "inicio",
     "ultrax",
     "ia",
@@ -88,6 +92,11 @@ const PAINEIS_CONHECIDOS: [&str; 14] = [
     "ritmo",
     "mercado",
     "maquinas",
+    "ciencia",
+    "visao3d",
+    "novojob",
+    "eventos",
+    "bancada",
 ];
 /// Quantos movimentos da carteira o painel mostra.
 const HISTORICO_MAX: usize = 30;
@@ -438,11 +447,18 @@ fn completar_paineis(lista: &str) -> String {
 /// ou fechados como ela.
 fn migrar_paineis(lista: &str) -> String {
     // a visão geral (0.3) entra na frente de toda lista salva antes dela
-    let lista = if lista.split(',').any(|i| i.trim().trim_start_matches('-') == "inicio") {
+    let mut lista = if lista.split(',').any(|i| i.trim().trim_start_matches('-') == "inicio") {
         lista.to_string()
     } else {
         format!("inicio,{lista}")
     };
+    // a seção Ciência (0.3, computação científica) entra aberta no fim
+    if !lista.split(',').any(|i| i.trim().trim_start_matches('-') == "ciencia") {
+        for painel in PAINEIS_CIENCIA {
+            lista.push(',');
+            lista.push_str(painel);
+        }
+    }
     lista
         .split(',')
         .map(str::trim)
@@ -1511,6 +1527,22 @@ fn responder_json(s: &mut TcpStream, resultado: Result<String, String>) -> std::
     }
 }
 
+/// Uma molécula do catálogo da triagem, com os descritores brutos, para a
+/// tela desenhar a que está sendo calculada.
+fn json_da_molecula(i: usize) -> Option<String> {
+    let m = hyurax_ultrax::triagem::catalogo().moleculas.get(i)?;
+    let bruto: Vec<String> = m.bruto.iter().map(i64::to_string).collect();
+    Some(format!(
+        "{{\"indice\":{i},\"id\":{},\"nome\":{},\"formula\":{},\"smiles\":{},\"logs_medido_mili\":{},\"descritores\":[{}]}}",
+        texto_json(&m.id),
+        texto_json(&m.nome),
+        texto_json(&m.formula),
+        texto_json(&m.smiles),
+        m.logs_mili,
+        bruto.join(",")
+    ))
+}
+
 /// Um parâmetro da parte `?a=1&b=2` do caminho, sem decodificar (só números e
 /// hexadecimal passam por aqui).
 fn parametro_da_url<'a>(caminho: &'a str, nome: &str) -> Option<&'a str> {
@@ -1536,6 +1568,7 @@ fn atender(mut s: TcpStream, porta: u16, painel: &Painel, rede: &Arc<Rede>, o: &
             "/painel.css" => responder(&mut s, "200 OK", "text/css; charset=utf-8", CSS.as_bytes()),
             "/painel.js" => responder(&mut s, "200 OK", "text/javascript; charset=utf-8", JS.as_bytes()),
             "/moleculas.js" => responder(&mut s, "200 OK", "text/javascript; charset=utf-8", MOLECULAS.as_bytes()),
+            "/ciencia.js" => responder(&mut s, "200 OK", "text/javascript; charset=utf-8", CIENCIA_JS.as_bytes()),
             "/gpu.js" => responder(&mut s, "200 OK", "text/javascript; charset=utf-8", GPU.as_bytes()),
             "/gpu-trabalhador.js" => responder(&mut s, "200 OK", "text/javascript; charset=utf-8", GPU_TRABALHADOR.as_bytes()),
             "/fontes/archivo.woff2" => responder(&mut s, "200 OK", "font/woff2", FONTE_ARCHIVO),
@@ -1565,6 +1598,24 @@ fn atender(mut s: TcpStream, porta: u16, painel: &Painel, rede: &Arc<Rede>, o: &
             "/api/ciencia/eventos" => {
                 let desde = parametro_da_url(&p.caminho, "desde").and_then(|v| v.parse::<u64>().ok()).unwrap_or(0);
                 responder(&mut s, "200 OK", "application/json; charset=utf-8", painel.ciencia.eventos_desde(desde).as_bytes())
+            }
+            r if r.starts_with("/api/ciencia/molecula/") => {
+                match r.trim_start_matches("/api/ciencia/molecula/").parse::<usize>().ok().and_then(json_da_molecula) {
+                    Some(j) => responder(&mut s, "200 OK", "application/json; charset=utf-8", j.as_bytes()),
+                    None => responder(&mut s, "404 Not Found", "text/plain", b"molecula fora do catalogo"),
+                }
+            }
+            r if r.starts_with("/api/ciencia/rotas/") => {
+                let mut partes = r.trim_start_matches("/api/ciencia/rotas/").split('/').map(|v| v.parse::<u32>().ok());
+                match (partes.next().flatten(), partes.next().flatten()) {
+                    (Some(instancia), Some(n)) if (hyurax_ultrax::rotas::TAMANHO.0..=hyurax_ultrax::rotas::TAMANHO.1).contains(&n) => {
+                        let cidades: Vec<String> =
+                            hyurax_ultrax::rotas::coordenadas(instancia, n).iter().map(|c| format!("[{},{}]", c.x, c.y)).collect();
+                        let j = format!("{{\"instancia\":{instancia},\"lado\":{},\"cidades\":[{}]}}", hyurax_ultrax::rotas::LADO, cidades.join(","));
+                        responder(&mut s, "200 OK", "application/json; charset=utf-8", j.as_bytes())
+                    }
+                    _ => responder(&mut s, "404 Not Found", "text/plain", b"instancia ou numero de cidades invalido"),
+                }
             }
             r if r.starts_with("/api/ciencia/job/") => {
                 let resto = r.trim_start_matches("/api/ciencia/job/");
@@ -2088,8 +2139,10 @@ mod testes {
         assert!(fechada.starts_with("inicio,-ultrax,-ia,-verificacao,mineracao,"), "{fechada}");
         assert!(paineis_validos(&fechada));
         // sem estação, nada muda
-        assert_eq!(migrar_paineis("inicio,carteira,-rede"), "inicio,carteira,-rede");
-        assert_eq!(migrar_paineis("carteira,-rede"), "inicio,carteira,-rede", "a visão geral entra na frente");
+        let ciencia = ",ciencia,visao3d,novojob,eventos,bancada";
+        assert_eq!(migrar_paineis("inicio,carteira,-rede"), format!("inicio,carteira,-rede{ciencia}"));
+        assert_eq!(migrar_paineis("carteira,-rede"), format!("inicio,carteira,-rede{ciencia}"), "a visão geral entra na frente");
+        assert_eq!(migrar_paineis("inicio,-ciencia,carteira"), "inicio,-ciencia,carteira", "quem fechou a Ciência continua com ela fechada");
         assert!(!paineis_validos("estacao"), "a estação não existe mais");
     }
 
