@@ -141,6 +141,16 @@ impl Nucleo {
                 Box::new(move |tipo, texto| b.registrar(tipo, texto)),
             )
         };
+        {
+            let b = Arc::clone(&barramento);
+            ultrax.ao_amostrar(Arc::new(move |ctx, a| {
+                b.publicar("amostra", format!("{{\"contexto\":{},\"amostra\":{}}}", ctx.json(), a.json()));
+            }));
+            let b = Arc::clone(&barramento);
+            ultrax.ao_marcar(Arc::new(move |tarefa, evento, detalhe| {
+                b.publicar("tarefa", serde_json::json!({ "tarefa": tarefa, "evento": evento, "detalhe": detalhe }).to_string());
+            }));
+        }
         let ciencia = Ciencia::abrir(&pastas.dados, ultrax.worker(), VERSAO)?;
         ciencia.ligar(&ultrax);
         {

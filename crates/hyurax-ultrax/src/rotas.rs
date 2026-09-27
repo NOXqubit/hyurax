@@ -37,6 +37,7 @@
 
 use hyurax_crypto::xof;
 
+use crate::observador::{Amostra, Nenhum, Observador};
 use crate::trabalho::{ErroDeTrabalho, Especificacao, Execucao, Recusa, TipoDeTrabalho};
 
 /// Quantos parâmetros extras a especificação leva: a instância.
@@ -260,6 +261,22 @@ pub fn resolver(
     semente: &[u8],
     continuar: &mut dyn FnMut(u64) -> bool,
 ) -> Result<(Resultado, u64), ErroDeTrabalho> {
+    resolver_observado(n, passos, instancia, semente, continuar, &mut Nenhum)
+}
+
+fn rota_u16(t: &[u32]) -> Vec<u16> {
+    t.iter().map(|&c| u16::try_from(c).unwrap_or(u16::MAX)).collect()
+}
+
+/// Como [`resolver`], entregando a rota de cada passada a `obs`.
+pub fn resolver_observado(
+    n: u32,
+    passos: u32,
+    instancia: u32,
+    semente: &[u8],
+    continuar: &mut dyn FnMut(u64) -> bool,
+    obs: &mut dyn Observador,
+) -> Result<(Resultado, u64), ErroDeTrabalho> {
     validar(n, passos, &[instancia])?;
     let cidades = coordenadas(instancia, n);
     let mut t = partida(semente, n);
@@ -272,6 +289,9 @@ pub fn resolver(
     let inicial = aresta.iter().fold(0u64, |s, &d| s.saturating_add(d));
     let mut comprimento = inicial;
     let (mut passadas, mut melhorias, mut otimo_local) = (0u32, 0u32, false);
+    if obs.quer() {
+        obs.amostra(Amostra::Rotas { passada: 0, passos, comprimento, inicial, rota: rota_u16(&t) });
+    }
     while passadas < passos {
         passadas = passadas.saturating_add(1);
         let mut melhorou = false;
@@ -327,6 +347,9 @@ pub fn resolver(
                 }
                 pendente = 0;
             }
+        }
+        if obs.quer() {
+            obs.amostra(Amostra::Rotas { passada: passadas, passos, comprimento, inicial, rota: rota_u16(&t) });
         }
         if !melhorou {
             otimo_local = true;
@@ -521,8 +544,18 @@ pub fn resumo(esp: &Especificacao) -> String {
 /// Executa a unidade. [`Execucao::operacoes`] são as avaliações de
 /// distância feitas, iguais em todo worker honesto.
 pub fn executar(esp: &Especificacao, semente: &[u8], continuar: &mut dyn FnMut(u64) -> bool) -> Result<Execucao, ErroDeTrabalho> {
+    executar_observado(esp, semente, continuar, &mut Nenhum)
+}
+
+/// Como [`executar`], entregando a rota de cada passada a `obs`.
+pub fn executar_observado(
+    esp: &Especificacao,
+    semente: &[u8],
+    continuar: &mut dyn FnMut(u64) -> bool,
+    obs: &mut dyn Observador,
+) -> Result<Execucao, ErroDeTrabalho> {
     let instancia = instancia_de(esp).ok_or_else(|| ErroDeTrabalho::Parametros("a especificação não é de rotas".into()))?;
-    let (r, operacoes) = resolver(esp.tamanho(), esp.passos(), instancia, semente, continuar)?;
+    let (r, operacoes) = resolver_observado(esp.tamanho(), esp.passos(), instancia, semente, continuar, obs)?;
     Ok(Execucao { resultado: r.codificar(), operacoes, curva: Vec::new() })
 }
 

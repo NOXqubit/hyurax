@@ -234,6 +234,19 @@ pub struct Treino {
 /// Treina `passos` passos com lotes de `lote` moléculas. `continuar` recebe
 /// as operações de cada passo e pode interromper (devolve `None`).
 pub fn treinar(semente: &[u8], lote: u32, passos: u32, base: &Base, continuar: &mut dyn FnMut(u64) -> bool) -> Option<Treino> {
+    treinar_observado(semente, lote, passos, base, continuar, &mut crate::observador::Nenhum)
+}
+
+/// Como [`treinar`], entregando a perda e os pesos de saída de cada passo a
+/// `obs`. O treino é o mesmo, bit a bit.
+pub fn treinar_observado(
+    semente: &[u8],
+    lote: u32,
+    passos: u32,
+    base: &Base,
+    continuar: &mut dyn FnMut(u64) -> bool,
+    obs: &mut dyn crate::observador::Observador,
+) -> Option<Treino> {
     let (treino, validacao) = base.divisao();
     if treino.is_empty() {
         return None;
@@ -290,7 +303,16 @@ pub fn treinar(semente: &[u8], lote: u32, passos: u32, base: &Base, continuar: &
             }
         }
         p.b2 = prender(i128::from(p.b2) - gb2.div_euclid(div));
-        curva.push(u64::try_from(perda.div_euclid(i128::from(lote.max(1)))).unwrap_or(u64::MAX));
+        let perda_do_lote = u64::try_from(perda.div_euclid(i128::from(lote.max(1)))).unwrap_or(u64::MAX);
+        curva.push(perda_do_lote);
+        if obs.quer() {
+            obs.amostra(crate::observador::Amostra::Ia {
+                passo: u32::try_from(passo.saturating_add(1)).unwrap_or(u32::MAX),
+                passos,
+                perda: perda_do_lote,
+                pesos_saida: p.w2.to_vec(),
+            });
+        }
         // o último passo conta as operações, mas não cancela: o treino já acabou
         if !continuar(por_passo) && passo.saturating_add(1) < passos as usize {
             return None;

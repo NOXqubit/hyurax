@@ -80,6 +80,7 @@ use std::cmp::Reverse;
 
 use hyurax_crypto::xof;
 
+use crate::observador::{Amostra, Nenhum, Observador};
 use crate::trabalho::{ErroDeTrabalho, Especificacao, Execucao, Recusa};
 
 /// Quantos parâmetros extras a especificação leva.
@@ -616,6 +617,16 @@ pub fn simular(
     semente: &[u8],
     continuar: &mut dyn FnMut(u64) -> bool,
 ) -> Result<Resultado, ErroDeTrabalho> {
+    simular_observado(esp, semente, continuar, &mut Nenhum)
+}
+
+/// Como [`simular`], entregando a população avaliada de cada geração a `obs`.
+pub fn simular_observado(
+    esp: &Especificacao,
+    semente: &[u8],
+    continuar: &mut dyn FnMut(u64) -> bool,
+    obs: &mut dyn Observador,
+) -> Result<Resultado, ErroDeTrabalho> {
     validar(esp.tamanho(), esp.passos(), esp.parametros())?;
     let p = Parametros::de(esp.parametros())?;
     let n = esp.tamanho() as usize;
@@ -719,6 +730,32 @@ pub fn simular(
             fixados_1: fixo1.iter().map(|w| w.count_ones()).sum(),
             fixados_0: fixo0.iter().map(|w| w.count_ones()).sum(),
         });
+        if obs.quer() {
+            let mut escolhida = vec![false; n];
+            for &j in sel {
+                if let Some(x) = escolhida.get_mut(j as usize) {
+                    *x = true;
+                }
+            }
+            let a_cada = n.div_ceil(400).max(1);
+            let pontos = (0..n)
+                .step_by(a_cada)
+                .map(|j| {
+                    (
+                        genetico.get(j).copied().unwrap_or(0),
+                        fenotipo.get(j).copied().unwrap_or(0),
+                        escolhida.get(j).copied().unwrap_or(false),
+                    )
+                })
+                .collect();
+            obs.amostra(Amostra::Melhoramento {
+                geracao: t,
+                geracoes: passos,
+                plantas: u32::try_from(n).unwrap_or(u32::MAX),
+                pontos,
+                a_cada: u32::try_from(a_cada).unwrap_or(u32::MAX),
+            });
+        }
         if ultima {
             break;
         }
@@ -767,7 +804,17 @@ pub fn simular(
 
 /// Executa a unidade.
 pub fn executar(esp: &Especificacao, semente: &[u8], continuar: &mut dyn FnMut(u64) -> bool) -> Result<Execucao, ErroDeTrabalho> {
-    let r = simular(esp, semente, continuar)?;
+    executar_observado(esp, semente, continuar, &mut Nenhum)
+}
+
+/// Como [`executar`], entregando a população de cada geração a `obs`.
+pub fn executar_observado(
+    esp: &Especificacao,
+    semente: &[u8],
+    continuar: &mut dyn FnMut(u64) -> bool,
+    obs: &mut dyn Observador,
+) -> Result<Execucao, ErroDeTrabalho> {
+    let r = simular_observado(esp, semente, continuar, obs)?;
     Ok(Execucao { resultado: r.codificar(), operacoes: operacoes(esp), curva: Vec::new() })
 }
 

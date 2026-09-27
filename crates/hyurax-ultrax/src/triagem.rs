@@ -29,6 +29,7 @@
 use std::sync::OnceLock;
 
 use crate::ia::{self, ENTRADAS, OCULTOS, Pesos};
+use crate::observador::{Amostra, Nenhum, Observador};
 use crate::trabalho::{ErroDeTrabalho, Especificacao, Execucao, Recusa, TipoDeTrabalho};
 
 /// O catálogo embutido no programa.
@@ -383,7 +384,17 @@ pub fn resumo(esp: &Especificacao) -> String {
 }
 
 /// Executa a unidade. A semente não entra.
-pub fn executar(esp: &Especificacao, _semente: &[u8], continuar: &mut dyn FnMut(u64) -> bool) -> Result<Execucao, ErroDeTrabalho> {
+pub fn executar(esp: &Especificacao, semente: &[u8], continuar: &mut dyn FnMut(u64) -> bool) -> Result<Execucao, ErroDeTrabalho> {
+    executar_observado(esp, semente, continuar, &mut Nenhum)
+}
+
+/// Como [`executar`], entregando cada molécula avaliada a `obs`.
+pub fn executar_observado(
+    esp: &Especificacao,
+    _semente: &[u8],
+    continuar: &mut dyn FnMut(u64) -> bool,
+    obs: &mut dyn Observador,
+) -> Result<Execucao, ErroDeTrabalho> {
     let l = limites(esp.parametros()).ok_or_else(|| ErroDeTrabalho::Parametros("a especificação não é de triagem".into()))?;
     let m = modelo().ok_or(ErroDeTrabalho::SemMotor("triagem molecular (modelo de referência ilegível)"))?;
     let c = catalogo();
@@ -394,12 +405,23 @@ pub fn executar(esp: &Especificacao, _semente: &[u8], continuar: &mut dyn FnMut(
         .ok_or_else(|| ErroDeTrabalho::Parametros("faixa fora do catálogo".into()))?;
     let mut corpo = Vec::with_capacity(quantidade.saturating_mul(BYTES_POR_MOLECULA));
     let mut aprovadas = 0u32;
+    let mut indice = l.inicio;
     for pedaco in faixa.chunks(BLOCO) {
         for molecula in pedaco {
             let (mascara, previsto, nota) = avaliar(molecula, &l, &m.pesos, c);
             if mascara == TODOS_OS_FILTROS {
                 aprovadas = aprovadas.saturating_add(1);
             }
+            if obs.quer() {
+                obs.amostra(Amostra::Triagem {
+                    indice: u32::try_from(indice).unwrap_or(u32::MAX),
+                    mascara,
+                    previsto_mili: i32::try_from(previsto).unwrap_or(0),
+                    nota,
+                    aprovada: mascara == TODOS_OS_FILTROS,
+                });
+            }
+            indice = indice.saturating_add(1);
             corpo.push(mascara);
             corpo.extend_from_slice(&i32::try_from(previsto).unwrap_or(0).to_be_bytes());
             corpo.extend_from_slice(&nota.to_be_bytes());

@@ -16,6 +16,7 @@ use hyurax_crypto::{HASH_LEN, sha512, xof};
 use hyurax_usefulpow::generate_matrices;
 
 use crate::ia;
+use crate::observador::{Amostra, Nenhum, Observador, recortar, recortar_grade};
 
 /// Domínio do desafio de Freivalds do mercado (`ultrax.DOMAIN_FREIVALDS`).
 pub const DOMINIO_FREIVALDS: &[u8] = dominio!("FREIVALDS-v1");
@@ -580,15 +581,26 @@ pub fn executar(
     semente: &[u8],
     continuar: &mut dyn FnMut(u64) -> bool,
 ) -> Result<Execucao, ErroDeTrabalho> {
+    executar_observado(esp, semente, continuar, &mut Nenhum)
+}
+
+/// Como [`executar`], entregando amostras do estado real a `obs` (ver
+/// [`crate::observador`]). O resultado é o mesmo, byte a byte.
+pub fn executar_observado(
+    esp: &Especificacao,
+    semente: &[u8],
+    continuar: &mut dyn FnMut(u64) -> bool,
+    obs: &mut dyn Observador,
+) -> Result<Execucao, ErroDeTrabalho> {
     match esp.tipo {
-        TipoDeTrabalho::Matriz => executar_matriz(esp.tamanho, semente, continuar),
-        TipoDeTrabalho::Mochila => executar_mochila(esp.tamanho, semente, continuar),
-        TipoDeTrabalho::Difusao => executar_difusao(esp.tamanho, esp.passos, semente, continuar),
-        TipoDeTrabalho::Ia => executar_ia(esp, semente, continuar),
-        TipoDeTrabalho::Genetica => crate::genetica::executar(esp, semente, continuar),
-        TipoDeTrabalho::Melhoramento => crate::melhoramento::executar(esp, semente, continuar),
-        TipoDeTrabalho::Rotas => crate::rotas::executar(esp, semente, continuar),
-        TipoDeTrabalho::Triagem => crate::triagem::executar(esp, semente, continuar),
+        TipoDeTrabalho::Matriz => executar_matriz(esp.tamanho, semente, continuar, obs),
+        TipoDeTrabalho::Mochila => executar_mochila(esp.tamanho, semente, continuar, obs),
+        TipoDeTrabalho::Difusao => executar_difusao(esp.tamanho, esp.passos, semente, continuar, obs),
+        TipoDeTrabalho::Ia => executar_ia(esp, semente, continuar, obs),
+        TipoDeTrabalho::Genetica => crate::genetica::executar_observado(esp, semente, continuar, obs),
+        TipoDeTrabalho::Melhoramento => crate::melhoramento::executar_observado(esp, semente, continuar, obs),
+        TipoDeTrabalho::Rotas => crate::rotas::executar_observado(esp, semente, continuar, obs),
+        TipoDeTrabalho::Triagem => crate::triagem::executar_observado(esp, semente, continuar, obs),
     }
 }
 
@@ -616,7 +628,7 @@ pub fn verificar_controlado(
         TipoDeTrabalho::Mochila => verificar_mochila(esp.tamanho, semente, resultado, continuar),
         TipoDeTrabalho::Difusao => verificar_difusao(esp.tamanho, esp.passos, semente, resultado, continuar),
         TipoDeTrabalho::Ia => {
-            let refeito = executar_ia(esp, semente, continuar)?;
+            let refeito = executar_ia(esp, semente, continuar, &mut Nenhum)?;
             Ok(if refeito.resultado == resultado {
                 Ok(())
             } else if resultado.len() != refeito.resultado.len() {
@@ -690,8 +702,14 @@ pub fn operacoes_de_verificacao(esp: &Especificacao) -> u64 {
 // IA
 // ---------------------------------------------------------------------------
 
-fn executar_ia(esp: &Especificacao, semente: &[u8], continuar: &mut dyn FnMut(u64) -> bool) -> Result<Execucao, ErroDeTrabalho> {
-    let treino = ia::treinar(semente, esp.tamanho, esp.passos, ia::Base::embutida(), continuar).ok_or(ErroDeTrabalho::Cancelado)?;
+fn executar_ia(
+    esp: &Especificacao,
+    semente: &[u8],
+    continuar: &mut dyn FnMut(u64) -> bool,
+    obs: &mut dyn Observador,
+) -> Result<Execucao, ErroDeTrabalho> {
+    let treino =
+        ia::treinar_observado(semente, esp.tamanho, esp.passos, ia::Base::embutida(), continuar, obs).ok_or(ErroDeTrabalho::Cancelado)?;
     Ok(Execucao {
         resultado: ia::codificar(&treino.pesos, treino.erro),
         operacoes: esp.operacoes_fixas().unwrap_or(0),
@@ -720,6 +738,7 @@ fn executar_matriz(
     n: u32,
     semente: &[u8],
     continuar: &mut dyn FnMut(u64) -> bool,
+    obs: &mut dyn Observador,
 ) -> Result<Execucao, ErroDeTrabalho> {
     let (a, b) = matrizes(n, semente)?;
     let lado = n as usize;
@@ -736,6 +755,11 @@ fn executar_matriz(
         }
         for &v in &acumulado {
             c.extend_from_slice(&i64::try_from(v).unwrap_or(i64::MAX).to_le_bytes());
+        }
+        if obs.quer() {
+            let linha: Vec<i64> = acumulado.iter().map(|&v| i64::try_from(v).unwrap_or(i64::MAX)).collect();
+            let (valores, a_cada) = recortar(&linha, 128);
+            obs.amostra(Amostra::Matriz { lado: n, linha: u32::try_from(k).unwrap_or(u32::MAX), valores, a_cada });
         }
         // o último pedaço conta as operações, mas não cancela: o trabalho já acabou
         if !continuar(por_linha) && k.saturating_add(1) < lado {
@@ -841,6 +865,7 @@ fn programacao_dinamica(
     inst: &InstanciaMochila,
     com_escolhas: bool,
     continuar: &mut dyn FnMut(u64) -> bool,
+    obs: &mut dyn Observador,
 ) -> Result<(u64, Vec<Vec<bool>>), ErroDeTrabalho> {
     let cap = inst.capacidade as usize;
     let mut melhor = vec![0u64; cap.saturating_add(1)];
@@ -865,6 +890,18 @@ fn programacao_dinamica(
             }
         }
         escolhas.push(linha);
+        if obs.quer() {
+            let (recorte, a_cada) = recortar(&melhor, 128);
+            obs.amostra(Amostra::Mochila {
+                itens: u32::try_from(itens).unwrap_or(u32::MAX),
+                capacidade: inst.capacidade,
+                item: u32::try_from(k).unwrap_or(u32::MAX),
+                peso: u32::try_from(peso).unwrap_or(u32::MAX),
+                valor,
+                melhor: recorte,
+                a_cada,
+            });
+        }
         if !continuar((cap as u64).saturating_add(1)) && k.saturating_add(1) < itens {
             return Err(ErroDeTrabalho::Cancelado);
         }
@@ -876,9 +913,10 @@ fn executar_mochila(
     itens: u32,
     semente: &[u8],
     continuar: &mut dyn FnMut(u64) -> bool,
+    obs: &mut dyn Observador,
 ) -> Result<Execucao, ErroDeTrabalho> {
     let inst = instancia_mochila(itens, semente)?;
-    let (otimo, escolhas) = programacao_dinamica(&inst, true, continuar)?;
+    let (otimo, escolhas) = programacao_dinamica(&inst, true, continuar, obs)?;
     let mut mascara = [0u8; 32];
     let mut resta = inst.capacidade as usize;
     for (i, linha) in escolhas.iter().enumerate().rev() {
@@ -925,7 +963,7 @@ fn verificar_mochila(
     if valor != declarado {
         return Ok(Err(Recusa(format!("valor declarado {declarado} difere da soma da escolha {valor}"))));
     }
-    let (otimo, _) = programacao_dinamica(&inst, false, continuar)?;
+    let (otimo, _) = programacao_dinamica(&inst, false, continuar, &mut Nenhum)?;
     if declarado != otimo {
         return Ok(Err(Recusa(format!("a escolha vale {declarado}, mas o ótimo é {otimo}"))));
     }
@@ -948,6 +986,7 @@ fn executar_difusao(
     passos: u32,
     semente: &[u8],
     continuar: &mut dyn FnMut(u64) -> bool,
+    obs: &mut dyn Observador,
 ) -> Result<Execucao, ErroDeTrabalho> {
     Especificacao::nova(TipoDeTrabalho::Difusao, lado, passos)?;
     let g = lado as usize;
@@ -981,6 +1020,10 @@ fn executar_difusao(
             }
         }
         std::mem::swap(&mut grade, &mut nova);
+        if obs.quer() {
+            let (recorte, lado_amostra, a_cada) = recortar_grade(&grade, g, 48);
+            obs.amostra(Amostra::Difusao { lado, passo: passo.saturating_add(1), passos, grade: recorte, lado_amostra, a_cada });
+        }
         if !continuar(celulas as u64) && passo.saturating_add(1) < passos {
             return Err(ErroDeTrabalho::Cancelado);
         }
@@ -1002,7 +1045,7 @@ fn verificar_difusao(
     if resultado.len() != esperado {
         return Ok(Err(Recusa("resultado com tamanho que não fecha a grade".into())));
     }
-    let refeito = executar_difusao(lado, passos, semente, continuar)?;
+    let refeito = executar_difusao(lado, passos, semente, continuar, &mut Nenhum)?;
     Ok(match refeito.resultado.as_chunks::<8>().0.iter().zip(resultado.as_chunks::<8>().0).position(|(a, b)| a != b) {
         None => Ok(()),
         Some(k) => Err(Recusa(format!("a célula {k} difere da recomputação"))),

@@ -1107,13 +1107,17 @@ impl Ciencia {
 // O worker pede e devolve unidades
 // ---------------------------------------------------------------------------
 
-impl Agendador for Ciencia {
-    fn proxima(&self, agora: u64) -> Option<PedidoDeUnidade> {
+impl Ciencia {
+    /// A próxima unidade para o worker. Com `tipo`, só desse tipo (a GPU pede
+    /// as de matriz); sem, primeiro as que outros nós pediram.
+    fn proxima_filtrada(&self, agora: u64, tipo: Option<TipoDeTrabalho>) -> Option<PedidoDeUnidade> {
         if self.somente_leitura.is_some() {
             return None;
         }
-        // primeiro o que outros nós pediram e este aceitou: tem prazo
-        if let Some(remota) = self.proxima_remota(agora) {
+        // primeiro o que outros nós pediram e este aceitou: tem prazo (só na CPU)
+        if tipo.is_none()
+            && let Some(remota) = self.proxima_remota(agora)
+        {
             return Some(remota);
         }
         let ritmo = |t| self.ultrax().map_or(20.0e6, |u| u.ritmo_de(t)).max(1.0);
@@ -1140,6 +1144,9 @@ impl Agendador for Ciencia {
                 }
             }
             for job in jobs.iter_mut().filter(|j| j.estado == EstadoDoJob::Rodando) {
+                if tipo.is_some_and(|t| job.esp.modelo().tipo() != t) {
+                    continue;
+                }
                 let orcamento = job.esp.orcamento_milicreditos();
                 if orcamento > 0 && job.consumo.milicreditos() >= orcamento {
                     job.estado = EstadoDoJob::SemOrcamento;
@@ -1210,7 +1217,9 @@ impl Agendador for Ciencia {
         });
         Some(pedido)
     }
+}
 
+impl Agendador for Ciencia {
     fn tem_trabalho(&self) -> bool {
         if self.rede.lock().is_ok_and(|r| !r.fila.is_empty()) {
             return true;
@@ -1223,6 +1232,13 @@ impl Agendador for Ciencia {
         })
     }
 
+    fn proxima(&self, agora: u64) -> Option<PedidoDeUnidade> {
+        self.proxima_filtrada(agora, None)
+    }
+
+    fn proxima_do_tipo(&self, agora: u64, tipo: TipoDeTrabalho) -> Option<PedidoDeUnidade> {
+        self.proxima_filtrada(agora, Some(tipo))
+    }
     fn comecou(&self, job: &[u8; HASH_LEN], indice: u64, linha: u32, entrada: Option<[u8; HASH_LEN]>) {
         let tipo = self.jobs.lock().ok().and_then(|mut jobs| {
             let j = jobs.iter_mut().find(|j| &j.id == job)?;
@@ -1594,6 +1610,41 @@ mod testes {
         let j = c.jobs.lock().unwrap();
         let x = j.iter().find(|x| &x.id == id).unwrap();
         (x.estado, x.feitas.concluidas(), x.abandonadas.concluidas())
+    }
+
+    /// A GPU recebe as unidades de JOB de matriz, a CPU confere o que volta,
+    /// e a unidade fecha no JOB como se tivesse rodado na CPU.
+    #[test]
+    fn unidade_de_matriz_vai_para_a_gpu_e_fecha_no_job() {
+        let p = pasta("gpu-job");
+        let partida = crate::ultrax::Partida { ligado: true, linhas: 1, uso_cpu: 100, memoria_mib: 256, debug: false, gpu: true, gpu_uso: 100 };
+        let u = Ultrax::abrir(&p, &[9; 32], 2, &partida, Box::new(|_, _| {}));
+        u.lab.store(false, Ordering::Relaxed);
+        let c = Ciencia::abrir(&p, u.worker(), "teste").unwrap();
+        c.ligar(&u);
+        let id = c.submeter(pedido(2, 16)).unwrap();
+        for _ in 0..2 {
+            let (numero, n) = u.gpu_pegar("GPU de teste").unwrap();
+            assert_eq!(n, 16);
+            let entrada = u.gpu_entrada(numero).unwrap();
+            let v: Vec<u64> = entrada.as_chunks::<4>().0.iter().map(|x| u64::from(u32::from_le_bytes(*x))).collect();
+            let n = n as usize;
+            let (a, b) = v.split_at(n * n);
+            let mut m = vec![0u32; n * n];
+            for i in 0..n {
+                for k in 0..n {
+                    for j in 0..n {
+                        m[i * n + j] += (a[i * n + k] * b[k * n + j]) as u32;
+                    }
+                }
+            }
+            let bytes: Vec<u8> = m.iter().flat_map(|x| x.to_le_bytes()).collect();
+            u.gpu_resultado(numero, &bytes).unwrap();
+        }
+        assert_eq!(estado(&c, &id), (EstadoDoJob::Concluido, 2, 0));
+        // sem unidade pendente e sem LAB, a GPU não recebe nada
+        assert!(u.gpu_pegar("GPU de teste").is_err());
+        let _ = std::fs::remove_dir_all(p);
     }
 
     #[test]

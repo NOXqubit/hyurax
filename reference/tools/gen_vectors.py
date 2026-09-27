@@ -1080,11 +1080,20 @@ def vec_rotas() -> dict:
         semente = crypto.H(b"vetor rotas %d" % n)
         resultado, ops = rotas.executar(n, passos, [instancia], semente)
         otimo = resultado[24] == 1
+        # a marca diz "a ultima passada nao achou troca"; o certificado diz
+        # "nenhuma troca encurta". Com o teto de passadas, a rota pode ficar
+        # otima justo na ultima passada: marca 0 e certificado aceito.
+        try:
+            rotas.certificar_otimo_local(n, passos, instancia, resultado)
+            certificado = True
+        except rotas.Recusa:
+            certificado = False
         casos.append({
             "tamanho": n, "passos": passos, "instancia": instancia, "semente": h(semente),
             "resultado": h(resultado), "operacoes": ops,
             "comprimento": rotas.certificar(n, passos, instancia, resultado),
             "otimo_local": otimo,
+            "otimo_local_certificado": certificado,
         })
     base = casos[3]
     n, passos, inst = base["tamanho"], base["passos"], base["instancia"]

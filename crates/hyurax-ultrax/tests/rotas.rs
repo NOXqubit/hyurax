@@ -63,8 +63,15 @@ fn dois_opt_certificados_e_conferencia_iguais_ao_gabarito() {
         assert_eq!(exec.resultado, esperado, "n = {}", e.tamanho());
         assert_eq!(exec.operacoes, caso["operacoes"].as_u64().unwrap(), "operações, n = {}", e.tamanho());
         assert_eq!(certificar(&e, &esperado).unwrap(), caso["comprimento"].as_u64().unwrap());
+        // a marca ("a última passada não achou troca") e o certificado ("nenhuma
+        // troca encurta") são fatos diferentes: com o teto de passadas, a rota
+        // pode ficar ótima justo na última passada
+        assert_eq!(esperado[24] == 1, caso["otimo_local"].as_bool().unwrap(), "marca de ótimo local, n = {}", e.tamanho());
         let local = certificar_otimo_local(&e, &esperado, &mut |_| true).unwrap();
-        assert_eq!(local.is_ok(), caso["otimo_local"].as_bool().unwrap(), "ótimo local, n = {}", e.tamanho());
+        assert_eq!(local.is_ok(), caso["otimo_local_certificado"].as_bool().unwrap(), "certificado de ótimo local, n = {}", e.tamanho());
+        if caso["otimo_local"].as_bool().unwrap() {
+            assert!(local.is_ok(), "marca 1 sem certificado, n = {}", e.tamanho());
+        }
         assert!(verificar(&e, &semente, &esperado).is_ok());
     }
     let a = &doc["adulterados"];

@@ -62,6 +62,7 @@
 
 use hyurax_crypto::xof;
 
+use crate::observador::{Amostra, Nenhum, Observador};
 use crate::trabalho::{ErroDeTrabalho, Especificacao, Execucao, Recusa, TipoDeTrabalho};
 
 /// Quantos parâmetros extras a especificação leva.
@@ -341,6 +342,7 @@ fn simular(
     p: Parametros,
     semente: &[u8],
     continuar: &mut dyn FnMut(u64) -> bool,
+    obs: &mut dyn Observador,
 ) -> Result<Vec<u8>, ErroDeTrabalho> {
     let m = tamanho.saturating_mul(2);
     let w = aptidoes(p.selecao, p.dominancia);
@@ -376,15 +378,33 @@ fn simular(
                 }
             }
         }
+        if obs.quer() {
+            obs.amostra(Amostra::Genetica {
+                geracao: u32::try_from(g.saturating_add(1)).unwrap_or(u32::MAX),
+                geracoes: passos,
+                copias: m,
+                contagens: ks.clone(),
+            });
+        }
     }
     Ok(saida)
 }
 
 /// Executa a unidade.
 pub fn executar(esp: &Especificacao, semente: &[u8], continuar: &mut dyn FnMut(u64) -> bool) -> Result<Execucao, ErroDeTrabalho> {
+    executar_observado(esp, semente, continuar, &mut Nenhum)
+}
+
+/// Como [`executar`], entregando as contagens de cada geração a `obs`.
+pub fn executar_observado(
+    esp: &Especificacao,
+    semente: &[u8],
+    continuar: &mut dyn FnMut(u64) -> bool,
+    obs: &mut dyn Observador,
+) -> Result<Execucao, ErroDeTrabalho> {
     validar(esp.tamanho(), esp.passos(), esp.parametros())?;
     let p = Parametros::de(esp.parametros())?;
-    let resultado = simular(esp.tamanho(), esp.passos(), p, semente, continuar)?;
+    let resultado = simular(esp.tamanho(), esp.passos(), p, semente, continuar, obs)?;
     Ok(Execucao { resultado, operacoes: operacoes(esp), curva: Vec::new() })
 }
 
