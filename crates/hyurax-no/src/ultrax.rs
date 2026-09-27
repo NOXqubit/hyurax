@@ -2199,6 +2199,9 @@ pub struct Auditoria {
     pub refeitas_iguais: u64,
     /// O placar foi comparado com o histórico (só dá quando o histórico está inteiro).
     pub placar_conferido: bool,
+    /// Registros cujas operações só se conferem refazendo (rotas): aqui só
+    /// o teto é conferido, e as refeitas da amostra conferem o número exato.
+    pub so_refazendo: u64,
     /// Descrição de cada problema achado.
     pub problemas: Vec<String>,
     /// Limites do que a auditoria prova, para ninguém ler mais do que ela diz.
@@ -2214,10 +2217,21 @@ fn worker_da_pasta(dados: &Path) -> Option<[u8; PUBKEY_LEN]> {
 
 /// As operações que a instância exige pelo modelo de custo do tipo.
 fn operacoes_da_instancia(esp: &Especificacao, semente: &[u8]) -> u64 {
+    operacoes_conhecidas(esp, semente).unwrap_or_else(|| esp.operacoes_maximas())
+}
+
+/// As operações que a tarefa tem de declarar, quando dá para saber sem
+/// executar. Nas rotas, o 2-opt para quando não acha melhora: a conta
+/// depende do caminho, e só refazendo se confere (a auditoria refaz uma
+/// amostra e compara as operações também).
+fn operacoes_conhecidas(esp: &Especificacao, semente: &[u8]) -> Option<u64> {
     match esp.tipo() {
-        TipoDeTrabalho::Mochila => trabalho::instancia_mochila(esp.tamanho(), semente)
-            .map_or(esp.operacoes_maximas(), |i| u64::from(esp.tamanho()).saturating_mul(u64::from(i.capacidade).saturating_add(1))),
-        _ => esp.operacoes_maximas(),
+        TipoDeTrabalho::Mochila => Some(
+            trabalho::instancia_mochila(esp.tamanho(), semente)
+                .map_or(esp.operacoes_maximas(), |i| u64::from(esp.tamanho()).saturating_mul(u64::from(i.capacidade).saturating_add(1))),
+        ),
+        TipoDeTrabalho::Rotas => None,
+        _ => Some(esp.operacoes_maximas()),
     }
 }
 
@@ -2272,9 +2286,18 @@ fn conferir_linha(r: &Registro, t: Option<&Tarefa>, esperado: Option<[u8; PUBKEY
     }
     // as operações são a base do Work Score: precisam ser as do modelo de custo
     let semente = if r.desafio { semente_do_desafio(&r.especificacao) } else { t.map_or([0; HASH_LEN], |t| t.semente_para(&prova.worker)) };
-    let devidas = operacoes_da_instancia(&r.especificacao, &semente);
-    if r.operacoes != devidas {
-        a.problemas.push(format!("#{n:08}: declara {} operações, e a tarefa tem {devidas}", r.operacoes));
+    match operacoes_conhecidas(&r.especificacao, &semente) {
+        Some(devidas) if r.operacoes != devidas => {
+            a.problemas.push(format!("#{n:08}: declara {} operações, e a tarefa tem {devidas}", r.operacoes));
+        }
+        Some(_) => {}
+        None => {
+            // o teto do modelo de custo ainda vale: declarar mais que ele é mentira
+            if r.operacoes > r.especificacao.operacoes_maximas() {
+                a.problemas.push(format!("#{n:08}: declara {} operações, acima do teto da tarefa", r.operacoes));
+            }
+            a.so_refazendo = a.so_refazendo.saturating_add(1);
+        }
     }
     if r.desafio && r.estado == Estado::Liquidada && desafio.is_some_and(|d| Some(d.esperado.to_string()) != r.resultado.map(|x| hex(&x))) {
         a.problemas.push(format!("#{n:08}: desafio liquidado com resposta diferente da do gabarito"));
@@ -2399,6 +2422,12 @@ pub fn comando(args: &[String]) -> Result<(), String> {
             println!("  vereditos assinados:  {} de {} com prova", a.vereditos_certos, a.com_prova);
             println!("  refeitas do zero:     {} iguais de {} sorteadas", a.refeitas_iguais, a.refeitas);
             println!("  placar conferido:     {}", if a.placar_conferido { "sim, contra o histórico inteiro" } else { "não" });
+            if a.so_refazendo > 0 {
+                println!(
+                    "  aviso: {} registro(s) de rotas: as operações dependem do caminho do 2-opt; aqui só o teto é conferido, e o número exato nas refeitas",
+                    a.so_refazendo
+                );
+            }
             for aviso in &a.avisos {
                 println!("  aviso: {aviso}");
             }
