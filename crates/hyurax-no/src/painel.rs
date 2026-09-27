@@ -890,8 +890,24 @@ fn uma_rodada(painel: &Arc<Painel>, rede: &Arc<Rede>, o: &Opcoes, endereco: [u8;
 // Carteira pelo painel (programa com janela)
 // ---------------------------------------------------------------------------
 
-fn criar_carteira(painel: &Painel, campos: &[(String, String)]) -> Result<String, String> {
+/// Só uma criação ou importação de carteira por vez. Sem isto, dois pedidos
+/// juntos (a janela e o navegador, ou um clique duplo) passam os dois pela
+/// conferência "já existe?" durante a cifragem, que leva até um minuto, e o
+/// segundo sobrescreve a carteira do primeiro: quem recebeu o primeiro
+/// endereço fica com uma chave que não existe mais.
+static MEXENDO_NA_CARTEIRA: Mutex<()> = Mutex::new(());
+
+fn trava_da_carteira() -> Result<std::sync::MutexGuard<'static, ()>, String> {
+    match MEXENDO_NA_CARTEIRA.try_lock() {
+        Ok(g) => Ok(g),
+        Err(std::sync::TryLockError::Poisoned(p)) => Ok(p.into_inner()),
+        Err(std::sync::TryLockError::WouldBlock) => Err("já estou criando uma carteira; espere terminar".into()),
+    }
+}
+
+fn criar_carteira(painel: &Painel, campos: &[(String, String)]) -> Result<[u8; ADDRESS_LEN], String> {
     let arquivo = painel.ambiente.arquivo_carteira.as_ref().ok_or("este painel não guarda carteira")?;
+    let _trava = trava_da_carteira()?;
     if painel.endereco().is_some() || arquivo.exists() {
         return Err("já existe uma carteira neste computador".into());
     }
@@ -909,11 +925,12 @@ fn criar_carteira(painel: &Painel, campos: &[(String, String)]) -> Result<String
         *e = Some(endereco);
     }
     painel.registrar("carteira", format!("carteira criada: {}", hex(&endereco)));
-    Ok(hex(&endereco))
+    Ok(endereco)
 }
 
-fn importar_carteira(painel: &Painel, campos: &[(String, String)]) -> Result<String, String> {
+fn importar_carteira(painel: &Painel, campos: &[(String, String)]) -> Result<[u8; ADDRESS_LEN], String> {
     let arquivo = painel.ambiente.arquivo_carteira.as_ref().ok_or("este painel não guarda carteira")?;
+    let _trava = trava_da_carteira()?;
     if painel.endereco().is_some() || arquivo.exists() {
         return Err("já existe uma carteira neste computador".into());
     }
@@ -933,7 +950,7 @@ fn importar_carteira(painel: &Painel, campos: &[(String, String)]) -> Result<Str
     if carteira::e_formato_antigo(conteudo) {
         painel.registrar("carteira", "aviso: esta carteira guarda o segredo sem senha; proteja com hyurax-no carteira cifrar".into());
     }
-    Ok(hex(&endereco))
+    Ok(endereco)
 }
 
 fn trocar_sementes(painel: &Painel, rede: &Arc<Rede>, campos: &[(String, String)]) -> Result<Vec<String>, String> {
@@ -1077,6 +1094,14 @@ fn enviar_do_painel(painel: &Painel, rede: &Arc<Rede>, o: &Opcoes, campos: &[(St
         &campo(campos, "taxa").unwrap_or_default(),
         o.rede.nome,
     )?;
+    // Só conferir, sem assinar: a tela pergunta antes de pedir a senha, para um
+    // endereço com erro de digitação ser apontado já no primeiro passo.
+    if campo(campos, "so_conferir").as_deref() == Some("1") {
+        return Ok(format!(
+            "{{\"conferido\":true,\"para\":\"{}\"}}",
+            crate::endereco::mostrar(&pedido.para, o.rede.nome)
+        ));
+    }
     let senha = campo(campos, "senha").unwrap_or_default();
     if senha.is_empty() {
         return Err("digite a senha da carteira para assinar o envio.".into());
@@ -1510,6 +1535,7 @@ fn atender(mut s: TcpStream, porta: u16, painel: &Painel, rede: &Arc<Rede>, o: &
                 let json = estado_json(painel, rede, o, local && host_local, porta);
                 responder(&mut s, "200 OK", "application/json; charset=utf-8", json.as_bytes())
             }
+            "/api/termos" => responder(&mut s, "200 OK", "text/html; charset=utf-8", crate::termos::html().as_bytes()),
             // As matrizes da tarefa da GPU: só para a janela deste computador.
             r if r.starts_with("/api/ultrax/gpu/entrada/") => {
                 let numero = r.trim_start_matches("/api/ultrax/gpu/entrada/").parse::<u32>().ok();
@@ -1563,11 +1589,11 @@ fn atender(mut s: TcpStream, porta: u16, painel: &Painel, rede: &Arc<Rede>, o: &
             responder(&mut s, "204 No Content", "text/plain", b"")
         }
         "/api/carteira/nova" if app => {
-            let r = criar_carteira(painel, &campos).map(|e| format!("{{\"endereco\":\"{e}\"}}"));
+            let r = criar_carteira(painel, &campos).map(|e| format!("{{\"endereco\":\"{}\"}}", crate::endereco::mostrar(&e, o.rede.nome)));
             responder_json(&mut s, r)
         }
         "/api/carteira/importar" if app => {
-            let r = importar_carteira(painel, &campos).map(|e| format!("{{\"endereco\":\"{e}\"}}"));
+            let r = importar_carteira(painel, &campos).map(|e| format!("{{\"endereco\":\"{}\"}}", crate::endereco::mostrar(&e, o.rede.nome)));
             responder_json(&mut s, r)
         }
         "/api/enviar" => responder_json(&mut s, enviar_do_painel(painel, rede, o, &campos)),
@@ -1591,6 +1617,10 @@ fn atender(mut s: TcpStream, porta: u16, painel: &Painel, rede: &Arc<Rede>, o: &
         }
         "/api/ajustes" if app => {
             let r = trocar_ajustes(painel, &campos).map(|()| "{\"ok\":true}".to_string());
+            responder_json(&mut s, r)
+        }
+        "/api/termos/aceitar" if app => {
+            let r = crate::termos::aceitar(&painel.ambiente.dados, "programa").map(|()| "{\"ok\":true}".to_string());
             responder_json(&mut s, r)
         }
         "/api/ultrax/gpu/pegar" => {
@@ -1780,6 +1810,12 @@ fn estado_json(painel: &Painel, rede: &Rede, o: &Opcoes, pode_mandar: bool, port
     );
     // ULTRAX: o motor de trabalho útil, separado da mineração.
     let _ = write!(j, "\"ultrax\":{},", painel.ultrax.json());
+    let _ = write!(
+        j,
+        "\"termos_aceitos\":{},\"termos_versao\":{},",
+        !painel.ambiente.app || crate::termos::aceitos(&painel.ambiente.dados),
+        crate::termos::VERSAO
+    );
     // Segundo fator, envio e histórico da carteira.
     let (fator_ligado, exige_envio, trava) = painel
         .seguranca
@@ -1910,6 +1946,17 @@ mod testes {
         // %XX quebrado ou UTF-8 inválido: o par some, não vira lixo.
         assert!(campo(&campos_do_formulario("a=%ZZ"), "a").is_none());
         assert!(campo(&campos_do_formulario("a=%FF"), "a").is_none());
+    }
+
+    #[test]
+    fn so_uma_carteira_nasce_por_vez() {
+        // Enquanto uma criação está no meio (a cifragem leva segundos), a
+        // segunda é recusada na hora, em vez de sobrescrever a primeira.
+        let primeira = trava_da_carteira().unwrap();
+        let segunda = std::thread::spawn(|| trava_da_carteira().map(|_| ())).join().unwrap();
+        assert_eq!(segunda, Err("já estou criando uma carteira; espere terminar".to_string()));
+        drop(primeira);
+        assert!(std::thread::spawn(|| trava_da_carteira().map(|_| ())).join().unwrap().is_ok());
     }
 
     #[test]

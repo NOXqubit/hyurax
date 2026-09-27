@@ -22,8 +22,16 @@ name = "hyurax"
 path = "src/bin/hyurax.rs"
 required-features = ["janela"]
 
+# O instalador leva o programa dentro: montar depois do `hyurax`, com
+# HYURAX_CARGA_EXE e HYURAX_CARGA_DLL apontando para os arquivos.
+[[bin]]
+name = "hyurax-instalador"
+path = "src/bin/instalador.rs"
+required-features = ["instalador"]
+
 [features]
 janela = ["dep:wry", "dep:tao"]
+instalador = ["janela"]
 
 [dependencies]
 hyurax-identidade.workspace = true

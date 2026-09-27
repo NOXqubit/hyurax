@@ -374,6 +374,17 @@
   <div class="boot-palco">
     <div class="boot-trilho" aria-hidden="true"><i id="boot-avanco"></i></div>
 
+    <!-- Termos: antes de tudo, no programa com janela, até o aceite da versão atual. -->
+    <div class="boot-cena" id="cena-termos" hidden>
+      <p class="boot-etiqueta">Antes de começar</p>
+      <h1 class="boot-titulo">Termos de uso</h1>
+      <p class="boot-texto">Rede de teste, HYX sem valor, sua carteira só com você, e o que o programa faz no seu computador. Leia até o fim.</p>
+      <div class="termos-texto" id="termos-texto" tabindex="0" aria-label="Texto dos termos de uso">Carregando os termos…</div>
+      <label class="chave-liga" for="termos-li"><input type="checkbox" id="termos-li" autocomplete="off" disabled><span id="termos-li-rotulo">Role até o fim para poder aceitar</span></label>
+      <p class="erro" id="erro-termos" role="alert"></p>
+      <div class="acoes"><button type="button" id="termos-aceitar" class="principal" disabled>Aceito e quero continuar</button></div>
+    </div>
+
     <!-- Partida: o que aparece enquanto o primeiro estado não chega. -->
     <div class="boot-cena" id="cena-partida">
       <p class="boot-etiqueta">Abrindo</p>

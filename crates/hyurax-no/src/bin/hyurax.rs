@@ -24,6 +24,10 @@ use hyurax_no::painel::{self, JaAberto};
 const TITULO: &str = "Hyurax";
 
 fn main() {
+    if std::env::args().any(|a| a == "--desinstalar") {
+        desinstalar();
+        return;
+    }
     let (url, motor) = match painel::ja_aberto() {
         JaAberto::Sim(porta) => (Some(format!("http://127.0.0.1:{porta}/")), None),
         JaAberto::Nao => match painel::app() {
@@ -152,8 +156,62 @@ fn abrir_no_navegador(destino: &str) {
     let _ = std::process::Command::new("explorer").arg(destino).spawn();
 }
 
+/// O "Adicionar ou remover programas" do Windows chama `Hyurax.exe --desinstalar`.
+///
+/// Só age se o programa estiver na pasta onde o instalador põe
+/// (`%LOCALAPPDATA%\Programs\Hyurax`): nunca apaga outra pasta. Tira os
+/// atalhos e o registro, mostra onde ficaram os dados (a carteira!) e apaga a
+/// pasta do programa depois que este processo termina. Os dados em
+/// `%APPDATA%\Hyurax` ficam: são do dono.
+fn desinstalar() {
+    use std::os::windows::process::CommandExt as _;
+    use std::path::PathBuf;
+    const SEM_JANELA: u32 = 0x0800_0000;
+    let aqui = std::env::current_exe().ok().and_then(|e| e.parent().map(PathBuf::from));
+    let esperada = std::env::var_os("LOCALAPPDATA").map(|l| PathBuf::from(l).join("Programs").join("Hyurax"));
+    let mesma = |a: &PathBuf, b: &PathBuf| {
+        a.display().to_string().trim_end_matches('\\').eq_ignore_ascii_case(b.display().to_string().trim_end_matches('\\'))
+    };
+    let mensagem = match (&aqui, &esperada) {
+        (Some(a), Some(e)) if mesma(a, e) => {
+            let _ = std::process::Command::new("reg.exe")
+                .args(["delete", r"HKCU\Software\Microsoft\Windows\CurrentVersion\Uninstall\Hyurax", "/f"])
+                .creation_flags(SEM_JANELA)
+                .status();
+            let menu = std::env::var_os("APPDATA").map(|a| PathBuf::from(a).join(r"Microsoft\Windows\Start Menu\Programs"));
+            let mesa = std::env::var_os("USERPROFILE").map(|u| PathBuf::from(u).join("Desktop"));
+            for pasta in [menu, mesa].into_iter().flatten() {
+                let _ = std::fs::remove_file(pasta.join("Hyurax.lnk"));
+            }
+            // A pasta do programa só sai depois que este processo termina (quando
+            // a pessoa fecha a janela de aviso): o Windows não apaga um .exe em uso.
+            let alvo = a.display().to_string().replace('\'', "''");
+            let script = format!(
+                "Wait-Process -Id {} -ErrorAction SilentlyContinue; Start-Sleep -Seconds 1; Remove-Item -LiteralPath '{alvo}' -Recurse -Force",
+                std::process::id()
+            );
+            let _ = std::process::Command::new("powershell.exe")
+                .args(["-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-Command", &script])
+                .creation_flags(SEM_JANELA)
+                .spawn();
+            r"desinstalar:O Hyurax foi desinstalado. Os seus dados continuam em %APPDATA%\Hyurax, inclusive a CARTEIRA: se for apagar essa pasta, guarde antes uma cópia do carteira.txt.".to_string()
+        }
+        _ => r"desinstalar:Esta cópia do Hyurax não foi instalada pelo instalador (ela não está em %LOCALAPPDATA%\Programs\Hyurax). Para remover, apague a pasta dela; os dados ficam em %APPDATA%\Hyurax.".to_string(),
+    };
+    abrir_janela(None, Some(&mensagem), None);
+}
+
 /// Página mostrada quando o motor não consegue ligar.
 fn pagina_de_erro(erro: &str) -> String {
+    // a desinstalação usa a mesma página, com outro título e sem "abra de novo"
+    let (titulo, erro, rodape) = match erro.strip_prefix("desinstalar:") {
+        Some(m) => ("Desinstalação do Hyurax", m, "Pode fechar esta janela."),
+        None => (
+            "O Hyurax não conseguiu ligar",
+            erro,
+            r"Feche esta janela e abra o programa de novo. Se continuar, a pasta de dados fica em %APPDATA%\Hyurax.",
+        ),
+    };
     let seguro: String = erro
         .chars()
         .map(|c| match c {
@@ -169,9 +227,8 @@ fn pagina_de_erro(erro: &str) -> String {
          font:15px/1.6 Consolas,monospace;display:grid;place-items:center;min-height:100vh\">\
          <div style=\"max-width:560px;padding:24px;border:1px solid rgba(243,243,241,.3)\">\
          <p style=\"letter-spacing:.3em;font-size:11px;opacity:.6\">HYURAX</p>\
-         <h1 style=\"font:700 28px Bahnschrift,sans-serif\">O Hyurax não conseguiu ligar</h1>\
-         <p>{seguro}</p><p style=\"opacity:.6\">Feche esta janela e abra o programa de novo. \
-         Se continuar, a pasta de dados fica em %APPDATA%\\Hyurax.</p></div>"
+         <h1 style=\"font:700 28px Bahnschrift,sans-serif\">{titulo}</h1>\
+         <p>{seguro}</p><p style=\"opacity:.6\">{rodape}</p></div>"
     )
 }
 

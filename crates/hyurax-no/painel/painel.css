@@ -925,6 +925,23 @@ input[type="number"] {
 }
 .boot-titulo:focus { outline: none; }
 .boot-texto { color: var(--tinta-2); max-width: 62ch; }
+.termos-texto {
+  max-height: min(46vh, 420px);
+  overflow-y: auto;
+  border: 1px solid var(--fio-forte);
+  border-radius: var(--r-p);
+  padding: 4px 18px 14px;
+  background: var(--painel);
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--tinta-2);
+  max-width: 72ch;
+}
+.termos-texto h2 { font: 700 20px/1.2 var(--display); font-stretch: 85%; color: var(--tinta); margin: 14px 0 4px; }
+.termos-texto h3 { font: 600 15px/1.3 var(--texto); color: var(--tinta); margin: 18px 0 4px; }
+.termos-texto strong { color: var(--tinta); }
+.termos-texto code { font-family: var(--mono); font-size: 12px; }
+.termos-texto ul { padding-left: 18px; }
 .boot-nota { color: var(--tinta-3); font-size: 11.5px; border-left: 1px solid var(--fio-forte); padding-left: 10px; max-width: 62ch; }
 /* Os três fatos do passo 1: tabela sem tabela, só riscos finos. */
 .fatos { display: grid; gap: 0; margin: 6px 0; max-width: 64ch; }

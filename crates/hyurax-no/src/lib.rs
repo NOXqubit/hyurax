@@ -26,6 +26,7 @@ mod maquinas;
 pub mod painel;
 mod seguranca;
 pub mod sementes;
+pub mod termos;
 mod senha;
 pub mod totp;
 mod ultrax;

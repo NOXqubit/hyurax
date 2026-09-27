@@ -395,7 +395,7 @@ const caracteres = (s) => [...s].length;
 
 function mostrarCena(nome) {
   bootCena = nome;
-  for (const id of ["partida", "trava", "1", "2", "3"]) {
+  for (const id of ["termos", "partida", "trava", "1", "2", "3"]) {
     const cena = $(`cena-${id}`);
     if (cena) cena.hidden = id !== nome;
   }
@@ -430,6 +430,14 @@ function desenharBoot(e) {
   }
   // O nó respondeu: a partida terminou, mesmo que a tela seja a do cadeado.
   acenderRegistro(true);
+  // Termos antes de tudo (só no programa com janela, que é quem grava o aceite).
+  if (e.app === true && e.termos_aceitos === false && e.pode_mandar === true && e.trancado !== true) {
+    if (bootCena !== "termos") {
+      mostrarCena("termos");
+      carregarTermos();
+    }
+    return;
+  }
   if (e.trancado === true) {
     if (bootCena !== "trava") {
       mostrarCena("trava");
@@ -449,6 +457,38 @@ function desenharBoot(e) {
   if (bootCena === "2" && bootOcupado) return;
   fecharBoot();
 }
+
+// Termos: o botão só vale depois de ler até o fim e marcar que leu.
+async function carregarTermos() {
+  try {
+    const r = await fetch("/api/termos", { cache: "no-store" });
+    $("termos-texto").innerHTML = await r.text();
+  } catch {
+    texto("erro-termos", "Não consegui carregar os termos. Feche e abra o programa de novo.");
+  }
+  const caixa = $("termos-texto");
+  const leuTudo = () => caixa.scrollTop + caixa.clientHeight >= caixa.scrollHeight - 24;
+  const conferir = () => {
+    if (leuTudo()) {
+      $("termos-li").disabled = false;
+      texto("termos-li-rotulo", "Li e aceito os termos de uso");
+    }
+  };
+  caixa.addEventListener("scroll", conferir);
+  conferir();
+  caixa.focus();
+}
+$("termos-li").addEventListener("change", () => { $("termos-aceitar").disabled = !$("termos-li").checked; });
+$("termos-aceitar").addEventListener("click", () => comBotao($("termos-aceitar"), async () => {
+  texto("erro-termos", "");
+  const res = await postar("/api/termos/aceitar");
+  if (!res.ok) {
+    texto("erro-termos", erroDe(res, "Não deu para gravar o aceite."));
+    return;
+  }
+  mostrarCena("partida");
+  await ler();
+}));
 
 // Passo 1 → 2.
 $("boot-comecar").addEventListener("click", () => {
@@ -675,9 +715,14 @@ enviarDialogo.addEventListener("keydown", (ev) => {
 });
 enviarDialogo.addEventListener("close", () => { enviarPedido = null; $("en-senha").value = ""; $("en-codigo").value = ""; });
 
-// A conferência é feita aqui só para mostrar: o nó confere tudo de novo antes de assinar.
+// A conferência rápida é feita aqui; depois o nó confere o pedido (inclusive o
+// dígito verificador do endereço) antes de pedir a senha, e de novo ao assinar.
 $("f-enviar").addEventListener("submit", (ev) => {
   ev.preventDefault();
+  comBotao($("en-conferir"), () => conferirEnvio());
+});
+
+async function conferirEnvio() {
   texto("erro-enviar", "");
   const para = $("en-para").value.replace(/\s+/g, "");
   const valor = $("en-valor").value.trim().replace(",", ".");
@@ -706,17 +751,23 @@ $("f-enviar").addEventListener("submit", (ev) => {
     texto("erro-enviar", `Não dá: valor mais taxa somam ${total.toFixed(8)} HYX e você tem ${saldo.toFixed(8)} gastáveis.`);
     return;
   }
+  const conferido = await postar("/api/enviar", { para, valor, taxa, so_conferir: "1" });
+  if (!conferido.ok || conferido.dados?.conferido !== true) {
+    texto("erro-enviar", erroDe(conferido, "O nó não aceitou este envio."));
+    return;
+  }
   enviarPedido = { para, valor, taxa };
-  texto("cf-para", para);
+  texto("cf-para", conferido.dados.para || para);
   texto("cf-valor", moeda(Number(valor).toFixed(8)));
   texto("cf-taxa", moeda(taxaNum.toFixed(8)));
   texto("cf-total", moeda(total.toFixed(8)));
   texto("cf-sobra", moeda((saldo - total).toFixed(8)));
   const exige = ultimo?.seguranca?.exige_envio === true;
   $("en-codigo-caixa").hidden = !exige;
+  texto("erro-assinar", "");
   faseEnviar("conferir");
   $("en-senha").focus();
-});
+}
 
 $("en-assinar").addEventListener("click", () => comBotao($("en-assinar"), async () => {
   if (!enviarPedido) return;
