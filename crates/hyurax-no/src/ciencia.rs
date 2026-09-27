@@ -172,7 +172,7 @@ pub(crate) struct Job {
 impl Job {
     fn novo(esp: EspecificacaoDeJob, id: [u8; HASH_LEN], criado_ms: u64) -> Self {
         let estado = if esp.nivel() >= Nivel::Concordancia { EstadoDoJob::AguardandoNos } else { EstadoDoJob::Rodando };
-        let agregador = Agregador::novo(esp.modelo().tipo());
+        let agregador = Agregador::novo(esp.modelo());
         Self {
             esp,
             id,
