@@ -57,10 +57,23 @@ anteriores ignoram. Por isso, nós novos e antigos convivem na mesma rede.
 - Os resultados são simulações e modelos: não são laudo nem recomendação
   profissional.
 - Os créditos não são dinheiro.
+- Uso para maiores de 18 anos, ou com autorização do responsável.
+- Instalar só em computador próprio, ou com autorização do dono.
+- A rede de teste pode ser reiniciada, e o HYX de teste some junto.
+- O projeto não guarda, não troca nem intermedeia criptoativos.
+- Novas cláusulas: lei brasileira, foro da cidade de quem usa, e parte
+  inválida não derruba o resto.
+- A limitação de responsabilidade não vale para dano de propósito, nem tira
+  direito que a lei não deixa tirar.
+- Revisados contra o CDC, a LGPD, o Marco Civil, o ECA, o Código Penal e a
+  Lei 14.478.
 - O programa pede o aceite de novo a quem aceitou a versão 1.
 - O site traz os mesmos termos e a política de privacidade atualizada.
-- Ainda não foram revisados por advogado. Isso é obrigatório antes da rede
-  principal.
+- Não têm assinatura de advogado. Antes da rede principal, com valor de
+  verdade, isso é recomendado.
+- A página de termos do site mostrava `**` soltos no texto, e no programa o
+  negrito caía no trecho errado. Os dois conversores foram corrigidos, e um
+  teste impede a volta do defeito.
 
 ### Desempenho
 
@@ -72,7 +85,7 @@ anteriores ignoram. Por isso, nós novos e antigos convivem na mesma rede.
 ## Conferir antes de rodar
 
 Cada arquivo da Release tem a soma SHA-256 ao lado. O programa ainda não tem
-assinatura digital, então o Windows pode mostrar "O Windows protegeu o
+assinatura digital (veja [`ASSINATURA-DIGITAL.md`](ASSINATURA-DIGITAL.md)), então o Windows pode mostrar "O Windows protegeu o
 computador". Para abrir, clique em *Mais informações* e depois em *Executar
 assim mesmo*. Faça isso só depois de conferir a soma.
 

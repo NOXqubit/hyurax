@@ -1,8 +1,8 @@
 # Gera site/termos.html a partir de docs/TERMOS-DE-USO.md, o mesmo texto que o
 # instalador e o programa mostram. Rode de novo sempre que os termos mudarem:
 #   python site/tools/gerar_termos.py
-# O conversor é o mínimo que o texto usa (títulos, parágrafos, listas,
-# negrito e código), igual ao de crates/hyurax-no/src/termos.rs.
+# O conversor é o mínimo que o texto usa (títulos, parágrafos, listas com um
+# nível de sub-lista, negrito e código), igual ao de crates/hyurax-no/src/termos.rs.
 
 from __future__ import annotations
 
@@ -21,43 +21,70 @@ def em_linha(t: str) -> str:
 
 
 def converter(md: str) -> str:
+    """Igual a `termos::html` do programa: o item da lista é juntado inteiro
+    antes de converter (negrito que quebra a linha fecha no lugar certo), e
+    há um nível de sub-lista."""
     if "-->" in md:
         md = md.split("-->", 1)[1]
-    saida, paragrafo, em_lista = [], [], False
+    saida: list[str] = []
+    paragrafo: list[str] = []
+    em_lista = False
+    item: list[str] = []
+    subitens: list[list[str]] = []
 
-    def fechar():
+    def fechar_paragrafo():
         if paragrafo:
             saida.append(f"<p>{em_linha(' '.join(paragrafo))}</p>")
             paragrafo.clear()
 
+    def escrever_item():
+        if not item and not subitens:
+            return
+        s = f"<li>{em_linha(' '.join(item))}"
+        if subitens:
+            s += "<ul>" + "".join(f"<li>{em_linha(' '.join(x))}</li>" for x in subitens) + "</ul>"
+        saida.append(s + "</li>")
+        item.clear()
+        subitens.clear()
+
     for linha in md.splitlines():
         crua = linha.rstrip()
+        recuo = len(crua) - len(crua.lstrip())
         l = html.escape(crua.strip(), quote=True)
-        if l.startswith("- "):
-            fechar()
-            if not em_lista:
+        if recuo == 0 and l.startswith("- "):
+            fechar_paragrafo()
+            if em_lista:
+                escrever_item()
+            else:
                 saida.append("<ul>")
                 em_lista = True
-            saida.append(f"<li>{em_linha(l[2:])}")
+            item.append(l[2:])
             continue
-        if em_lista and crua.startswith("  ") and l:
-            saida[-1] += " " + em_linha(l)
+        if em_lista and recuo >= 2 and l:
+            if l.startswith("- ") and recuo < 4:
+                subitens.append([l[2:]])
+            elif subitens and recuo >= 4:
+                subitens[-1].append(l)
+            else:
+                item.append(l)
             continue
         if em_lista:
+            escrever_item()
             saida.append("</ul>")
             em_lista = False
         if l.startswith("## "):
-            fechar()
+            fechar_paragrafo()
             saida.append(f"<h2>{em_linha(l[3:])}</h2>")
         elif l.startswith("# "):
-            fechar()
+            fechar_paragrafo()
             saida.append(f"<h1>{em_linha(l[2:])}</h1>")
         elif not l:
-            fechar()
+            fechar_paragrafo()
         else:
             paragrafo.append(l)
-    fechar()
+    fechar_paragrafo()
     if em_lista:
+        escrever_item()
         saida.append("</ul>")
     return "\n".join(saida)
 
