@@ -25,12 +25,18 @@ pub fn comando(args: &[String]) -> Result<(), String> {
         pausa_fixa_ms: o.pausa_ms,
         painel_na_rede: o.painel_rede,
     })?;
+    if o.api_externa {
+        n.api_externa.store(true, Ordering::Relaxed);
+    }
     let porta = hyurax_nucleo::api::abrir(&n, o.painel_porta, hyurax_interface::ARQUIVOS)?;
     // a chave da sessão vai no endereço (depois do #): sem ela o painel só
     // mostra o aviso para abrir por aqui
     println!("Painel: {}", hyurax_nucleo::api::endereco_da_janela(porta, &n.chave_painel));
     if n.na_rede.load(Ordering::Relaxed) {
         println!("  (visível na rede local; comandos só deste computador)");
+    }
+    if o.api_externa {
+        println!("  API externa ligada em /api/v1/externa/ (contas: hyurax-no contas)");
     }
     if endereco.is_none() {
         println!("  sem --arquivo nem --endereco: nada de mineração (não há para onde mandar a recompensa)");

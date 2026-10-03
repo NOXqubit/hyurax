@@ -158,9 +158,24 @@ pub(super) fn atender(s: &mut TcpStream, p: &Pedido, n: &Arc<Nucleo>) -> std::io
                 n.na_rede.store(na_rede, Ordering::Relaxed);
                 n.barramento.registrar("painel", if na_rede { "painel visível na rede local (só leitura)" } else { "painel só neste computador" });
             }
+            if let Some(ligar) = sim("api_externa") {
+                n.api_externa.store(ligar, Ordering::Relaxed);
+                n.barramento.registrar("painel", if ligar { "API externa ligada: contas de cliente mandam JOBs pela rede" } else { "API externa desligada" });
+            }
             n.gravar_ajustes();
             ok()
         }
+        "/api/v1/contas/criar" => {
+            let limite = numero("limite_milicreditos").map_or(0, u64::from);
+            n.contas.criar(&texto("nome"), limite, crate::util::agora_unix()).map(|(c, chave)| {
+                n.barramento.registrar("painel", format!("conta {} ({}) criada para a API externa", c.id, c.nome));
+                json!({ "id": c.id, "nome": c.nome, "chave": chave, "aviso": "guarde a chave agora: ela não aparece de novo" })
+            })
+        }
+        "/api/v1/contas/revogar" => numero("id").ok_or_else(|| "falta o id".to_string()).and_then(|id| n.contas.revogar(id)).map(|()| {
+            n.barramento.registrar("painel", "conta da API externa revogada");
+            json!({ "ok": true })
+        }),
         "/api/v1/sementes" if janela => n.trocar_sementes(&texto("lista")).map(|l| json!({ "sementes": l })),
         "/api/v1/maquinas" => n.maquinas.trocar(&texto("lista")).map(|l| {
             n.gravar_ajustes();

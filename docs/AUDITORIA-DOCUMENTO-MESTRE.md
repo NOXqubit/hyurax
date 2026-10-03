@@ -136,7 +136,8 @@ disso está pronto para produção: a rede é de **teste**.
 | Reputação local de workers | REAL (gravada em disco, [REPUTACAO.md](REPUTACAO.md)) |
 | Nós verificados (3 meses), Gold Score | REAL na visão local de cada nó: 90 dias, 100 unidades verificadas, até 1% de recusas, ativo em 30 dias ([REPUTACAO.md](REPUTACAO.md)) |
 | Marketplace, preços, pagamentos, disputas | FORA DO PC (a troca de unidades entre nós existe, sem preço) |
-| Contas, backend, API externa, painel web, aplicativo móvel | FORA DO PC |
+| Contas de cliente e API externa | REAL no nó: contas com chave (só o hash em disco), créditos por conta, isolamento entre contas, limites, relatórios e dados brutos ([API-EXTERNA.md](API-EXTERNA.md), `tests/api_externa.rs`) |
+| Backend central, painel web multi-cliente, aplicativo móvel nativo | AUSENTE (exige servidor sempre no ar; ver o fim deste documento) |
 | HYX Index | só documento, sem lastro (`docs/HYX-INDEX.md`) |
 | Promessa de rentabilidade ou valorização | nenhuma encontrada em README, site, docs, termos e tela |
 

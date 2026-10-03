@@ -7,6 +7,7 @@
 mod cadeia;
 mod carteira;
 mod ciencia;
+mod contas;
 mod identidade;
 mod opcoes;
 mod lancamento;
@@ -34,9 +35,15 @@ Com --pasta P, tudo fica em P. Redes: testnet (padrão) e regtest (local).
       Minera N blocos (padrão 1; 0 = sem parar).
 
   hyurax-no painel [--arquivo carteira.txt | --endereco ENDERECO]
-                   [--painel-porta 8800] [--painel-rede]
+                   [--painel-porta 8800] [--painel-rede] [--api-externa]
       O núcleo inteiro com a interface em http://127.0.0.1:8800 no navegador.
       --painel-rede deixa o celular no mesmo Wi-Fi ver (sem poder mandar).
+      --api-externa liga /api/v1/externa/ para as contas de cliente.
+
+  hyurax-no contas criar --nome NOME [--creditos MILICREDITOS]
+  hyurax-no contas listar | revogar --id N | limite --id N --creditos M
+      Contas da API externa. A chave de acesso aparece uma vez, na criação;
+      em disco fica só o hash. Créditos são contabilidade, não dinheiro.
 
   hyurax-no no [--exportar resumo.json]
       Só o nó: escuta, sincroniza, serve e propaga. Sem minerar.
@@ -85,6 +92,7 @@ fn principal(args: &[String]) -> Result<(), String> {
         "ciencia" => ciencia::comando(resto),
         "lancamento" => lancamento::comando(resto),
         "identidade" => identidade::comando(resto),
+        "contas" => contas::comando(resto),
         "versao" | "--versao" | "-V" => {
             println!("{} {} · rede de teste", hyurax_nucleo::PRODUTO, hyurax_nucleo::VERSAO);
             Ok(())

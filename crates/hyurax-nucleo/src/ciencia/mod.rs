@@ -357,6 +357,10 @@ pub struct Situacao {
     pub tipo: TipoDeTrabalho,
     /// O resumo consolidado do que já foi conferido.
     pub agregado: String,
+    /// Créditos consumidos até aqui, em milicréditos.
+    pub milicreditos: u64,
+    /// Orçamento do JOB, em milicréditos (0: sem limite).
+    pub orcamento_milicreditos: u64,
 }
 
 impl Situacao {
@@ -370,6 +374,8 @@ impl Situacao {
             total: j.esp.unidades(),
             tipo: j.esp.modelo().tipo(),
             agregado: j.agregador.texto(),
+            milicreditos: j.consumo.milicreditos(),
+            orcamento_milicreditos: j.esp.orcamento_milicreditos(),
         }
     }
 }

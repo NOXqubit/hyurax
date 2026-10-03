@@ -39,6 +39,7 @@ pub mod cadeia;
 pub mod carteira;
 pub mod ciencia;
 pub mod config;
+pub mod contas;
 pub mod identidade;
 pub mod instalacao;
 pub mod maquinas;

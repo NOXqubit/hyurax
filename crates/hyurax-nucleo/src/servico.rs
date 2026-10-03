@@ -79,6 +79,10 @@ pub struct Nucleo {
     pub sementes: Mutex<Vec<String>>,
     /// O painel responde a outros aparelhos da rede local (só leitura).
     pub na_rede: AtomicBool,
+    /// A API externa responde (contas de cliente, `/api/v1/externa/`).
+    pub api_externa: AtomicBool,
+    /// As contas de cliente da API externa.
+    pub contas: crate::contas::Contas,
     /// Porta do nó para outros nós (0: não escuta).
     pub porta_p2p: u16,
     /// Quando o núcleo ligou.
@@ -192,6 +196,8 @@ impl Nucleo {
             metricas: Metricas::iniciar(),
             maquinas,
             na_rede: AtomicBool::new(ajustes.na_rede || p.painel_na_rede),
+            api_externa: AtomicBool::new(ajustes.api_externa),
+            contas: crate::contas::Contas::abrir(Some(pastas.config.clone())),
             sementes: Mutex::new(sementes),
             ajustes: Mutex::new(ajustes.clone()),
             inicio: Instant::now(),
@@ -261,6 +267,7 @@ impl Nucleo {
         a.linhas = Some(self.mineracao.linhas.load(Ordering::Relaxed));
         a.limite_cpu = self.mineracao.limite_cpu.load(Ordering::Relaxed);
         a.na_rede = self.na_rede.load(Ordering::Relaxed);
+        a.api_externa = self.api_externa.load(Ordering::Relaxed);
         a.ultrax = u.ligado.load(Ordering::Relaxed);
         a.ultrax_linhas = u.linhas.load(Ordering::Relaxed);
         a.ultrax_limite_cpu = u.uso_cpu.load(Ordering::Relaxed);

@@ -51,6 +51,8 @@ pub struct Ajustes {
     pub ultrax_gpu_limite: u32,
     /// Calcular unidades que outros nós pedirem.
     pub aceitar_rede: bool,
+    /// A API externa (contas de cliente mandam JOBs de fora).
+    pub api_externa: bool,
     /// Sementes do dono.
     pub sementes: Vec<String>,
     /// As outras máquinas do dono.
@@ -76,6 +78,7 @@ impl Default for Ajustes {
             ultrax_gpu: false,
             ultrax_gpu_limite: 50,
             aceitar_rede: false,
+            api_externa: false,
             sementes: Vec::new(),
             maquinas: Vec::new(),
         }
@@ -111,6 +114,7 @@ impl Ajustes {
                 "ultrax_gpu" => a.ultrax_gpu = sim,
                 "ultrax_gpu_uso" | "ultrax_gpu_limite" => a.ultrax_gpu_limite = faixa(10, 100).unwrap_or(a.ultrax_gpu_limite),
                 "aceitar_rede" => a.aceitar_rede = sim,
+                "api_externa" => a.api_externa = sim,
                 "semente" if sementes::valida(v) && a.sementes.len() < sementes::MAXIMO => a.sementes.push(v.to_string()),
                 "maquina" if sementes::valida(v) && a.maquinas.len() < maquinas::MAXIMO => a.maquinas.push(v.to_string()),
                 _ => {}
@@ -141,6 +145,7 @@ impl Ajustes {
         let _ = writeln!(t, "ultrax_gpu={}", b(self.ultrax_gpu));
         let _ = writeln!(t, "ultrax_gpu_limite={}", self.ultrax_gpu_limite);
         let _ = writeln!(t, "aceitar_rede={}", b(self.aceitar_rede));
+        let _ = writeln!(t, "api_externa={}", b(self.api_externa));
         for s in &self.sementes {
             let _ = writeln!(t, "semente={s}");
         }

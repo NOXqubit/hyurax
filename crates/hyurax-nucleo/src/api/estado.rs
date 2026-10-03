@@ -187,6 +187,13 @@ pub fn estado(n: &Nucleo, pode_mandar: bool, url_celular: &str) -> Value {
                 "watts_nucleo": ajustes.watts_nucleo,
                 "centavos_kwh": ajustes.centavos_kwh,
                 "na_rede": n.na_rede.load(Ordering::Relaxed),
+                "api_externa": n.api_externa.load(Ordering::Relaxed),
+                // as contas (sem chave: em disco só há o hash) só para quem pode mandar
+                "contas": if pode_mandar {
+                    n.contas.listar().iter().map(|c| json!({ "id": c.id, "nome": c.nome, "limite_milicreditos": c.limite_milicreditos, "revogada": c.revogada, "jobs": n.contas.jobs_da_conta(c.id).len() })).collect::<Vec<_>>()
+                } else {
+                    Vec::new()
+                },
                 "url_celular": url_celular,
                 "avisar_bloco": ajustes.avisar_bloco,
                 "som_bloco": ajustes.som_bloco,

@@ -27,6 +27,8 @@ pub struct Pedido {
     pub origem: Option<String>,
     /// A chave de sessão do painel (`X-Hyurax-Chave`), quando veio.
     pub chave: Option<String>,
+    /// `Authorization` (API externa), quando veio.
+    pub autorizacao: Option<String>,
     /// O corpo, em bytes.
     pub corpo: Vec<u8>,
 }
@@ -82,7 +84,7 @@ pub fn ler(s: &mut TcpStream, corpo_max: &dyn Fn(&str) -> usize) -> Option<Pedid
     let mut primeira = linhas.next()?.split(' ');
     let metodo = primeira.next()?.to_string();
     let caminho = primeira.next()?.to_string();
-    let (mut host, mut origem, mut chave, mut tamanho) = (String::new(), None, None, 0usize);
+    let (mut host, mut origem, mut chave, mut autorizacao, mut tamanho) = (String::new(), None, None, None, 0usize);
     let maximo = corpo_max(caminho.split('?').next().unwrap_or(""));
     for l in linhas {
         let Some((nome, valor)) = l.split_once(':') else { continue };
@@ -91,6 +93,7 @@ pub fn ler(s: &mut TcpStream, corpo_max: &dyn Fn(&str) -> usize) -> Option<Pedid
             "host" => host = valor.to_ascii_lowercase(),
             "origin" => origem = Some(valor.to_ascii_lowercase()),
             "x-hyurax-chave" => chave = Some(valor.to_string()),
+            "authorization" => autorizacao = Some(valor.to_string()),
             "content-length" => tamanho = valor.parse().ok().filter(|t| *t <= maximo)?,
             _ => {}
         }
@@ -107,7 +110,7 @@ pub fn ler(s: &mut TcpStream, corpo_max: &dyn Fn(&str) -> usize) -> Option<Pedid
         corpo.extend_from_slice(pedaco.get(..n)?);
     }
     corpo.truncate(tamanho);
-    Some(Pedido { metodo, caminho, host, origem, chave, corpo })
+    Some(Pedido { metodo, caminho, host, origem, chave, autorizacao, corpo })
 }
 
 /// Compara duas chaves sem vazar, pelo tempo, quantos caracteres bateram.

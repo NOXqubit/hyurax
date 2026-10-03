@@ -34,6 +34,8 @@ pub struct Opcoes {
     pub painel_porta: u16,
     /// Painel visível na rede local.
     pub painel_rede: bool,
+    /// API externa ligada (contas de cliente mandam JOBs).
+    pub api_externa: bool,
 }
 
 /// Lê as opções. Sem `--pasta`, usa as pastas do sistema (as mesmas do
@@ -61,6 +63,7 @@ pub fn ler(args: &[String]) -> Result<Opcoes, String> {
         exportar: None,
         painel_porta: config::PORTA_PAINEL,
         painel_rede: false,
+        api_externa: false,
     };
     // endereços se leem no fim, quando já se sabe a rede: o prefixo depende dela
     let (mut endereco_texto, mut para_texto) = (None::<String>, None::<String>);
@@ -73,6 +76,10 @@ pub fn ler(args: &[String]) -> Result<Opcoes, String> {
             }
             "--painel-rede" => {
                 o.painel_rede = true;
+                continue;
+            }
+            "--api-externa" => {
+                o.api_externa = true;
                 continue;
             }
             _ => {}

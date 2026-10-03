@@ -27,6 +27,7 @@
 
 mod comandos;
 pub mod estado;
+pub mod externa;
 pub mod http;
 
 use std::io::{Read, Write};
@@ -167,7 +168,7 @@ pub fn abrir(n: &Arc<Nucleo>, porta: u16, arquivos: Arquivos) -> Result<u16, Str
     // no programa com janela a porta sempre abre para a rede, e quem decide se
     // responde a outro aparelho é o ajuste "ver no celular", conferido antes
     // de ler qualquer byte
-    let ip = if n.modo == Modo::Janela || n.na_rede.load(Ordering::Relaxed) {
+    let ip = if n.modo == Modo::Janela || n.na_rede.load(Ordering::Relaxed) || n.api_externa.load(Ordering::Relaxed) {
         IpAddr::V4(Ipv4Addr::UNSPECIFIED)
     } else {
         IpAddr::V4(Ipv4Addr::LOCALHOST)
@@ -180,7 +181,7 @@ pub fn abrir(n: &Arc<Nucleo>, porta: u16, arquivos: Arquivos) -> Result<u16, Str
             let Ok(mut s) = conexao else { continue };
             let Ok(par) = s.peer_addr() else { continue };
             let local = par.ip().is_loopback();
-            if !local && !n.na_rede.load(Ordering::Relaxed) {
+            if !local && !n.na_rede.load(Ordering::Relaxed) && !n.api_externa.load(Ordering::Relaxed) {
                 // recusa sem ler nada e sem abrir linha: a resposta cabe no
                 // buffer do sistema, então a escrita não bloqueia
                 let _ = s.set_nonblocking(true);
@@ -237,10 +238,10 @@ fn host_local(host: &str, porta: u16) -> bool {
 }
 
 fn atender(mut s: TcpStream, porta: u16, local: bool, n: &Arc<Nucleo>, arquivos: Arquivos) -> std::io::Result<()> {
-    // de fora, só leitura: nenhum corpo é aceito
+    // de fora, só leitura: nenhum corpo é aceito (fora os formulários da API externa)
     let corpo_max = |rota: &str| {
         if !local {
-            0
+            externa::corpo_max(rota)
         } else if rota.starts_with("/api/v1/gpu/resultado/") {
             ultrax::GPU_RESULTADO_MAX
         } else {
@@ -252,6 +253,17 @@ fn atender(mut s: TcpStream, porta: u16, local: bool, n: &Arc<Nucleo>, arquivos:
     };
     if !host_valido(&p.host, porta) {
         return responder(&mut s, "403 Forbidden", "text/plain", b"host desconhecido");
+    }
+    // a API externa: só com ela ligada, e só com a chave de uma conta
+    if p.rota().starts_with(externa::PREFIXO) {
+        if !n.api_externa.load(Ordering::Relaxed) {
+            return responder(&mut s, "403 Forbidden", "application/json; charset=utf-8", r#"{"erro":"a API externa deste nó está desligada"}"#.as_bytes());
+        }
+        return externa::atender(&mut s, &p, n);
+    }
+    // com só a API externa ligada, o resto continua só deste computador
+    if !local && !n.na_rede.load(Ordering::Relaxed) {
+        return responder(&mut s, "403 Forbidden", "text/plain", b"painel so neste computador");
     }
     let com_chave = p.chave_enviada().is_some_and(|c| http::mesma_chave(c, &n.chave_painel));
     // a janela deste computador: daqui, Host local e a chave desta abertura
