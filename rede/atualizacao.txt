@@ -1,0 +1,9 @@
+formato=HYURAX-ATUALIZACAO-v1
+versao=1.0.1
+rede=testnet
+instalador=hyurax-instalador-windows-x86_64.exe
+endereco=https://github.com/NOXqubit/hyurax/releases/download/v1.0.1/hyurax-instalador-windows-x86_64.exe
+tamanho=7617536
+sha512=a4115531326b80a18b077d0e84cb9ea6f33d54f4f173d29e16fecba5041b5074c6261edc6c482465add74b5f12acffd8786d4124f1c7211c2eed46f0a0a39f1b
+notas=Malha: os nós se acham na rede local, abrem a porta no roteador sozinhos (UPnP/NAT-PMP), conversam por pontes quando não há porta aberta, e blocos e transações viajam em pacotes do Éter (pendrive, Bluetooth, som).
+assinatura=f72809441a018ee71b90b0981f89e4434c5fc06ea08f18b2bb95dc74bbdc4aff19197d8ed3fa0eb54ada86c707aca551d7f3fd37baf2240defe47b0976f48f05

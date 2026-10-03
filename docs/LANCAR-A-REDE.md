@@ -88,15 +88,16 @@ fora de qualquer repositório; a chave pública está em
 hyurax-no lancamento assinar --chave D:\chaves-hyurax\lancamento.chave --instalador hyurax-instalador-windows-x86_64.exe --versao 1.0.1 --notas "o que mudou"
 ```
 
-3. Confira e publique o `atualizacao.txt` na mesma Release:
+3. Confira o `atualizacao.txt`:
 
 ```bash
 hyurax-no lancamento conferir --arquivo atualizacao.txt --instalador hyurax-instalador-windows-x86_64.exe
 ```
 
-```bash
-gh release upload v1.0.1 atualizacao.txt
-```
+4. Copie-o para `rede/atualizacao.txt`, faça o commit e envie para a `main`.
+   O fluxo `atualizacao` do GitHub anexa o arquivo à Release da versão
+   escrita nele. O fluxo só copia: quem assina é você, aqui, e um manifesto
+   sem a assinatura certa é recusado pelos programas.
 
 Os programas abertos acham a versão nova em até 12 horas (ou na hora, em
 Ajustes → Atualização → Buscar agora), conferem a assinatura, baixam o

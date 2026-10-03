@@ -1,0 +1,36 @@
+# Anexa o manifesto de atualização assinado à Release da versão dele.
+#
+# O segredo de lançamento nunca sai deste computador do autor: a assinatura é
+# feita aqui (`hyurax-no lancamento assinar`, docs/LANCAR-A-REDE.md, passo 2b)
+# e o `rede/atualizacao.txt` assinado, que é público, entra no repositório.
+# Este fluxo só copia o arquivo para a Release; ele não tem como assiná-lo,
+# e os programas instalados recusam um manifesto que não confira com a chave
+# de lançamento.
+
+name: atualizacao
+
+on:
+  push:
+    branches: [main]
+    paths: ["rede/atualizacao.txt"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  anexar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: anexar à Release da versão
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          versao="$(sed -n 's/^versao=//p' rede/atualizacao.txt)"
+          [ -n "$versao" ] || { echo "manifesto sem versao"; exit 1; }
+          grep -q '^assinatura=' rede/atualizacao.txt || { echo "manifesto sem assinatura"; exit 1; }
+          gh release upload "v${versao}" rede/atualizacao.txt --clobber --repo "${GITHUB_REPOSITORY}"
+          echo "atualizacao.txt anexado à Release v${versao}"
