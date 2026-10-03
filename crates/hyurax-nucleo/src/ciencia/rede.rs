@@ -304,12 +304,27 @@ impl Ciencia {
             }
         }
         let mut vencidas = Vec::new();
+        // quem desconectou não entrega mais: a unidade não espera o prazo
+        let conectados: std::collections::BTreeSet<u64> = rede.pares_com_identidade().into_iter().map(|(p, _)| p).collect();
         if let Ok(mut r) = self.rede.lock() {
-            r.ofertas.retain(|_, o| agora.saturating_sub(o.visto_ms) < OFERTA_VALE_MS);
+            r.ofertas.retain(|par, o| agora.saturating_sub(o.visto_ms) < OFERTA_VALE_MS && conectados.contains(par));
             r.guardados.retain(|_, g| agora.saturating_sub(g.desde_ms) < GUARDADO_MS);
             // unidade redundante vencida: quem não entregou falhou
             let mut sumiram = Vec::new();
             for ((job, indice), u) in r.redundantes.iter_mut() {
+                let mut caiu = false;
+                for x in &mut u.remotos {
+                    if let Remoto::Esperando { par, .. } | Remoto::Comprometido { par, .. } = x
+                        && !conectados.contains(par)
+                    {
+                        sumiram.push(*par);
+                        *x = Remoto::Falhou { worker: None, motivo: "o par desconectou antes de entregar".into() };
+                        caiu = true;
+                    }
+                }
+                if caiu && agora <= u.prazo_ms {
+                    vencidas.push((*job, *indice));
+                }
                 if agora > u.prazo_ms {
                     for x in &mut u.remotos {
                         if let Remoto::Esperando { par, .. } | Remoto::Comprometido { par, .. } = x {

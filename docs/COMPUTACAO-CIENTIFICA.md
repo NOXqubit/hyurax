@@ -275,9 +275,13 @@ Cada etapa termina com testes, clippy limpo e commit.
 ## 4. Limites que já se sabem
 
 - **Uma máquina, até agora.** A redundância entre nós só é real com nós
-  reais. O teste da Etapa D usa três processos com identidades separadas
-  numa máquina. Entre máquinas diferentes, fica para a testnet pública.
-- **Reputação só na memória.** Recomeça do zero quando o nó reabre.
+  reais. `crates/hyurax-nucleo/tests/tres_nos.rs` sobe três núcleos
+  completos (identidade, cadeia e pasta próprias) ligados pela rede P2P de
+  verdade em 127.0.0.1, roda um JOB de nível 3 e derruba um nó no meio de
+  outro. Entre máquinas diferentes (latência, perda, NAT), fica para a
+  testnet pública.
+- **Reputação local.** Gravada em disco desde 03/10/2026 (ver
+  [REPUTACAO.md](REPUTACAO.md)), mas cada nó tem a sua.
 - **Bytes pela rede não medidos.** A tela conta mensagens, não bytes.
 - **Medidas de uma rodada só.** Nesta máquina, o mesmo motor varia de
   0,7× a 1,3× entre duas rodadas sem mudança de código. Ganho abaixo

@@ -51,6 +51,9 @@ jobs:
       - uses: actions/checkout@v5
       - uses: dtolnay/rust-toolchain@stable
       - run: cargo test -p hyurax-net --locked -- --ignored --test-threads=1
+      # três núcleos completos ligados pelos sockets: JOB de nível 3 e um nó
+      # que cai no meio
+      - run: cargo test -p hyurax-nucleo --test tres_nos --locked -- --ignored
 
   dependencias:
     name: falhas conhecidas nas dependências (RustSec)

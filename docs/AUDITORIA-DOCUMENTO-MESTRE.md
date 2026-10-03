@@ -38,7 +38,7 @@ máquina), **AUSENTE**, **FORA DO PC** (backend, web, mobile, economia).
 | Gerenciamento de work units | REAL | ciclo de vida fechado em tabela; JOB pausado e sem orçamento fecham; cancelar para as unidades. Testes: `tarefa.rs`, `job_pausado_fecha_*`, `job_cancelado_nao_quer_mais_*` | — | — |
 | Execução por CPU/GPU | PARCIAL | 8 motores na CPU; matriz na GPU (WebGL 2) conferida por Freivalds. Testes: `job_na_cpu_pelas_linhas_do_worker_ate_concluir`, `gpu_honesta_e_creditada_e_adulterada_e_recusada`; GPU real usada na janela | GPU nos outros motores; backend nativo | — |
 | Checkpoints e recuperação | PARCIAL | checkpoint do JOB com SHA-512 e cópia anterior, gravado com `sync_all` e também ao fechar; linha que cai é reiniciada e devolve a unidade. Testes: `retoma_do_checkpoint_*`, `encerrar_grava_o_checkpoint_*`, `linha_que_cai_solta_a_memoria_e_a_tarefa` | checkpoint dentro de uma unidade longa (ela recomeça do zero) | — |
-| Envio e recebimento de resultados | SIMULADO | compromisso, revelação e maioria entre nós; testado com mensagens injetadas, sem socket (`ciencia/rede.rs`) | ensaio entre máquinas | dois PCs na mesma rede, JOB de nível 3 |
+| Envio e recebimento de resultados | REAL numa máquina | compromisso assinado, revelação e maioria entre três núcleos completos pelos sockets (Noise sobre TCP), e um nó que cai no meio: `tests/tres_nos.rs` | ensaio entre máquinas diferentes (latência, perda, NAT) | dois PCs na mesma rede, JOB de nível 3 |
 | Verificação e evidências | REAL | registro de prova assinado, veredito assinado, auditoria do histórico (agora com INPUT_HASH), `consenso.jsonl` com as assinaturas dos votos. Testes: `prova.rs`, `auditoria_pega_*` | âncora externa de tempo | `hyurax-no ultrax auditar` |
 | Telemetria real de hardware | REAL | CPU, RAM, GPU 3D/cálculo e memória da GPU pelos contadores do Windows, com origem na tela | temperatura (PENDENTE), bytes da rede | — |
 | Logs, falhas e reconexão | REAL | registro com teto e rotação; falha de código registrada; reconexão com espera crescente | — | — |
@@ -54,7 +54,7 @@ máquina), **AUSENTE**, **FORA DO PC** (backend, web, mobile, economia).
 |---|---|---|---|---|
 | Integridade (hashes, assinaturas) | REAL | INPUT_HASH, RESULT_HASH, registro assinado, raiz de Merkle das unidades no relatório | assinatura dos arquivos do JOB | — |
 | Reexecução | REAL | cada unidade é conferida antes de contar, pelo método adequado ao motor (Freivalds, ótimo exato, recomputação) | — | — |
-| Múltiplos nós | SIMULADO | maioria + conferência local da maioria; conluio pego; compromisso assinado pelo worker. Testado em processo | ensaio entre máquinas | — |
+| Múltiplos nós | REAL numa máquina | maioria + conferência local da maioria; conluio pego; compromisso assinado pelo worker. Três núcleos pelos sockets (`tests/tres_nos.rs`) | ensaio entre máquinas | — |
 | Verificação independente | PARCIAL | a CPU confere a GPU por outro algoritmo | nó verificador dedicado; segunda implementação | — |
 | Reprodutibilidade | PARCIAL | semente por unidade, `hyurax-no ciencia refazer`, versão do programa por unidade no registro e no relatório | versão por motor; hash dos dados embutidos | — |
 | Cálculo × validação científica | REAL | aviso no relatório, incertezas por motor (o erro da IA é o medido no JOB, não um número fixo), termos de uso | — | — |
@@ -65,12 +65,12 @@ máquina), **AUSENTE**, **FORA DO PC** (backend, web, mobile, economia).
 |---|---|---|
 | Divisão em unidades | REAL | semente derivada por índice; intervalos de progresso |
 | Filas e agendamento | REAL | no máximo 8 em voo por JOB; JOB tem prioridade sobre o LAB |
-| Seleção de nós compatíveis | SIMULADO | tipo, memória, ocupação, frescor da oferta, reputação local, par indisponível fica de fora 5 min |
+| Seleção de nós compatíveis | REAL numa máquina | tipo, memória, ocupação, frescor da oferta, reputação local, par indisponível fica de fora 5 min; oferta de par desconectado sai na hora |
 | Balanceamento | PARCIAL | entre linhas e GPU; entre nós, só por ocupação |
 | Persistência e retomada | REAL | checkpoint, gravação ao fechar |
 | Reexecução seletiva | PARCIAL | `ciencia refazer` de uma unidade; reabrir unidades com falha pela tela: AUSENTE |
 | Controle de duplicidade | REAL | resultado repetido não entra; CSV com uma linha por unidade |
-| Nós desconectados | PARCIAL | prazo devolve a unidade; faltar voto não conta como falha |
+| Nós desconectados | REAL | par que desconecta falha as unidades dele na hora (sem esperar o prazo), sem pesar na reputação; a unidade fecha com a maioria que sobrou, ou espera nós se não houver maioria (`tests/tres_nos.rs`) |
 
 ## §7 — telemetria e visualização 3D
 
