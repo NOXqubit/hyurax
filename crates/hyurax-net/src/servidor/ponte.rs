@@ -55,6 +55,11 @@ const REVERIFICAR_S: u64 = 600;
 /// Intervalo do anúncio na rede local.
 const ANUNCIO_A_CADA: Duration = Duration::from_secs(10);
 const PRAZO_CONTROLE: Duration = Duration::from_secs(5);
+/// Quanto o nó de identidade maior espera antes de discar por ponte a um nó
+/// de identidade menor. Se os dois discam juntos, cada um recusa a conexão
+/// do outro como duplicada e os dois caem; com o desempate, o menor disca
+/// primeiro e o maior só tenta se a conexão não veio.
+const ESPERA_DO_MAIOR_S: u64 = 20;
 
 /// Token de reserva -> (dono, expira).
 type TokensDeReserva = HashMap<[u8; 16], ([u8; 32], u64)>;
@@ -536,11 +541,20 @@ impl Rede {
                 .next()
         });
         let Some((alvo, ponte)) = candidato else { return };
+        if eu > alvo && !tentativas.contains_key(&alvo) {
+            if let Ok(mut t) = self.malha.tentativas.lock() {
+                t.insert(alvo, (0, agora.saturating_add(ESPERA_DO_MAIOR_S)));
+            }
+            return;
+        }
         let ok = self.conectar_por_ponte(ponte, alvo).is_ok();
+        // atraso sorteado de até 15 s: dois nós que começaram juntos não
+        // continuam tentando no mesmo segundo
+        let sorteio = u64::from(token_novo().first().copied().unwrap_or(0) % 16);
         if let Ok(mut t) = self.malha.tentativas.lock() {
             let e = t.entry(alvo).or_insert((0, 0));
             e.0 = if ok { 0 } else { e.0.saturating_add(1) };
-            e.1 = agora.saturating_add(30u64.saturating_mul(1u64 << e.0.min(7)));
+            e.1 = agora.saturating_add(30u64.saturating_mul(1u64 << e.0.min(7))).saturating_add(sorteio);
             if e.0 >= 8 {
                 t.remove(&alvo);
                 if let Ok(mut p) = self.malha.pontes.lock() {

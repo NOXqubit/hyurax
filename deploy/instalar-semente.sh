@@ -16,7 +16,7 @@
 # tem valor.
 set -euo pipefail
 
-VERSAO="${HYURAX_VERSAO:-v1.0.2}"
+VERSAO="${HYURAX_VERSAO:-v1.0.3}"
 PORTA_NO=8790
 PORTA_WEB=8080
 DADOS=/var/lib/hyurax
