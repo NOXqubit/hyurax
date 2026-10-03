@@ -26,6 +26,7 @@
 //! [`crate::ultrax`].
 
 use std::collections::VecDeque;
+#[cfg(windows)]
 use std::io::{BufRead, BufReader};
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
@@ -193,6 +194,8 @@ impl Metricas {
         m
     }
 
+    // no Linux a medição lê /proc e não tem o que anotar
+    #[cfg(not(target_os = "linux"))]
     fn anotar_problema(&self, p: String) {
         if let Ok(mut x) = self.problema.lock() {
             *x = Some(p);
