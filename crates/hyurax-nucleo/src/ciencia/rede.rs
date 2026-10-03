@@ -30,7 +30,7 @@ use hyurax_net::Rede;
 use hyurax_ultrax::job::Nivel;
 use hyurax_ultrax::prova::RegistroDeProva;
 use hyurax_ultrax::rede::{MensagemUltrax, RESULTADO_MAX, bit_do_tipo};
-use hyurax_ultrax::reputacao::Reputacao;
+use super::reputacao::{self, Historico};
 use hyurax_ultrax::tarefa::Estado;
 use hyurax_ultrax::trabalho::{self, Especificacao, TipoDeTrabalho, hash_da_entrada, hash_do_resultado};
 use hyurax_ultrax::validador::{Desfecho, Parecer, compromisso, por_maioria, revelacao_confere};
@@ -134,7 +134,10 @@ pub(super) struct EstadoDaRede {
     pub(super) redundantes: BTreeMap<([u8; HASH_LEN], u64), Redundante>,
     pub(super) pedidos: BTreeMap<u64, ([u8; HASH_LEN], u64)>,
     pub(super) proximo_pedido: u64,
-    pub(super) reputacao: BTreeMap<[u8; PUBKEY_LEN], Reputacao>,
+    /// O que este nó conferiu de cada worker (gravado em `reputacao.txt`).
+    pub(super) reputacao: BTreeMap<[u8; PUBKEY_LEN], Historico>,
+    /// A reputação mudou desde a última gravação.
+    pub(super) reputacao_suja: bool,
     /// Pares que recusaram ou sumiram: fora da escolha até este instante.
     pub(super) indisponiveis: BTreeMap<u64, u64>,
     pub(super) recebidas: u64,
@@ -151,6 +154,18 @@ pub(super) struct EstadoDaRede {
 const FILA_DE_DECISOES: usize = 256;
 
 impl EstadoDaRede {
+    /// Conta um parecer de um worker, com a data, e marca para gravar.
+    fn registrar(&mut self, worker: &[u8; PUBKEY_LEN], parecer: &Parecer, agora: u64) {
+        reputacao::abrir_espaco(&mut self.reputacao, worker);
+        let h = self.reputacao.entry(*worker).or_default();
+        if h.desde_ms == 0 {
+            h.desde_ms = agora;
+        }
+        h.ultimo_ms = agora;
+        h.rep.registrar(parecer);
+        self.reputacao_suja = true;
+    }
+
     /// Pares com oferta válida que aceitam este trabalho, dos de melhor
     /// reputação para os de pior.
     fn candidatos(&self, esp: &Especificacao, agora: u64) -> Vec<(u64, [u8; PUBKEY_LEN])> {
@@ -163,7 +178,7 @@ impl EstadoDaRede {
             .filter(|(_, o)| o.tipos & bit_do_tipo(esp.tipo()) != 0 && u64::from(o.memoria_mib) >= memoria)
             .filter(|(par, _)| ocupados(**par) < REMOTAS_POR_PAR)
             .filter(|(par, _)| self.indisponiveis.get(par).is_none_or(|ate| *ate <= agora))
-            .map(|(par, o)| (*par, o.worker, self.reputacao.get(&o.worker).map_or(500, Reputacao::nota)))
+            .map(|(par, o)| (*par, o.worker, self.reputacao.get(&o.worker).map_or(500, |h| h.rep.nota())))
             .collect();
         v.sort_by(|a, b| b.2.cmp(&a.2).then(a.0.cmp(&b.0)));
         v.into_iter().map(|(p, w, _)| (p, w)).collect()
@@ -186,6 +201,30 @@ impl Ciencia {
                 c.tratar_ultrax(par, corpo);
             }
         }));
+    }
+
+    /// Lê a reputação gravada (na abertura).
+    pub(super) fn carregar_reputacao(&self) {
+        let lida = reputacao::ler(&self.pasta);
+        if let Ok(mut r) = self.rede.lock() {
+            r.reputacao = lida;
+        }
+    }
+
+    /// Grava a reputação, se mudou (o vigia chama a cada segundo).
+    pub(super) fn gravar_reputacao_se_mudou(&self) {
+        let copia = match self.rede.lock() {
+            Ok(mut r) if r.reputacao_suja => {
+                r.reputacao_suja = false;
+                r.reputacao.clone()
+            }
+            _ => return,
+        };
+        if reputacao::gravar(&self.pasta, &copia).is_err()
+            && let Ok(mut r) = self.rede.lock()
+        {
+            r.reputacao_suja = true; // tenta de novo no próximo segundo
+        }
     }
 
     /// A thread que decide as unidades redundantes (uma por ciência). Ela só
@@ -731,12 +770,13 @@ impl Ciencia {
             })
             .collect();
         if let Ok(mut r) = self.rede.lock() {
+            let agora = agora_ms();
             for (worker, visto) in &vistos {
-                r.reputacao.entry(*worker).or_default().registrar(visto);
+                r.registrar(worker, visto, agora);
             }
             for (worker, motivo) in &falhas {
                 if let Some(w) = worker {
-                    r.reputacao.entry(*w).or_default().registrar(&Parecer::Recusado(hyurax_ultrax::trabalho::Recusa(motivo.clone())));
+                    r.registrar(w, &Parecer::Recusado(hyurax_ultrax::trabalho::Recusa(motivo.clone())), agora);
                 }
             }
         }
@@ -880,15 +920,21 @@ impl Ciencia {
         let reputacao: Vec<String> = r
             .reputacao
             .iter()
-            .map(|(w, rep)| {
+            .map(|(w, h)| {
+                let c = reputacao::classificar(h, agora);
                 format!(
-                    "{{\"worker\":\"{}\",\"enviadas\":{},\"verificadas\":{},\"recusadas\":{},\"divergentes\":{},\"nota\":{}}}",
+                    "{{\"worker\":\"{}\",\"enviadas\":{},\"verificadas\":{},\"recusadas\":{},\"divergentes\":{},\"nota\":{},\"gold\":{},\"verificado\":{},\"falta\":{},\"desde\":{},\"ultimo\":{}}}",
                     hex(w),
-                    rep.enviadas,
-                    rep.verificadas,
-                    rep.recusadas,
-                    rep.divergentes,
-                    rep.nota()
+                    h.rep.enviadas,
+                    h.rep.verificadas,
+                    h.rep.recusadas,
+                    h.rep.divergentes,
+                    h.rep.nota(),
+                    c.gold,
+                    c.verificado,
+                    serde_json::Value::from(c.falta),
+                    h.desde_ms,
+                    h.ultimo_ms
                 )
             })
             .collect();
@@ -929,11 +975,9 @@ mod testes {
         assert_eq!(c, vec![1, 4], "o 2 não faz matriz e o 3 não tem memória");
         assert!(r.candidatos(&esp, 1_000 + OFERTA_VALE_MS + 1).is_empty(), "oferta velha não vale");
         // o worker 4 com nota melhor passa na frente
-        let mut boa = Reputacao::default();
         for _ in 0..10 {
-            boa.registrar(&Parecer::Aceito);
+            r.registrar(&[4; 32], &Parecer::Aceito, 1_000);
         }
-        r.reputacao.insert([4; 32], boa);
         let c: Vec<u64> = r.candidatos(&esp, 2_000).into_iter().map(|(p, _)| p).collect();
         assert_eq!(c, vec![4, 1]);
     }
@@ -949,6 +993,7 @@ mod testes {
     use hyurax_crypto::ed25519_public_key;
     use hyurax_ultrax::job::{Dominio, PedidoDeJob};
     use hyurax_ultrax::validador::compromisso;
+    use hyurax_ultrax::reputacao::Reputacao;
 
     const LOCAL: [u8; SECRET_LEN] = [0x10; SECRET_LEN];
     const W1: [u8; SECRET_LEN] = [0x11; SECRET_LEN];
@@ -1085,7 +1130,7 @@ mod testes {
         }
         let reps = {
             let r = c.rede.lock().unwrap();
-            [LOCAL, W1, W2].iter().map(|s| r.reputacao.get(&ed25519_public_key(s)).cloned().unwrap_or_default()).collect()
+            [LOCAL, W1, W2].iter().map(|s| r.reputacao.get(&ed25519_public_key(s)).map(|h| h.rep).unwrap_or_default()).collect()
         };
         let (estado, feitas) = {
             let j = c.jobs.lock().unwrap();
@@ -1103,6 +1148,27 @@ mod testes {
         assert_eq!((estado, feitas), (EstadoDoJob::Concluido, 1));
         assert!(reps.iter().all(|r| r.verificadas == 1 && r.divergentes == 0 && r.recusadas == 0));
         assert!(eventos.iter().any(|e| e.contains("CONSENSUS 3/3")));
+    }
+
+    #[test]
+    fn reputacao_sobrevive_a_reabrir() {
+        let pasta = std::env::temp_dir().join(format!("hyurax-ciencia-reputacao-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&pasta);
+        {
+            let c = Ciencia::abrir(&pasta, ed25519_public_key(&LOCAL), "teste").unwrap();
+            let mut r = c.rede.lock().unwrap();
+            r.registrar(&[7; 32], &Parecer::Aceito, 1_000);
+            r.registrar(&[7; 32], &Parecer::Aceito, 5_000);
+            drop(r);
+            c.gravar_reputacao_se_mudou();
+            c.encerrar_vigia();
+        }
+        let c = Ciencia::abrir(&pasta, ed25519_public_key(&LOCAL), "teste").unwrap();
+        let h = c.rede.lock().unwrap().reputacao.get(&[7; 32]).copied().unwrap();
+        assert_eq!((h.rep.verificadas, h.desde_ms, h.ultimo_ms), (2, 1_000, 5_000));
+        assert!(c.json_rede().contains("\"gold\":"));
+        c.encerrar_vigia();
+        let _ = std::fs::remove_dir_all(&pasta);
     }
 
     #[test]

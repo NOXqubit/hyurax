@@ -229,9 +229,14 @@ function rede() {
     ["Unidades de outros nós aqui", `${fmt(r.remotas_executando)} rodando · ${fmt(r.remotas_na_fila)} na fila`],
     ["Nossas unidades em outros nós", fmt(r.redundantes)],
     ["Mensagens", `${fmt(r.mensagens_recebidas)} recebidas · ${fmt(r.mensagens_enviadas)} enviadas`],
-    ...(r.reputacao || []).slice(0, 6).map((x) => [
+    // Gold Score e "verificado" são a visão DESTE nó (docs/REPUTACAO.md)
+    ...[...(r.reputacao || [])].sort((a, b) => (b.gold ?? 0) - (a.gold ?? 0)).slice(0, 6).map((x) => [
       el("span", { class: "num", title: x.worker }, curto(x.worker, 10)),
-      `nota ${x.nota} · ${x.verificadas} aceitas · ${x.divergentes} divergentes · ${x.recusadas} recusadas`,
+      el(
+        "span",
+        { title: x.verificado ? "nó verificado: 90 dias, 100 unidades, até 1% de recusas, ativo em 30 dias" : `falta: ${(x.falta || []).join("; ")}` },
+        `${x.verificado ? "verificado · " : ""}Gold ${x.gold ?? "—"} · nota ${x.nota} · ${x.verificadas} aceitas · ${x.divergentes} divergentes · ${x.recusadas} recusadas`,
+      ),
     ]),
   ]);
 }

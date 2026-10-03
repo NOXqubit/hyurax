@@ -50,6 +50,11 @@ const ALVO_SAIDAS: usize = 8;
 /// computador (loopback) não tem teto por IP: vários nós numa máquina.
 const MAX_ENTRADAS: usize = 32;
 const MAX_ENTRADAS_POR_IP: usize = 4;
+/// Teto de conexões de entrada vindas da mesma faixa de endereços (IPv4 /24,
+/// IPv6 /48). Quem aluga muitos IPs costuma recebê-los vizinhos: isto encarece
+/// encher as vagas com identidades falsas, sem impedir (nenhum mecanismo
+/// isolado resolve Sybil). Rede local e loopback ficam de fora.
+const MAX_ENTRADAS_POR_FAIXA: usize = 8;
 /// Quantas transações do mempool entregar a um par que acabou de conectar.
 const MAX_MEMPOOL_NA_ENTRADA: usize = 1000;
 /// Quantos endereços anunciar num `ADDRS`.
@@ -516,6 +521,12 @@ impl Rede {
         if total >= MAX_ENTRADAS || (!ip.is_loopback() && deste_ip >= MAX_ENTRADAS_POR_IP) {
             return None;
         }
+        if let Some(f) = faixa(ip) {
+            let da_faixa: usize = entradas.iter().filter(|(outro, _)| faixa(**outro) == Some(f)).map(|(_, n)| *n).sum();
+            if da_faixa >= MAX_ENTRADAS_POR_FAIXA {
+                return None;
+            }
+        }
         entradas.insert(ip, deste_ip.saturating_add(1));
         drop(entradas);
         Some(VagaDeEntrada { rede: Arc::clone(self), ip })
@@ -886,6 +897,31 @@ impl Rede {
     }
 }
 
+/// A faixa de um endereço público (IPv4 /24, IPv6 /48), para o teto por
+/// faixa. Loopback, rede local e link-local não têm faixa (sem teto).
+fn faixa(ip: IpAddr) -> Option<[u8; 7]> {
+    match ip {
+        IpAddr::V4(v4) => {
+            if v4.is_loopback() || v4.is_private() || v4.is_link_local() || v4.is_unspecified() {
+                return None;
+            }
+            let [a, b, c, _] = v4.octets();
+            Some([4, a, b, c, 0, 0, 0])
+        }
+        IpAddr::V6(v6) => {
+            if let Some(v4) = v6.to_ipv4_mapped() {
+                return faixa(IpAddr::V4(v4));
+            }
+            let [o0, o1, o2, o3, o4, o5, ..] = v6.octets();
+            // loopback, local única (fc00::/7) e link-local (fe80::/10)
+            if v6.is_loopback() || v6.is_unspecified() || (o0 & 0xfe) == 0xfc || (o0 == 0xfe && (o1 & 0xc0) == 0x80) {
+                return None;
+            }
+            Some([6, o0, o1, o2, o3, o4, o5])
+        }
+    }
+}
+
 /// Espera uma mensagem inteira por até `prazo`, tolerando os timeouts curtos
 /// de leitura do socket. Um par que fica mudo, ou goteja, além do prazo é
 /// derrubado.
@@ -923,6 +959,21 @@ fn escrever_laco(mut escritor: Escritor, entrada: &Receiver<Vec<u8>>, rede: &Arc
 
 #[cfg(test)]
 mod testes {
+    #[test]
+    #[allow(clippy::unwrap_used)]
+    fn faixa_agrupa_vizinhos_publicos_e_ignora_a_rede_local() {
+        let ip = |s: &str| s.parse::<IpAddr>().unwrap();
+        assert_eq!(faixa(ip("200.10.20.1")), faixa(ip("200.10.20.254")));
+        assert_ne!(faixa(ip("200.10.20.1")), faixa(ip("200.10.21.1")));
+        assert_eq!(faixa(ip("192.168.0.5")), None);
+        assert_eq!(faixa(ip("10.1.2.3")), None);
+        assert_eq!(faixa(ip("127.0.0.1")), None);
+        assert_eq!(faixa(ip("2001:db8:1:2::1")), faixa(ip("2001:db8:1:ffff::9")));
+        assert_ne!(faixa(ip("2001:db8:1::1")), faixa(ip("2001:db8:2::1")));
+        assert_eq!(faixa(ip("fe80::1")), None);
+        assert_eq!(faixa(ip("::ffff:200.10.20.7")), faixa(ip("200.10.20.1")));
+    }
+
     use super::*;
 
     #[test]

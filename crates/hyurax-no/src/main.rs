@@ -7,6 +7,7 @@
 mod cadeia;
 mod carteira;
 mod ciencia;
+mod identidade;
 mod opcoes;
 mod lancamento;
 mod painel;
@@ -59,6 +60,11 @@ Com --pasta P, tudo fica em P. Redes: testnet (padrão) e regtest (local).
       Para quem publica: a chave de lançamento (nasce fora do repositório) e
       o manifesto assinado que a atualização segura do programa confere.
 
+  hyurax-no identidade ver|girar
+      ver: a identidade deste nó na rede e o WORKER_ID do ULTRAX.
+      girar: troca a identidade (com o programa fechado). A antiga fica
+      guardada ao lado; os outros nós passam a ver uma identidade nova.
+
 Opções de rede (comandos que sobem o nó):
   --rede testnet|regtest   --porta P   --semente IP:PORTA[,…]   --sem-sementes-padrao
 
@@ -78,6 +84,7 @@ fn principal(args: &[String]) -> Result<(), String> {
         "ultrax" => ultrax::comando(resto),
         "ciencia" => ciencia::comando(resto),
         "lancamento" => lancamento::comando(resto),
+        "identidade" => identidade::comando(resto),
         "versao" | "--versao" | "-V" => {
             println!("{} {} · rede de teste", hyurax_nucleo::PRODUTO, hyurax_nucleo::VERSAO);
             Ok(())

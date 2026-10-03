@@ -97,11 +97,11 @@ teste que a prova e o risco que sobra.
 |---|---|
 | Identidade criptográfica; comunicação autenticada | REAL |
 | Autenticação e autorização (API local) | REAL (chave de sessão) |
-| Rotação e revogação de credenciais | AUSENTE |
+| Rotação e revogação de credenciais | PARCIAL (rotação: `hyurax-no identidade girar`; revogação anunciada na rede: AUSENTE) |
 | Proteção de chaves privadas | PARCIAL (carteira cifrada; `no.chave` e `seguranca.txt` em texto, só o dono lê) |
 | Proteção contra replay | REAL (Noise; oferta com frescor; código de 6 dígitos não vale duas vezes) |
 | Rate limiting | PARCIAL (tetos de conexão, fila, livro e código; balde por par: AUSENTE) |
-| Detecção de Sybil | AUSENTE (banimento por identidade e IP; nenhum mecanismo isolado resolve, como o documento diz) |
+| Detecção de Sybil | PARCIAL (banimento por identidade e IP, teto por IP e por faixa /24, reputação que cobra trabalho verificado; nenhum mecanismo isolado resolve, como o documento diz) |
 | Integridade de executáveis; atualizações assinadas | PARCIAL (atualização assinada REAL; Authenticode PENDENTE) |
 | Isolamento de tarefas | PARCIAL |
 | Logs e resposta a incidentes | PARCIAL (registro; procedimento de incidente: `SECURITY.md` só diz como relatar) |
@@ -133,8 +133,8 @@ disso está pronto para produção: a rede é de **teste**.
 | Item | Estado |
 |---|---|
 | Créditos de computação, orçamento por JOB, Work Score | REAL, separados do HYX, sem liquidação |
-| Reputação local de workers | PARCIAL (só na memória) |
-| Nós verificados (3 meses), Gold Score | AUSENTE |
+| Reputação local de workers | REAL (gravada em disco, [REPUTACAO.md](REPUTACAO.md)) |
+| Nós verificados (3 meses), Gold Score | REAL na visão local de cada nó: 90 dias, 100 unidades verificadas, até 1% de recusas, ativo em 30 dias ([REPUTACAO.md](REPUTACAO.md)) |
 | Marketplace, preços, pagamentos, disputas | FORA DO PC (a troca de unidades entre nós existe, sem preço) |
 | Contas, backend, API externa, painel web, aplicativo móvel | FORA DO PC |
 | HYX Index | só documento, sem lastro (`docs/HYX-INDEX.md`) |
@@ -218,7 +218,7 @@ nenhum teste de JOB pelas threads do worker (criado).
 
 ## O que fica para depois do PC, na ordem do roadmap
 
-1. Reputação gravada em disco, ensaio entre máquinas (fase 6, rede).
+1. Ensaio entre máquinas (fase 6, rede).
 2. Cifra em repouso de `no.chave` e `seguranca.txt`, zeroização, rotação da
    identidade (fase 3, restante).
 3. Authenticode do `.exe` (depende do certificado do dono).

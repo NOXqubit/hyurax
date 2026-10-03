@@ -48,6 +48,7 @@ use crate::util::{de_hex, hex};
 pub mod bancada;
 mod rede;
 pub mod relatorio;
+pub mod reputacao;
 
 /// Versão do esquema da pasta `PASTA/ciencia/`.
 pub const VERSAO_DA_PASTA: u32 = 1;
@@ -415,6 +416,7 @@ impl Ciencia {
             saida: Mutex::new(None),
         });
         c.carregar();
+        c.carregar_reputacao();
         Ok(c)
     }
 
@@ -749,6 +751,7 @@ impl Ciencia {
     pub(crate) fn manutencao(&self, agora: u64) {
         self.esvaziar(false);
         self.manutencao_rede(agora);
+        self.gravar_reputacao_se_mudou();
         {
             let mut vencidos = Vec::new();
             if let Ok(mut jobs) = self.jobs.lock() {

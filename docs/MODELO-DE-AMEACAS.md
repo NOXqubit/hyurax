@@ -78,9 +78,16 @@ Quer ler o painel ou mandar comando para `127.0.0.1:8800`.
   trava do nó, na thread do par que mandou; o recibo (`conferir_pow`) só vale
   para aquele cabeçalho, e o resto da validação continua dentro da trava.
   Bloco que já tenho não custa conta nenhuma. Testes: `pow_fora_da_trava.rs`.
-- **Risco residual:** Sybil (muitas identidades e IPs) não tem defesa além do
-  banimento e do teto por IP; rotação e revogação da identidade do nó não
-  existem. **PENDENTE.**
+- Teto de conexões de entrada por faixa de endereços públicos (IPv4 /24,
+  IPv6 /48), além do teto por IP. Teste: `faixa_agrupa_vizinhos_publicos_e_ignora_a_rede_local`.
+- Rotação da identidade: `hyurax-no identidade girar` (com o programa
+  fechado) troca a identidade e guarda a antiga ao lado. Teste:
+  `girar_troca_a_identidade_e_guarda_a_antiga`.
+- **Risco residual:** Sybil com IPs espalhados passa pelos tetos (encarecem,
+  não impedem; a reputação local cobra trabalho verificado de cada
+  identidade, ver [REPUTACAO.md](REPUTACAO.md)); não existe revogação
+  anunciada na rede: quem copiou uma identidade antiga ainda fala como ela.
+  **PENDENTE.**
 
 ### A5 — workers maliciosos na computação entre nós (nível 3)
 
@@ -99,7 +106,9 @@ Quer ler o painel ou mandar comando para `127.0.0.1:8800`.
   ULTRAX v2): quem revela outro resultado deixa duas assinaturas suas que não
   fecham, e a falha pesa nele. Testes: `revelacao_que_nao_bate_com_o_compromisso_falha`,
   `compromisso_assinado_igual_ao_gabarito`.
-- **Risco residual:** a reputação não é gravada em disco; nada disso foi ensaiado entre
+- A reputação é gravada em disco (`ciencia/reputacao.txt`), com Gold Score e
+  nó verificado ([REPUTACAO.md](REPUTACAO.md)).
+- **Risco residual:** nada disso foi ensaiado entre
   máquinas diferentes. **PENDENTE.**
 
 ### A6 — atualização falsa ou download adulterado
