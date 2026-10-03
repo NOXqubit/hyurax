@@ -16,7 +16,7 @@
 # tem valor.
 set -euo pipefail
 
-VERSAO="${HYURAX_VERSAO:-v0.2.0-teste.1}"
+VERSAO="${HYURAX_VERSAO:-v1.0.0}"
 PORTA_NO=8790
 PORTA_WEB=8080
 DADOS=/var/lib/hyurax
@@ -60,6 +60,14 @@ echo "== firewall local"
 if command -v ufw >/dev/null; then ufw allow "${PORTA_NO}/tcp"; ufw allow "${PORTA_WEB}/tcp"; fi
 if command -v firewall-cmd >/dev/null; then
   firewall-cmd --permanent --add-port="${PORTA_NO}/tcp" --add-port="${PORTA_WEB}/tcp" && firewall-cmd --reload
+fi
+# As imagens Ubuntu da Oracle Cloud vêm sem ufw e com uma regra REJECT no
+# iptables: sem isto, a porta fica fechada mesmo liberada no painel da nuvem.
+if ! command -v ufw >/dev/null && ! command -v firewall-cmd >/dev/null && command -v iptables >/dev/null; then
+  for p in "${PORTA_NO}" "${PORTA_WEB}"; do
+    iptables -C INPUT -p tcp --dport "$p" -m state --state NEW -j ACCEPT 2>/dev/null       || iptables -I INPUT -p tcp --dport "$p" -m state --state NEW -j ACCEPT
+  done
+  if command -v netfilter-persistent >/dev/null; then netfilter-persistent save; fi
 fi
 
 sleep 3
