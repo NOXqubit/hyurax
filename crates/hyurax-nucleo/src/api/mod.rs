@@ -21,7 +21,7 @@
 //!   este computador. Nenhum arquivo do disco é servido: a interface vem
 //!   embutida no programa.
 //!
-//! Rotas de leitura: `/api/v1/estado`, `/api/v1/resumo`, `/api/v1/fluxo`
+//! Rotas de leitura: `/api/v1/estado`, `/api/v1/resumo`, `/api/v1/saude`, `/api/v1/fluxo`
 //! (eventos, SSE), `/api/v1/termos` e `/api/v1/ciencia/…`. Os comandos estão
 //! em [`comandos`].
 
@@ -314,6 +314,7 @@ fn ler(mut s: TcpStream, p: &Pedido, n: &Arc<Nucleo>, arquivos: Arquivos, daqui:
             };
             return http::responder_com(&mut s, "200 OK", "application/json; charset=utf-8", &extras, corpo.as_bytes());
         }
+        "/api/v1/saude" => return responder(&mut s, "200 OK", "application/json; charset=utf-8", estado::saude(n).to_string().as_bytes()),
         "/api/v1/termos" => return responder(&mut s, "200 OK", "text/html; charset=utf-8", crate::termos::html().as_bytes()),
         _ => {}
     }

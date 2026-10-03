@@ -8,6 +8,7 @@ mod cadeia;
 mod carteira;
 mod ciencia;
 mod contas;
+mod copia;
 mod identidade;
 mod opcoes;
 mod lancamento;
@@ -72,6 +73,11 @@ Com --pasta P, tudo fica em P. Redes: testnet (padrão) e regtest (local).
       girar: troca a identidade (com o programa fechado). A antiga fica
       guardada ao lado; os outros nós passam a ver uma identidade nova.
 
+  hyurax-no copia criar --destino PASTA
+  hyurax-no copia conferir --origem COPIA | restaurar --origem COPIA
+      Cópia de segurança das pastas (com manifesto SHA-512). Restaurar só
+      com o programa fechado, e nunca apaga: o que existia fica ao lado.
+
 Opções de rede (comandos que sobem o nó):
   --rede testnet|regtest   --porta P   --semente IP:PORTA[,…]   --sem-sementes-padrao
 
@@ -93,6 +99,7 @@ fn principal(args: &[String]) -> Result<(), String> {
         "lancamento" => lancamento::comando(resto),
         "identidade" => identidade::comando(resto),
         "contas" => contas::comando(resto),
+        "copia" => copia::comando(resto),
         "versao" | "--versao" | "-V" => {
             println!("{} {} · rede de teste", hyurax_nucleo::PRODUTO, hyurax_nucleo::VERSAO);
             Ok(())

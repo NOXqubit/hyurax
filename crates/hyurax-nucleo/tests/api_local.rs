@@ -104,6 +104,14 @@ fn chave_host_e_origin_protegem_a_api_local() {
     let grande = [certo[0], certo[1], certo[2], ("Content-Length", "9216")];
     assert_eq!(pedido(porta, "POST", "/api/v1/ultrax", &grande, "").0, 400);
 
+    // a saúde, pública como o resumo, para monitoramento
+    let (s, saude) = pedido(porta, "GET", "/api/v1/saude", &[], "");
+    assert_eq!(s, 200);
+    let saude: serde_json::Value = serde_json::from_str(&saude).unwrap();
+    assert_eq!(saude["ok"], false, "sem pares, pede atenção");
+    assert!(saude["alertas"].as_array().unwrap().iter().any(|a| a.as_str().unwrap().contains("par")));
+    assert!(saude.get("saldo").is_none() && saude.get("endereco").is_none(), "nada de carteira na saúde");
+
     // o resumo lido por outra máquina do dono: com desafio, volta assinado
     // pela chave de worker deste nó; a chave fica fixada na primeira vez
     let alvo = format!("127.0.0.1:{porta}");

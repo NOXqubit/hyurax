@@ -238,3 +238,46 @@ pub fn resumo(n: &Nucleo) -> Value {
         "cpu_processo": { "valor": cpu, "unidade": "%", "origem": if cpu.is_some() { "REAL" } else { "PENDENTE" } },
     })
 }
+
+/// A saúde do nó, para monitoramento (`/api/v1/saude`, público como o
+/// resumo, sem endereço nem saldo). `ok` é falso quando algo pede atenção, e
+/// `alertas` diz o quê. Cada número é medido aqui; nada é estimado.
+pub fn saude(n: &Nucleo) -> Value {
+    let agora_s = crate::util::agora_unix();
+    let (altura, ponta_s) = n
+        .rede
+        .no
+        .lock()
+        .map(|no| (no.chain.height(), no.chain.tip().map_or(0, |b| b.header.timestamp)))
+        .unwrap_or((0, 0));
+    let pares = n.rede.pares_conectados();
+    let situacoes = n.ciencia.situacoes();
+    let abertos = situacoes.iter().filter(|s| !s.estado.e_final()).count();
+    let mut alertas: Vec<String> = Vec::new();
+    if pares == 0 {
+        alertas.push("nenhum par conectado".into());
+    }
+    let sem_bloco = agora_s.saturating_sub(ponta_s);
+    // dez intervalos sem bloco novo: ou a rede parou, ou este nó ficou para trás
+    if ponta_s > 0 && sem_bloco > n.config.rede.target_spacing.saturating_mul(10) {
+        alertas.push(format!("último bloco há {} min", sem_bloco / 60));
+    }
+    if n.carteira.trancado() {
+        alertas.push("programa trancado".into());
+    }
+    json!({
+        "ok": alertas.is_empty(),
+        "alertas": alertas,
+        "produto": PRODUTO,
+        "versao": VERSAO,
+        "rede": n.config.rede.nome,
+        "ligado_ha_s": n.inicio.elapsed().as_secs(),
+        "altura": altura,
+        "ultimo_bloco_ha_s": if ponta_s > 0 { Some(sem_bloco) } else { None },
+        "pares": pares,
+        "minerando": n.mineracao.ligada.load(Ordering::Relaxed),
+        "ultrax_ligado": n.ultrax.ligado.load(Ordering::Relaxed),
+        "jobs_abertos": abertos,
+        "api_externa": n.api_externa.load(Ordering::Relaxed),
+    })
+}
