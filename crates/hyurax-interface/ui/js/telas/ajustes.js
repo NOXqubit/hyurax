@@ -3,7 +3,7 @@
 
 import { $, el, texto, hora, fmt } from "../util.js";
 import { postar } from "../api.js";
-import { fatos, resultado } from "./comum.js";
+import { fatos, resultado, tabela } from "./comum.js";
 
 let urlDoQr = "";
 let abrirTermos = () => {};
@@ -40,6 +40,28 @@ export function montar(opcoes) {
     if (!r.ok) resultado("a-energia-saida", r);
   });
   $("a-termos").addEventListener("click", () => abrirTermos(false));
+  $("a-api").addEventListener("change", (e) => mudar({ api_externa: e.target.checked ? "1" : "0" }));
+  $("a-conta").addEventListener("submit", async (ev) => {
+    ev.preventDefault();
+    const nome = $("a-conta-nome").value.trim();
+    const limite = Math.round(Number($("a-conta-creditos").value) * 1000);
+    const r = await postar("/contas/criar", { nome, limite_milicreditos: limite });
+    const s = $("a-conta-saida");
+    s.className = r.ok ? "saida" : "saida erro";
+    s.replaceChildren();
+    if (!r.ok) {
+      s.textContent = r.erro;
+      return;
+    }
+    // a chave aparece só agora: em disco fica só o hash dela
+    s.append(
+      `Conta ${r.dados.id} (${r.dados.nome}) criada. Chave de acesso, que não aparece de novo: `,
+      el("code", { class: "hash" }, r.dados.chave),
+      " ",
+      el("button", { type: "button", class: "botao-leve", onclick: () => navigator.clipboard?.writeText(r.dados.chave) }, "Copiar"),
+    );
+    $("a-conta-nome").value = "";
+  });
   $("a-atu-buscar").addEventListener("click", async () => {
     const r = await postar("/atualizacao/buscar");
     resultado("a-atu-saida", r, "Buscando o manifesto e conferindo a assinatura…");
@@ -100,6 +122,33 @@ export function atualizar(e) {
     texto("a-url", a.na_rede ? "Sem endereço na rede local." : "O painel só abre neste computador.");
     qr.hidden = true;
   }
+  caixa("a-api", a.api_externa);
+  $("a-api").disabled = !janela;
+  for (const x of $("a-conta").elements) x.disabled = !e.pode_mandar;
+  tabela(
+    "a-contas",
+    [{ t: "Conta" }, { t: "Nome" }, { t: "Limite", num: true }, { t: "JOBs", num: true }, { t: "Estado" }, { t: "" }],
+    (a.contas || []).map((c) => [
+      { v: String(c.id), num: true },
+      c.nome,
+      { v: `${fmt(c.limite_milicreditos / 1000, 3)} créditos`, num: true },
+      { v: fmt(c.jobs), num: true },
+      c.revogada ? "revogada" : "ativa",
+      c.revogada || !e.pode_mandar
+        ? ""
+        : el("button", {
+            type: "button",
+            class: "botao-leve",
+            "aria-label": `Revogar a conta ${c.id} (${c.nome})`,
+            onclick: async () => {
+              if (!confirm(`Revogar a conta ${c.id} (${c.nome})? A chave dela para de valer na hora.`)) return;
+              const r = await postar("/contas/revogar", { id: c.id });
+              resultado("a-conta-saida", r, `Conta ${c.id} revogada.`);
+            },
+          }, "Revogar"),
+    ]),
+    { vazio: "nenhuma conta" },
+  );
   fatos("a-pastas", [
     ["Configuração e carteira", el("span", { class: "num" }, a.pasta_config || "—")],
     ["Dados (cadeia, ULTRAX, registros)", el("span", { class: "num" }, a.pasta_dados || "—")],

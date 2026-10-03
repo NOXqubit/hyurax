@@ -206,7 +206,8 @@ function lista() {
         { v: `${fmt(j.feitas)}/${fmt(j.unidades)}`, num: true },
         { v: fmt(j.falhas), num: true },
         j.nivel_nome,
-        { v: fmt(j.consumo.milicreditos / 1000, 3), num: true },
+        // consumido, e de quanto quando há orçamento (JOB de conta da API externa sempre tem)
+        { v: `${fmt(j.consumo.milicreditos / 1000, 3)}${j.orcamento_milicreditos ? ` de ${fmt(j.orcamento_milicreditos / 1000, 3)}` : ""}`, num: true },
         el("div", { class: "acoes" }, acoes),
       ];
     }),

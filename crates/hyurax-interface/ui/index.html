@@ -11,6 +11,8 @@
 </head>
 <body>
 
+<a class="pular" href="#principal">Pular para o conteúdo</a>
+
 <header id="topo">
   <div class="marca">
     <span class="marca-nome">HYURAX</span><span class="marca-barra">/</span><span class="marca-sub">ULTRAX</span>
@@ -18,7 +20,7 @@
     <span class="etiqueta-rede" id="topo-rede" title="A rede pública é de teste: o HYX não tem valor">REDE DE TESTE</span>
   </div>
   <dl class="topo-fatos">
-    <div><dt>Conexão com o núcleo</dt><dd id="topo-conexao" class="estado-desligado">conectando…</dd></div>
+    <div><dt>Conexão com o núcleo</dt><dd id="topo-conexao" class="estado-desligado" aria-live="polite">conectando…</dd></div>
     <div><dt>Altura</dt><dd id="topo-altura" class="num">—</dd></div>
     <div><dt>Pares</dt><dd id="topo-pares" class="num">—</dd></div>
     <div><dt>Sincronização</dt><dd id="topo-sinc">—</dd></div>
@@ -38,7 +40,12 @@
   <p class="nav-rodape"><span id="nav-maquina">—</span></p>
 </nav>
 
-<main id="principal">
+<main id="principal" tabindex="-1">
+
+  <div class="faixa-erro" id="faixa-conexao" role="alert" hidden>
+    <strong>O núcleo não está respondendo.</strong>
+    <span>Os números desta tela pararam no último valor recebido. Se o núcleo só travou por um instante, a tela reconecta sozinha. Se o programa foi fechado, abra de novo pela janela dele (ou pelo endereço novo que o <code>hyurax-no painel</code> mostrar): cada abertura tem uma chave nova, e esta página não vale mais.</span>
+  </div>
 
   <!-- Visão geral -->
   <section id="tela-visao" class="tela" aria-labelledby="t-visao">
@@ -313,6 +320,20 @@
         <label class="chave" for="a-som"><input type="checkbox" id="a-som"><span>Com som</span></label>
       </article>
     </div>
+    <article class="bloco">
+      <h2>API externa e contas de cliente</h2>
+      <p class="nota">Contas de cliente mandam JOBs de outro computador por <code>/api/v1/externa/</code>, com a chave de acesso delas (ver docs/API-EXTERNA.md). Cada conta tem um limite de créditos de computação, que não são dinheiro nem HYX. A conexão não é cifrada: use só em rede local confiável.</p>
+      <label class="chave" for="a-api"><input type="checkbox" id="a-api"><span>Ligar a API externa</span></label>
+      <form id="a-conta" class="formulario" autocomplete="off">
+        <div class="campos">
+          <label for="a-conta-nome"><small>Nome da conta</small><input id="a-conta-nome" maxlength="60" placeholder="Laboratório, cliente…"></label>
+          <label for="a-conta-creditos"><small>Limite (créditos)</small><input id="a-conta-creditos" type="number" min="0" step="0.001" value="10"></label>
+        </div>
+        <button type="submit" class="botao-leve">Criar conta</button>
+        <p class="saida" id="a-conta-saida" role="status"></p>
+      </form>
+      <div class="tabela-caixa"><table id="a-contas"></table></div>
+    </article>
     <article class="bloco">
       <h2>Atualização</h2>
       <p class="nota">Só entra versão nova cujo manifesto foi assinado pela chave de lançamento do projeto (embutida neste programa). O instalador baixado é conferido por tamanho e SHA-512 contra o manifesto antes de abrir, e ainda mostra os termos.</p>

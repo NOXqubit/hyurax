@@ -17,7 +17,7 @@
   --painel-3: #1c1c20;
   --tinta: #f2f2ef;
   --tinta-2: rgba(242, 242, 239, 0.7);
-  --tinta-3: rgba(242, 242, 239, 0.45);
+  --tinta-3: rgba(242, 242, 239, 0.56); /* 5,9:1 sobre o painel: WCAG AA para texto pequeno */
   --fio: rgba(242, 242, 239, 0.09);
   --fio-forte: rgba(242, 242, 239, 0.24);
   --gpu: #9fbdf2;
@@ -43,6 +43,13 @@ body {
 [hidden] { display: none !important; }
 button, input, select, textarea { font: inherit; color: inherit; }
 :focus-visible { outline: 2px solid var(--tinta); outline-offset: 2px; }
+/* para quem navega pelo teclado: aparece só com o foco */
+.pular { position: absolute; left: 12px; top: -48px; z-index: 50; padding: 8px 14px; background: var(--tinta); color: var(--fundo); border-radius: var(--r-p); font-weight: 650; text-decoration: none; }
+.pular:focus { top: 10px; }
+#principal:focus { outline: none; }
+/* o núcleo parou de responder: a tela diz, em vez de mostrar números parados como se fossem atuais */
+.faixa-erro { display: grid; gap: 4px; margin: 0 0 16px; padding: 12px 16px; border: 1px solid var(--tinta); border-left-width: 4px; border-radius: var(--r-p); background: var(--painel-2); }
+.faixa-erro span { color: var(--tinta-2); font-size: 13px; }
 .num, table, code, .endereco, .registro, .hash { font-family: var(--mono); font-variant-numeric: tabular-nums; }
 small, .nota { color: var(--tinta-3); font-size: 12px; }
 .nota { margin: 8px 0 0; line-height: 1.45; }
@@ -166,6 +173,10 @@ td .botao-leve { padding: 4px 10px; font-size: 12px; white-space: nowrap; }
 
 /* formulários e controles */
 .formulario { display: grid; gap: 10px; }
+/* um texto longo (chave, hash) não alarga o formulário além da tela */
+.formulario > *, .bloco > * { min-width: 0; }
+.saida { overflow-wrap: anywhere; }
+.saida code { word-break: break-all; }
 .formulario label, .campos label { display: grid; gap: 4px; }
 .campos { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
 input, select, textarea { background: var(--painel-2); border: 1px solid var(--fio-forte); border-radius: var(--r-p); padding: 8px 10px; width: 100%; min-width: 0; }

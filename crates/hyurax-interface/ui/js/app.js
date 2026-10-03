@@ -53,10 +53,15 @@ function atualizarTopo(e) {
   if (s) texto("nav-maquina", `${s.cpu || "CPU"} · ${s.nucleos_logicos} núcleo(s)${s.ram_total_mib ? ` · ${fmt(s.ram_total_mib / 1024, 1)} GiB` : ""}`);
 }
 
+let jaConectou = false;
 ouvir("conexao", (ligado) => {
   const d = $("topo-conexao");
   d.className = ligado ? "estado-ligado" : "estado-desligado";
   d.textContent = ligado ? "conectado" : "sem conexão (tentando de novo)";
+  // a faixa só aparece depois de ter conectado uma vez (abrir não é falha)
+  if (ligado) jaConectou = true;
+  $("faixa-conexao").hidden = ligado || !jaConectou;
+  document.body.classList.toggle("desconectado", !ligado && jaConectou);
 });
 
 // ---------- termos e cadeado ----------
