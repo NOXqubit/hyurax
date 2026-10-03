@@ -9,6 +9,7 @@ mod carteira;
 mod ciencia;
 mod contas;
 mod copia;
+mod pacote;
 mod identidade;
 mod opcoes;
 mod lancamento;
@@ -29,8 +30,10 @@ Com --pasta P, tudo fica em P. Redes: testnet (padrão) e regtest (local).
       ver: mostra o endereço (não pede senha).
       cifrar: converte uma carteira com o segredo em texto para o formato com senha.
 
-  hyurax-no enviar --arquivo carteira.txt --para ENDERECO --valor HYX [--taxa HYX]
+  hyurax-no enviar --arquivo carteira.txt --para ENDERECO --valor HYX [--taxa HYX] [--pacote ARQ]
       Assina uma transferência (pede a senha) e manda para a rede.
+      --pacote também grava a transação num pacote do Éter, para levar sem
+      internet (pendrive, Bluetooth, som) até um nó conectado.
 
   hyurax-no minerar --endereco ENDERECO [--blocos N] [--linhas L] [--pausa-ms X]
       Minera N blocos (padrão 1; 0 = sem parar).
@@ -73,6 +76,12 @@ Com --pasta P, tudo fica em P. Redes: testnet (padrão) e regtest (local).
       girar: troca a identidade (com o programa fechado). A antiga fica
       guardada ao lado; os outros nós passam a ver uma identidade nova.
 
+  hyurax-no pacote exportar --saida ARQ [--blocos N]
+  hyurax-no pacote importar --arquivo ARQ
+      Pacote do Éter: blocos e transações num arquivo. Importar confere tudo
+      como se viesse de um par (com o programa fechado). Com o programa
+      aberto, basta pôr o arquivo na pasta eter/entrada dos dados.
+
   hyurax-no copia criar --destino PASTA
   hyurax-no copia conferir --origem COPIA | restaurar --origem COPIA
       Cópia de segurança das pastas (com manifesto SHA-512). Restaurar só
@@ -80,6 +89,7 @@ Com --pasta P, tudo fica em P. Redes: testnet (padrão) e regtest (local).
 
 Opções de rede (comandos que sobem o nó):
   --rede testnet|regtest   --porta P   --semente IP:PORTA[,…]   --sem-sementes-padrao
+  --sem-malha   sem anúncio na rede local e sem abrir a porta no roteador (UPnP)
 
 Senha em script: variável HYURAX_SENHA (conveniente, e menos segura que digitar).
 A rede pública ainda é de teste: o HYX não tem valor.
@@ -100,6 +110,7 @@ fn principal(args: &[String]) -> Result<(), String> {
         "identidade" => identidade::comando(resto),
         "contas" => contas::comando(resto),
         "copia" => copia::comando(resto),
+        "pacote" => pacote::comando(resto),
         "versao" | "--versao" | "-V" => {
             println!("{} {} · rede de teste", hyurax_nucleo::PRODUTO, hyurax_nucleo::VERSAO);
             Ok(())

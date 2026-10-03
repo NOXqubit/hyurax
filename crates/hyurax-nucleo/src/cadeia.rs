@@ -56,6 +56,14 @@ pub fn subir(config: &ConfigDoNo, saida: &Saida) -> Result<Arc<Rede>, String> {
             .escutar(("0.0.0.0", config.porta))
             .map_err(|e| format!("não consegui escutar na porta {}: {e}", config.porta))?;
         saida(format!("escutando outros nós na porta {porta}"));
+        // IPv6 também: com IPv6 público, o nó é alcançável sem abrir porta
+        // nenhuma (no Linux, o primeiro bind já atende os dois e este falha)
+        if rede.escutar(("::", porta)).is_ok() {
+            saida(format!("escutando também em IPv6, porta {porta}"));
+        }
+        if config.malha {
+            ligar_malha(&rede, porta, config.rede.nome == ParametrosRede::REGTEST.nome, saida);
+        }
     }
     for semente in config.sementes.iter().filter(|s| !s.is_empty()) {
         rede.semear(semente);
@@ -66,6 +74,61 @@ pub fn subir(config: &ConfigDoNo, saida: &Saida) -> Result<Arc<Rede>, String> {
     }
     procurar_a_rede(config, &rede, saida);
     Ok(rede)
+}
+
+/// A malha (docs/HYURAX-MALHA.md): anúncio na rede local e porta aberta no
+/// roteador. No regtest, só a rede local (nada de mexer no roteador de quem
+/// roda teste).
+fn ligar_malha(rede: &Arc<Rede>, porta: u16, regtest: bool, saida: &Saida) {
+    let difusao = std::net::SocketAddr::from(([255, 255, 255, 255], hyurax_net::malha::PORTA_VIZINHOS));
+    match rede.ligar_vizinhos(hyurax_net::malha::PORTA_VIZINHOS, vec![difusao]) {
+        Ok(()) => saida("procurando outros nós na rede local (Wi-Fi e cabo)".into()),
+        Err(e) => saida(format!("sem descoberta na rede local: {e}")),
+    }
+    if regtest {
+        rede.anotar_roteador("não tentado (rede local de desenvolvimento)".into());
+        return;
+    }
+    let (rede, saida) = (Arc::clone(rede), Arc::clone(saida));
+    std::thread::spawn(move || {
+        let mut aberto: Option<hyurax_net::roteador::Mapeamento> = None;
+        loop {
+            match hyurax_net::roteador::abrir(porta) {
+                Ok(m) => {
+                    let texto = match (m.cgnat, m.ip_externo) {
+                        (true, Some(ip)) => format!(
+                            "porta {} aberta por {}, mas o roteador está atrás da operadora (IP {ip}, CGNAT): de fora, só por ponte",
+                            m.porta_externa, m.metodo
+                        ),
+                        (false, Some(ip)) => format!("porta {} aberta por {} no IP {ip}", m.porta_externa, m.metodo),
+                        (_, None) => format!("porta {} aberta por {}", m.porta_externa, m.metodo),
+                    };
+                    if aberto.is_none() {
+                        saida(texto.clone());
+                    }
+                    rede.anotar_roteador(texto);
+                    aberto = Some(m);
+                }
+                Err(e) => {
+                    rede.anotar_roteador(format!("não abriu a porta sozinho: {e}"));
+                    if aberto.is_none() {
+                        saida(format!("roteador: {e}"));
+                    }
+                }
+            }
+            // renova antes de a duração vencer; para quando o nó fecha
+            let ate = std::time::Instant::now() + std::time::Duration::from_secs(20 * 60);
+            while std::time::Instant::now() < ate {
+                if rede.parado() {
+                    if let Some(m) = &aberto {
+                        hyurax_net::roteador::fechar(m);
+                    }
+                    return;
+                }
+                std::thread::sleep(std::time::Duration::from_secs(2));
+            }
+        }
+    });
 }
 
 /// Sem semente nenhuma, procura a lista publicada. Só na testnet, e numa

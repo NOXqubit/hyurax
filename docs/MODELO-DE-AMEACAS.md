@@ -89,6 +89,32 @@ Quer ler o painel ou mandar comando para `127.0.0.1:8800`.
   anunciada na rede: quem copiou uma identidade antiga ainda fala como ela.
   **PENDENTE.**
 
+### A4b — a malha (pontes, alcance, rede local, pacotes)
+
+Superfície nova de `docs/HYURAX-MALHA.md`:
+
+- **Ponte.** Copia bytes que são Noise de ponta a ponta: não lê, não altera
+  (alterar derruba a cifra) e não se passa pelo alvo (quem disca exige a
+  identidade do alvo no aperto de mão). Reserva só com token dito dentro da
+  cifra: ninguém sequestra a vaga de outro. Tetos: 64 reservas (2 por nó),
+  16 circuitos (4 por alvo), 256 MiB e 5 min de silêncio por circuito.
+- **Verificação de alcance.** Quem confere só disca para o IP que já vê do
+  par, uma vez a cada 5 minutos por IP: não serve para mandar o nó atacar
+  outro endereço.
+- **Rede local.** Anúncio aceito só de endereço local; o IP usado é o de
+  origem do datagrama, nunca um escrito dentro dele; um anúncio por segundo
+  por IP; o pior que um anúncio falso faz é uma discagem que a cifra recusa.
+- **Roteador.** O nó só fala HTTP com endereço da rede local (o roteador
+  nunca está na internet); a porta aberta é a do próprio nó e é devolvida ao
+  fechar (ou vence em 1 h).
+- **Pacote do Éter.** Cada quadro é conferido como se viesse de um par
+  (prova de trabalho, validação completa); quadro ruim é recusado sozinho,
+  sem banir ninguém.
+- **Risco residual:** a ponte vê quem fala com quem e quanto (não o quê);
+  abrir porta no roteador expõe o nó à internet como qualquer servidor (as
+  defesas de A4 valem); o comando de terminal parado à força não devolve a
+  porta antes de ela vencer (1 h).
+
 ### A5 — workers maliciosos na computação entre nós (nível 3)
 
 - Só especificação viaja, nunca código; faixas conferidas antes de executar;

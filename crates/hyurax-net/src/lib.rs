@@ -17,10 +17,12 @@
 mod cifra;
 mod conexao;
 pub mod entropia;
+pub mod malha;
+pub mod roteador;
 mod no;
 mod servidor;
 
 pub use cifra::{Identidade, PADRAO_NOISE, Papel};
 pub use conexao::{Conexao, Escritor, NetError};
 pub use no::{Malicia, No, Reacao};
-pub use servidor::{Rede, TIPO_ULTRAX, TratadorUltrax};
+pub use servidor::{EstadoDaMalha, Rede, ResultadoDoPacote, TIPO_ULTRAX, TratadorUltrax};

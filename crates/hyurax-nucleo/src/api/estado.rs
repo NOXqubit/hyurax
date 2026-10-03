@@ -93,6 +93,16 @@ pub fn estado(n: &Nucleo, pode_mandar: bool, url_celular: &str) -> Value {
         })
         .unwrap_or_default();
     let proximo_nonce = endereco.map(|e| no.proximo_nonce(&e));
+    let m = n.rede.estado_da_malha();
+    let malha = json!({
+        "alcance": m.alcance,
+        "externo": m.externo,
+        "vizinhos": m.vizinhos,
+        "pontes_conhecidas": m.pontes_conhecidas,
+        "reservas": m.reservas_minhas,
+        "circuitos": m.circuitos,
+        "roteador": m.roteador,
+    });
     let no_json = json!({
         "altura": altura,
         "ponta": hex(&c.tip_hash()),
@@ -102,6 +112,8 @@ pub fn estado(n: &Nucleo, pode_mandar: bool, url_celular: &str) -> Value {
         "sincronizado": n.rede.pares_conectados() > 0 && n.rede.alcancou_os_pares(),
         "mempool": no.mempool_len(),
         "porta_p2p": n.porta_p2p,
+        // a malha (docs/HYURAX-MALHA.md): o que este nó sabe do próprio alcance
+        "malha": malha,
         "recompensa": hyx(u128::from(block_reward(altura.saturating_add(1), &n.config.rede))),
         "maturidade": n.config.rede.coinbase_maturity,
         "prova_util": {

@@ -37,6 +37,23 @@ que resolva isso sozinho. O que a tecnologia pode fazer é:
 | IPv6: endereços e conexões | REAL (muitas operadoras dão IPv6 público; com ele, o nó é alcançável sem abrir porta) |
 | Éter: Wi-Fi local, som e Bluetooth serial | núcleo testado; falta ligar ao nó |
 
+### Estado em 03/10/2026
+
+| Etapa | Estado | Onde | Prova |
+|---|---|---|---|
+| M1. Descoberta na rede local | **feita** | `servidor/ponte.rs` (`ligar_vizinhos`), UDP 8792 | `vizinhos_na_rede_local_se_acham_sem_semente` |
+| M2. Porta aberta sozinha + alcance | **feita** (UPnP e NAT-PMP; IPv6 escutado) | `roteador.rs`, `servidor/ponte.rs` | roteador simulado nos testes; **no roteador de verdade deste PC: "porta 8790 aberta por UPnP no IP 177.195.137.243"**; `no_confere_o_proprio_alcance_com_um_par` |
+| M3. Ponte por qualquer nó | **feita** | `servidor/ponte.rs` | `dois_nos_sem_porta_aberta_se_falam_por_uma_ponte`, `ponte_sem_reserva_recusa_o_circuito` |
+| M4. Furo de NAT | **PENDENTE** | — | exige transporte UDP cifrado (a rede é TCP); a M3 já resolve o caso, com mais carga na ponte |
+| M5. Éter ligado ao nó | **feita no nível de arquivo**: pacote do Éter (blocos e transações) que atravessa qualquer meio do `eter`, pasta `eter/entrada` e `saida`, `hyurax-no pacote`, `enviar --pacote` | `malha.rs` (`Pacote`), `servidor/pacote.rs`, `hyurax-nucleo/src/eter.rs` | `pacote_do_eter_leva_blocos_e_transacoes_sem_rede`, vetores `malha.json` |
+
+Formato de tudo isso especificado em `reference/hyurax/malha.py` e conferido
+byte a byte por `vectors/malha.json`.
+
+**O teste que falta, e só se faz com mais de uma casa:** dois nós em
+internets diferentes, um atrás de NAT sem UPnP, se falando pela ponte de um
+terceiro. Os testes aqui usam sockets reais, mas numa máquina só.
+
 ### O que construir, em ordem
 
 | Etapa | O que | Por que | Como provar |

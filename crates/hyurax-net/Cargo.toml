@@ -16,6 +16,11 @@ hyurax-chain.workspace = true
 hyurax-consensus.workspace = true
 hyurax-crypto.workspace = true
 snow.workspace = true
+hyurax-codec.workspace = true
+
+[dev-dependencies]
+serde_json.workspace = true
+hex.workspace = true
 
 [lints.rust]
 unsafe_code = "forbid"

@@ -26,7 +26,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 OUT_DIR = ROOT.parent / "vectors"
 
-from hyurax import argon2, codec, consensus, crypto, genetica, ia, identidade, job, melhoramento, rede_ultrax, rotas, triagem, usefulpow, ultrax  # noqa: E402
+from hyurax import argon2, codec, consensus, crypto, genetica, ia, identidade, job, malha, melhoramento, rede_ultrax, rotas, triagem, usefulpow, ultrax  # noqa: E402
 from hyurax.block import BlockHeader  # noqa: E402
 from hyurax.chain import Chain, make_genesis  # noqa: E402
 from hyurax.consensus import MAINNET, REGTEST, TESTNET  # noqa: E402
@@ -1497,6 +1497,51 @@ def vec_codec_edge() -> dict:
             "merkle_path_errors": path_errors, "merkle_verify": verify}
 
 
+def vec_malha() -> dict:
+    """Malha (reference/hyurax/malha.py): uma mensagem de cada subtipo, os
+    prefixos de conexão, o anúncio na rede local e corpos recusados."""
+    token = bytes(range(16))
+    alvo = crypto.H(b"alvo")[:32]
+    mensagens = [
+        ("pedir_alcance", malha.pedir_alcance(8790, token)),
+        ("alcance v4", malha.alcance(4, bytes([200, 10, 20, 30]), 8790, True)),
+        ("alcance v6", malha.alcance(6, bytes(range(16)), 65535, False)),
+        ("reservar", malha.reservar(token)),
+        ("reserva", malha.reserva(token, True)),
+        ("pontes", malha.pontes([(alvo, 4, bytes([177, 1, 2, 3]), 8790), (alvo, 6, bytes(range(16)), 1)])),
+        ("pontes vazia", malha.pontes([])),
+    ]
+    casos = [{"nome": n, "corpo": h(c), "subtipo": malha.ler(c)["subtipo"]} for n, c in mensagens]
+    bom = mensagens[3][1]
+    recusados = [
+        ("versao", bytes([2]) + bom[1:]),
+        ("subtipo", bytes([1, 9])),
+        ("sobra", bom + b"\x00"),
+        ("curto", bom[:-1]),
+        ("familia", bytes([1, 2, 5]) + bytes(6) + b"\x01"),
+        ("marca", mensagens[4][1][:-1] + b"\x02"),
+        ("pontes demais", bytes([1, 5, 33])),
+    ]
+    vizinho = malha.anuncio_vizinho(b"HYXT", 8790, alvo)
+    return {
+        "tipo_malha": malha.TIPO_MALHA,
+        "porta_vizinhos": malha.PORTA_VIZINHOS,
+        "mensagens": casos,
+        "recusados": [{"nome": n, "corpo": h(c)} for n, c in recusados],
+        "vizinho": {"corpo": h(vizinho), "magic": h(b"HYXT"), "porta": 8790, "identidade": h(alvo)},
+        "pacote": {
+            "corpo": h(malha.pacote(b"HYXT", [b"quadro um", b"", bytes(300)])),
+            "quadros": [h(b"quadro um"), h(b""), h(bytes(300))],
+            "recusado_sobra": h(malha.pacote(b"HYXT", [b"x"]) + bytes(1)),
+        },
+        "prefixos": {
+            "verificar": h(malha.PREFIXO_VERIFICAR + token),
+            "reserva": h(malha.PREFIXO_RESERVA + token),
+            "circuito": h(malha.PREFIXO_CIRCUITO + alvo),
+        },
+    }
+
+
 FILES = {
     "units.json": vec_units,
     "crypto_ed25519.json": vec_crypto,
@@ -1523,6 +1568,7 @@ FILES = {
     "rotas.json": vec_rotas,
     "triagem.json": vec_triagem,
     "rede_ultrax.json": vec_rede_ultrax,
+    "malha.json": vec_malha,
 }
 
 

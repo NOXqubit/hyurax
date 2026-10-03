@@ -144,7 +144,11 @@ resultado da antiga, folha a folha, de 0 a 33 folhas.
 2. **Mensagem nova no `hyurax-wire`** para fragmentos viajarem entre nós — fora
    do consenso, como manda o §18 do documento mestre: a blockchain **não** é
    banco de arquivos.
-3. **Encontro entre casas**: nó semente público e furo de NAT.
+3. **Encontro entre casas**: feito sem semente fixa pela malha
+   ([HYURAX-MALHA.md](HYURAX-MALHA.md)): porta aberta sozinha por UPnP,
+   pontes entre nós sem porta aberta, vizinhos na rede local. Blocos e
+   transações já atravessam o Éter como **pacote** (`hyurax-no pacote`,
+   pasta `eter/entrada`). Furo de NAT direto: PENDENTE.
 4. **App Android**, para Bluetooth de verdade (o Termux não o expõe).
 
 ## O que isto não é

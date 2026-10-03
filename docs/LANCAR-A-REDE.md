@@ -108,6 +108,12 @@ chave pública, que os programas antigos não aceitam sozinhos.
 
 ## Passo 3 — o primeiro nó sempre ligado (você)
 
+Desde a malha ([HYURAX-MALHA.md](HYURAX-MALHA.md)), o programa tenta abrir a
+porta 8790 no roteador sozinho (UPnP/NAT-PMP), confere com um par se ficou
+alcançável e, se não ficou, chega aos outros por ponte. Na rede local, os nós
+se acham sem semente. Neste computador, o roteador aceitou o UPnP: ele pode
+ser o primeiro ponto de entrada sem servidor de nuvem.
+
 Uma rede precisa de pelo menos um endereço fixo para os novos baterem. Três
 jeitos, do mais barato para o mais confortável:
 

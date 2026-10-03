@@ -40,6 +40,7 @@ pub mod carteira;
 pub mod ciencia;
 pub mod config;
 pub mod copia;
+pub mod eter;
 pub mod contas;
 pub mod identidade;
 pub mod instalacao;

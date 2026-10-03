@@ -133,8 +133,16 @@ pub fn enviar(args: &[String]) -> Result<(), String> {
         endereco::mostrar(&para, o.no.rede.nome),
         hyx(u128::from(o.taxa))
     );
+    if let Some(arquivo_do_pacote) = &o.pacote {
+        // sem internet: a transação vai num arquivo que atravessa pendrive,
+        // Bluetooth ou som (eter enviar) e entra na rede pelo primeiro nó
+        // conectado que importar o pacote
+        let pacote = rede.exportar_pacote(0)?;
+        std::fs::write(arquivo_do_pacote, pacote).map_err(|e| format!("não consegui gravar {}: {e}", arquivo_do_pacote.display()))?;
+        println!("Pacote do Éter gravado em {} (leve até um nó conectado: pasta eter/entrada, ou hyurax-no pacote importar).", arquivo_do_pacote.display());
+    }
     if rede.pares_conectados() == 0 {
-        println!("Aviso: nenhum par conectado. A transação só existe neste nó; use --semente para mandar à rede.");
+        println!("Aviso: nenhum par conectado. A transação só existe neste nó; use --semente, ou --pacote para levá-la por outro meio.");
         return Ok(());
     }
     std::thread::sleep(Duration::from_secs(3));

@@ -45,6 +45,9 @@ pub struct ConfigDoNo {
     pub sementes: Vec<String>,
     /// Não usar a lista embutida nem a publicada.
     pub sem_sementes_padrao: bool,
+    /// Malha (docs/HYURAX-MALHA.md): anunciar na rede local e abrir a porta
+    /// no roteador por UPnP/NAT-PMP. Só vale com porta de escuta.
+    pub malha: bool,
 }
 
 impl ConfigDoNo {
@@ -52,7 +55,7 @@ impl ConfigDoNo {
     /// máquina (`sementes.txt`), depois a lista embutida da testnet. A lista
     /// publicada na internet é consultada depois de o nó subir.
     pub fn nova(rede: ParametrosRede, pastas: Pastas, porta: u16, sementes: Vec<String>, sem_sementes_padrao: bool) -> Self {
-        let mut c = Self { rede, pastas, porta, sementes, sem_sementes_padrao };
+        let mut c = Self { rede, pastas, porta, sementes, sem_sementes_padrao, malha: true };
         if c.sementes.is_empty() && !c.sem_sementes_padrao {
             c.sementes = sementes::do_arquivo(&c.pastas.config);
             if c.sementes.is_empty() && c.rede.nome == ParametrosRede::TESTNET.nome {

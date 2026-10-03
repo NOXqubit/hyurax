@@ -252,6 +252,11 @@ impl Nucleo {
                 }
             });
         }
+        // a pasta do Éter: pacotes que chegam por pendrive, Bluetooth ou som
+        {
+            let fraco = Arc::downgrade(&n);
+            std::thread::spawn(move || crate::eter::vigiar(&fraco));
+        }
         n.ultrax.iniciar();
         Ok(n)
     }
@@ -404,6 +409,9 @@ impl Nucleo {
         if let Err(e) = cadeia::salvar(&self.rede, &self.config) {
             self.barramento.registrar("erro", format!("não consegui gravar a cadeia ao fechar: {e}"));
         }
+        // a rede para por último: as threads saem, e a porta aberta no
+        // roteador (UPnP/NAT-PMP) é devolvida
+        self.rede.desligar();
         self.barramento.registrar("sistema", "encerrado");
     }
 }

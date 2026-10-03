@@ -36,6 +36,11 @@ use crate::cifra::{Identidade, Papel};
 use crate::conexao::{Conexao, Escritor, NetError};
 use crate::no::No;
 
+mod pacote;
+mod ponte;
+pub use pacote::ResultadoDoPacote;
+pub use ponte::EstadoDaMalha;
+
 const TIMEOUT: Duration = Duration::from_millis(400);
 /// Tempo máximo para o par completar o aperto de mão.
 const PRAZO_APERTO: Duration = Duration::from_secs(10);
@@ -223,6 +228,8 @@ pub struct Rede {
     /// Banidos até (segundos Unix): identidades e IPs.
     banidas: Mutex<BTreeMap<[u8; 32], u64>>,
     ips_banidos: Mutex<BTreeMap<IpAddr, u64>>,
+    /// Alcance, pontes e vizinhos (`servidor/ponte.rs`).
+    malha: ponte::Malha,
 }
 
 impl Rede {
@@ -259,6 +266,7 @@ impl Rede {
             saidas: AtomicUsize::new(0),
             banidas: Mutex::new(BTreeMap::new()),
             ips_banidos: Mutex::new(BTreeMap::new()),
+            malha: ponte::Malha::default(),
         })
     }
 
@@ -335,6 +343,11 @@ impl Rede {
 
     fn parando(&self) -> bool {
         self.parar.load(Ordering::Relaxed)
+    }
+
+    /// O nó foi desligado ([`Rede::desligar`]).
+    pub fn parado(&self) -> bool {
+        self.parando()
     }
 
     /// Bane uma identidade e um IP (que não seja deste computador) por uma hora.
@@ -495,10 +508,8 @@ impl Rede {
                         // o teto e o banimento valem antes de abrir a thread
                         let Some(vaga) = rede.vaga_de_entrada(&stream) else { continue };
                         let r = Arc::clone(&rede);
-                        std::thread::spawn(move || {
-                            let _vaga = vaga;
-                            let _ = r.servir(stream, Papel::Recebeu, None);
-                        });
+                        // prefixo da malha (ponte, alcance) ou aperto Noise
+                        std::thread::spawn(move || r.atender_entrada(stream, vaga));
                     }
                     Err(ref e) if e.kind() == std::io::ErrorKind::WouldBlock => {
                         std::thread::sleep(Duration::from_millis(50));
@@ -551,7 +562,7 @@ impl Rede {
                     self.garantir_manutencao();
                     let rede = Arc::clone(self);
                     std::thread::spawn(move || {
-                        let _ = rede.servir(stream, Papel::Discou, rotulo);
+                        let _ = rede.servir(stream, Papel::Discou, rotulo, false, None);
                     });
                     return Ok(());
                 }
@@ -587,6 +598,7 @@ impl Rede {
                         rede.anotar_discagem(&addr, ok);
                     }
                 }
+                rede.cuidar_da_malha();
             }
         });
     }
@@ -635,18 +647,33 @@ impl Rede {
 
     /// O aperto de mão e depois o laço de mensagens. `rotulo`: o endereço
     /// como foi discado (pode ser um nome), marcado como conectado também.
-    fn servir(self: &Arc<Self>, stream: TcpStream, papel: Papel, rotulo: Option<String>) -> Result<(), NetError> {
+    /// `via_ponte`: o socket é um circuito por uma ponte (o IP do outro lado é
+    /// o da ponte, não o do par); `esperado`: a identidade que tem de
+    /// responder.
+    fn servir(
+        self: &Arc<Self>,
+        stream: TcpStream,
+        papel: Papel,
+        rotulo: Option<String>,
+        via_ponte: bool,
+        esperado: Option<[u8; 32]>,
+    ) -> Result<(), NetError> {
         // No Windows o socket aceito herda o modo não bloqueante do listener; no
         // Linux, não. Fixar o modo aqui faz os dois sistemas se comportarem igual.
         stream.set_nonblocking(false)?;
         stream.set_read_timeout(Some(TIMEOUT))?;
-        let ip_par = stream.peer_addr().ok().map(|s| s.ip());
+        let sa_par = if via_ponte { None } else { stream.peer_addr().ok() };
+        let ip_par = sa_par.map(|s| s.ip());
         // Primeiro a cifra (Noise XX); o HELLO já viaja cifrado.
         let (mut conexao, chave_do_par) =
             Conexao::com_cifra(stream, self.magic, &self.identidade, papel, PRAZO_APERTO)?;
         if self.identidade_banida(&chave_do_par) {
             conexao.fechar();
             return Err(NetError::Handshake("identidade banida por malícia".into()));
+        }
+        if esperado.is_some_and(|e| e != chave_do_par) {
+            conexao.fechar();
+            return Err(NetError::Handshake("pela ponte respondeu outro nó".into()));
         }
         // A identidade provada na cifra evita conexão duplicada com o mesmo nó
         // (os dois discando ao mesmo tempo, ou o mesmo nó por dois endereços) e
@@ -666,7 +693,7 @@ impl Rede {
         if papel == Papel::Discou {
             self.saidas.fetch_add(1, Ordering::Relaxed);
         }
-        let resultado = self.servir_cifrado(&mut conexao, papel, ip_par, chave_do_par, rotulo);
+        let resultado = self.servir_cifrado(&mut conexao, papel, sa_par, chave_do_par, rotulo);
         if papel == Papel::Discou {
             self.saidas.fetch_sub(1, Ordering::Relaxed);
         }
@@ -688,10 +715,11 @@ impl Rede {
         self: &Arc<Self>,
         conexao: &mut Conexao,
         papel: Papel,
-        ip_par: Option<IpAddr>,
+        sa_par: Option<SocketAddr>,
         chave_do_par: [u8; 32],
         rotulo: Option<String>,
     ) -> Result<(), NetError> {
+        let ip_par = sa_par.map(|s| s.ip());
         let par_ponta = self.aperto_de_mao(conexao, papel)?;
 
         // Aprende onde o par escuta, e marca como conectado para não rediscar.
@@ -720,6 +748,16 @@ impl Rede {
         }
         if let Ok(mut t) = self.trabalho_dos_pares.lock() {
             t.insert(id, par_ponta.trabalho);
+        }
+        // para a malha: o IP de quem falou direto, e onde estão as pontes
+        // possíveis (os pares que este nó discou e que atenderam)
+        if let (Some(sa), Ok(mut m)) = (sa_par, self.malha.ip_do_par.lock()) {
+            m.insert(id, sa.ip());
+        }
+        if papel == Papel::Discou
+            && let (Some(sa), Ok(mut d)) = (sa_par, self.malha.discado.lock())
+        {
+            d.insert(id, sa);
         }
 
         let mut iniciais = Vec::new();
@@ -755,6 +793,12 @@ impl Rede {
         self.remover(id);
         if let Ok(mut m) = self.identidade_do_par.lock() {
             m.remove(&id);
+        }
+        if let Ok(mut m) = self.malha.ip_do_par.lock() {
+            m.remove(&id);
+        }
+        if let Ok(mut d) = self.malha.discado.lock() {
+            d.remove(&id);
         }
         if let Ok(mut c) = self.conectados.lock() {
             for a in &marcados {
@@ -807,7 +851,7 @@ impl Rede {
         }
     }
 
-    fn ler_laco(&self, conexao: &mut Conexao, id: u64, saida: &Saida) -> Result<(), NetError> {
+    fn ler_laco(self: &Arc<Self>, conexao: &mut Conexao, id: u64, saida: &Saida) -> Result<(), NetError> {
         // responder: o que não cabe na fila derruba o par (ele pede mais do que lê)
         let responder = |msg: &Message| -> Result<(), NetError> {
             let Some(q) = self.quadro(msg) else { return Ok(()) };
@@ -837,6 +881,14 @@ impl Rede {
             match msg {
                 Message::GetAddrs => {
                     responder(&Message::Addrs(self.enderecos_para_anunciar()))?;
+                    // e os nós que só se alcançam por ponte
+                    if let Some(p) = self.pontes_para_anunciar() {
+                        responder(&p)?;
+                    }
+                    continue;
+                }
+                Message::Desconhecida { tipo: crate::malha::TIPO_MALHA, corpo } => {
+                    self.tratar_malha(id, &corpo);
                     continue;
                 }
                 Message::Addrs(lista) => {

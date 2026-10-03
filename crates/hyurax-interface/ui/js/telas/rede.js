@@ -39,6 +39,23 @@ export function atualizar(e) {
     ["Mempool", `${fmt(n.mempool)} tx`],
     ["Bytes trafegados", "PENDENTE (não medido na 1.0)"],
   ]);
+  // a malha: os nós se acham e se alcançam sem servidor central
+  const m = n.malha || {};
+  const ALCANCE = {
+    "de fora": "sim: um nó da internet conseguiu chegar aqui (este nó é porta de entrada)",
+    "só na rede local": "na rede local, sim; de fora, ainda não conferido",
+    "não": "não: quem está de fora chega por ponte",
+    desconhecido: "ainda conferindo",
+  };
+  fatos("r-malha", [
+    ["Alcançável de fora", ALCANCE[m.alcance] || "—"],
+    ["Endereço visto de fora", m.externo || "—"],
+    ["Roteador", m.roteador || "—"],
+    ["Nós na rede local", fmt(m.vizinhos)],
+    ["Rotas por ponte conhecidas", fmt(m.pontes_conhecidas)],
+    ["Reservas em pontes", m.reservas ? `${fmt(m.reservas)} (quem está de fora chega por elas)` : "nenhuma"],
+    ["Circuitos que este nó repassa", `${fmt(m.circuitos)} (cifrados de ponta a ponta: este nó não lê)`],
+  ]);
   const janela = e.modo === "janela" && e.pode_mandar;
   for (const x of $("r-sementes").elements) x.disabled = !janela;
   for (const x of $("r-maquinas").elements) x.disabled = !e.pode_mandar;

@@ -243,9 +243,14 @@ fn bloco_forjado_sem_prova_e_recusado() {
     // o bloco forjado deixaria de encaixar na ponta do alvo (falhou assim no
     // GitHub Actions).
     let espelho = alvo.no.lock().unwrap().chain.clone();
-    let forjado = espelho
+    let mut forjado = espelho
         .build_candidate(MINERADOR, vec![], Some(espelho.tip().unwrap().header.timestamp + 120), Vec::new())
         .unwrap();
+    // O alvo do regtest é fácil: um nonce qualquer às vezes bate a prova por
+    // sorte, e aí o bloco nem é forjado. Escolhe um que comprovadamente não bate.
+    while hyurax_chain::conferir_pow(&ParametrosRede::REGTEST, &forjado.header).is_ok() {
+        forjado.header.nonce += 1;
+    }
 
     let mut conexao = conectar_e_apertar_mao(porta, magic);
     conexao.enviar(&Message::Block(Box::new(forjado))).unwrap();
@@ -713,4 +718,137 @@ fn identidade_que_mostrou_malicia_fica_banida() {
     // outra identidade, do mesmo computador, continua bem-vinda
     alvo_continua_vivo(porta, 2);
     alvo.desligar();
+}
+
+// ================================================================ MALHA
+// docs/HYURAX-MALHA.md: os nós se acham e se alcançam sem servidor central.
+
+fn porta_udp_livre() -> u16 {
+    std::net::UdpSocket::bind("127.0.0.1:0").unwrap().local_addr().unwrap().port()
+}
+
+#[test]
+#[ignore = "sobe sockets — ver cabeçalho do arquivo"]
+fn dois_nos_sem_porta_aberta_se_falam_por_uma_ponte() {
+    // R escuta (é alcançável); A e B não escutam (como atrás de NAT)
+    let r = rede(No::novo(cadeia_com(2)));
+    let a = zerado();
+    let b = zerado();
+    let porta = r.escutar("127.0.0.1:0").unwrap();
+    b.conectar(("127.0.0.1", porta)).unwrap();
+    a.conectar(("127.0.0.1", porta)).unwrap();
+    let id_a = a.identidade_publica();
+    let id_b = b.identidade_publica();
+    let conectado = |x: &Arc<Rede>, id: [u8; 32]| x.pares_com_identidade().iter().any(|(_, i)| *i == id);
+    // B guarda uma vaga na ponte, A aprende a rota e disca por ela
+    assert!(
+        esperar(Duration::from_secs(60), || conectado(&a, id_b) && conectado(&b, id_a)),
+        "A e B não se conectaram pela ponte: A {:?}, B {:?}, R {:?}",
+        a.estado_da_malha(),
+        b.estado_da_malha(),
+        r.estado_da_malha()
+    );
+    assert!(r.estado_da_malha().circuitos >= 1, "a conexão A-B passa pela ponte R");
+    // e a cadeia anda pelos dois caminhos
+    assert!(esperar(Duration::from_secs(60), || altura(&a) == 2 && altura(&b) == 2));
+    for x in [&a, &b, &r] {
+        x.desligar();
+    }
+}
+
+#[test]
+#[ignore = "sobe sockets — ver cabeçalho do arquivo"]
+fn ponte_sem_reserva_recusa_o_circuito() {
+    let r = zerado();
+    let porta = r.escutar("127.0.0.1:0").unwrap();
+    // circuito até uma identidade sem reserva: a ponte responde 0 e fecha
+    let mut s = std::net::TcpStream::connect(("127.0.0.1", porta)).unwrap();
+    s.set_read_timeout(Some(Duration::from_secs(10))).unwrap();
+    s.write_all(&hyurax_net::malha::Prefixo::Circuito([9; 32]).bytes()).unwrap();
+    let mut resposta = [7u8; 1];
+    s.read_exact(&mut resposta).unwrap();
+    assert_eq!(resposta, [0]);
+    // reserva com token que ninguém pediu (fora da cifra) não guarda nada
+    let mut falsa = std::net::TcpStream::connect(("127.0.0.1", porta)).unwrap();
+    falsa.write_all(&hyurax_net::malha::Prefixo::Reserva([5; 16]).bytes()).unwrap();
+    std::thread::sleep(Duration::from_millis(500));
+    let mut s2 = std::net::TcpStream::connect(("127.0.0.1", porta)).unwrap();
+    s2.set_read_timeout(Some(Duration::from_secs(10))).unwrap();
+    s2.write_all(&hyurax_net::malha::Prefixo::Circuito([9; 32]).bytes()).unwrap();
+    s2.read_exact(&mut resposta).unwrap();
+    assert_eq!(resposta, [0], "reserva sem token pedido pela cifra não vale");
+    // e o nó continua atendendo o aperto de mão normal
+    alvo_continua_vivo(porta, 0);
+    r.desligar();
+}
+
+#[test]
+#[ignore = "sobe sockets — ver cabeçalho do arquivo"]
+fn no_confere_o_proprio_alcance_com_um_par() {
+    let r = zerado();
+    let a = zerado();
+    let porta_r = r.escutar("127.0.0.1:0").unwrap();
+    a.escutar("127.0.0.1:0").unwrap();
+    a.conectar(("127.0.0.1", porta_r)).unwrap();
+    // R tenta voltar até A com o token; como R é da rede local (loopback), o
+    // resultado vale só para a rede local
+    assert!(
+        esperar(Duration::from_secs(40), || a.estado_da_malha().alcance == "só na rede local"),
+        "alcance de A: {:?}",
+        a.estado_da_malha()
+    );
+    a.desligar();
+    r.desligar();
+}
+
+#[test]
+#[ignore = "sobe sockets — ver cabeçalho do arquivo"]
+fn vizinhos_na_rede_local_se_acham_sem_semente() {
+    let a = rede(No::novo(cadeia_com(3)));
+    let b = zerado();
+    a.escutar("127.0.0.1:0").unwrap();
+    b.escutar("127.0.0.1:0").unwrap();
+    let (ua, ub) = (porta_udp_livre(), porta_udp_livre());
+    // nenhuma semente, nenhum conectar(): só o anúncio na rede local
+    a.ligar_vizinhos(ua, vec![format!("127.0.0.1:{ub}").parse().unwrap()]).unwrap();
+    b.ligar_vizinhos(ub, vec![format!("127.0.0.1:{ua}").parse().unwrap()]).unwrap();
+    assert!(esperar(Duration::from_secs(60), || b.pares_conectados() >= 1), "B não achou A: {:?}", b.estado_da_malha());
+    assert!(b.estado_da_malha().vizinhos >= 1);
+    assert!(esperar(Duration::from_secs(60), || altura(&b) == 3), "B não sincronizou pelo vizinho");
+    a.desligar();
+    b.desligar();
+}
+
+#[test]
+fn pacote_do_eter_leva_blocos_e_transacoes_sem_rede() {
+    // Lógica sem socket: o pacote é o que atravessa pendrive, Bluetooth ou som.
+    let (mut no, _dono, _saldo, assinar) = conta_com_saldo();
+    assert_eq!(no.adicionar_tx(assinar(0, 1_000)), Ok(true));
+    let altura_a = no.chain.height();
+    let a = rede(no);
+    let pacote = a.exportar_pacote(1000).unwrap();
+
+    // um nó que nunca falou com A recebe o arquivo e fica com a cadeia e a tx
+    let b = zerado();
+    let r = b.importar_pacote(&pacote).unwrap();
+    assert_eq!((r.blocos as u64, r.transacoes, r.recusados), (altura_a, 1, 0), "{r:?}");
+    assert_eq!(altura(&b), altura_a);
+    assert_eq!(b.no.lock().unwrap().mempool_len(), 1);
+    // importar de novo não muda nada
+    let de_novo = b.importar_pacote(&pacote).unwrap();
+    assert_eq!((de_novo.blocos, de_novo.transacoes), (0, 0), "{de_novo:?}");
+
+    // um byte trocado dentro de um quadro: só aquele quadro é recusado
+    let mut ruim = pacote.clone();
+    let meio = ruim.len() / 2;
+    ruim[meio] ^= 0xff;
+    let c = zerado();
+    match c.importar_pacote(&ruim) {
+        Ok(r) => assert!(r.recusados >= 1, "{r:?}"),
+        Err(e) => assert!(e.contains("ilegível"), "{e}"),
+    }
+    // pacote de outra rede
+    let mut outra = pacote;
+    outra[4] ^= 1;
+    assert!(zerado().importar_pacote(&outra).unwrap_err().contains("outra rede"));
 }

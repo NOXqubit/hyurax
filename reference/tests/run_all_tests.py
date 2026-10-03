@@ -40,6 +40,7 @@ MODULES = [
     ("test_16_triagem.py", "triagem de moleculas reais: filtros, modelo de referencia e recusas"),
     ("test_17_job.py", "JOB do ULTRAX: unidades, intervalos, resumo e creditos"),
     ("test_18_rede_ultrax.py", "mensagens do ULTRAX entre nos"),
+    ("test_19_malha.py", "malha: alcance, pontes e vizinhos na rede local"),
 ]
 
 

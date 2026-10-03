@@ -36,6 +36,8 @@ pub struct Opcoes {
     pub painel_rede: bool,
     /// API externa ligada (contas de cliente mandam JOBs).
     pub api_externa: bool,
+    /// Pacote do Éter (gravar a transação num arquivo, ou ler um).
+    pub pacote: Option<PathBuf>,
 }
 
 /// Lê as opções. Sem `--pasta`, usa as pastas do sistema (as mesmas do
@@ -50,6 +52,7 @@ pub fn ler(args: &[String]) -> Result<Opcoes, String> {
     let mut porta = 0u16;
     let mut sementes = Vec::new();
     let mut sem_padrao = false;
+    let mut sem_malha = false;
     let mut o = Opcoes {
         no: ConfigDoNo::nova(rede, Pastas::unica("."), 0, Vec::new(), true),
         arquivo: None,
@@ -64,6 +67,7 @@ pub fn ler(args: &[String]) -> Result<Opcoes, String> {
         painel_porta: config::PORTA_PAINEL,
         painel_rede: false,
         api_externa: false,
+        pacote: None,
     };
     // endereços se leem no fim, quando já se sabe a rede: o prefixo depende dela
     let (mut endereco_texto, mut para_texto) = (None::<String>, None::<String>);
@@ -80,6 +84,10 @@ pub fn ler(args: &[String]) -> Result<Opcoes, String> {
             }
             "--api-externa" => {
                 o.api_externa = true;
+                continue;
+            }
+            "--sem-malha" => {
+                sem_malha = true;
                 continue;
             }
             _ => {}
@@ -100,6 +108,7 @@ pub fn ler(args: &[String]) -> Result<Opcoes, String> {
             "--valor" => o.valor = Some(unidades_de_hyx(valor)?),
             "--taxa" => o.taxa = unidades_de_hyx(valor)?,
             "--exportar" => o.exportar = Some(PathBuf::from(valor)),
+            "--pacote" => o.pacote = Some(PathBuf::from(valor)),
             "--linhas" => o.linhas = valor.parse::<u32>().ok().filter(|&n| n >= 1).ok_or("--linhas precisa ser pelo menos 1")?,
             _ => return Err(format!("opção desconhecida: {nome}")),
         }
@@ -109,6 +118,7 @@ pub fn ler(args: &[String]) -> Result<Opcoes, String> {
         None => Pastas::do_sistema()?,
     };
     o.no = ConfigDoNo::nova(rede, pastas, porta, sementes, sem_padrao);
+    o.no.malha = !sem_malha;
     if let Some(t) = endereco_texto {
         o.endereco = Some(endereco::ler(&t, rede.nome).map_err(|e| format!("--endereco: {e}"))?);
     }

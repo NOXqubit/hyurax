@@ -52,6 +52,10 @@
       "bytes": 9365,
       "sha512_16": "0c05f12f37bfe03286886199960f36c2"
     },
+    "malha.json": {
+      "bytes": 3827,
+      "sha512_16": "20fd8aa7a01c9b5f33dacd66f5cd42ec"
+    },
     "melhoramento.json": {
       "bytes": 17105,
       "sha512_16": "ca3fbf9a5e8664c35e0e1f7ec8009cab"
