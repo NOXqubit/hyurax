@@ -46,7 +46,7 @@ máquina), **AUSENTE**, **FORA DO PC** (backend, web, mobile, economia).
 | Controle de recursos e preferências | REAL | linhas, limite por linha, teto de memória (unidade que não cabe é recusada na submissão), GPU com fatia; tudo em `ajustes.txt`. Testes: `limite_de_cpu_*`, `teto_de_memoria_*`, `unidade_maior_que_o_teto_*` | teto de memória do sistema operacional | — |
 | Isolamento de tarefas remotas | PARCIAL | nenhum código de fora roda; limites por par | processo separado | — |
 | UI sem lógica crítica (§15) | REAL | o núcleo roda sem a tela (`hyurax-no painel`, `no`); a tela só consome a API | — | — |
-| Testar tarefas longas (§15) | REAL | `scripts/teste-longo.ps1`: memória, handles e threads medidos a cada 30 s, auditoria no fim | rodar horas, não minutos, antes de cada lançamento | ver o CSV do teste |
+| Testar tarefas longas (§15) | REAL | `scripts/teste-longo.ps1`: memória, handles e threads medidos a cada 30 s, auditoria no fim. 03/10, 30 min, 2 linhas, build debug: memória privada 7,8 → 7,5 MiB, 99 handles e 6 threads do começo ao fim, 382 registros, 381 assinaturas e vereditos válidos, 20 de 20 refeitas iguais, placar conferido | rodar horas, não minutos, antes de cada lançamento | ver o CSV do teste |
 
 ## §4 e §6 — verificação computacional
 
