@@ -74,3 +74,25 @@ créditos de computação medem contribuição: não são dinheiro e não são H
 - Trabalho científico valendo na recompensa do bloco: mudança de consenso,
   especificação nova (SPEC-02).
 - Nós semente públicos da testnet e assinatura digital do programa.
+
+## Depois da 1.0: o Documento Mestre (02 e 03/10/2026)
+
+O roadmap de 10 fases do [Documento Mestre](DOCUMENTO-MESTRE.md) foi seguido
+em ordem; o registro de cada fase está em
+[AUDITORIA-DOCUMENTO-MESTRE.md](AUDITORIA-DOCUMENTO-MESTRE.md). O que mudou
+para quem usa:
+
+- **Segurança:** a janela fala com o núcleo por uma chave de sessão; o
+  código de 6 dígitos tem espera depois de erros e não vale duas vezes; a
+  carteira antiga (segredo em texto) não envia mais; atualizações só com
+  manifesto assinado pela chave de lançamento.
+- **Computação entre nós (protocolo ULTRAX v2):** o compromisso é assinado
+  pelo worker; um nó que cai não segura mais as unidades por 2 minutos;
+  a reputação dos workers é gravada, com Gold Score e "nó verificado".
+- **Novos comandos:** `hyurax-no identidade ver|girar`,
+  `hyurax-no contas ...` (API externa), `hyurax-no copia criar|conferir|restaurar`.
+- **Tela:** API externa e contas em Ajustes; aviso quando o núcleo para de
+  responder e quando um JOB termina; "pular para o conteúdo" e contraste
+  maior no texto secundário.
+- **Operação:** `/api/v1/saude` para monitoramento e o manual
+  [OPERACAO.md](OPERACAO.md).

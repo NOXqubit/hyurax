@@ -16,11 +16,12 @@ que cabiam no programa de PC.
 2. **Nenhum defeito foi corrigido sem antes ser conferido no código** (o
    caminho até a falha seguido de verdade). Os 40 defeitos alegados se
    confirmaram; a gravidade de alguns foi revista.
-3. **Medidas desta máquina** (Atom x5-Z8350, 3,4 GB): `cargo test --workspace`
-   (338 testes, 0 falhas no fim), os 18 cenários de rede com sockets
-   (`--ignored`, todos passam), `clippy -D warnings` limpo, 177 testes do
-   gabarito Python, instalação limpa (30 conferências) e teste de execução
-   longa (`scripts/teste-longo.ps1`).
+3. **Medidas desta máquina** (Atom x5-Z8350, 3,4 GB), no fim das fases
+   (03/10/2026): `cargo test --workspace` (359 testes, 0 falhas), os 18
+   cenários de rede com sockets e os três núcleos pela rede (`--ignored`,
+   todos passam), `clippy -D warnings` limpo, 178 testes do gabarito Python,
+   instalação limpa (30 conferências) e execução longa de 30 min
+   (`scripts/teste-longo.ps1`).
 
 Legenda do estado: **REAL** (implementado e exercitado por teste ou uso),
 **PARCIAL**, **SIMULADO** (roda de verdade sobre dado gerado, ou só numa
@@ -217,11 +218,48 @@ temporal e inspeção ausentes na interface 1.0 (implementado); atualização
 assinada ausente (implementado); linha do worker sem supervisão (corrigido);
 nenhum teste de JOB pelas threads do worker (criado).
 
-## O que fica para depois do PC, na ordem do roadmap
+## O roadmap inteiro (§21), fase por fase
 
-1. Ensaio entre máquinas (fase 6, rede).
-2. Cifra em repouso de `no.chave` e `seguranca.txt`, zeroização, rotação da
-   identidade (fase 3, restante).
-3. Authenticode do `.exe` (depende do certificado do dono).
-4. Backend, contas, marketplace, mobile e economia (fases 5, 7, 8 e 9), só
-   depois do núcleo de PC estável, como o documento manda.
+Feito em 02 e 03/10/2026, na ordem do documento. Para cada fase: o que existe,
+como foi testado e o que ficou de fora (com o motivo). Os commits estão no
+histórico do repositório.
+
+| Fase | O que existe agora | Como foi testado | O que falta, e por quê |
+|---|---|---|---|
+| 1 — Auditoria | Este documento, com os 7 campos por seção e os 40 defeitos conferidos no código | leitura do código por área; conferência de cada defeito antes de corrigir | — |
+| 2 — Núcleo PC | Execução, checkpoints com SHA-512, recuperação, supervisão das linhas, telemetria real, registro com teto, atualização assinada | 108+ testes do núcleo; JOB pelas linhas do worker até concluir; execução longa de 30 min sem crescimento de memória, handles ou threads | execução de horas antes de cada lançamento |
+| 3 — Cibersegurança | [Modelo de ameaças](MODELO-DE-AMEACAS.md); chave de sessão da API, Host e Origin; limites de conexão e de fila; banimento; teto por faixa /24; Argon2id fora da trava; compromisso assinado (ULTRAX v2); resumo das máquinas assinado; rotação da identidade; `cargo audit` no CI | `tests/api_local.rs`, 18 cenários de rede com sockets, testes de cada defesa | cifra em repouso (DPAPI) de `no.chave` e `seguranca.txt` e zeroização (ver abaixo); revogação anunciada na rede; Authenticode |
+| 4 — Design | Painel com visão geral, gráfico de CPU, histórico e reprodução de JOB, inspeção de unidade, ajustes, aviso de conexão perdida, "pular para o conteúdo", contraste AA, layout de celular | conferido no navegador: teclado, nomes acessíveis de todos os controles, 375 px em todas as telas sem rolagem lateral, aviso com o núcleo parado | teste automático da interface (hoje é conferência manual) |
+| 5 — Backend | Contas de cliente com chave, API externa (`/api/v1/externa/`), créditos por conta, limites por minuto e de JOBs, relatórios e dados brutos ([API-EXTERNA.md](API-EXTERNA.md)) | `tests/api_externa.rs` de ponta a ponta; `hyurax-no contas` | backend central na nuvem (exige servidor sempre no ar); TLS no nó (exige biblioteca com código em C, vedada pela regra do projeto) |
+| 6 — Rede | Três núcleos completos ligados pela rede P2P real fazem JOB de nível 3; nó que cai no meio falha as unidades na hora; reputação gravada, Gold Score e nó verificado ([REPUTACAO.md](REPUTACAO.md)) | `tests/tres_nos.rs` (também no CI) | ensaio entre máquinas diferentes, com latência, perda e NAT (exige duas máquinas e a rede de teste pública) |
+| 7 — Cliente | Painel (dashboard), instalador com manifesto e desinstalação limpa, acompanhamento por JOB, resultados e relatórios, custo estimado antes e consumido durante (créditos "de" orçamento), contas e API externa na tela | instalação limpa (30 conferências); navegador | — |
+| 8 — Mobile | "Ver no celular": o painel em só leitura na rede local, responsivo, com QR; avisos de bloco e de JOB na tela | 375 px conferidos; avisos conferidos com um JOB de verdade | aplicativo nativo (o documento manda esperar o PC estável; não há SDK Android nesta máquina); carteira e marketplace no celular |
+| 9 — Economia | [ECONOMIA.md](ECONOMIA.md): para que o HYX é necessário em cada função, emissão com o risco da concentração no começo, créditos, regulação | números conferidos no código e nos vetores | cobrança, liquidação em HYX, liquidez: **ausentes de propósito** até haver necessidade demonstrada, estrutura jurídica e rede principal |
+| 10 — Produção | Cópia de segurança com manifesto e restauração que não apaga; `/api/v1/saude` para monitoramento; [OPERACAO.md](OPERACAO.md) com recuperação de desastre, resposta a incidentes e implantação gradual | testes de cópia (inclusive adulterada e manifesto malicioso) e da saúde; comando de cópia testado pelo terminal | auditoria externa de segurança e parecer jurídico (exigem terceiros); monitoramento central de vários nós |
+
+### Por que a cifra em repouso e a zeroização ficaram de fora
+
+- **DPAPI** (cifrar `no.chave` e `seguranca.txt` com a conta do Windows):
+  protege contra quem copia os arquivos, mas amarra os segredos ao perfil
+  do Windows. Uma cópia de segurança restaurada em outro computador, ou
+  depois de reinstalar o Windows, viraria lixo, e o segundo fator perdido
+  tranca o dono para fora. Exige decidir antes como recuperar o segundo
+  fator. Chamar a DPAPI do Rust também exige `unsafe` (proibido) ou um
+  PowerShell auxiliar.
+- **Zeroização**: apagar segredos da memória de forma garantida exige
+  escrita volátil (`unsafe`, proibido) ou uma dependência nova (vedada). E
+  os segredos são copiados em vários lugares; zerar um só daria falsa
+  segurança.
+
+## O que fica para depois, e de quem depende
+
+1. **Do dono do projeto:** certificado Authenticode; publicar a rede de
+   teste (push, etiqueta, Release com `atualizacao.txt` assinado); ensaio
+   entre máquinas (lan house); auditoria externa e parecer jurídico antes
+   de qualquer rede principal.
+2. **Decisão de projeto antes do código:** recuperação do segundo fator
+   (para então cifrar em repouso); revogação de identidade anunciada na rede
+   (mudança de protocolo); emissão definitiva (o halving de ~292 dias está
+   marcado PROVISÓRIO); trabalho científico na recompensa do bloco (SPEC-02).
+3. **Depois do PC estável, como o documento manda:** aplicativo móvel
+   nativo, backend central, marketplace com preço, cobrança.
