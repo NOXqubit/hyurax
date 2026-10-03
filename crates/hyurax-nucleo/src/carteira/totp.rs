@@ -135,12 +135,19 @@ pub fn codigo(segredo: &[u8], agora_unix: u64) -> String {
 /// vaza quantos dígitos iniciais acertaram.
 #[must_use]
 pub fn confere(segredo: &[u8], agora_unix: u64, digitado: &str) -> bool {
+    passo_que_confere(segredo, agora_unix, digitado).is_some()
+}
+
+/// Como [`confere`], devolvendo o passo de 30 s a que o código pertence: quem
+/// guarda o último passo aceito recusa o mesmo código uma segunda vez.
+#[must_use]
+pub fn passo_que_confere(segredo: &[u8], agora_unix: u64, digitado: &str) -> Option<u64> {
     let limpo: String = digitado.chars().filter(|c| c.is_ascii_digit()).collect();
     if limpo.len() != DIGITOS as usize {
-        return false;
+        return None;
     }
     let passo = (agora_unix / PASSO_S) as i64;
-    let mut bateu = false;
+    let mut achado = None;
     for delta in -JANELA..=JANELA {
         let Ok(contador) = u64::try_from(passo.saturating_add(delta)) else { continue };
         let esperado = format!("{:0width$}", codigo_do_contador(segredo, contador), width = DIGITOS as usize);
@@ -148,9 +155,11 @@ pub fn confere(segredo: &[u8], agora_unix: u64, digitado: &str) -> bool {
         for (a, b) in esperado.bytes().zip(limpo.bytes()) {
             iguais &= u8::from(a == b);
         }
-        bateu |= iguais == 1;
+        if iguais == 1 {
+            achado = Some(contador);
+        }
     }
-    bateu
+    achado
 }
 
 const ALFABETO: &[u8; 32] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";

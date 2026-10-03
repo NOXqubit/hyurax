@@ -176,6 +176,11 @@
           <form id="c-importar" class="formulario" autocomplete="off">
             <h3>Importar</h3>
             <label for="c-conteudo"><small>Conteúdo do arquivo carteira.txt</small><textarea id="c-conteudo" rows="6" spellcheck="false"></textarea></label>
+            <p class="nota">Arquivo de versão antiga, com o segredo sem senha? Escolha uma senha nova: ele entra já cifrado.</p>
+            <div class="campos">
+              <label for="c-imp-senha"><small>Senha nova (só para arquivo antigo)</small><input id="c-imp-senha" type="password" autocomplete="new-password"></label>
+              <label for="c-imp-senha2"><small>Repita</small><input id="c-imp-senha2" type="password" autocomplete="new-password"></label>
+            </div>
             <button type="submit" class="botao-leve">Importar</button>
             <p class="saida" id="c-importar-saida" role="status"></p>
           </form>
@@ -183,6 +188,18 @@
       </article>
     </div>
     <div id="c-com-carteira" hidden>
+      <article class="bloco aviso-carteira" id="c-sem-senha" hidden>
+        <h2>Esta carteira está sem senha</h2>
+        <p>O segredo dela está em texto no disco (formato de uma versão antiga). Enquanto for assim, o envio fica bloqueado: escolha uma senha para cifrá-la.</p>
+        <form id="c-cifrar" class="formulario" autocomplete="off">
+          <div class="campos">
+            <label for="c-cif-senha"><small>Senha (mínimo 10 caracteres)</small><input id="c-cif-senha" type="password" autocomplete="new-password"></label>
+            <label for="c-cif-senha2"><small>Repita a senha</small><input id="c-cif-senha2" type="password" autocomplete="new-password"></label>
+          </div>
+          <button type="submit" class="botao">Proteger com senha</button>
+          <p class="saida" id="c-cifrar-saida" role="status"></p>
+        </form>
+      </article>
       <div class="grade-dupla">
         <article class="bloco">
           <h2>Saldo</h2>

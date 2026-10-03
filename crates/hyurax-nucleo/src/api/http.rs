@@ -3,12 +3,17 @@
 
 use std::io::{Read, Write};
 use std::net::TcpStream;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 /// Teto do cabeçalho.
 const CABECALHO_MAX: usize = 16 * 1024;
 /// Teto do corpo de formulário.
 pub const CORPO_MAX: usize = 8 * 1024;
+/// Prazo para o pedido inteiro chegar: quem goteja um byte a cada poucos
+/// segundos não segura a linha para sempre.
+const PRAZO_DO_PEDIDO: Duration = Duration::from_secs(10);
+/// Prazo de cada escrita da resposta.
+const PRAZO_DE_ESCRITA: Duration = Duration::from_secs(10);
 
 /// Um pedido.
 pub struct Pedido {
@@ -20,6 +25,8 @@ pub struct Pedido {
     pub host: String,
     /// `Origin`, em minúsculas, quando veio.
     pub origem: Option<String>,
+    /// A chave de sessão do painel (`X-Hyurax-Chave`), quando veio.
+    pub chave: Option<String>,
     /// O corpo, em bytes.
     pub corpo: Vec<u8>,
 }
@@ -36,6 +43,12 @@ impl Pedido {
         self.caminho.split_once('?')?.1.split('&').find_map(|par| par.split_once('=').filter(|(k, _)| *k == nome).map(|(_, v)| v))
     }
 
+    /// A chave de sessão: o cabeçalho, ou `?chave=` (o fluxo de eventos e os
+    /// links de relatório não conseguem mandar cabeçalho).
+    pub fn chave_enviada(&self) -> Option<&str> {
+        self.chave.as_deref().or_else(|| self.parametro("chave"))
+    }
+
     /// Os campos do formulário do corpo.
     pub fn campos(&self) -> Vec<(String, String)> {
         campos_do_formulario(&String::from_utf8_lossy(&self.corpo))
@@ -45,9 +58,13 @@ impl Pedido {
 /// Lê um pedido. `corpo_max` diz quanto corpo este caminho aceita.
 pub fn ler(s: &mut TcpStream, corpo_max: &dyn Fn(&str) -> usize) -> Option<Pedido> {
     s.set_read_timeout(Some(Duration::from_secs(5))).ok()?;
+    let inicio = Instant::now();
     let mut buf = Vec::new();
     let mut pedaco = [0u8; 2048];
     let fim_cab = loop {
+        if inicio.elapsed() > PRAZO_DO_PEDIDO {
+            return None;
+        }
         let n = s.read(&mut pedaco).ok()?;
         if n == 0 {
             return None;
@@ -65,7 +82,7 @@ pub fn ler(s: &mut TcpStream, corpo_max: &dyn Fn(&str) -> usize) -> Option<Pedid
     let mut primeira = linhas.next()?.split(' ');
     let metodo = primeira.next()?.to_string();
     let caminho = primeira.next()?.to_string();
-    let (mut host, mut origem, mut tamanho) = (String::new(), None, 0usize);
+    let (mut host, mut origem, mut chave, mut tamanho) = (String::new(), None, None, 0usize);
     let maximo = corpo_max(caminho.split('?').next().unwrap_or(""));
     for l in linhas {
         let Some((nome, valor)) = l.split_once(':') else { continue };
@@ -73,12 +90,16 @@ pub fn ler(s: &mut TcpStream, corpo_max: &dyn Fn(&str) -> usize) -> Option<Pedid
         match nome.trim().to_ascii_lowercase().as_str() {
             "host" => host = valor.to_ascii_lowercase(),
             "origin" => origem = Some(valor.to_ascii_lowercase()),
+            "x-hyurax-chave" => chave = Some(valor.to_string()),
             "content-length" => tamanho = valor.parse().ok().filter(|t| *t <= maximo)?,
             _ => {}
         }
     }
     let mut corpo = buf.get(fim_cab.saturating_add(4)..)?.to_vec();
     while corpo.len() < tamanho {
+        if inicio.elapsed() > PRAZO_DO_PEDIDO {
+            return None;
+        }
         let n = s.read(&mut pedaco).ok()?;
         if n == 0 {
             break;
@@ -86,7 +107,15 @@ pub fn ler(s: &mut TcpStream, corpo_max: &dyn Fn(&str) -> usize) -> Option<Pedid
         corpo.extend_from_slice(pedaco.get(..n)?);
     }
     corpo.truncate(tamanho);
-    Some(Pedido { metodo, caminho, host, origem, corpo })
+    Some(Pedido { metodo, caminho, host, origem, chave, corpo })
+}
+
+/// Compara duas chaves sem vazar, pelo tempo, quantos caracteres bateram.
+pub fn mesma_chave(a: &str, b: &str) -> bool {
+    if a.len() != b.len() || a.is_empty() {
+        return false;
+    }
+    a.bytes().zip(b.bytes()).fold(0u8, |acc, (x, y)| acc | (x ^ y)) == 0
 }
 
 /// Decodifica `application/x-www-form-urlencoded`: `+` é espaço, `%XX` é byte.
@@ -142,6 +171,7 @@ pub fn responder(s: &mut TcpStream, status: &str, tipo: &str, corpo: &[u8]) -> s
     // uma escrita só, e sem Nagle: em duas, o Windows segurava o corpo
     // esperando o ACK atrasado do cabeçalho (200 a 400 ms por resposta)
     let _ = s.set_nodelay(true);
+    let _ = s.set_write_timeout(Some(PRAZO_DE_ESCRITA));
     let mut tudo = Vec::with_capacity(cab.len().saturating_add(corpo.len()));
     tudo.extend_from_slice(cab.as_bytes());
     tudo.extend_from_slice(corpo);
@@ -171,6 +201,7 @@ pub fn responder_json(s: &mut TcpStream, r: Result<serde_json::Value, String>) -
 /// Conexão caiu.
 pub fn comecar_fluxo(s: &mut TcpStream) -> std::io::Result<()> {
     let _ = s.set_nodelay(true);
+    let _ = s.set_write_timeout(Some(PRAZO_DE_ESCRITA));
     s.write_all(
         b"HTTP/1.1 200 OK\r\nContent-Type: text/event-stream; charset=utf-8\r\nCache-Control: no-store\r\n\
           X-Content-Type-Options: nosniff\r\nConnection: keep-alive\r\n\r\nretry: 2000\n\n",

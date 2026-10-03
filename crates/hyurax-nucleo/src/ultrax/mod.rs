@@ -359,6 +359,12 @@ pub trait Agendador: Send + Sync {
     /// Há JOB com unidade esperando a vez. Enquanto houver, a LAB (carga de
     /// teste) não gera nada: o trabalho pedido vem primeiro.
     fn tem_trabalho(&self) -> bool;
+    /// O JOB ainda quer esta unidade? `false` depois de cancelado, vencido ou
+    /// concluído: a unidade na fila não começa, e a que roda para.
+    fn ainda_quer(&self, job: &[u8; HASH_LEN], indice: u64) -> bool {
+        let _ = (job, indice);
+        true
+    }
 }
 
 /// Uma tarefa na fila, com o que o worker precisa saber além dela.
@@ -630,6 +636,9 @@ pub struct Ultrax {
     nucleos: u32,
     /// O dono ligou o ULTRAX.
     pub ligado: AtomicBool,
+    /// Fim das threads (orquestrador e linhas): só o benchmark usa, num
+    /// ULTRAX temporário que precisa sumir depois.
+    encerrado: AtomicBool,
     /// Gera trabalho LAB quando não há unidade de JOB. Desligado, a fila só
     /// recebe unidades de JOB (é o que `hyurax-no ciencia rodar` usa).
     pub lab: AtomicBool,
@@ -712,6 +721,7 @@ impl Ultrax {
             segredo,
             nucleos,
             ligado: AtomicBool::new(partida.ligado),
+            encerrado: AtomicBool::new(false),
             lab: AtomicBool::new(true),
             linhas: AtomicU32::new(partida.linhas.clamp(1, nucleos)),
             uso_cpu: AtomicU32::new(partida.uso_cpu.clamp(10, 100)),
@@ -776,6 +786,18 @@ impl Ultrax {
 
     fn agendador(&self) -> Option<Arc<dyn Agendador>> {
         self.agendador.lock().ok().and_then(|a| a.clone())
+    }
+
+    /// Termina as threads deste ULTRAX (orquestrador e linhas) de vez.
+    pub fn encerrar_threads(&self) {
+        self.ligado.store(false, Ordering::Relaxed);
+        self.encerrado.store(true, Ordering::Relaxed);
+        self.tem_na_fila.notify_all();
+        self.pedir_mais();
+    }
+
+    pub(super) fn encerrado(&self) -> bool {
+        self.encerrado.load(Ordering::Relaxed)
     }
 
     /// Tarefas na fila ou rodando (para esperar tudo terminar).

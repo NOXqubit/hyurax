@@ -114,7 +114,10 @@ fn teto_de_memoria_cancela_o_que_nao_cabe() {
     tarefa.avancar(Estado::NaFila, agora_ms(), "").unwrap();
     u.processar(0, NaFila { tarefa, desafio: None, recusas: 0, origem: vec![0; 32], job: None });
     let placar = u.placar();
-    assert_eq!((placar.canceladas, placar.liquidadas), (1, 0));
+    // não cabe e nunca vai caber: conta como falha (abandonada), não como
+    // parada do dono; numa unidade de JOB, isso vira WORK_UNIT_FAILED em vez
+    // de voltar para a fila sem fim
+    assert_eq!((placar.abandonadas, placar.canceladas, placar.liquidadas), (1, 0, 0));
     assert_eq!(u.reservada.load(Ordering::Relaxed), 0, "nada fica reservado");
     // e o gerador dimensiona dentro do teto
     let esp = u.dimensionar(TipoDeTrabalho::Matriz).unwrap();

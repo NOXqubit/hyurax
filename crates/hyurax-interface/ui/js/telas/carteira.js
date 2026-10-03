@@ -38,6 +38,7 @@ function comCarteira(e) {
   const c = e.carteira;
   $("c-sem-carteira").hidden = true;
   $("c-com-carteira").hidden = false;
+  $("c-sem-senha").hidden = !c.sem_senha;
   texto("c-saldo", `${c.saldo} HYX`);
   fatos("c-fatos", [
     ["Imaturo", `${c.imaturo} HYX`, "recompensa de bloco que ainda não passou da maturidade"],
@@ -202,14 +203,22 @@ async function criar(ev) {
 
 async function importar(ev) {
   ev.preventDefault();
-  const r = await postar("/carteira/importar", { conteudo: $("c-conteudo").value });
-  resultado("c-importar-saida", r, r.ok ? `Importada: ${r.dados.endereco}${r.dados.sem_senha ? ". Aviso: este arquivo guarda o segredo sem senha; proteja com hyurax-no carteira cifrar." : "."}` : "");
-  if (r.ok) $("c-conteudo").value = "";
+  const r = await postar("/carteira/importar", { conteudo: $("c-conteudo").value, senha: $("c-imp-senha").value, senha2: $("c-imp-senha2").value });
+  resultado("c-importar-saida", r, r.ok ? `Importada: ${r.dados.endereco}${r.dados.cifrada_agora ? " (o arquivo antigo, sem senha, foi cifrado com a senha nova)" : ""}.` : "");
+  if (r.ok) $("c-conteudo").value = $("c-imp-senha").value = $("c-imp-senha2").value = "";
+}
+
+async function cifrar(ev) {
+  ev.preventDefault();
+  const r = await postar("/carteira/cifrar", { senha: $("c-cif-senha").value, senha2: $("c-cif-senha2").value });
+  resultado("c-cifrar-saida", r, "Pronto: a carteira está cifrada com a senha. Guarde a senha: ninguém consegue recuperá-la.");
+  if (r.ok) $("c-cif-senha").value = $("c-cif-senha2").value = "";
 }
 
 export function montar() {
   $("c-nova").addEventListener("submit", criar);
   $("c-importar").addEventListener("submit", importar);
+  $("c-cifrar").addEventListener("submit", cifrar);
   $("c-enviar").addEventListener("submit", enviar);
   for (const id of ["e-para", "e-valor", "e-taxa"]) $(id).addEventListener("input", () => texto("e-saida", ""));
   $("c-enviar").addEventListener("reset", limparEnvio);

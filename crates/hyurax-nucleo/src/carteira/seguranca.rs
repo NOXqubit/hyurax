@@ -15,6 +15,56 @@ use std::path::Path;
 
 use crate::carteira::totp;
 
+/// Quantos erros seguidos de código antes de começar a esperar.
+const ERROS_LIVRES: u32 = 5;
+/// A primeira espera depois dos erros livres; cada erro seguinte dobra.
+const ESPERA_INICIAL_S: u64 = 30;
+/// A espera nunca passa disto.
+const ESPERA_MAXIMA_S: u64 = 15 * 60;
+
+/// As tentativas de código desta abertura do programa: contra quem tenta os
+/// 10^6 códigos por um script, e contra reaproveitar um código já usado.
+#[derive(Default)]
+pub(crate) struct Tentativas {
+    erros: u32,
+    bloqueado_ate: u64,
+    ultimo_passo: Option<u64>,
+}
+
+impl Tentativas {
+    /// Segundos até poder tentar de novo (0 = pode agora).
+    pub fn espera(&self, agora: u64) -> u64 {
+        self.bloqueado_ate.saturating_sub(agora)
+    }
+
+    /// Confere o código respeitando a espera e o anti-reuso. `Err` diz por quê.
+    pub fn conferir(&mut self, s: &Seguranca, agora: u64, digitado: &str) -> Result<(), String> {
+        let falta = self.espera(agora);
+        if falta > 0 {
+            return Err(format!("muitos códigos errados seguidos: espere {falta} s e tente de novo."));
+        }
+        let passo = s.segredo.as_ref().and_then(|seg| totp::passo_que_confere(seg, agora, digitado));
+        match passo {
+            Some(p) if self.ultimo_passo.is_none_or(|u| p > u) => {
+                self.erros = 0;
+                self.bloqueado_ate = 0;
+                self.ultimo_passo = Some(p);
+                Ok(())
+            }
+            Some(_) => Err("este código já foi usado: espere o próximo aparecer no aplicativo.".into()),
+            None => {
+                self.erros = self.erros.saturating_add(1);
+                if self.erros >= ERROS_LIVRES {
+                    let dobras = (self.erros - ERROS_LIVRES).min(10);
+                    let espera = ESPERA_INICIAL_S.saturating_mul(1u64 << dobras).min(ESPERA_MAXIMA_S);
+                    self.bloqueado_ate = agora.saturating_add(espera);
+                }
+                Err("código de 6 dígitos errado ou vencido. O código muda a cada 30 segundos.".into())
+            }
+        }
+    }
+}
+
 /// Nome do arquivo dentro da pasta de dados.
 const ARQUIVO: &str = "seguranca.txt";
 
@@ -75,9 +125,7 @@ impl Seguranca {
             u8::from(self.exige_envio),
             u8::from(self.trava),
         );
-        let temporario = arquivo.with_extension("tmp");
-        std::fs::write(&temporario, texto).map_err(|e| format!("não consegui gravar {ARQUIVO}: {e}"))?;
-        std::fs::rename(&temporario, &arquivo).map_err(|e| format!("não consegui gravar {ARQUIVO}: {e}"))
+        crate::arquivos::gravar_privado(&arquivo, &texto)
     }
 
     /// Existe segundo fator configurado?
@@ -86,6 +134,7 @@ impl Seguranca {
     }
 
     /// O código digitado vale agora?  Sem segredo, nada a conferir: `false`.
+    #[cfg(test)]
     pub fn confere(&self, agora: u64, digitado: &str) -> bool {
         self.segredo.as_ref().is_some_and(|s| totp::confere(s, agora, digitado))
     }
@@ -137,6 +186,30 @@ mod testes {
         assert!(!s.ligado() && !s.exige_envio && !s.trava);
         assert!(!s.confere(1, "123456"));
         let _ = std::fs::remove_dir_all(&p);
+    }
+
+    #[test]
+    fn codigo_nao_vale_duas_vezes_e_erros_seguidos_fazem_esperar() {
+        let segredo = vec![9u8; totp::SEGREDO_LEN];
+        let s = Seguranca { segredo: Some(segredo.clone()), exige_envio: true, trava: true };
+        let mut t = Tentativas::default();
+        let agora = 1_700_000_000;
+        let certo = totp::codigo(&segredo, agora);
+        assert!(t.conferir(&s, agora, &certo).is_ok());
+        // o mesmo código, de novo, dentro da mesma janela: recusado
+        assert!(t.conferir(&s, agora + 5, &certo).unwrap_err().contains("já foi usado"));
+        // cinco erros seguidos: daí em diante, espera
+        let errado = if certo == "000000" { "111111" } else { "000000" };
+        for _ in 0..ERROS_LIVRES {
+            assert!(t.conferir(&s, agora + 10, errado).is_err());
+        }
+        assert_eq!(t.espera(agora + 10), ESPERA_INICIAL_S);
+        let proximo = totp::codigo(&segredo, agora + 30);
+        assert!(t.conferir(&s, agora + 30, &proximo).unwrap_err().contains("espere"));
+        // passada a espera, o código certo do momento vale e zera a conta
+        let depois = agora + 10 + ESPERA_INICIAL_S + 30;
+        assert!(t.conferir(&s, depois, &totp::codigo(&segredo, depois)).is_ok());
+        assert_eq!(t.espera(depois), 0);
     }
 
     #[test]

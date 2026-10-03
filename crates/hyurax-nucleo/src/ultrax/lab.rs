@@ -12,6 +12,9 @@ impl Ultrax {
         let mut ultimo_gravado = Instant::now();
         let mut proximo_segundo = Instant::now().checked_add(Duration::from_secs(1)).unwrap_or_else(Instant::now);
         loop {
+            if self.encerrado() {
+                return;
+            }
             // espera o próximo segundo, ou uma linha pedindo mais trabalho:
             // com tarefa curta, esperar o segundo inteiro deixava as linhas paradas
             let restante = proximo_segundo.saturating_duration_since(Instant::now());

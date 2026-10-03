@@ -3,7 +3,7 @@
 
 import { $, texto, trocar, fmt } from "./util.js";
 import { conectar, estado, ouvir, avisar } from "./estado.js";
-import { obter, postar } from "./api.js";
+import { obter, postar, pegarChaveDoEndereco, chaveDaSessao } from "./api.js";
 import * as visao from "./telas/visao.js";
 import * as ultrax from "./telas/ultrax.js";
 import * as ciencia from "./telas/ciencia.js";
@@ -12,6 +12,9 @@ import * as cadeia from "./telas/cadeia.js";
 import * as rede from "./telas/rede.js";
 import * as registro from "./telas/registro.js";
 import * as ajustes from "./telas/ajustes.js";
+
+// a chave de sessão vem no endereço; tira dele antes de qualquer coisa
+pegarChaveDoEndereco();
 
 const TELAS = { visao, ultrax, ciencia, carteira, cadeia, rede, registro, ajustes };
 let atual = "visao";
@@ -28,7 +31,14 @@ function mostrarTela(nome) {
   TELAS[nome].aoMostrar?.(estado.atual);
   $("principal").scrollTop = 0;
 }
-window.addEventListener("hashchange", () => mostrarTela(location.hash.slice(1)));
+window.addEventListener("hashchange", () => {
+  if (location.hash.startsWith("#chave=")) {
+    pegarChaveDoEndereco();
+    location.reload();
+    return;
+  }
+  mostrarTela(location.hash.slice(1));
+});
 
 // ---------- barra de estado ----------
 function atualizarTopo(e) {
@@ -96,6 +106,7 @@ function cuidarDaGpu(e) {
   const querer = !!(e.pode_mandar && e.ultrax?.ligado && g?.ligada);
   if (querer && !trabalhadorGpu) {
     trabalhadorGpu = new Worker("/js/gpu/trabalhador.js", { type: "module" });
+    trabalhadorGpu.postMessage({ chave: chaveDaSessao() });
     trabalhadorGpu.onmessage = (m) => {
       const d = m.data || {};
       if (d.amostra) avisar("amostra", d.amostra);
@@ -145,5 +156,13 @@ for (const tela of Object.values(TELAS)) tela.montar?.({ abrirTermos });
 mostrarTela(location.hash.slice(1) || "visao");
 conectar();
 // o estado chega pelo fluxo; esta leitura só adianta o primeiro quadro
-obter("/estado").then((r) => { if (r.ok) avisar("estado", r.dados); });
+obter("/estado").then((r) => {
+  if (r.ok) avisar("estado", r.dados);
+  else if (r.status === 401) {
+    // aberto num navegador sem a chave desta abertura do programa
+    const d = $("topo-conexao");
+    d.className = "estado-desligado";
+    d.textContent = "sem a chave: abra pela janela do programa (ou pelo endereço que o hyurax-no painel mostrou)";
+  }
+});
 trocar("vg-registro");

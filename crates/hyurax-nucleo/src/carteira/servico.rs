@@ -12,7 +12,7 @@ use hyurax_crypto::ADDRESS_LEN;
 use hyurax_net::Rede;
 use serde_json::{Value, json};
 
-use super::seguranca::Seguranca;
+use super::seguranca::{Seguranca, Tentativas};
 use super::{arquivo, cifrar_segredo, endereco, envio, gravar, totp};
 use crate::arquivos;
 use crate::config::ConfigDoNo;
@@ -38,6 +38,7 @@ pub struct Carteira {
     endereco: Mutex<Option<[u8; ADDRESS_LEN]>>,
     seguranca: Mutex<Seguranca>,
     totp_pendente: Mutex<Option<Vec<u8>>>,
+    tentativas: Mutex<Tentativas>,
     destravado: AtomicBool,
     pasta_config: PathBuf,
 }
@@ -56,6 +57,7 @@ impl Carteira {
             endereco: Mutex::new(endereco),
             seguranca: Mutex::new(seguranca),
             totp_pendente: Mutex::new(None),
+            tentativas: Mutex::new(Tentativas::default()),
             destravado: AtomicBool::new(!trava),
             pasta_config,
         }
@@ -74,6 +76,19 @@ impl Carteira {
     /// O estado do segundo fator: (ligado, exige no envio, tranca ao abrir).
     pub fn seguranca(&self) -> (bool, bool, bool) {
         self.seguranca.lock().map(|s| (s.ligado(), s.exige_envio, s.trava)).unwrap_or((false, false, false))
+    }
+
+    /// Confere um código de 6 dígitos com o segredo gravado, contando os
+    /// erros (espera crescente) e recusando código já usado.
+    fn conferir_codigo(&self, codigo: &str) -> Result<(), String> {
+        let s = self.seguranca.lock().map_err(|_| "segurança travada".to_string())?;
+        let mut t = self.tentativas.lock().map_err(|_| "segurança travada".to_string())?;
+        t.conferir(&s, agora_unix(), codigo)
+    }
+
+    /// A carteira deste computador guarda o segredo sem senha (formato antigo)?
+    pub fn sem_senha(&self) -> bool {
+        self.arquivo.as_ref().and_then(|a| std::fs::read_to_string(a).ok()).is_some_and(|t| arquivo::e_formato_antigo(&t))
     }
 
     fn marcar(&self, e: [u8; ADDRESS_LEN]) {
@@ -105,11 +120,14 @@ impl Carteira {
         Ok(e)
     }
 
-    /// Importa o conteúdo de um `carteira.txt`.
+    /// Importa o conteúdo de um `carteira.txt`. Um arquivo do formato antigo
+    /// (segredo em texto) só entra cifrado: `senha` e `repetida` escolhem a
+    /// senha nova. Devolve o endereço e se o arquivo veio sem senha.
     ///
     /// # Errors
-    /// Já existe carteira, ou o texto não é uma carteira do Hyurax.
-    pub fn importar(&self, conteudo: &str) -> Result<([u8; ADDRESS_LEN], bool), String> {
+    /// Já existe carteira, o texto não é uma carteira do Hyurax, ou formato
+    /// antigo sem senha nova válida.
+    pub fn importar(&self, conteudo: &str, senha: &str, repetida: &str) -> Result<([u8; ADDRESS_LEN], bool), String> {
         let destino = self.arquivo.as_ref().ok_or("este nó não guarda carteira")?;
         let _trava = trava_da_carteira()?;
         if self.endereco().is_some() || destino.exists() {
@@ -120,9 +138,41 @@ impl Carteira {
             return Err("cole o conteúdo do arquivo carteira.txt".into());
         }
         let e = arquivo::endereco(conteudo).map_err(|x| format!("não é uma carteira do Hyurax: {x}"))?;
-        gravar(destino, &format!("{conteudo}\n"))?;
+        let antiga = arquivo::e_formato_antigo(conteudo);
+        if antiga {
+            // o segredo em texto não vai para o disco: entra já cifrado
+            if senha.is_empty() {
+                return Err("este arquivo guarda o segredo sem senha: escolha uma senha nova (duas vezes) para ele ser cifrado na importação".into());
+            }
+            if senha != repetida {
+                return Err("as duas senhas não são iguais".into());
+            }
+            let segredo = arquivo::abrir(conteudo, "")?;
+            gravar(destino, &cifrar_segredo(&segredo, senha)?)?;
+        } else {
+            gravar(destino, &format!("{conteudo}\n"))?;
+        }
         self.marcar(e);
-        Ok((e, arquivo::e_formato_antigo(conteudo)))
+        Ok((e, antiga))
+    }
+
+    /// Cifra com senha uma carteira do formato antigo que já está neste
+    /// computador (de uma versão anterior do programa).
+    ///
+    /// # Errors
+    /// Sem carteira, carteira já cifrada, senhas diferentes ou fracas, ou disco.
+    pub fn cifrar(&self, senha: &str, repetida: &str) -> Result<(), String> {
+        let destino = self.arquivo.as_ref().ok_or("este nó não guarda carteira")?;
+        let _trava = trava_da_carteira()?;
+        let texto = arquivos::ler(destino)?;
+        if !arquivo::e_formato_antigo(&texto) {
+            return Err("esta carteira já é cifrada com senha".into());
+        }
+        if senha != repetida {
+            return Err("as duas senhas não são iguais".into());
+        }
+        let segredo = arquivo::abrir(&texto, "")?;
+        gravar(destino, &cifrar_segredo(&segredo, senha)?)
     }
 
     /// Confere um envio sem assinar (o endereço de destino, o valor e a taxa).
@@ -144,12 +194,15 @@ impl Carteira {
         if senha.is_empty() {
             return Err("digite a senha da carteira para assinar o envio.".into());
         }
-        let exige = self.seguranca.lock().is_ok_and(|s| s.ligado() && s.exige_envio);
-        if exige && !self.seguranca.lock().is_ok_and(|s| s.confere(agora_unix(), codigo)) {
-            return Err("código de 6 dígitos errado ou vencido. Olhe o aplicativo de novo.".into());
-        }
         let destino = self.arquivo.as_ref().ok_or("este nó não guarda carteira")?;
         let texto = arquivos::ler(destino)?;
+        if arquivo::e_formato_antigo(&texto) {
+            return Err("esta carteira guarda o segredo sem senha: proteja com senha (Carteira) antes de enviar".into());
+        }
+        let exige = self.seguranca.lock().is_ok_and(|s| s.ligado() && s.exige_envio);
+        if exige {
+            self.conferir_codigo(codigo)?;
+        }
         let feita = envio::enviar(rede, &config.rede.magic, config.rede.coinbase_maturity, &texto, senha, pedido)?;
         Ok(json!({
             "txid": hex(&feita.txid),
@@ -208,13 +261,11 @@ impl Carteira {
     /// # Errors
     /// Não ligado, ou código errado.
     pub fn seguranca_mudar(&self, codigo: &str, desligar: bool, exige_envio: bool, trava: bool) -> Result<bool, String> {
-        let mut guarda = self.seguranca.lock().map_err(|_| "segurança travada".to_string())?;
-        if !guarda.ligado() {
+        if !self.seguranca.lock().is_ok_and(|s| s.ligado()) {
             return Err("o segundo fator não está ligado".into());
         }
-        if !guarda.confere(agora_unix(), codigo) {
-            return Err("código de 6 dígitos errado ou vencido.".into());
-        }
+        self.conferir_codigo(codigo)?;
+        let mut guarda = self.seguranca.lock().map_err(|_| "segurança travada".to_string())?;
         let nova = if desligar { Seguranca::default() } else { Seguranca { segredo: guarda.segredo.clone(), exige_envio, trava } };
         nova.gravar(&self.pasta_config)?;
         let desligou = !nova.ligado();
@@ -229,9 +280,7 @@ impl Carteira {
     /// # Errors
     /// Código errado.
     pub fn destravar(&self, codigo: &str) -> Result<(), String> {
-        if !self.seguranca.lock().is_ok_and(|s| s.confere(agora_unix(), codigo)) {
-            return Err("código errado. O código muda a cada 30 segundos.".into());
-        }
+        self.conferir_codigo(codigo)?;
         self.destravado.store(true, Ordering::Relaxed);
         Ok(())
     }

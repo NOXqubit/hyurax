@@ -113,7 +113,10 @@ pub fn enviar(args: &[String]) -> Result<(), String> {
             o.no.rede.coinbase_maturity
         ));
     }
-    let s = if arquivo::e_formato_antigo(&texto) { String::new() } else { senha::ler("Senha da carteira")? };
+    if arquivo::e_formato_antigo(&texto) {
+        return Err("esta carteira guarda o segredo sem senha: proteja antes com `hyurax-no carteira cifrar --arquivo ...`".into());
+    }
+    let s = senha::ler("Senha da carteira")?;
     let segredo = arquivo::abrir(&texto, &s)?;
     let saida = Output { recipient: para, asset_id: HYX, amount: valor };
     let tx = sign_transfer_outputs(&segredo, &o.no.rede.magic, origem, vec![saida], o.taxa, nonce).map_err(|e| e.to_string())?;

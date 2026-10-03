@@ -26,7 +26,9 @@ pub fn comando(args: &[String]) -> Result<(), String> {
         painel_na_rede: o.painel_rede,
     })?;
     let porta = hyurax_nucleo::api::abrir(&n, o.painel_porta, hyurax_interface::ARQUIVOS)?;
-    println!("Painel: http://127.0.0.1:{porta}/");
+    // a chave da sessão vai no endereço (depois do #): sem ela o painel só
+    // mostra o aviso para abrir por aqui
+    println!("Painel: {}", hyurax_nucleo::api::endereco_da_janela(porta, &n.chave_painel));
     if n.na_rede.load(Ordering::Relaxed) {
         println!("  (visível na rede local; comandos só deste computador)");
     }

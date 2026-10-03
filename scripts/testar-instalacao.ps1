@@ -104,7 +104,13 @@ try {
             Conferir ($resumo.versao -match "^\d+\.\d+\.\d+$") "versão $($resumo.versao)"
             Conferir ($resumo.rede -eq "hyurax-testnet" -or $resumo.rede -like "*test*") "rede de teste ($($resumo.rede))"
             try {
-                $e = Invoke-RestMethod -TimeoutSec 5 "http://127.0.0.1:$Porta/api/v1/estado"
+                # sem a chave de sessão, a leitura completa é recusada
+                $semChave = $null
+                try { Invoke-WebRequest -UseBasicParsing -TimeoutSec 5 "http://127.0.0.1:$Porta/api/v1/estado" | Out-Null; $semChave = 200 } catch { $semChave = $_.Exception.Response.StatusCode.value__ }
+                Conferir ($semChave -eq 401) "sem a chave da sessão, o estado é recusado ($semChave)"
+                $chave = (Get-Content -Raw (Join-Path $roaming "Hyurax\painel.chave")).Trim()
+                Conferir ($chave.Length -eq 64) "a chave da sessão está na configuração do usuário"
+                $e = Invoke-RestMethod -TimeoutSec 5 -Headers @{ "X-Hyurax-Chave" = $chave } "http://127.0.0.1:$Porta/api/v1/estado"
                 Conferir ($e.rede.tipo -eq "TESTNET") "estado diz TESTNET"
                 Conferir ($e.ajustes.pasta_dados -like "$local*") "dados na pasta isolada do usuário"
                 Conferir ($e.ajustes.pasta_config -like "$roaming*") "configuração na pasta isolada do usuário"

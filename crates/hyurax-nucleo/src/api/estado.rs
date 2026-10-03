@@ -122,6 +122,7 @@ pub fn estado(n: &Nucleo, pode_mandar: bool, url_celular: &str) -> Value {
         "imaturo": hyx(imaturo),
         "proximo_nonce": proximo_nonce,
         "pode_enviar": endereco.is_some() && pode_mandar && saldo > 0,
+        "sem_senha": n.carteira.sem_senha(),
         "maximo_envio": hyx(u128::from(envio::maximo(saldo, envio::TAXA_PADRAO))),
         "taxa_padrao": hyx(u128::from(envio::TAXA_PADRAO)),
         "seguranca": { "ligado": fator, "exige_envio": exige_envio, "trava": trava },

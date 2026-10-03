@@ -164,8 +164,19 @@ fn para_o_bloco_de_notas(t: &str) -> Vec<u8> {
 }
 
 fn rodar(programa: &str, args: &[&str]) -> Result<(), String> {
+    rodar_com(programa, args, &[])
+}
+
+/// Roda um programa com variáveis de ambiente extras: é por elas que os
+/// caminhos chegam ao PowerShell, e nunca dentro do texto do script (um
+/// apóstrofo tipográfico num nome de pasta fecharia a string e viraria código).
+fn rodar_com(programa: &str, args: &[&str], ambiente: &[(&str, &Path)]) -> Result<(), String> {
     use std::os::windows::process::CommandExt as _;
-    let saida = Command::new(programa)
+    let mut comando = Command::new(programa);
+    for (nome, valor) in ambiente {
+        comando.env(nome, valor);
+    }
+    let saida = comando
         .args(args)
         .creation_flags(SEM_JANELA)
         .output()
@@ -179,14 +190,12 @@ fn rodar(programa: &str, args: &[&str]) -> Result<(), String> {
 
 /// Atalho do Windows (.lnk), pelo próprio Windows (WScript.Shell).
 fn atalho(arquivo: &Path, alvo: &Path, pasta: &Path) -> Result<(), String> {
-    let aspas = |p: &Path| p.display().to_string().replace('\'', "''");
-    let script = format!(
-        "$a=(New-Object -ComObject WScript.Shell).CreateShortcut('{}');$a.TargetPath='{}';$a.WorkingDirectory='{}';$a.Description='Hyurax / Ultrax: nó, carteira, mineração e trabalho útil (rede de teste)';$a.Save()",
-        aspas(arquivo),
-        aspas(alvo),
-        aspas(pasta)
-    );
-    rodar("powershell.exe", &["-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-Command", &script])
+    let script = "$a=(New-Object -ComObject WScript.Shell).CreateShortcut($env:HYX_ATALHO);$a.TargetPath=$env:HYX_ALVO;$a.WorkingDirectory=$env:HYX_PASTA;$a.Description='Hyurax / Ultrax: nó, carteira, mineração e trabalho útil (rede de teste)';$a.Save()";
+    rodar_com(
+        "powershell.exe",
+        &["-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-Command", script],
+        &[("HYX_ATALHO", arquivo), ("HYX_ALVO", alvo), ("HYX_PASTA", pasta)],
+    )
 }
 
 fn instalar(chave: &str, area_de_trabalho: bool, abrir: bool) -> Result<PathBuf, String> {

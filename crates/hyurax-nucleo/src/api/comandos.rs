@@ -60,12 +60,16 @@ pub(super) fn atender(s: &mut TcpStream, p: &Pedido, n: &Arc<Nucleo>) -> std::io
             n.barramento.registrar("carteira", format!("carteira criada: {}", endereco::mostrar(&e, rede)));
             json!({ "endereco": endereco::mostrar(&e, rede) })
         }),
-        "/api/v1/carteira/importar" if janela => n.carteira.importar(&texto("conteudo")).map(|(e, antiga)| {
+        "/api/v1/carteira/importar" if janela => n.carteira.importar(&texto("conteudo"), &texto("senha"), &texto("senha2")).map(|(e, antiga)| {
             n.barramento.registrar("carteira", format!("carteira importada: {}", endereco::mostrar(&e, rede)));
             if antiga {
-                n.barramento.registrar("carteira", "aviso: esta carteira guarda o segredo sem senha; proteja com hyurax-no carteira cifrar");
+                n.barramento.registrar("carteira", "a carteira veio sem senha (formato antigo) e foi cifrada com a senha nova");
             }
-            json!({ "endereco": endereco::mostrar(&e, rede), "sem_senha": antiga })
+            json!({ "endereco": endereco::mostrar(&e, rede), "cifrada_agora": antiga })
+        }),
+        "/api/v1/carteira/cifrar" if janela => n.carteira.cifrar(&texto("senha"), &texto("senha2")).map(|()| {
+            n.barramento.registrar("carteira", "carteira protegida com senha: o segredo não fica mais em texto no disco");
+            json!({ "ok": true })
         }),
         "/api/v1/carteira/conferir" => n
             .carteira
@@ -191,6 +195,14 @@ pub(super) fn atender(s: &mut TcpStream, p: &Pedido, n: &Arc<Nucleo>) -> std::io
             .map(|()| json!({ "ok": true })),
         _ => return responder(s, "404 Not Found", "text/plain", b"nao existe"),
     };
+    // código de 6 dígitos errado fica no registro (sem o código): quem tenta
+    // os 10^6 por um script aparece no hyurax.log
+    if let Err(e) = &r
+        && matches!(p.rota(), "/api/v1/destravar" | "/api/v1/seguranca/mudar" | "/api/v1/carteira/enviar")
+        && (e.contains("código") || e.contains("espere"))
+    {
+        n.barramento.registrar("seguranca", format!("código de 6 dígitos recusado em {}: {e}", p.rota()));
+    }
     responder_json(s, r)
 }
 

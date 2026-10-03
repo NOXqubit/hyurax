@@ -231,12 +231,16 @@ fn ponta_a_ponta(pasta: &Path, nucleos: u32) -> Result<(f64, f64), String> {
             break;
         }
         if inicio.elapsed() > limite {
-            u.ligar(false);
+            u.encerrar_threads();
+            c.encerrar_vigia();
             return Err("o JOB do benchmark não terminou em 10 minutos".into());
         }
     }
     let segundos = inicio.elapsed().as_secs_f64();
-    u.ligar(false);
+    // o ULTRAX e a ciência temporários somem: sem isto, cada benchmark deixava
+    // uma thread por núcleo, o orquestrador e a vigia rodando para sempre
+    u.encerrar_threads();
+    c.encerrar_vigia();
     let _ = std::fs::remove_dir_all(&dir);
     Ok((unidades as f64 / segundos.max(1e-9), segundos))
 }

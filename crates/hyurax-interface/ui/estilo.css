@@ -130,6 +130,7 @@ h3 { font: 650 15px/1.3 var(--texto); margin: 0 0 10px; }
 .endereco { font-size: 12.5px; overflow-wrap: anywhere; margin: 12px 0; user-select: all; }
 .qr { width: 164px; height: 164px; background: #fff; border-radius: 6px; padding: 8px; display: block; }
 .qr svg { width: 100%; height: 100%; display: block; }
+.aviso-carteira { border-color: var(--tinta-2); margin-bottom: 16px; }
 
 /* selos de origem: forma + texto, nunca só cor */
 .selo { display: inline-block; font: 600 9.5px/1.5 var(--mono); letter-spacing: 0.08em; padding: 0 5px; border-radius: 3px; vertical-align: 1px; white-space: nowrap; }

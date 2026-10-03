@@ -518,7 +518,14 @@ impl Ciencia {
                 }
             }
             let terminou = u.local.is_some() && u.remotos.iter().all(|x| matches!(x, Remoto::Entregou(_) | Remoto::Falhou { .. }));
-            if terminou { r.redundantes.remove(&(*job, indice)) } else { None }
+            if terminou {
+                // os números de pedido desta unidade não servem mais: sem isto o
+                // mapa crescia um par de entradas por unidade, para sempre
+                r.pedidos.retain(|_, v| *v != (*job, indice));
+                r.redundantes.remove(&(*job, indice))
+            } else {
+                None
+            }
         };
         for (par, pedido) in revelar {
             self.enviar(par, &MensagemUltrax::Revelar { pedido });

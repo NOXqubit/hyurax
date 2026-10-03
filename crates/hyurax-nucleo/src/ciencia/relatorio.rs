@@ -198,7 +198,20 @@ fn csv(unidades: &str) -> String {
     ];
     let mut saida = colunas.join(",");
     saida.push('\n');
+    // uma linha por unidade: depois de uma queda entre o registro e o
+    // checkpoint, a unidade é refeita e aparece duas vezes no registro; vale
+    // a última
+    let mut por_indice: std::collections::BTreeMap<u64, &str> = std::collections::BTreeMap::new();
+    let mut sem_indice: Vec<&str> = Vec::new();
     for linha in unidades.lines().filter(|l| !l.trim().is_empty()) {
+        match campo(linha, "indice").and_then(|v| v.parse::<u64>().ok()) {
+            Some(i) => {
+                por_indice.insert(i, linha);
+            }
+            None => sem_indice.push(linha),
+        }
+    }
+    for linha in por_indice.into_values().chain(sem_indice) {
         let valores: Vec<String> = colunas
             .iter()
             .map(|k| {

@@ -85,6 +85,9 @@ pub struct Nucleo {
     pub inicio: Instant,
     /// Núcleos lógicos da máquina.
     pub nucleos: u32,
+    /// A chave de sessão do painel desta abertura (ver `api`): sem ela, nem
+    /// um programa deste computador manda comando.
+    pub chave_painel: String,
     /// A trava da pasta de dados (solta quando o núcleo some).
     _trava: std::fs::File,
 }
@@ -123,6 +126,7 @@ impl Nucleo {
         let ajustes = if p.modo == Modo::Janela { Ajustes::ler(&pastas.config) } else { Ajustes::default() };
         let nucleos = u32::try_from(std::thread::available_parallelism().map_or(1, |n| n.get())).unwrap_or(1);
         let id = identidade::na_pasta(&pastas.config)?;
+        let chave_painel = crate::api::nova_chave(&pastas.config)?;
         let ultrax = {
             let b = Arc::clone(&barramento);
             Ultrax::abrir(
@@ -184,6 +188,7 @@ impl Nucleo {
             ajustes: Mutex::new(ajustes.clone()),
             inicio: Instant::now(),
             nucleos,
+            chave_painel,
             _trava: trava,
         });
         if n.carteira.endereco().is_none() && n.modo == Modo::Janela {
@@ -281,6 +286,13 @@ impl Nucleo {
         self.mineracao.ligada.store(false, Ordering::Relaxed);
         self.mineracao.interromper();
         self.ultrax.ligar(false);
+        // as linhas param no próximo pedaço; espera um pouco para os desfechos
+        // (unidades devolvidas à fila) chegarem à ciência antes do checkpoint
+        let inicio = Instant::now();
+        while self.ultrax.ocupado() && inicio.elapsed() < std::time::Duration::from_secs(3) {
+            std::thread::sleep(std::time::Duration::from_millis(50));
+        }
+        self.ciencia.encerrar();
         self.ultrax.gravar_placar();
         if let Err(e) = cadeia::salvar(&self.rede, &self.config) {
             self.barramento.registrar("erro", format!("não consegui gravar a cadeia ao fechar: {e}"));

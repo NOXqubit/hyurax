@@ -6,7 +6,13 @@
 import { criarGpu } from "./computacao.js";
 
 let pedido = { ligada: false, uso: 50 };
-onmessage = (ev) => { pedido = ev.data || pedido; };
+let chave = "";
+onmessage = (ev) => {
+  const d = ev.data || {};
+  if (typeof d.chave === "string") chave = d.chave;
+  if ("ligada" in d) pedido = d;
+};
+const cabecalhos = (extra) => (chave ? { ...extra, "X-Hyurax-Chave": chave } : extra);
 
 const dormir = (ms) => new Promise((r) => setTimeout(r, ms));
 const contar = (dados) => postMessage(dados);
@@ -15,7 +21,7 @@ async function postar(caminho, campos) {
   try {
     const r = await fetch(caminho, {
       method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      headers: cabecalhos({ "Content-Type": "application/x-www-form-urlencoded" }),
       body: new URLSearchParams(campos || {}),
     });
     const dados = r.status === 204 ? null : await r.json().catch(() => null);
@@ -60,7 +66,7 @@ async function laco() {
       parametros: [],
     };
     try {
-      const r = await fetch(`/api/v1/gpu/entrada/${numero}`, { cache: "no-store" });
+      const r = await fetch(`/api/v1/gpu/entrada/${numero}`, { cache: "no-store", headers: cabecalhos({}) });
       if (!r.ok) throw new Error(`entrada ${r.status}`);
       const tudo = new Uint32Array(await r.arrayBuffer());
       let aviso = 0;
@@ -86,7 +92,7 @@ async function laco() {
         await postar(`/api/v1/gpu/cancelar/${numero}`, { motivo: "a GPU foi desligada no meio da conta" });
         continue;
       }
-      await fetch(`/api/v1/gpu/resultado/${numero}`, { method: "POST", headers: { "Content-Type": "application/octet-stream" }, body: C });
+      await fetch(`/api/v1/gpu/resultado/${numero}`, { method: "POST", headers: cabecalhos({ "Content-Type": "application/octet-stream" }), body: C });
       contar({ nome: gpu.nome, erro: "" });
     } catch (erro) {
       const motivo = `A GPU falhou: ${erro.message || erro}`;

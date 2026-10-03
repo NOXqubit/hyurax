@@ -39,7 +39,10 @@ pub fn main() {
         return;
     }
     if hyurax_nucleo::api::ja_aberto(config::PORTA_PAINEL) {
-        abrir_janela(Some(&format!("http://127.0.0.1:{}/", config::PORTA_PAINEL)), None, None);
+        // outra janela para o programa que já roda, com a chave de sessão dele
+        // (gravada na pasta de configuração deste usuário)
+        let chave = Pastas::do_sistema().ok().and_then(|p| hyurax_nucleo::api::ler_chave(&p.config)).unwrap_or_default();
+        abrir_janela(Some(&hyurax_nucleo::api::endereco_da_janela(config::PORTA_PAINEL, &chave)), None, None);
         return;
     }
     match ligar() {
@@ -70,7 +73,7 @@ fn ligar() -> Result<(String, Arc<Nucleo>), String> {
         Err(e) => return Err(e),
     };
     let porta = hyurax_nucleo::api::abrir(&n, config::PORTA_PAINEL, hyurax_interface::ARQUIVOS)?;
-    Ok((format!("http://127.0.0.1:{porta}/"), n))
+    Ok((hyurax_nucleo::api::endereco_da_janela(porta, &n.chave_painel), n))
 }
 
 /// Pedido que vem de dentro da página para o programa.
@@ -138,7 +141,9 @@ fn montar_janela(
 fn abrir_janela(url: Option<&str>, erro: Option<&str>, motor: Option<Arc<Nucleo>>) {
     let laco = EventLoopBuilder::<Pedido>::with_user_event().build();
     let proxy = laco.create_proxy();
-    let origem = url.map(|u| u.trim_end_matches('/').to_string()).unwrap_or_default();
+    // a origem do painel, sem o "#chave=…": é com ela que a navegação interna
+    // é reconhecida
+    let origem = url.map(|u| u.split('#').next().unwrap_or(u).trim_end_matches('/').to_string()).unwrap_or_default();
     // O navegador da janela guarda o cache na pasta de dados do usuário, e não
     // ao lado do .exe: o programa nunca grava na pasta de instalação.
     let mut contexto = WebContext::new(Pastas::do_sistema().ok().map(|p| p.navegador()));
@@ -225,18 +230,18 @@ fn desinstalar() -> String {
         .filter(|f| !f.starts_with(&pasta_texto))
         .collect();
     // depois que este processo sair: o resto do manifesto (nomes soltos,
-    // conferidos por Manifesto::ler), e a pasta só se ficar vazia
-    let aspas = |s: &str| s.replace('\'', "''");
-    let arquivos: Vec<String> = manifesto.arquivos.iter().map(|n| format!("'{}'", aspas(&aqui.join(n).display().to_string()))).collect();
-    let pasta = aspas(&pasta_texto);
+    // conferidos por Manifesto::ler), e a pasta só se ficar vazia. Os
+    // caminhos vão por variável de ambiente, nunca dentro do texto do script.
+    let arquivos = manifesto.arquivos.join("|");
     let script = format!(
         "Wait-Process -Id {} -ErrorAction SilentlyContinue; Start-Sleep -Seconds 1; \
-         foreach ($a in @({})) {{ Remove-Item -LiteralPath $a -Force -ErrorAction SilentlyContinue }}; \
-         if (-not (Get-ChildItem -LiteralPath '{pasta}' -Force -ErrorAction SilentlyContinue)) {{ Remove-Item -LiteralPath '{pasta}' -Force -ErrorAction SilentlyContinue }}",
-        std::process::id(),
-        arquivos.join(",")
+         foreach ($n in $env:HYX_ARQUIVOS.Split('|')) {{ Remove-Item -LiteralPath (Join-Path $env:HYX_PASTA $n) -Force -ErrorAction SilentlyContinue }}; \
+         if (-not (Get-ChildItem -LiteralPath $env:HYX_PASTA -Force -ErrorAction SilentlyContinue)) {{ Remove-Item -LiteralPath $env:HYX_PASTA -Force -ErrorAction SilentlyContinue }}",
+        std::process::id()
     );
     let _ = std::process::Command::new("powershell.exe")
+        .env("HYX_PASTA", &aqui)
+        .env("HYX_ARQUIVOS", &arquivos)
         .args(["-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-Command", &script])
         .creation_flags(SEM_JANELA)
         .spawn();

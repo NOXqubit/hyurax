@@ -315,6 +315,8 @@ pub struct Ciencia {
     pub(crate) jobs: Mutex<Vec<Job>>,
     eventos: Mutex<VecDeque<String>>,
     seq: AtomicU64,
+    /// Fim da thread vigia (só o benchmark, com uma ciência temporária).
+    vigia_encerrada: std::sync::atomic::AtomicBool,
     /// Arquivos só-acréscimo abertos, com buffer e bytes já no disco. Esvaziados
     /// a cada segundo e ao fim de cada JOB: abrir e fechar a cada evento custava
     /// uns 7 ms por unidade no disco desta máquina.
@@ -403,6 +405,7 @@ impl Ciencia {
             jobs: Mutex::new(Vec::new()),
             eventos: Mutex::new(VecDeque::new()),
             seq: AtomicU64::new(0),
+            vigia_encerrada: std::sync::atomic::AtomicBool::new(false),
             escrita: Mutex::new(BTreeMap::new()),
             ultrax: Mutex::new(Weak::new()),
             somente_leitura,
@@ -425,6 +428,11 @@ impl Ciencia {
         ultrax.ligar_agendador(agendador);
         let c = Arc::clone(self);
         std::thread::spawn(move || c.vigiar());
+    }
+
+    /// Termina a thread vigia de vez.
+    pub fn encerrar_vigia(&self) {
+        self.vigia_encerrada.store(true, Ordering::Relaxed);
     }
 
     fn ultrax(&self) -> Option<Arc<Ultrax>> {
@@ -484,6 +492,18 @@ impl Ciencia {
         }
         let esp = EspecificacaoDeJob::nova(pedido).map_err(|e| e.to_string())?;
         let id = esp.id().map_err(|e| e.to_string())?;
+        // uma unidade que não cabe no teto de memória do ULTRAX nunca rodaria
+        if let Some(u) = self.ultrax.lock().ok().and_then(|w| w.upgrade()) {
+            let teto = u64::from(u.memoria_mib.load(Ordering::Relaxed)).saturating_mul(1024 * 1024);
+            let pede = unidade(&esp, &id, 0).map(|x| x.especificacao.memoria_bytes()).unwrap_or(0);
+            if pede > teto {
+                return Err(format!(
+                    "cada unidade pede {:.1} MiB e o teto de memória do ULTRAX é {:.0} MiB: aumente o teto (ULTRAX) ou diminua o tamanho",
+                    pede as f64 / 1_048_576.0,
+                    teto as f64 / 1_048_576.0
+                ));
+            }
+        }
         let codificado = esp.codificar().map_err(|e| e.to_string())?;
         let mut jobs = self.jobs.lock().map_err(|_| "trava dos JOBs quebrada".to_string())?;
         if jobs.iter().any(|j| j.id == id) {
@@ -623,6 +643,20 @@ impl Ciencia {
         ok
     }
 
+    /// Ao fechar o programa: grava o checkpoint de todo JOB que mudou e
+    /// esvazia os registros. Sem isto, o que aconteceu nos últimos 2 s se
+    /// perdia, e a unidade consolidada era refeita na próxima abertura.
+    pub fn encerrar(&self) {
+        if let Ok(mut jobs) = self.jobs.lock() {
+            for job in jobs.iter_mut().filter(|j| j.sujo) {
+                if self.gravar_checkpoint(job).is_ok() {
+                    job.sujo = false;
+                }
+            }
+        }
+        self.esvaziar(true);
+    }
+
     /// Esvazia os buffers para o disco. `fechar` também fecha os arquivos
     /// (ao fim de um JOB, para o relatório ler tudo).
     pub(crate) fn esvaziar(&self, fechar: bool) {
@@ -702,6 +736,9 @@ impl Ciencia {
         let mut ultimo_progresso: BTreeMap<([u8; HASH_LEN], u64), u64> = BTreeMap::new();
         loop {
             std::thread::sleep(Duration::from_millis(1000));
+            if self.vigia_encerrada.load(Ordering::Relaxed) {
+                return;
+            }
             let agora = agora_ms();
             self.manutencao(agora);
             self.progresso_das_ativas(agora, &mut ultimo_progresso);
@@ -964,7 +1001,10 @@ impl Ciencia {
     /// Se todas as unidades têm desfecho, fecha o JOB (checkpoint e evento).
     /// Devolve `true` quando fechou agora; aí o relatório vai para o disco.
     fn fechar_se_acabou(&self, job: &mut Job, eventos: &mut Vec<Evento>) -> bool {
-        if job.estado != EstadoDoJob::Rodando || job.resolvidas() < job.esp.unidades() {
+        // pausado ou sem orçamento também fecha: as unidades que estavam em voo
+        // terminaram, e não falta nenhuma
+        let aberto = matches!(job.estado, EstadoDoJob::Rodando | EstadoDoJob::Pausado | EstadoDoJob::SemOrcamento | EstadoDoJob::AguardandoNos);
+        if !aberto || job.resolvidas() < job.esp.unidades() {
             return false;
         }
         job.estado = EstadoDoJob::Concluido;
@@ -1220,6 +1260,11 @@ impl Ciencia {
 }
 
 impl Agendador for Ciencia {
+    fn ainda_quer(&self, job: &[u8; HASH_LEN], _indice: u64) -> bool {
+        // unidade de outro nó (JOB que não é daqui) segue o pedido dele
+        self.jobs.lock().map_or(true, |jobs| !jobs.iter().any(|j| &j.id == job && j.estado.e_final()))
+    }
+
     fn tem_trabalho(&self) -> bool {
         if self.rede.lock().is_ok_and(|r| !r.fila.is_empty()) {
             return true;
@@ -1276,6 +1321,12 @@ impl Agendador for Ciencia {
         {
             let Ok(mut jobs) = self.jobs.lock() else { return };
             let Some(job) = jobs.iter_mut().find(|j| j.id == d.job) else { return };
+            if job.estado.e_final() {
+                // cancelado, vencido ou concluído: o que ainda chegar não muda o
+                // JOB (nem consumo, nem créditos, nem o checkpoint)
+                job.em_voo.remove(&d.indice);
+                return;
+            }
             let tipo = job.esp.modelo().tipo();
             let voo = job.em_voo.get(&d.indice).copied();
             let base = Evento {
@@ -1670,6 +1721,69 @@ mod testes {
         }
         let csv = std::fs::read_to_string(c.pasta_do_job(&id).join("relatorio.csv")).unwrap();
         assert_eq!(csv.lines().count(), 21, "cabeçalho e uma linha por unidade");
+        let _ = std::fs::remove_dir_all(p);
+    }
+
+    #[test]
+    fn job_cancelado_nao_quer_mais_as_unidades_nem_recebe_resultado() {
+        let p = pasta("cancelado");
+        let c = Ciencia::abrir(&p, [7; 32], "teste").unwrap();
+        let id = c.submeter(pedido(4, 8)).unwrap();
+        let a = c.proxima(1).unwrap().indice;
+        assert!(c.ainda_quer(&id, a));
+        c.mudar(&id, "cancelar").unwrap();
+        assert!(!c.ainda_quer(&id, a), "o worker para a unidade de JOB cancelado");
+        // o resultado que chega depois não muda o JOB
+        c.terminou(liquidada(id, a));
+        assert_eq!(estado(&c, &id), (EstadoDoJob::Cancelado, 0, 0));
+        assert!(c.jobs.lock().unwrap().iter().find(|j| j.id == id).unwrap().em_voo.is_empty());
+        // JOB de outro nó (que não é daqui): segue o pedido dele
+        assert!(c.ainda_quer(&[9; 64], 0));
+        let _ = std::fs::remove_dir_all(p);
+    }
+
+    #[test]
+    fn job_pausado_fecha_quando_a_ultima_unidade_em_voo_termina() {
+        let p = pasta("pausado");
+        let c = Ciencia::abrir(&p, [7; 32], "teste").unwrap();
+        let id = c.submeter(pedido(1, 8)).unwrap();
+        let a = c.proxima(1).unwrap().indice;
+        c.mudar(&id, "pausar").unwrap();
+        c.terminou(liquidada(id, a));
+        assert_eq!(estado(&c, &id), (EstadoDoJob::Concluido, 1, 0), "pausado com tudo feito vira concluído");
+        assert!(c.pasta_do_job(&id).join("relatorio.json").exists());
+        let _ = std::fs::remove_dir_all(p);
+    }
+
+    #[test]
+    fn unidade_maior_que_o_teto_de_memoria_e_recusada_na_submissao() {
+        let p = pasta("teto");
+        let partida = crate::ultrax::Partida { ligado: false, linhas: 1, uso_cpu: 100, memoria_mib: 32, debug: false, gpu: false, gpu_uso: 50 };
+        let u = Ultrax::abrir(&p, &[9; 32], 1, &partida, Box::new(|_, _| {}));
+        let c = Ciencia::abrir(&p, u.worker(), "teste").unwrap();
+        c.ligar(&u);
+        let erro = c.submeter(pedido(2, 1024)).unwrap_err();
+        assert!(erro.contains("teto de memória"), "{erro}");
+        assert!(c.submeter(pedido(2, 16)).is_ok(), "a que cabe entra");
+        u.encerrar_threads();
+        c.encerrar_vigia();
+        let _ = std::fs::remove_dir_all(p);
+    }
+
+    #[test]
+    fn encerrar_grava_o_checkpoint_do_que_acabou_de_mudar() {
+        let p = pasta("encerrar");
+        let id = {
+            let c = Ciencia::abrir(&p, [7; 32], "teste").unwrap();
+            let id = c.submeter(pedido(3, 8)).unwrap();
+            let a = c.proxima(1).unwrap().indice;
+            c.terminou(liquidada(id, a));
+            // fecha logo depois: sem esperar o vigia de 2 s
+            c.encerrar();
+            id
+        };
+        let c = Ciencia::abrir(&p, [7; 32], "teste").unwrap();
+        assert_eq!(estado(&c, &id).1, 1, "a unidade consolidada sobreviveu ao fechamento");
         let _ = std::fs::remove_dir_all(p);
     }
 

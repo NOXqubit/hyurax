@@ -10,6 +10,9 @@ impl Ultrax {
 
     pub(super) fn linha(self: Arc<Self>, i: u32) {
         loop {
+            if self.encerrado() {
+                return;
+            }
             if !self.ligado.load(Ordering::Relaxed) || i >= self.linhas.load(Ordering::Relaxed) {
                 std::thread::sleep(Duration::from_millis(300));
                 continue;
@@ -70,11 +73,23 @@ impl Ultrax {
         // Gerenciador de recursos: a memória é reservada antes de atribuir, ou
         // a tarefa não roda.
         let memoria = esp.memoria_bytes();
+        // unidade de um JOB cancelado ou concluído enquanto esperava na fila
+        if let (Some((job, i)), Some(a)) = (item.job, self.agendador())
+            && !a.ainda_quer(&job, i)
+        {
+            let motivo = "o JOB foi cancelado ou já terminou";
+            let _ = item.tarefa.avancar(Estado::Cancelada, agora_ms(), motivo);
+            self.encerrar(&item, None, 0, motivo);
+            return;
+        }
         if !self.reservar(memoria) {
             let teto = u64::from(self.memoria_mib.load(Ordering::Relaxed)).saturating_mul(1024 * 1024);
             if memoria > teto {
                 let motivo = format!("pede {:.1} MiB e o teto é {:.0} MiB", mib(memoria), mib(teto));
                 let _ = item.tarefa.avancar(Estado::Cancelada, agora_ms(), motivo.clone());
+                // não cabe e não vai caber: conta como falha da unidade, em vez
+                // de voltar para a fila e girar sem fim
+                item.recusas = item.recusas.max(2);
                 self.encerrar(&item, None, 0, &motivo);
             } else {
                 // cabe no teto, mas outra linha está usando: espera a vez na fila
@@ -131,7 +146,7 @@ impl Ultrax {
         }
 
         let inicio_ms = agora_ms();
-        let mut controle = Controle::novo(self, linha, item.tarefa.prazo_ms, &feitas);
+        let mut controle = Controle::novo(self, linha, item.tarefa.prazo_ms, &feitas).da_unidade(item.job);
         let mut observador = ObservadorDaLinha {
             saida: self.saida_de_amostras.lock().ok().and_then(|s| s.clone()),
             contexto: ContextoDaAmostra {
@@ -563,11 +578,50 @@ pub(super) struct Controle<'a> {
     /// Pausa devida e ainda não dormida.
     pub(super) divida: Duration,
     pub(super) motivo: Option<&'static str>,
+    /// A unidade de JOB que este pedaço calcula, se for unidade de JOB.
+    pub(super) job: Option<([u8; HASH_LEN], u64)>,
+    /// Última consulta ao agendador, e se ele já disse que não quer mais.
+    consultado: std::cell::Cell<Option<Instant>>,
+    desistiu: std::cell::Cell<bool>,
 }
 
 impl<'a> Controle<'a> {
     pub(super) fn novo(u: &'a Ultrax, linha: u32, prazo_ms: u64, feitas: &'a AtomicU64) -> Self {
-        Self { u, linha, prazo_ms, feitas, marco: Instant::now(), trabalhando: Duration::ZERO, divida: Duration::ZERO, motivo: None }
+        Self {
+            u,
+            linha,
+            prazo_ms,
+            feitas,
+            marco: Instant::now(),
+            trabalhando: Duration::ZERO,
+            divida: Duration::ZERO,
+            motivo: None,
+            job: None,
+            consultado: std::cell::Cell::new(None),
+            desistiu: std::cell::Cell::new(false),
+        }
+    }
+
+    /// Liga o controle à unidade de JOB: se o JOB for cancelado, o cálculo para.
+    pub(super) fn da_unidade(mut self, job: Option<([u8; HASH_LEN], u64)>) -> Self {
+        self.job = job;
+        self
+    }
+
+    /// O JOB desistiu desta unidade? Pergunta ao agendador no máximo duas
+    /// vezes por segundo (a trava dos JOBs não entra em cada pedaço).
+    fn job_desistiu(&self) -> bool {
+        let Some((job, indice)) = self.job else { return false };
+        if self.desistiu.get() {
+            return true;
+        }
+        if self.consultado.get().is_some_and(|t| t.elapsed() < Duration::from_millis(500)) {
+            return false;
+        }
+        self.consultado.set(Some(Instant::now()));
+        let desistiu = self.u.agendador().is_some_and(|a| !a.ainda_quer(&job, indice));
+        self.desistiu.set(desistiu);
+        desistiu
     }
 
     /// Chamado a cada pedaço. Devolve `false` para interromper.
@@ -608,6 +662,8 @@ impl<'a> Controle<'a> {
             Some("a linha foi desligada nos ajustes")
         } else if agora_ms() > self.prazo_ms {
             Some("prazo vencido")
+        } else if self.job_desistiu() {
+            Some("o JOB foi cancelado ou já terminou")
         } else if self.u.reservada.load(Ordering::Relaxed)
             > u64::from(self.u.memoria_mib.load(Ordering::Relaxed)).saturating_mul(1024 * 1024)
         {

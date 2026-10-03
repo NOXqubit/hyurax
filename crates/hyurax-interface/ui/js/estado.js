@@ -6,6 +6,8 @@
 // ("registro", "tarefa", "ciencia", "amostra", "bloco"). Se o fluxo cai, a
 // tela diz que caiu; o navegador reconecta sozinho.
 
+import { url } from "./api.js";
+
 const ouvintes = new Map();
 
 export const estado = {
@@ -46,7 +48,7 @@ function guardar(lista, item, max) {
 
 /** Liga o fluxo. */
 export function conectar() {
-  const fonte = new EventSource("/api/v1/fluxo");
+  const fonte = new EventSource(url("/fluxo"));
   const ler = (e) => {
     estado.ultimoEvento = Date.now();
     try {
