@@ -31,8 +31,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-      - uses: dtolnay/rust-toolchain@stable
+      # versão fixa: lint novo de uma versão nova não derruba o lançamento
+      - uses: dtolnay/rust-toolchain@master
         with:
+          toolchain: 1.98.1
           components: clippy
       - run: cargo test --workspace --locked
       - run: cargo clippy --workspace --all-targets --locked -- -D warnings
@@ -49,7 +51,10 @@ jobs:
     needs: rust
     steps:
       - uses: actions/checkout@v5
-      - uses: dtolnay/rust-toolchain@stable
+      # versão fixa: lint novo de uma versão nova não derruba o lançamento
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: 1.98.1
       - run: cargo test -p hyurax-net --locked -- --ignored --test-threads=1
       # três núcleos completos ligados pelos sockets: JOB de nível 3 e um nó
       # que cai no meio
@@ -60,7 +65,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-      - uses: dtolnay/rust-toolchain@stable
+      # versão fixa: lint novo de uma versão nova não derruba o lançamento
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: 1.98.1
       # binário pronto do cargo-audit; roda só no GitHub, nada é instalado aqui
       - uses: taiki-e/install-action@v2
         with:
