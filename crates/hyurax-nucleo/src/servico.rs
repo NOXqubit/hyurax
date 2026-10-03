@@ -88,6 +88,9 @@ pub struct Nucleo {
     /// A chave de sessão do painel desta abertura (ver `api`): sem ela, nem
     /// um programa deste computador manda comando.
     pub chave_painel: String,
+    /// Assina o resumo público (a chave de worker deste nó), para as outras
+    /// máquinas do dono saberem que foi esta que respondeu.
+    pub chave_do_resumo: [u8; hyurax_crypto::SECRET_LEN],
     /// A atualização segura (manifesto assinado).
     pub atualizacao: Mutex<crate::atualizacao::Estado>,
     /// Quem fecha o programa quando o instalador da versão nova abre (a
@@ -172,7 +175,7 @@ impl Nucleo {
         let carteira = Carteira::abrir(p.arquivo_carteira.clone(), p.endereco_fixo, pastas.config.clone());
         let mineracao = Mineracao::nova(nucleos, ajustes.linhas.unwrap_or(p.linhas_padrao), ajustes.limite_cpu);
         let sementes = if p.modo == Modo::Janela { ajustes.sementes.clone() } else { p.config.sementes.clone() };
-        let maquinas = Maquinas::default();
+        let maquinas = Maquinas::com_arquivo(pastas.config.join(maquinas::ARQUIVO_DAS_CONHECIDAS));
         if let Ok(mut l) = maquinas.lista.lock() {
             l.clone_from(&ajustes.maquinas);
         }
@@ -194,6 +197,7 @@ impl Nucleo {
             inicio: Instant::now(),
             nucleos,
             chave_painel,
+            chave_do_resumo: hyurax_ultrax::prova::chave_do_worker(id.segredo()),
             atualizacao: Mutex::new(crate::atualizacao::Estado::default()),
             ao_sair: Mutex::new(None),
             _trava: trava,

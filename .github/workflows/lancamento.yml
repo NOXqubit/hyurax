@@ -29,6 +29,10 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - run: cargo test --workspace --locked
       - run: cargo test -p hyurax-net --locked -- --ignored --test-threads=1
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-audit
+      - run: cargo audit
 
   compilar:
     name: ${{ matrix.nome }}

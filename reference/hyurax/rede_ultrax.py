@@ -19,10 +19,19 @@ Corpo: `u8 VERSAO || u8 subtipo || campos`, big-endian, sem sobra:
   2 PEDIDO       u64 pedido || job[64] || u64 índice || especificação ||
                  semente[64] || u64 prazo ms || u8 com_compromisso
   3 RECUSA       u64 pedido || string motivo (até 500 bytes)
-  4 COMPROMISSO  u64 pedido || worker[32] || compromisso[64]
+  4 COMPROMISSO  u64 pedido || worker[32] || compromisso[64] || assinatura[64]
                  compromisso = H(DOMINIO_COMPROMISSO || RESULT_HASH || worker),
                  o mesmo de `validador.compromisso`: quem copia o resultado de
                  outro não sabe o compromisso antes da revelação.
+                 A assinatura é do worker, sobre H(DOMINIO_COMPROMISSO_ASSINADO
+                 || job[64] || u64 índice || u64 pedido || compromisso): quem
+                 revela um resultado diferente do que prometeu deixa duas
+                 assinaturas suas que não fecham (esta e a do registro de
+                 prova), e a falha pesa nele. `job` e `índice` não viajam: quem
+                 pede já os tem, pelo número do pedido.
+
+Versão 2 (03/10/2026): o compromisso passou a ser assinado. A versão 1 não é
+lida (nenhum nó com ela chegou a ser publicado).
   5 REVELAR      u64 pedido
   6 RESULTADO    u64 pedido || var_bytes registro de prova ||
                  assinatura[64] || var_bytes resultado (até RESULTADO_MAX)
@@ -39,9 +48,10 @@ from __future__ import annotations
 from . import codec, crypto, identidade, job
 
 TIPO_ULTRAX = 0x5558
-VERSAO = 1
+VERSAO = 2
 DOMINIO_OFERTA = identidade.rotulo("ULTRAX-OFERTA-v1")
 DOMINIO_COMPROMISSO = identidade.rotulo("ULTRAX-COMPROMISSO-v1")
+DOMINIO_COMPROMISSO_ASSINADO = identidade.rotulo("ULTRAX-COMPROMISSO-ASSINADO-v1")
 RESULTADO_MAX = 1 << 20
 MOTIVO_MAX = 500
 REGISTRO_MAX = 4096
@@ -82,8 +92,22 @@ def compromisso_de(resultado_hash: bytes, worker: bytes) -> bytes:
     return crypto.H(DOMINIO_COMPROMISSO + resultado_hash + worker)
 
 
-def compromisso(numero: int, worker: bytes, valor: bytes) -> bytes:
-    return codec.enc_u8(VERSAO) + codec.enc_u8(COMPROMISSO) + codec.enc_u64(numero) + worker + valor
+def mensagem_do_compromisso(job_id: bytes, indice: int, numero: int, valor: bytes) -> bytes:
+    return crypto.H(DOMINIO_COMPROMISSO_ASSINADO + job_id + codec.enc_u64(indice) + codec.enc_u64(numero) + valor)
+
+
+def compromisso(segredo: bytes, job_id: bytes, indice: int, numero: int, valor: bytes) -> bytes:
+    worker = crypto.ed25519_public_key(segredo)
+    assinatura = crypto.ed25519_sign(segredo, mensagem_do_compromisso(job_id, indice, numero, valor))
+    return codec.enc_u8(VERSAO) + codec.enc_u8(COMPROMISSO) + codec.enc_u64(numero) + worker + valor + assinatura
+
+
+def compromisso_confere(m: dict, job_id: bytes, indice: int) -> bool:
+    """A assinatura de um compromisso lido, para a unidade (job, índice)
+    que quem pede associou a este número de pedido."""
+    return crypto.ed25519_verify(
+        m["worker"], mensagem_do_compromisso(job_id, indice, m["pedido"], m["compromisso"]), m["assinatura"]
+    )
 
 
 def revelar(numero: int) -> bytes:
@@ -135,7 +159,8 @@ def ler(dados: bytes) -> dict:
         if len(m["motivo"].encode("utf-8")) > MOTIVO_MAX:
             raise ValueError("motivo longo demais")
     elif subtipo == COMPROMISSO:
-        m = {"subtipo": "compromisso", "pedido": r.u64(), "worker": r.fixed(32), "compromisso": r.fixed(64)}
+        m = {"subtipo": "compromisso", "pedido": r.u64(), "worker": r.fixed(32), "compromisso": r.fixed(64),
+             "assinatura": r.fixed(64)}
     elif subtipo == REVELAR:
         m = {"subtipo": "revelar", "pedido": r.u64()}
     elif subtipo == RESULTADO:

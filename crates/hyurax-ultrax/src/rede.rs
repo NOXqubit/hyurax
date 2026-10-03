@@ -10,8 +10,11 @@
 //!
 //! Quem recebe confere tudo de novo: a especificação é decodificada **e
 //! validada** (faixas e custo do motor), os tamanhos têm teto, a oferta é
-//! assinada pelo worker e o compromisso amarra resultado e worker. Nenhum
-//! código vem pela rede: só os motores compilados no programa rodam.
+//! assinada pelo worker e o compromisso amarra resultado e worker, assinado
+//! por ele para a unidade do pedido. Nenhum código vem pela rede: só os
+//! motores compilados no programa rodam.
+//!
+//! Versão 2: o compromisso passou a ser assinado; a versão 1 não é lida.
 
 use hyurax_codec::{CodecError, Reader, Writer};
 use hyurax_crypto::{HASH_LEN, PUBKEY_LEN, SECRET_LEN, SIGNATURE_LEN, ed25519_public_key, ed25519_sign, ed25519_verify, sha512};
@@ -21,9 +24,11 @@ use crate::trabalho::{ErroDeTrabalho, Especificacao};
 /// Tipo da mensagem de rede que leva o ULTRAX ("UX").
 pub const TIPO_ULTRAX: u16 = 0x5558;
 /// Versão do corpo.
-pub const VERSAO: u8 = 1;
+pub const VERSAO: u8 = 2;
 /// Domínio da assinatura da oferta.
 pub const DOMINIO_OFERTA: &[u8] = dominio!("OFERTA-v1");
+/// Domínio da assinatura do compromisso.
+pub const DOMINIO_COMPROMISSO_ASSINADO: &[u8] = dominio!("COMPROMISSO-ASSINADO-v1");
 /// Maior resultado que viaja pela rede.
 pub const RESULTADO_MAX: usize = 1 << 20;
 /// Maior motivo de recusa, em bytes.
@@ -81,6 +86,9 @@ pub enum MensagemUltrax {
         worker: [u8; PUBKEY_LEN],
         /// `H(DOMINIO_COMPROMISSO || RESULT_HASH || worker)`.
         compromisso: [u8; HASH_LEN],
+        /// Assinatura do worker sobre [`mensagem_do_compromisso`]: revelar
+        /// outro resultado deixa duas assinaturas dele que não fecham.
+        assinatura: [u8; SIGNATURE_LEN],
     },
     /// Quem pede já tem todos os compromissos: pode revelar.
     Revelar {
@@ -143,7 +151,37 @@ pub fn mensagem_da_oferta(worker: &[u8; PUBKEY_LEN], tipos: u16, linhas: u8, mem
     sha512(&dados)
 }
 
+/// O que a assinatura do compromisso cobre: a unidade (`job`, `índice`) que
+/// quem pede associou ao número do pedido, o número e o compromisso. `job` e
+/// `índice` não viajam na mensagem.
+pub fn mensagem_do_compromisso(job: &[u8; HASH_LEN], indice: u64, pedido: u64, compromisso: &[u8; HASH_LEN]) -> [u8; HASH_LEN] {
+    let mut dados = DOMINIO_COMPROMISSO_ASSINADO.to_vec();
+    dados.extend_from_slice(job);
+    dados.extend_from_slice(&indice.to_be_bytes());
+    dados.extend_from_slice(&pedido.to_be_bytes());
+    dados.extend_from_slice(compromisso);
+    sha512(&dados)
+}
+
 impl MensagemUltrax {
+    /// Um compromisso assinado pela chave do worker, para a unidade do pedido.
+    pub fn compromisso(segredo: &[u8; SECRET_LEN], job: &[u8; HASH_LEN], indice: u64, pedido: u64, compromisso: [u8; HASH_LEN]) -> Self {
+        let worker = ed25519_public_key(segredo);
+        let assinatura = ed25519_sign(segredo, &mensagem_do_compromisso(job, indice, pedido, &compromisso));
+        Self::Compromisso { pedido, worker, compromisso, assinatura }
+    }
+
+    /// O compromisso foi assinado pelo worker que ele nomeia, para esta
+    /// unidade? Outras mensagens: `false`.
+    pub fn compromisso_confere(&self, job: &[u8; HASH_LEN], indice: u64) -> bool {
+        match self {
+            Self::Compromisso { pedido, worker, compromisso, assinatura } => {
+                ed25519_verify(worker, &mensagem_do_compromisso(job, indice, *pedido, compromisso), assinatura)
+            }
+            _ => false,
+        }
+    }
+
     /// Uma oferta assinada pela chave do worker.
     pub fn oferta(segredo: &[u8; SECRET_LEN], tipos: u16, linhas: u8, memoria_mib: u32, instante_ms: u64) -> Self {
         let worker = ed25519_public_key(segredo);
@@ -206,11 +244,12 @@ impl MensagemUltrax {
                 w.u64(*pedido);
                 w.string(motivo)?;
             }
-            Self::Compromisso { pedido, worker, compromisso } => {
+            Self::Compromisso { pedido, worker, compromisso, assinatura } => {
                 w.u8(4);
                 w.u64(*pedido);
                 w.fixed(worker);
                 w.fixed(compromisso);
+                w.fixed(assinatura);
             }
             Self::Revelar { pedido } => {
                 w.u8(5);
@@ -268,7 +307,7 @@ impl MensagemUltrax {
                 }
                 Self::Recusa { pedido, motivo }
             }
-            4 => Self::Compromisso { pedido: r.u64()?, worker: r.fixed()?, compromisso: r.fixed()? },
+            4 => Self::Compromisso { pedido: r.u64()?, worker: r.fixed()?, compromisso: r.fixed()?, assinatura: r.fixed()? },
             5 => Self::Revelar { pedido: r.u64()? },
             6 => {
                 let pedido = r.u64()?;

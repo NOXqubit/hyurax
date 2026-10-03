@@ -50,9 +50,10 @@ export function atualizar(e) {
     (e.maquinas || []).map((m) => {
       const r = m.resumo || {};
       if (!m.ok) return [m.alvo, `sem resposta: ${m.erro}`, "", "", "", "", "", ""];
+      // a resposta veio assinada pela chave desta máquina (vista na primeira vez)
       return [
-        m.alvo,
-        `${r.produto} ${r.versao} · ${r.rede}`,
+        { v: m.alvo, title: m.chave ? `chave ${m.chave}` : "" },
+        `${r.produto} ${r.versao} · ${r.rede} · assinado ${(m.chave || "").slice(0, 8)}…`,
         { v: fmt(r.altura), num: true },
         { v: fmt(r.pares), num: true },
         r.minerando ? `${r.linhas} de ${r.nucleos} · ${fmt(r.ritmo, 2)} tent./s` : "parada",

@@ -50,9 +50,15 @@ Quer ler o painel ou mandar comando para `127.0.0.1:8800`.
   qualquer byte ser lido (`api/mod.rs`, laço de `abrir`).
 - Ligado, o aparelho **só lê** (nunca manda comando), com teto de conexões e
   de fluxos por aparelho, e vagas de fluxo reservadas para a janela local.
-- **Risco residual:** o resumo das outras máquinas do dono (`maquinas.rs`)
-  vem por HTTP sem assinatura; um aparelho que tome o IP de uma delas mostra
-  números falsos no painel. Assinar o resumo com a chave do nó: **PENDENTE**.
+- O resumo das outras máquinas do dono (`maquinas.rs`) vai com um desafio
+  aleatório e volta assinado (Ed25519) pela chave de worker de quem
+  respondeu, sobre o desafio e os bytes exatos do corpo. A chave fica fixada
+  na primeira resposta (`maquinas-conhecidas.txt`): um aparelho que tome o IP
+  de uma delas, ou repita uma resposta velha, aparece como erro. Testes:
+  `assinatura_do_resumo_e_chave_fixada`, `tests/api_local.rs`.
+- **Risco residual:** a primeira resposta é aceita sem prova de quem é (a
+  chave é fixada nela); a lista vem por HTTP, então quem escuta a rede local
+  lê os números.
 
 ### A4 — um par malicioso na internet (porta 8790)
 
@@ -68,9 +74,11 @@ Quer ler o painel ou mandar comando para `127.0.0.1:8800`.
   órfão forjado e bloco sem prova derrubam o par, e quem mostrou malícia fica
   banido uma hora (identidade e IP). Testes: `orfao_forjado_derruba_quem_mandou`,
   `identidade_que_mostrou_malicia_fica_banida`, `bloco_forjado_sem_prova_e_recusado`.
-- **Risco residual:** a prova de trabalho de um órfão é conferida com a trava
-  do nó segurada (cada órfão forjado custa um Argon2id de 32 MiB antes do
-  banimento); Sybil (muitas identidades e IPs) não tem defesa além do
+- A prova de trabalho (Argon2id) de um bloco novo é conferida **fora** da
+  trava do nó, na thread do par que mandou; o recibo (`conferir_pow`) só vale
+  para aquele cabeçalho, e o resto da validação continua dentro da trava.
+  Bloco que já tenho não custa conta nenhuma. Testes: `pow_fora_da_trava.rs`.
+- **Risco residual:** Sybil (muitas identidades e IPs) não tem defesa além do
   banimento e do teto por IP; rotação e revogação da identidade do nó não
   existem. **PENDENTE.**
 
@@ -79,17 +87,19 @@ Quer ler o painel ou mandar comando para `127.0.0.1:8800`.
 - Só especificação viaja, nunca código; faixas conferidas antes de executar;
   memória, prazo e fila com teto por par (`ciencia/rede.rs`, `hyurax-ultrax/src/rede.rs`).
 - Compromisso antes da revelação; maioria; o resultado da maioria é refeito
-  aqui antes de entrar no JOB. Testes: `conluio_de_dois_e_pego_pela_conferencia_local`,
+  aqui antes de entrar no JOB, numa thread própria (a decisora), sem segurar
+  a leitura do par. Teste: `decisora_decide_fora_da_thread_do_par`. Testes: `conluio_de_dois_e_pego_pela_conferencia_local`,
   `worker_que_adultera_perde_na_maioria_e_leva_divergencia`.
 - Oferta só vale com horário próximo e uma chave por par; compromisso só com o
   worker da oferta daquele par; falha sem assinatura não pesa no worker
   alegado; operações declaradas acima do teto recusam a entrega; semente que
   não é a da unidade é recusada. Testes: `oferta_velha_ou_repetida_por_outro_par_nao_entra`,
   `pedido_com_semente_que_nao_e_da_unidade_e_recusado`.
-- **Risco residual:** o compromisso não é assinado pelo worker (quem troca o
-  resultado na revelação não perde reputação; o resultado trocado, porém, não
-  entra); a conferência de um resultado remoto roda na thread de leitura do
-  par; a reputação não é gravada em disco; nada disso foi ensaiado entre
+- O compromisso é assinado pelo worker para a unidade do pedido (protocolo
+  ULTRAX v2): quem revela outro resultado deixa duas assinaturas suas que não
+  fecham, e a falha pesa nele. Testes: `revelacao_que_nao_bate_com_o_compromisso_falha`,
+  `compromisso_assinado_igual_ao_gabarito`.
+- **Risco residual:** a reputação não é gravada em disco; nada disso foi ensaiado entre
   máquinas diferentes. **PENDENTE.**
 
 ### A6 — atualização falsa ou download adulterado

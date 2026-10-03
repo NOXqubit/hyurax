@@ -55,3 +55,19 @@ fn compromisso_igual_ao_gabarito_e_recusados_nao_se_leem() {
         assert!(MensagemUltrax::decodificar(&bytes(&caso["corpo"])).is_err(), "{} foi aceito", caso["nome"]);
     }
 }
+
+#[test]
+fn compromisso_assinado_igual_ao_gabarito() {
+    let doc = carregar("rede_ultrax.json");
+    let caso = doc["mensagens"].as_array().unwrap().iter().find(|c| c["nome"] == "compromisso").unwrap();
+    let m = MensagemUltrax::decodificar(&bytes(&caso["corpo"])).unwrap();
+    let a = &doc["compromisso_assinado"];
+    let job: [u8; 64] = bytes(&a["job"]).try_into().unwrap();
+    let indice = a["indice"].as_u64().unwrap();
+    assert_eq!(m.compromisso_confere(&job, indice), a["confere"].as_bool().unwrap());
+    assert_eq!(m.compromisso_confere(&job, indice + 1), a["outro_indice_confere"].as_bool().unwrap());
+    let mut outro = job;
+    outro[0] ^= 1;
+    assert!(!m.compromisso_confere(&outro, indice));
+    assert!(a["confere"].as_bool().unwrap() && !a["outro_job_confere"].as_bool().unwrap());
+}

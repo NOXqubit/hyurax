@@ -136,15 +136,20 @@ fn se_um_meio_cai_o_que_falta_vem_pelos_outros() {
     let (mut bt_a, mut bt_b) = par_serial(1_000_000);
 
     espalhar(&dados, "foto", &mut [&mut wifi_a, &mut bt_a]).unwrap();
-    thread::sleep(Duration::from_millis(100));
-
     // O Wi-Fi "caiu": tudo o que veio por ele se perdeu. Só o Bluetooth chegou.
-    let _perdido = wifi_b.receber().unwrap();
+    // Espera o que o Bluetooth entregar (com a máquina carregada, 100 ms
+    // fixos às vezes não bastavam), com prazo.
     let mut recepcao = Recepcao::nova();
-    for q in bt_b.receber().unwrap() {
-        assert!(recepcao.quadro(&q).unwrap().is_none());
+    let ate = std::time::Instant::now() + Duration::from_secs(10);
+    let mut faltando = Vec::new();
+    while faltando.is_empty() && std::time::Instant::now() < ate {
+        thread::sleep(Duration::from_millis(50));
+        let _perdido = wifi_b.receber().unwrap();
+        for q in bt_b.receber().unwrap() {
+            assert!(recepcao.quadro(&q).unwrap().is_none());
+        }
+        faltando = recepcao.faltando();
     }
-    let faltando = recepcao.faltando();
     assert!(!faltando.is_empty());
 
     // Quem recebeu pede o que falta; quem enviou manda de novo só aquilo, pelo meio que sobrou.
@@ -153,11 +158,14 @@ fn se_um_meio_cai_o_que_falta_vem_pelos_outros() {
         let q = hyurax_eter::Quadro::Fragmento(fragmentos[*i as usize].clone()).codificar().unwrap();
         bt_a.enviar(&q).unwrap();
     }
-    thread::sleep(Duration::from_millis(100));
     let mut fechou = None;
-    for q in bt_b.receber().unwrap() {
-        if let Some(obj) = recepcao.quadro(&q).unwrap() {
-            fechou = Some(obj);
+    let ate = std::time::Instant::now() + Duration::from_secs(10);
+    while fechou.is_none() && std::time::Instant::now() < ate {
+        thread::sleep(Duration::from_millis(50));
+        for q in bt_b.receber().unwrap() {
+            if let Some(obj) = recepcao.quadro(&q).unwrap() {
+                fechou = Some(obj);
+            }
         }
     }
     assert_eq!(fechou.as_deref(), Some(dados.as_slice()));

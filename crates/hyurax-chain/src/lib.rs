@@ -99,6 +99,54 @@ fn alvo_do(header: &BlockHeader) -> Result<Alvo, ChainError> {
     alvo_de_bits(header.bits).map_err(texto)
 }
 
+/// Recibo de que o Argon2id de um cabeçalho já foi conferido contra os
+/// parâmetros da rede.
+///
+/// Só [`conferir_pow`] cria um. Ele existe para o nó conferir a prova de
+/// trabalho de um bloco que chegou da rede **fora** da trava da cadeia (o
+/// Argon2id custa dezenas de MiB e dezenas de milissegundos) e depois aplicar
+/// o bloco sem refazer essa conta. O recibo vale para um único cabeçalho: o
+/// `block_hash` dele vai junto, e um bloco com outro cabeçalho é conferido do
+/// zero.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct PowConferido {
+    hash: [u8; HASH_LEN],
+    pow: hyurax_pow::ParametrosPow,
+}
+
+impl PowConferido {
+    /// O `block_hash` do cabeçalho conferido.
+    pub fn block_hash(&self) -> &[u8; HASH_LEN] {
+        &self.hash
+    }
+}
+
+/// Conferência de um cabeçalho que não depende da cadeia: versão conhecida,
+/// alvo não mais fácil que o limite da rede e Argon2id que bate esse alvo.
+///
+/// Não precisa da cadeia, então roda sem trava nenhuma. Não substitui a
+/// validação completa: o alvo esperado naquela altura, o tempo, as transações
+/// e o trabalho útil continuam sendo conferidos quando o bloco encaixar.
+///
+/// # Errors
+/// Versão desconhecida, alvo fácil demais ou prova que não bate.
+pub fn conferir_pow(params: &ParametrosRede, header: &BlockHeader) -> Result<PowConferido, ChainError> {
+    if header.version != BLOCK_VERSION {
+        return Err(erro(format!("versão de bloco desconhecida: {}", header.version)));
+    }
+    let alvo = alvo_do(header)?;
+    if alvo > params.max_target {
+        return Err(erro("alvo mais fácil que o limite da rede"));
+    }
+    let hash = Calculadora::nova(params.pow)
+        .and_then(|mut c| c.pow_hash(&header.encode()))
+        .map_err(texto)?;
+    if !bate_alvo(&hash, &alvo) {
+        return Err(erro("prova de trabalho não bate o alvo"));
+    }
+    Ok(PowConferido { hash: header.block_hash(), pow: params.pow })
+}
+
 fn agora() -> u64 {
     SystemTime::now().duration_since(UNIX_EPOCH).map_or(0, |d| d.as_secs())
 }
@@ -285,24 +333,11 @@ impl Chain {
     /// # Errors
     /// Versão desconhecida, alvo fácil demais ou prova que não bate.
     pub fn check_orphan_header(&self, header: &BlockHeader) -> Result<(), ChainError> {
-        if header.version != BLOCK_VERSION {
-            return Err(erro(format!("versão de bloco desconhecida: {}", header.version)));
-        }
-        if alvo_do(header)? > self.params.max_target {
-            return Err(erro("alvo mais fácil que o limite da rede"));
-        }
-        self.check_header_pow(header)
+        conferir_pow(&self.params, header).map(|_| ())
     }
 
     fn check_header_pow(&self, header: &BlockHeader) -> Result<(), ChainError> {
-        let alvo = alvo_do(header)?;
-        let hash = Calculadora::nova(self.params.pow)
-            .and_then(|mut c| c.pow_hash(&header.encode()))
-            .map_err(texto)?;
-        if !bate_alvo(&hash, &alvo) {
-            return Err(erro("prova de trabalho não bate o alvo"));
-        }
-        Ok(())
+        conferir_pow(&self.params, header).map(|_| ())
     }
 
     fn validate_transactions(&self, block: &Block) -> Result<(), ChainError> {
@@ -394,6 +429,20 @@ impl Chain {
     /// vindo da rede passa por [`Chain::accept_block`].
     pub fn accept_block_do_proprio_disco(&mut self, block: Block, now: Option<u64>) -> Result<(), ChainError> {
         self.aceitar(block, now, false)
+    }
+
+    /// Aceita um bloco cujo Argon2id já foi conferido por [`conferir_pow`],
+    /// sem refazer essa conta. Todo o resto é conferido como em
+    /// [`Chain::accept_block`]. Recibo de outro cabeçalho, ou de outros
+    /// parâmetros de rede, não vale: o bloco é conferido do zero.
+    pub fn accept_block_com_pow(
+        &mut self,
+        block: Block,
+        pow: &PowConferido,
+        now: Option<u64>,
+    ) -> Result<(), ChainError> {
+        let vale = pow.hash == block.block_hash() && pow.pow == self.params.pow;
+        self.aceitar(block, now, !vale)
     }
 
     fn aceitar(&mut self, block: Block, now: Option<u64>, com_argon2: bool) -> Result<(), ChainError> {

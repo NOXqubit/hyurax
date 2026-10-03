@@ -156,7 +156,7 @@ pub fn estado(n: &Nucleo, pode_mandar: bool, url_celular: &str) -> Value {
         .maquinas
         .vistas
         .lock()
-        .map(|v| v.iter().map(|x| json!({ "alvo": x.alvo, "quando": x.quando, "ok": x.ok, "erro": x.erro, "resumo": x.resumo })).collect())
+        .map(|v| v.iter().map(|x| json!({ "alvo": x.alvo, "quando": x.quando, "ok": x.ok, "erro": x.erro, "resumo": x.resumo, "chave": x.chave })).collect())
         .unwrap_or_default();
     let ultrax: Value = serde_json::from_str(&n.ultrax.json()).unwrap_or(Value::Null);
     if let Some(o) = j.as_object_mut() {

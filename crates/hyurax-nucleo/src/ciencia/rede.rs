@@ -104,7 +104,9 @@ pub(super) struct Entrega {
 #[derive(Clone, Debug)]
 pub(super) enum Remoto {
     Esperando { par: u64, pedido: u64 },
-    Comprometido { par: u64, pedido: u64, worker: [u8; PUBKEY_LEN], compromisso: [u8; HASH_LEN] },
+    /// `assinatura`: do worker, sobre o compromisso para esta unidade (já
+    /// conferida na chegada).
+    Comprometido { par: u64, pedido: u64, worker: [u8; PUBKEY_LEN], compromisso: [u8; HASH_LEN], assinatura: [u8; 64] },
     Entregou(Box<Entrega>),
     Falhou { worker: Option<[u8; PUBKEY_LEN]>, motivo: String },
 }
@@ -138,7 +140,15 @@ pub(super) struct EstadoDaRede {
     pub(super) recebidas: u64,
     pub(super) enviadas: u64,
     pub(super) ultima_oferta_ms: u64,
+    /// Fila da thread que decide as unidades redundantes. A decisão pode
+    /// refazer o cálculo (segundos) e roda fora da thread que lê o par: senão
+    /// um resultado remoto segurava os blocos e as transações daquele par.
+    pub(super) decisora: Option<std::sync::mpsc::SyncSender<([u8; HASH_LEN], u64)>>,
 }
+
+/// Unidades esperando decisão na fila da thread decisora. Cheia, a decisão
+/// roda na hora, na thread de quem chegou (o par que inunda espera por ela).
+const FILA_DE_DECISOES: usize = 256;
 
 impl EstadoDaRede {
     /// Pares com oferta válida que aceitam este trabalho, dos de melhor
@@ -169,12 +179,43 @@ impl Ciencia {
             r.segredo = Some(segredo_do_worker);
         }
         self.aceitar_rede.store(aceitar, Ordering::Relaxed);
+        self.iniciar_decisora();
         let c = Arc::downgrade(self);
         rede.ao_receber_ultrax(Arc::new(move |par, _identidade, corpo| {
             if let Some(c) = c.upgrade() {
                 c.tratar_ultrax(par, corpo);
             }
         }));
+    }
+
+    /// A thread que decide as unidades redundantes (uma por ciência). Ela só
+    /// guarda uma referência fraca: quando a ciência acaba, a fila fecha e a
+    /// thread termina.
+    fn iniciar_decisora(self: &Arc<Self>) {
+        let Ok(mut r) = self.rede.lock() else { return };
+        if r.decisora.is_some() {
+            return;
+        }
+        let (tx, rx) = std::sync::mpsc::sync_channel::<([u8; HASH_LEN], u64)>(FILA_DE_DECISOES);
+        let fraca = Arc::downgrade(self);
+        let criada = std::thread::Builder::new().name("ciencia-decisora".into()).spawn(move || {
+            while let Ok((job, indice)) = rx.recv() {
+                let Some(c) = fraca.upgrade() else { return };
+                c.decidir(&job, indice);
+            }
+        });
+        if criada.is_ok() {
+            r.decisora = Some(tx);
+        }
+    }
+
+    /// Decide a unidade na thread decisora; sem ela (testes) ou com a fila
+    /// cheia, decide aqui mesmo.
+    fn decidir_depois(&self, job: [u8; HASH_LEN], indice: u64) {
+        let fila = self.rede.lock().ok().and_then(|r| r.decisora.clone());
+        if fila.is_none_or(|tx| tx.try_send((job, indice)).is_err()) {
+            self.decidir(&job, indice);
+        }
     }
 
     /// Liga ou desliga aceitar trabalho de outros nós.
@@ -248,8 +289,9 @@ impl Ciencia {
             }
             r.indisponiveis.retain(|_, ate| *ate > agora);
         }
+        // na decisora: a conferência não segura o vigia (checkpoints, prazos)
         for (job, indice) in vencidas {
-            self.decidir(&job, indice);
+            self.decidir_depois(job, indice);
         }
     }
 
@@ -303,15 +345,25 @@ impl Ciencia {
                     *x = Remoto::Falhou { worker: None, motivo: format!("recusou: {motivo}") };
                 });
             }
-            MensagemUltrax::Compromisso { pedido, worker, compromisso } => {
-                // o worker do compromisso tem de ser o da oferta deste par
-                let ofertado = self.rede.lock().ok().and_then(|r| r.ofertas.get(&par).map(|o| o.worker));
+            MensagemUltrax::Compromisso { pedido, worker, compromisso, assinatura } => {
+                // o worker do compromisso tem de ser o da oferta deste par, e a
+                // assinatura dele tem de ser para a unidade deste pedido
+                let (ofertado, unidade) = self
+                    .rede
+                    .lock()
+                    .map(|r| (r.ofertas.get(&par).map(|o| o.worker), r.pedidos.get(&pedido).copied()))
+                    .unwrap_or((None, None));
+                let assinado = unidade.is_some_and(|(job, indice)| {
+                    hyurax_crypto::ed25519_verify(&worker, &hyurax_ultrax::rede::mensagem_do_compromisso(&job, indice, pedido, &compromisso), &assinatura)
+                });
                 self.do_remoto(par, pedido, |x| {
                     if let Remoto::Esperando { par, pedido } = *x {
-                        *x = if ofertado == Some(worker) {
-                            Remoto::Comprometido { par, pedido, worker, compromisso }
-                        } else {
+                        *x = if ofertado != Some(worker) {
                             Remoto::Falhou { worker: None, motivo: "compromisso com um worker que não é o da oferta deste par".into() }
+                        } else if !assinado {
+                            Remoto::Falhou { worker: None, motivo: "a assinatura do compromisso não confere".into() }
+                        } else {
+                            Remoto::Comprometido { par, pedido, worker, compromisso, assinatura }
                         };
                     }
                 });
@@ -412,10 +464,22 @@ impl Ciencia {
                 let guardado = Guardado { registro: registro.codificar(), assinatura, resultado: resultado.clone(), desde_ms: agora_ms() };
                 if x.com_compromisso {
                     let c = compromisso(&registro.resultado, &registro.worker);
-                    if let Ok(mut r) = self.rede.lock() {
-                        r.guardados.insert((x.par, x.pedido), guardado);
-                    }
-                    self.enviar(x.par, &MensagemUltrax::Compromisso { pedido: x.pedido, worker: registro.worker, compromisso: c });
+                    let segredo = match self.rede.lock() {
+                        Ok(mut r) => {
+                            r.guardados.insert((x.par, x.pedido), guardado);
+                            r.segredo
+                        }
+                        Err(_) => None,
+                    };
+                    // assinado pela mesma chave do registro de prova: revelar
+                    // outra coisa depois deixa a prova contra este worker
+                    let m = match segredo {
+                        Some(s) if hyurax_crypto::ed25519_public_key(&s) == registro.worker => {
+                            MensagemUltrax::compromisso(&s, &x.job, x.indice, x.pedido, c)
+                        }
+                        _ => MensagemUltrax::Recusa { pedido: x.pedido, motivo: "sem a chave do worker para assinar o compromisso".into() },
+                    };
+                    self.enviar(x.par, &m);
                 } else {
                     self.enviar(
                         x.par,
@@ -511,7 +575,7 @@ impl Ciencia {
             mudar(x);
             (job, indice)
         };
-        self.decidir(&unidade.0, unidade.1);
+        self.decidir_depois(unidade.0, unidade.1);
     }
 
     /// Quem pede: confere uma entrega de outro nó.
@@ -526,7 +590,7 @@ impl Ciencia {
             Ok(reg)
         });
         self.do_remoto(par, pedido, |x| {
-            let Remoto::Comprometido { worker, compromisso: c, .. } = x.clone() else {
+            let Remoto::Comprometido { worker, compromisso: c, assinatura: assinatura_do_compromisso, .. } = x.clone() else {
                 *x = Remoto::Falhou { worker: None, motivo: "resultado sem compromisso antes".into() };
                 return;
             };
@@ -534,9 +598,16 @@ impl Ciencia {
             // oferta de outro não consegue sujar a reputação do dono da chave.
             *x = match conferido {
                 Ok(reg) if reg.worker != worker => Remoto::Falhou { worker: None, motivo: "o registro é de outro worker".into() },
-                Ok(reg) if !revelacao_confere(&c, &reg.resultado, &reg.worker) => {
-                    Remoto::Falhou { worker: None, motivo: "o resultado não bate com o compromisso".into() }
-                }
+                // o compromisso e o registro são assinados pelo mesmo worker
+                // e não fecham: a prova é dele, e a falha pesa nele
+                Ok(reg) if !revelacao_confere(&c, &reg.resultado, &reg.worker) => Remoto::Falhou {
+                    worker: Some(worker),
+                    motivo: format!(
+                        "revelou um resultado diferente do compromisso que assinou (compromisso {}…, assinatura {}…)",
+                        hex(c.get(..8).unwrap_or_default()),
+                        hex(assinatura_do_compromisso.get(..8).unwrap_or_default())
+                    ),
+                },
                 Ok(reg) => Remoto::Entregou(Box::new(Entrega {
                     worker: reg.worker,
                     hash: reg.resultado,
@@ -920,9 +991,18 @@ mod testes {
     /// workers de fora. Devolve a reputação vista de cada um, o estado do
     /// JOB, as unidades feitas e os eventos gravados.
     fn rodada(nome: &str, jeitos: [Jeito; 3]) -> (Vec<Reputacao>, EstadoDoJob, u64, Vec<String>) {
+        rodada_com(nome, jeitos, false)
+    }
+
+    /// `decisora`: a decisão roda na thread decisora, como no programa ligado
+    /// na rede, e não na thread que entregou a última mensagem.
+    fn rodada_com(nome: &str, jeitos: [Jeito; 3], decisora: bool) -> (Vec<Reputacao>, EstadoDoJob, u64, Vec<String>) {
         let pasta = std::env::temp_dir().join(format!("hyurax-ciencia-rede-{nome}-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&pasta);
         let c = Ciencia::abrir(&pasta, ed25519_public_key(&LOCAL), "teste").unwrap();
+        if decisora {
+            c.iniciar_decisora();
+        }
         let id = c
             .submeter(PedidoDeJob {
                 dominio: Dominio::Matematica,
@@ -975,19 +1055,33 @@ mod testes {
             abandonada: false,
         });
         // os de fora: primeiro todos os compromissos, depois as revelações
-        let entregas: Vec<(u64, u64, Pacote, Jeito)> = [(1u64, W1, jeitos[1]), (2, W2, jeitos[2])]
+        let entregas: Vec<(u64, u64, Pacote, Jeito, [u8; SECRET_LEN])> = [(1u64, W1, jeitos[1]), (2, W2, jeitos[2])]
             .into_iter()
-            .map(|(par, s, j)| (par, pedidos[&par], entrega(&p.especificacao, &p.semente, &s, j), j))
+            .map(|(par, s, j)| (par, pedidos[&par], entrega(&p.especificacao, &p.semente, &s, j), j, s))
             .collect();
-        for (par, pedido, (reg, _, _), jeito) in &entregas {
+        for (par, pedido, (reg, _, _), jeito, s) in &entregas {
             let prometido = if *jeito == Jeito::TrocaNaRevelacao { hash_do_resultado(b"outra coisa") } else { reg.resultado };
-            let m = MensagemUltrax::Compromisso { pedido: *pedido, worker: reg.worker, compromisso: compromisso(&prometido, &reg.worker) };
+            let m = MensagemUltrax::compromisso(s, &id, 0, *pedido, compromisso(&prometido, &reg.worker));
             c.tratar_ultrax(*par, &m.codificar().unwrap());
         }
+        // com a decisora, o pedido de revelação também sai na thread dela
+        let ate = std::time::Instant::now() + std::time::Duration::from_secs(30);
+        while decisora && !c.rede.lock().unwrap().redundantes.get(&(id, 0)).is_some_and(|u| u.revelou) && std::time::Instant::now() < ate {
+            std::thread::sleep(std::time::Duration::from_millis(20));
+        }
         assert!(c.rede.lock().unwrap().redundantes.get(&(id, 0)).is_some_and(|u| u.revelou), "com todos os compromissos, pede a revelação");
-        for (par, pedido, (reg, assinatura, res), _) in entregas {
+        for (par, pedido, (reg, assinatura, res), _, _) in entregas {
             let m = MensagemUltrax::Resultado { pedido, registro: reg.codificar(), assinatura, resultado: res };
             c.tratar_ultrax(par, &m.codificar().unwrap());
+        }
+        if decisora {
+            let ate = std::time::Instant::now() + std::time::Duration::from_secs(30);
+            while c.rede.lock().unwrap().redundantes.contains_key(&(id, 0))
+                || !c.jobs.lock().unwrap().iter().any(|x| x.id == id && x.estado.e_final())
+            {
+                assert!(std::time::Instant::now() < ate, "a decisora não decidiu a unidade");
+                std::thread::sleep(std::time::Duration::from_millis(20));
+            }
         }
         let reps = {
             let r = c.rede.lock().unwrap();
@@ -1009,6 +1103,14 @@ mod testes {
         assert_eq!((estado, feitas), (EstadoDoJob::Concluido, 1));
         assert!(reps.iter().all(|r| r.verificadas == 1 && r.divergentes == 0 && r.recusadas == 0));
         assert!(eventos.iter().any(|e| e.contains("CONSENSUS 3/3")));
+    }
+
+    #[test]
+    fn decisora_decide_fora_da_thread_do_par() {
+        let (reps, estado, feitas, eventos) = rodada_com("decisora", [Jeito::Honesto, Jeito::Honesto, Jeito::Adultera], true);
+        assert_eq!((estado, feitas), (EstadoDoJob::Concluido, 1));
+        assert_eq!((reps[2].verificadas, reps[2].divergentes), (0, 1));
+        assert!(eventos.iter().any(|e| e.contains("CONSENSUS 2/3")));
     }
 
     #[test]
@@ -1088,10 +1190,20 @@ mod testes {
     fn revelacao_que_nao_bate_com_o_compromisso_falha() {
         let (reps, estado, _, eventos) = rodada("revelacao", [Jeito::Honesto, Jeito::Honesto, Jeito::TrocaNaRevelacao]);
         assert_eq!(estado, EstadoDoJob::Concluido, "sobram 2 de 3 honestos");
-        // a entrega trocada não conta, mas também não pesa na reputação da
-        // chave: o compromisso não é assinado pelo worker, e um par que repete
-        // a oferta de outro poderia forjá-lo para sujar um inocente
-        assert_eq!((reps[2].verificadas, reps[2].recusadas), (0, 0));
-        assert!(eventos.iter().any(|e| e.contains("CONSENSUS") && e.contains("compromisso")));
+        // a entrega trocada não conta, e pesa no worker: o compromisso e o
+        // registro são assinados por ele e não fecham
+        assert_eq!((reps[2].verificadas, reps[2].recusadas), (0, 1));
+        assert!(eventos.iter().any(|e| e.contains("CONSENSUS") && e.contains("compromisso que assinou")));
+    }
+
+    #[test]
+    fn compromisso_com_assinatura_de_outra_unidade_nao_entra() {
+        // a assinatura de um compromisso vale para o JOB e o índice do pedido;
+        // reaproveitada em outro pedido, não confere
+        let valor = compromisso(&hash_do_resultado(b"r"), &ed25519_public_key(&W1));
+        let m = MensagemUltrax::compromisso(&W1, &[1; 64], 0, 7, valor);
+        assert!(m.compromisso_confere(&[1; 64], 0));
+        assert!(!m.compromisso_confere(&[1; 64], 1));
+        assert!(!m.compromisso_confere(&[2; 64], 0));
     }
 }

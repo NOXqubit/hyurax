@@ -285,7 +285,23 @@ fn ler(mut s: TcpStream, p: &Pedido, n: &Arc<Nucleo>, arquivos: Arquivos, daqui:
     }
     // públicas: o resumo (para as outras máquinas do dono) e os termos
     match rota {
-        "/api/v1/resumo" => return responder(&mut s, "200 OK", "application/json; charset=utf-8", estado::resumo(n).to_string().as_bytes()),
+        "/api/v1/resumo" => {
+            // Com `?desafio=` (32 bytes em hex), o resumo vai assinado pela
+            // chave do worker deste nó: quem pergunta sabe que foi esta
+            // máquina, e agora, que respondeu (ver `maquinas`).
+            let corpo = estado::resumo(n).to_string();
+            let extras = match p.parametro("desafio").and_then(crate::util::de_hex::<32>) {
+                Some(desafio) => {
+                    let assinatura = hyurax_crypto::ed25519_sign(&n.chave_do_resumo, &crate::maquinas::mensagem(&desafio, corpo.as_bytes()));
+                    vec![
+                        (crate::maquinas::CABECALHO_CHAVE, crate::util::hex(&hyurax_crypto::ed25519_public_key(&n.chave_do_resumo))),
+                        (crate::maquinas::CABECALHO_ASSINATURA, crate::util::hex(&assinatura)),
+                    ]
+                }
+                None => Vec::new(),
+            };
+            return http::responder_com(&mut s, "200 OK", "application/json; charset=utf-8", &extras, corpo.as_bytes());
+        }
         "/api/v1/termos" => return responder(&mut s, "200 OK", "text/html; charset=utf-8", crate::termos::html().as_bytes()),
         _ => {}
     }

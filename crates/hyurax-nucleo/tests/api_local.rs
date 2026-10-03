@@ -104,6 +104,17 @@ fn chave_host_e_origin_protegem_a_api_local() {
     let grande = [certo[0], certo[1], certo[2], ("Content-Length", "9216")];
     assert_eq!(pedido(porta, "POST", "/api/v1/ultrax", &grande, "").0, 400);
 
+    // o resumo lido por outra máquina do dono: com desafio, volta assinado
+    // pela chave de worker deste nó; a chave fica fixada na primeira vez
+    let alvo = format!("127.0.0.1:{porta}");
+    let (vista, chave) = hyurax_nucleo::maquinas::olhar(&alvo, 1, None);
+    assert!(vista.ok, "resumo assinado: {}", vista.erro);
+    let chave = chave.expect("a chave de quem assinou");
+    assert_eq!(chave, hyurax_crypto::ed25519_public_key(&n.chave_do_resumo));
+    assert!(hyurax_nucleo::maquinas::olhar(&alvo, 2, Some(&chave)).0.ok);
+    let (outra, _) = hyurax_nucleo::maquinas::olhar(&alvo, 3, Some(&[1u8; 32]));
+    assert!(!outra.ok && outra.erro.contains("mudou"), "{}", outra.erro);
+
     n.encerrar();
     let _ = std::fs::remove_dir_all(pasta);
 }

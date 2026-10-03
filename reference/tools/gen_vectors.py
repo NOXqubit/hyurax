@@ -1170,7 +1170,7 @@ def vec_rede_ultrax() -> dict:
         ("pedido matriz", rede_ultrax.pedido(7, crypto.H(b"job"), 3, esp_matriz, crypto.H(b"semente"), 1_790_000_060_000, True)),
         ("pedido genetica", rede_ultrax.pedido(8, crypto.H(b"job 2"), 2**40 - 1, esp_genetica, crypto.H(b"s2"), 5, False)),
         ("recusa", rede_ultrax.recusa(7, "memória acima do teto deste worker")),
-        ("compromisso", rede_ultrax.compromisso(7, worker, rede_ultrax.compromisso_de(resultado_hash, worker))),
+        ("compromisso", rede_ultrax.compromisso(segredo, crypto.H(b"job"), 3, 7, rede_ultrax.compromisso_de(resultado_hash, worker))),
         ("revelar", rede_ultrax.revelar(7)),
         ("resultado", rede_ultrax.resultado(7, b"registro de prova codificado", bytes(64), b"\x01\x02\x03")),
         ("cancelar", rede_ultrax.cancelar(7)),
@@ -1183,7 +1183,7 @@ def vec_rede_ultrax() -> dict:
     oferta = bytearray(mensagens[0][1])
     oferta[2 + 32 + 2 + 1] ^= 1  # a memória muda: a assinatura não confere mais
     recusados = [
-        ("versao", bytes([2]) + mensagens[5][1][1:]),
+        ("versao", bytes([1]) + mensagens[5][1][1:]),
         ("subtipo", bytes([1, 9]) + bytes(8)),
         ("sobra", mensagens[5][1] + b"\x00"),
         ("curto", mensagens[1][1][:-1]),
@@ -1196,6 +1196,14 @@ def vec_rede_ultrax() -> dict:
         "resultado_hash": h(resultado_hash),
         "mensagens": casos,
         "oferta_adulterada": {"corpo": h(bytes(oferta)), "assinatura_confere": rede_ultrax.ler(bytes(oferta))["assinatura_confere"]},
+        # a assinatura do compromisso vale só para a unidade do pedido
+        "compromisso_assinado": {
+            "job": h(crypto.H(b"job")),
+            "indice": 3,
+            "confere": rede_ultrax.compromisso_confere(rede_ultrax.ler(mensagens[4][1]), crypto.H(b"job"), 3),
+            "outro_indice_confere": rede_ultrax.compromisso_confere(rede_ultrax.ler(mensagens[4][1]), crypto.H(b"job"), 4),
+            "outro_job_confere": rede_ultrax.compromisso_confere(rede_ultrax.ler(mensagens[4][1]), crypto.H(b"outro"), 3),
+        },
         "recusados": [{"nome": n, "corpo": h(c)} for n, c in recusados],
     }
 

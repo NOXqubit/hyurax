@@ -162,10 +162,20 @@ const CSP: &str = "default-src 'self'; style-src 'self' 'unsafe-inline'; img-src
 /// # Errors
 /// Conexão caiu.
 pub fn responder(s: &mut TcpStream, status: &str, tipo: &str, corpo: &[u8]) -> std::io::Result<()> {
+    responder_com(s, status, tipo, &[], corpo)
+}
+
+/// Responde e fecha, com cabeçalhos a mais (nome, valor). Os valores vêm do
+/// próprio programa (hex), nunca do pedido.
+///
+/// # Errors
+/// Conexão caiu.
+pub fn responder_com(s: &mut TcpStream, status: &str, tipo: &str, extras: &[(&str, String)], corpo: &[u8]) -> std::io::Result<()> {
+    let extras: String = extras.iter().map(|(nome, valor)| format!("{nome}: {valor}\r\n")).collect();
     let cab = format!(
         "HTTP/1.1 {status}\r\nContent-Type: {tipo}\r\nContent-Length: {}\r\nCache-Control: no-store\r\n\
          X-Content-Type-Options: nosniff\r\nX-Frame-Options: DENY\r\nReferrer-Policy: no-referrer\r\n\
-         Content-Security-Policy: {CSP}\r\nConnection: close\r\n\r\n",
+         Content-Security-Policy: {CSP}\r\n{extras}Connection: close\r\n\r\n",
         corpo.len()
     );
     // uma escrita só, e sem Nagle: em duas, o Windows segurava o corpo

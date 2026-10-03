@@ -848,9 +848,28 @@ impl Rede {
                 _ => {}
             }
 
+            // O Argon2id de um bloco novo é conferido aqui, sem a trava do nó:
+            // enquanto ele roda, os outros pares continuam sendo atendidos. Um
+            // bloco que já tenho não custa nada; um forjado derruba o par.
+            let pow = match &msg {
+                Message::Block(bloco) => {
+                    let (params, ja_tenho) = {
+                        let no = self.no.lock().map_err(|_| NetError::Handshake("nó travado".into()))?;
+                        (no.chain.params, no.chain.altura_de(&bloco.block_hash()).is_some())
+                    };
+                    if ja_tenho {
+                        None
+                    } else {
+                        let recibo = hyurax_chain::conferir_pow(&params, &bloco.header)
+                            .map_err(|e| NetError::Handshake(format!("par malicioso: bloco recusado: {e}")))?;
+                        Some(recibo)
+                    }
+                }
+                _ => None,
+            };
             let reacao = {
                 let mut no = self.no.lock().map_err(|_| NetError::Handshake("nó travado".into()))?;
-                no.tratar(msg)
+                no.tratar_com_pow(msg, pow)
             };
             match reacao {
                 Ok(r) => {

@@ -9,7 +9,7 @@
 use std::collections::BTreeMap;
 
 use hyurax_block::Block;
-use hyurax_chain::Chain;
+use hyurax_chain::{Chain, ChainError, PowConferido};
 use hyurax_consensus::{U512, alvo_de_bits, target_to_work};
 use hyurax_tx::{ASSET_ID_LEN, Endereco, Transfer, Tx};
 use hyurax_wire::{Hash, MAX_GET_BLOCKS, MAX_HEADERS, Message};
@@ -20,6 +20,9 @@ use hyurax_wire::{Hash, MAX_GET_BLOCKS, MAX_HEADERS, Message};
 /// memória. Ao estourar, o nó **descarta todos** e recomeça a sincronizar —
 /// perder um ramo em construção é barato; ficar sem memória, não.
 const MAX_ORFAOS: usize = 512;
+
+/// Um ramo de órfãos em ordem, cada um com o recibo do Argon2id (se houver).
+type Ramo = Vec<(Block, Option<PowConferido>)>;
 
 /// O que o nó decidiu fazer com uma mensagem.
 #[derive(Debug, Default)]
@@ -47,8 +50,9 @@ pub struct No {
     /// Transferências esperando entrar num bloco, por `(remetente, nonce)`.
     mempool: BTreeMap<(Endereco, u64), Transfer>,
     /// Blocos recebidos que não estendem a ponta, por `block_hash`. Podem ser
-    /// de um ramo concorrente que ainda está chegando.
-    orfaos: BTreeMap<Hash, Block>,
+    /// de um ramo concorrente que ainda está chegando. O recibo do Argon2id vai
+    /// junto, para o bloco não ser conferido de novo quando encaixar.
+    orfaos: BTreeMap<Hash, (Block, Option<PowConferido>)>,
 }
 
 impl No {
@@ -164,8 +168,14 @@ impl No {
     /// Aplica um bloco na cadeia. Se avançar a ponta, tira do mempool o que o
     /// bloco gastou. Devolve `true` se a ponta avançou.
     pub fn aceitar_bloco(&mut self, bloco: Block) -> Result<bool, Malicia> {
+        self.aceitar_bloco_com(bloco, None)
+    }
+
+    /// Como [`No::aceitar_bloco`], aproveitando o recibo do Argon2id quando
+    /// ele foi conferido antes, fora da trava.
+    pub fn aceitar_bloco_com(&mut self, bloco: Block, pow: Option<&PowConferido>) -> Result<bool, Malicia> {
         let antes = self.chain.tip_hash();
-        self.chain.accept_block(bloco, None).map_err(|e| Malicia(e.to_string()))?;
+        self.aplicar(bloco, pow).map_err(|e| Malicia(e.to_string()))?;
         let avancou = self.chain.tip_hash() != antes;
         if avancou {
             self.limpar_mempool();
@@ -192,12 +202,20 @@ impl No {
         }
     }
 
+    /// Aplica um bloco na cadeia, sem refazer o Argon2id se houver recibo.
+    fn aplicar(&mut self, bloco: Block, pow: Option<&PowConferido>) -> Result<(), ChainError> {
+        match pow {
+            Some(p) => self.chain.accept_block_com_pow(bloco, p, None),
+            None => self.chain.accept_block(bloco, None),
+        }
+    }
+
     /// Guarda um bloco que ainda não encaixa, respeitando o teto.
-    fn guardar_orfao(&mut self, bloco: Block) {
+    fn guardar_orfao(&mut self, bloco: Block, pow: Option<PowConferido>) {
         if self.orfaos.len() >= MAX_ORFAOS {
             self.orfaos.clear();
         }
-        self.orfaos.insert(bloco.block_hash(), bloco);
+        self.orfaos.insert(bloco.block_hash(), (bloco, pow));
     }
 
     /// Aplica, em sequência, os órfãos que já encaixam na ponta atual.
@@ -207,15 +225,15 @@ impl No {
             let Some(hash) = self
                 .orfaos
                 .iter()
-                .find(|(_, b)| b.header.prev_hash == ponta)
+                .find(|(_, (b, _))| b.header.prev_hash == ponta)
                 .map(|(h, _)| *h)
             else {
                 return;
             };
-            let Some(bloco) = self.orfaos.remove(&hash) else {
+            let Some((bloco, pow)) = self.orfaos.remove(&hash) else {
                 return;
             };
-            if self.chain.accept_block(bloco, None).is_err() {
+            if self.aplicar(bloco, pow.as_ref()).is_err() {
                 return; // não encaixou de verdade; para aqui
             }
             self.limpar_mempool();
@@ -223,9 +241,9 @@ impl No {
     }
 
     /// O trabalho somado de um ramo de blocos.
-    fn trabalho_do_ramo(ramo: &[Block]) -> Option<U512> {
+    fn trabalho_do_ramo(ramo: &[(Block, Option<PowConferido>)]) -> Option<U512> {
         let mut total = U512::ZERO;
-        for bloco in ramo {
+        for (bloco, _) in ramo {
             let alvo = alvo_de_bits(bloco.header.bits).ok()?;
             total = total.checked_add(&target_to_work(&alvo).ok()?)?;
         }
@@ -234,12 +252,12 @@ impl No {
 
     /// Monta, a partir de um órfão, o ramo que vai de um ancestral da minha
     /// cadeia até ele. Devolve `(altura do ancestral, ramo em ordem)`.
-    fn montar_ramo(&self, folha: &Hash) -> Option<(u64, Vec<Block>)> {
+    fn montar_ramo(&self, folha: &Hash) -> Option<(u64, Ramo)> {
         let mut ramo = Vec::new();
         let mut atual = *folha;
         for _ in 0..=MAX_ORFAOS {
-            let bloco = self.orfaos.get(&atual)?;
-            ramo.push(bloco.clone());
+            let (bloco, pow) = self.orfaos.get(&atual)?;
+            ramo.push((bloco.clone(), *pow));
             let prev = bloco.header.prev_hash;
             if let Some(altura) = self.chain.altura_de(&prev) {
                 ramo.reverse();
@@ -261,7 +279,7 @@ impl No {
     fn tentar_reorganizar(&mut self) -> Result<bool, Malicia> {
         // Escolhe o ramo completo de maior trabalho.
         let folhas: Vec<Hash> = self.orfaos.keys().copied().collect();
-        let mut melhor: Option<(u64, Vec<Block>, U512)> = None;
+        let mut melhor: Option<(u64, Ramo, U512)> = None;
         for folha in folhas {
             let Some((altura_ancestral, ramo)) = self.montar_ramo(&folha) else {
                 continue;
@@ -300,11 +318,13 @@ impl No {
 
         // Aplica o ramo novo. Se falhar no meio, volta tudo.
         let mut aplicados = 0usize;
-        for bloco in &ramo {
-            if self.chain.accept_block(bloco.clone(), None).is_err() {
+        for (bloco, pow) in &ramo {
+            if self.aplicar(bloco.clone(), pow.as_ref()).is_err() {
                 let _ = self.chain.rollback(aplicados);
+                // Os que saíram já tinham sido validados por este nó, inteiros,
+                // quando entraram: voltar com eles não refaz o Argon2id.
                 for antigo in removidos.iter().rev() {
-                    if self.chain.accept_block(antigo.clone(), None).is_err() {
+                    if self.chain.accept_block_do_proprio_disco(antigo.clone(), None).is_err() {
                         // Não deveria acontecer: eram blocos já validados.
                         return Err(Malicia("falha ao restaurar a cadeia antiga".into()));
                     }
@@ -316,11 +336,11 @@ impl No {
 
         // Deu certo: os blocos aplicados saem dos órfãos, e o que foi desfeito
         // vira órfão (pode voltar a valer se aquele ramo crescer de novo).
-        for bloco in &ramo {
+        for (bloco, _) in &ramo {
             self.orfaos.remove(&bloco.block_hash());
         }
         for antigo in removidos {
-            self.guardar_orfao(antigo);
+            self.guardar_orfao(antigo, None);
         }
         self.limpar_mempool();
         Ok(true)
@@ -328,6 +348,12 @@ impl No {
 
     /// Decide o que fazer com uma mensagem recebida de um par.
     pub fn tratar(&mut self, msg: Message) -> Result<Reacao, Malicia> {
+        self.tratar_com_pow(msg, None)
+    }
+
+    /// Como [`No::tratar`], com o recibo do Argon2id de um bloco conferido
+    /// antes, fora da trava (servidor.rs). Recibo de outro bloco é ignorado.
+    pub fn tratar_com_pow(&mut self, msg: Message, pow: Option<PowConferido>) -> Result<Reacao, Malicia> {
         let mut r = Reacao::default();
         match msg {
             // O aperto de mão é tratado antes, no servidor; se chegar aqui,
@@ -372,12 +398,13 @@ impl No {
             }
 
             Message::Block(bloco) => {
+                let pow = pow.filter(|p| *p.block_hash() == bloco.block_hash());
                 let estende = bloco.header.prev_hash == self.chain.tip_hash();
                 let ja_tenho = self.chain.altura_de(&bloco.block_hash()).is_some();
                 if ja_tenho {
                     // repetição de algo que já validei; sem novidade
                 } else if estende {
-                    if self.aceitar_bloco(*bloco.clone())? {
+                    if self.aceitar_bloco_com(*bloco.clone(), pow.as_ref())? {
                         // Blocos podem chegar fora de ordem: o que estava
                         // guardado e agora encaixa entra na sequência.
                         self.encaixar_orfaos();
@@ -388,12 +415,14 @@ impl No {
                     // concorrente chegando. Antes de guardar, a prova de
                     // trabalho do cabeçalho: órfão forjado derruba quem mandou,
                     // em vez de encher a área de órfãos e expulsar os legítimos.
-                    self.chain
-                        .check_orphan_header(&bloco.header)
-                        .map_err(|e| Malicia(format!("órfão recusado: {e}")))?;
+                    let pow = match pow {
+                        Some(p) => p,
+                        None => hyurax_chain::conferir_pow(&self.chain.params, &bloco.header)
+                            .map_err(|e| Malicia(format!("órfão recusado: {e}")))?,
+                    };
                     // Guardo e tento trocar de cadeia se o ramo já tiver mais
                     // trabalho que o meu.
-                    self.guardar_orfao(*bloco);
+                    self.guardar_orfao(*bloco, Some(pow));
                     if self.tentar_reorganizar()? {
                         // Trocou de cadeia: anuncia a ponta nova aos outros.
                         if let Some(ponta) = self.chain.tip().cloned() {

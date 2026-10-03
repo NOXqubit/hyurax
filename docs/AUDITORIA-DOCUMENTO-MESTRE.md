@@ -54,7 +54,7 @@ máquina), **AUSENTE**, **FORA DO PC** (backend, web, mobile, economia).
 |---|---|---|---|---|
 | Integridade (hashes, assinaturas) | REAL | INPUT_HASH, RESULT_HASH, registro assinado, raiz de Merkle das unidades no relatório | assinatura dos arquivos do JOB | — |
 | Reexecução | REAL | cada unidade é conferida antes de contar, pelo método adequado ao motor (Freivalds, ótimo exato, recomputação) | — | — |
-| Múltiplos nós | SIMULADO | maioria + conferência local da maioria; conluio pego. Testado em processo | ensaio entre máquinas; compromisso assinado pelo worker | — |
+| Múltiplos nós | SIMULADO | maioria + conferência local da maioria; conluio pego; compromisso assinado pelo worker. Testado em processo | ensaio entre máquinas | — |
 | Verificação independente | PARCIAL | a CPU confere a GPU por outro algoritmo | nó verificador dedicado; segunda implementação | — |
 | Reprodutibilidade | PARCIAL | semente por unidade, `hyurax-no ciencia refazer`, versão do programa por unidade no registro e no relatório | versão por motor; hash dos dados embutidos | — |
 | Cálculo × validação científica | REAL | aviso no relatório, incertezas por motor (o erro da IA é o medido no JOB, não um número fixo), termos de uso | — | — |
@@ -151,8 +151,8 @@ entre nós, sem preço; execução prolongada passou a ter teste
 
 - Todo crate proíbe `unsafe`; `clippy` nega `unwrap`, `expect`, `panic` e
   indexação direta. Nenhuma dependência nova nesta auditoria.
-- Não há `cargo-audit` nem `cargo-deny` no CI: **PENDENTE** (adicionar exige
-  baixar a ferramenta).
+- `cargo audit` (base RustSec) roda no CI a cada envio e antes de cada
+  lançamento; vulnerabilidade publicada derruba o build. Roda só no GitHub.
 - Sem teste automático: a janela (`hyurax-app`) e o JavaScript da interface
   (conferidos à mão no navegador, com dados reais); o instalador é testado
   pelo `testar-instalacao.ps1`.
@@ -177,8 +177,8 @@ local e execução), `c159b31` (rede, ciência entre nós, relatório), `7e28b7c
 | 6 | Benchmark deixava threads vivas | baixa | corrigido |
 | 7 | Queda duplicava linha no CSV | baixa | corrigido |
 | 8 | Operações declaradas por worker remoto inflavam créditos | alta | corrigido |
-| 9 | Oferta sem frescor nem vínculo ao par | alta | corrigido (compromisso assinado: PENDENTE) |
-| 10 | Conferência remota na thread do par, com trava presa | média | parcial: fora da trava; ainda na thread do par |
+| 9 | Oferta sem frescor nem vínculo ao par | alta | corrigido (e o compromisso passou a ser assinado: ULTRAX v2) |
+| 10 | Conferência remota na thread do par, com trava presa | média | corrigido (thread decisora) |
 | 11 | Pedido com semente falsa sujava a auditoria | média | corrigido |
 | 12 | Assinaturas dos votos remotos descartadas | média | corrigido (`consenso.jsonl`) |
 | 13 | Relatório nunca mostrava nível 3 | média | corrigido |
@@ -193,9 +193,9 @@ local e execução), `c159b31` (rede, ciência entre nós, relatório), `7e28b7c
 | 22 | Recusa ou sumiço derrubava a unidade sem pesar no par | alta | corrigido |
 | 23 | Pedidos de pares diferentes misturados | média | corrigido (pedido repetido recusado) |
 | 24 | Semente por nome rediscada a cada 2 s | média | corrigido |
-| 25 | Resumo das outras máquinas sem autenticação | média | PENDENTE |
+| 25 | Resumo das outras máquinas sem autenticação | média | corrigido (desafio, assinatura, chave fixada) |
 | 26 | `no.chave` em texto; permissão só depois | média | parcial: 0600 desde a criação e `sync_all`; cifra em repouso PENDENTE |
-| 27 | Sem banimento; órfão forjado custa Argon2id com a trava | alta | parcial: banimento feito; conferência fora da trava PENDENTE |
+| 27 | Sem banimento; órfão forjado custa Argon2id com a trava | alta | corrigido (banimento; Argon2id fora da trava) |
 | 28 | "Sincronizado" falso para sempre | média | corrigido |
 | 29 | HEADERS não validado | baixa | corrigido (encadeamento) |
 | 30 | API lia o pedido inteiro antes de recusar a rede local | alta | corrigido |
@@ -218,11 +218,9 @@ nenhum teste de JOB pelas threads do worker (criado).
 
 ## O que fica para depois do PC, na ordem do roadmap
 
-1. Compromisso assinado pelo worker, conferência remota fora da thread do par,
-   reputação gravada em disco, ensaio entre máquinas (fase 6, rede).
+1. Reputação gravada em disco, ensaio entre máquinas (fase 6, rede).
 2. Cifra em repouso de `no.chave` e `seguranca.txt`, zeroização, rotação da
-   identidade, assinatura do resumo das máquinas (fase 3, restante).
+   identidade (fase 3, restante).
 3. Authenticode do `.exe` (depende do certificado do dono).
-4. `cargo-audit` no CI.
-5. Backend, contas, marketplace, mobile e economia (fases 5, 7, 8 e 9), só
+4. Backend, contas, marketplace, mobile e economia (fases 5, 7, 8 e 9), só
    depois do núcleo de PC estável, como o documento manda.
