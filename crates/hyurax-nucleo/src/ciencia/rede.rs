@@ -47,6 +47,11 @@ pub(super) const REMOTAS_POR_PAR: usize = 2;
 const REMOTAS_MAX: usize = 8;
 /// Resultado guardado esperando a revelação, no máximo por isso.
 const GUARDADO_MS: u64 = 10 * 60_000;
+/// Uma oferta só vale se o horário assinado nela estiver perto do nosso:
+/// oferta velha, guardada e repetida por outro par, não vale.
+const OFERTA_FRESCA_MS: u64 = 5 * 60_000;
+/// Par que recusou ou sumiu fica fora da escolha por isso.
+const INDISPONIVEL_MS: u64 = 5 * 60_000;
 
 /// Uma oferta vista de um par.
 #[derive(Clone, Copy, Debug)]
@@ -91,6 +96,8 @@ pub(super) struct Entrega {
     memoria: u64,
     operacoes_verificacao: u64,
     tarefa: [u8; HASH_LEN],
+    /// A assinatura do registro de prova, guardada como evidência do voto.
+    assinatura: Option<[u8; 64]>,
 }
 
 /// Onde está um worker remoto nesta unidade.
@@ -126,6 +133,8 @@ pub(super) struct EstadoDaRede {
     pub(super) pedidos: BTreeMap<u64, ([u8; HASH_LEN], u64)>,
     pub(super) proximo_pedido: u64,
     pub(super) reputacao: BTreeMap<[u8; PUBKEY_LEN], Reputacao>,
+    /// Pares que recusaram ou sumiram: fora da escolha até este instante.
+    pub(super) indisponiveis: BTreeMap<u64, u64>,
     pub(super) recebidas: u64,
     pub(super) enviadas: u64,
     pub(super) ultima_oferta_ms: u64,
@@ -143,6 +152,7 @@ impl EstadoDaRede {
             .filter(|(_, o)| agora.saturating_sub(o.visto_ms) < OFERTA_VALE_MS)
             .filter(|(_, o)| o.tipos & bit_do_tipo(esp.tipo()) != 0 && u64::from(o.memoria_mib) >= memoria)
             .filter(|(par, _)| ocupados(**par) < REMOTAS_POR_PAR)
+            .filter(|(par, _)| self.indisponiveis.get(par).is_none_or(|ate| *ate <= agora))
             .map(|(par, o)| (*par, o.worker, self.reputacao.get(&o.worker).map_or(500, Reputacao::nota)))
             .collect();
         v.sort_by(|a, b| b.2.cmp(&a.2).then(a.0.cmp(&b.0)));
@@ -218,10 +228,12 @@ impl Ciencia {
             r.ofertas.retain(|_, o| agora.saturating_sub(o.visto_ms) < OFERTA_VALE_MS);
             r.guardados.retain(|_, g| agora.saturating_sub(g.desde_ms) < GUARDADO_MS);
             // unidade redundante vencida: quem não entregou falhou
+            let mut sumiram = Vec::new();
             for ((job, indice), u) in r.redundantes.iter_mut() {
                 if agora > u.prazo_ms {
                     for x in &mut u.remotos {
-                        if matches!(x, Remoto::Esperando { .. } | Remoto::Comprometido { .. }) {
+                        if let Remoto::Esperando { par, .. } | Remoto::Comprometido { par, .. } = x {
+                            sumiram.push(*par);
                             *x = Remoto::Falhou { worker: None, motivo: "prazo vencido sem entrega".into() };
                         }
                     }
@@ -231,6 +243,10 @@ impl Ciencia {
                     vencidas.push((*job, *indice));
                 }
             }
+            for par in sumiram {
+                r.indisponiveis.insert(par, agora.saturating_add(INDISPONIVEL_MS));
+            }
+            r.indisponiveis.retain(|_, ate| *ate > agora);
         }
         for (job, indice) in vencidas {
             self.decidir(&job, indice);
@@ -244,11 +260,19 @@ impl Ciencia {
             r.recebidas = r.recebidas.saturating_add(1);
         }
         match m {
-            MensagemUltrax::Oferta { worker, tipos, memoria_mib, .. } => {
-                if m.oferta_confere()
+            MensagemUltrax::Oferta { worker, tipos, memoria_mib, instante_ms, .. } => {
+                let agora = agora_ms();
+                let fresca = agora.abs_diff(instante_ms) <= OFERTA_FRESCA_MS;
+                if fresca
+                    && m.oferta_confere()
                     && let Ok(mut r) = self.rede.lock()
                 {
-                    r.ofertas.insert(par, OfertaVista { worker, tipos, memoria_mib, visto_ms: agora_ms() });
+                    // a mesma chave de worker em dois pares: vale a do primeiro
+                    // (quem repete a oferta de outro não toma o lugar dele)
+                    let de_outro = r.ofertas.iter().any(|(p, o)| *p != par && o.worker == worker && agora.saturating_sub(o.visto_ms) < OFERTA_VALE_MS);
+                    if !de_outro {
+                        r.ofertas.insert(par, OfertaVista { worker, tipos, memoria_mib, visto_ms: agora });
+                    }
                 }
             }
             MensagemUltrax::Pedido { pedido, job, indice, especificacao, semente, prazo_ms, com_compromisso } => {
@@ -269,14 +293,29 @@ impl Ciencia {
                     r.guardados.remove(&(par, pedido));
                 }
             }
-            MensagemUltrax::Recusa { pedido, motivo } => self.do_remoto(par, pedido, |x| {
-                *x = Remoto::Falhou { worker: None, motivo: format!("recusou: {motivo}") };
-            }),
-            MensagemUltrax::Compromisso { pedido, worker, compromisso } => self.do_remoto(par, pedido, |x| {
-                if let Remoto::Esperando { par, pedido } = *x {
-                    *x = Remoto::Comprometido { par, pedido, worker, compromisso };
+            MensagemUltrax::Recusa { pedido, motivo } => {
+                // recusa não pesa na reputação de ninguém, mas o par sai da
+                // escolha por um tempo (e a unidade não conta como falha)
+                if let Ok(mut r) = self.rede.lock() {
+                    r.indisponiveis.insert(par, agora_ms().saturating_add(INDISPONIVEL_MS));
                 }
-            }),
+                self.do_remoto(par, pedido, |x| {
+                    *x = Remoto::Falhou { worker: None, motivo: format!("recusou: {motivo}") };
+                });
+            }
+            MensagemUltrax::Compromisso { pedido, worker, compromisso } => {
+                // o worker do compromisso tem de ser o da oferta deste par
+                let ofertado = self.rede.lock().ok().and_then(|r| r.ofertas.get(&par).map(|o| o.worker));
+                self.do_remoto(par, pedido, |x| {
+                    if let Remoto::Esperando { par, pedido } = *x {
+                        *x = if ofertado == Some(worker) {
+                            Remoto::Comprometido { par, pedido, worker, compromisso }
+                        } else {
+                            Remoto::Falhou { worker: None, motivo: "compromisso com um worker que não é o da oferta deste par".into() }
+                        };
+                    }
+                });
+            }
             MensagemUltrax::Resultado { pedido, registro, assinatura, resultado } => {
                 self.resultado_remoto(par, pedido, &registro, &assinatura, resultado);
             }
@@ -302,7 +341,17 @@ impl Ciencia {
         if remota.prazo_ms <= agora_ms() {
             return Some("o prazo já venceu".into());
         }
+        if remota.semente != hyurax_ultrax::job::semente_da_unidade(&remota.job, remota.indice) {
+            return Some("a semente não é a desta unidade do JOB".into());
+        }
+        if self.jobs.lock().is_ok_and(|j| j.iter().any(|x| x.id == remota.job)) {
+            return Some("este nó já calcula este JOB".into());
+        }
         let Ok(mut r) = self.rede.lock() else { return Some("estado da rede travado".into()) };
+        let mesma = |x: &Remota| x.job == remota.job && x.indice == remota.indice;
+        if r.fila.iter().any(mesma) || r.executando.values().any(mesma) {
+            return Some("já calculo esta unidade para outro pedido".into());
+        }
         let do_par = r.fila.iter().filter(|x| x.par == remota.par).count().saturating_add(r.executando.values().filter(|x| x.par == remota.par).count());
         if do_par >= REMOTAS_POR_PAR || r.fila.len().saturating_add(r.executando.len()) >= REMOTAS_MAX {
             return Some("worker ocupado".into());
@@ -442,6 +491,7 @@ impl Ciencia {
                     memoria: d.memoria,
                     operacoes_verificacao: d.operacoes_verificacao,
                     tarefa: d.tarefa,
+                    assinatura: d.assinatura,
                 }),
                 _ => Err(if d.nota.is_empty() { d.estado.nome().to_string() } else { d.nota.clone() }),
             });
@@ -480,23 +530,27 @@ impl Ciencia {
                 *x = Remoto::Falhou { worker: None, motivo: "resultado sem compromisso antes".into() };
                 return;
             };
+            // Falha que o worker não assinou não pesa nele: quem repassa a
+            // oferta de outro não consegue sujar a reputação do dono da chave.
             *x = match conferido {
-                Ok(reg) if reg.worker != worker => Remoto::Falhou { worker: Some(worker), motivo: "o registro é de outro worker".into() },
+                Ok(reg) if reg.worker != worker => Remoto::Falhou { worker: None, motivo: "o registro é de outro worker".into() },
                 Ok(reg) if !revelacao_confere(&c, &reg.resultado, &reg.worker) => {
-                    Remoto::Falhou { worker: Some(worker), motivo: "o resultado não bate com o compromisso".into() }
+                    Remoto::Falhou { worker: None, motivo: "o resultado não bate com o compromisso".into() }
                 }
                 Ok(reg) => Remoto::Entregou(Box::new(Entrega {
                     worker: reg.worker,
                     hash: reg.resultado,
                     resultado,
-                    ms_calculo: reg.fim_ms.saturating_sub(reg.inicio_ms),
+                    // o tempo é declarado pelo outro nó: não entra como CPU deste JOB
+                    ms_calculo: 0,
                     ms_verificacao: 0,
                     memoria: 0,
                     operacoes_verificacao: 0,
                     tarefa: reg.tarefa,
+                    assinatura: Some(*assinatura),
                     registro: reg,
                 })),
-                Err(motivo) => Remoto::Falhou { worker: Some(worker), motivo },
+                Err(motivo) => Remoto::Falhou { worker: None, motivo },
             };
         });
     }
@@ -551,12 +605,20 @@ impl Ciencia {
         }
         // a entrada de cada entrega tem de ser a da unidade: senão calculou outra coisa
         let entrada = hash_da_entrada(&u.esp, &u.semente).ok();
+        let teto = u.esp.operacoes_maximas();
         entregas.retain(|e| {
             let ok = Some(e.registro.entrada) == entrada && e.registro.especificacao == u.esp;
             if !ok {
                 falhas.push((Some(e.worker), "entrada ou especificação diferentes da unidade".into()));
+                return false;
             }
-            ok
+            // operações declaradas acima do teto da especificação: o registro
+            // (assinado pelo worker) mente sobre o trabalho, e os créditos sairiam dele
+            if e.registro.operacoes > teto {
+                falhas.push((Some(e.worker), format!("declarou {} operações; o teto desta unidade é {teto}", e.registro.operacoes)));
+                return false;
+            }
+            true
         });
         let (redundancia, tipo) = self
             .jobs
@@ -575,9 +637,12 @@ impl Ciencia {
             (Desfecho::Verificado { .. }, Some(e)) => Some(trabalho::verificar(&u.esp, &u.semente, &e.resultado)),
             _ => None,
         };
-        // reputação: o que este nó viu de cada worker
-        if let Ok(mut r) = self.rede.lock() {
-            for (worker, parecer) in &decisao.pareceres {
+        // reputação: o que este nó viu de cada worker. As conferências da
+        // minoria rodam antes de pegar a trava da rede (podem levar segundos).
+        let vistos: Vec<([u8; PUBKEY_LEN], Parecer)> = decisao
+            .pareceres
+            .iter()
+            .map(|(worker, parecer)| {
                 let visto = match (&conferencia, parecer) {
                     // votou no resultado que a conferência recusou: recusa, com a evidência
                     (Some(Err(recusa)), Parecer::Aceito) => Parecer::Recusado(recusa.clone()),
@@ -591,7 +656,12 @@ impl Ciencia {
                     },
                     _ => parecer.clone(),
                 };
-                r.reputacao.entry(*worker).or_default().registrar(&visto);
+                (*worker, visto)
+            })
+            .collect();
+        if let Ok(mut r) = self.rede.lock() {
+            for (worker, visto) in &vistos {
+                r.reputacao.entry(*worker).or_default().registrar(visto);
             }
             for (worker, motivo) in &falhas {
                 if let Some(w) = worker {
@@ -609,8 +679,21 @@ impl Ciencia {
             (Desfecho::Verificado { aceitos: k }, Some(e)) => {
                 // conferência independente aqui, antes de entrar no JOB
                 if let Some(Err(_)) = conferencia {
-                    self.voltar_para_a_fila(job_id, indice, tipo, format!("a maioria ({k}) concordou num resultado que a conferência daqui recusou; {diagnostico}"));
+                    self.voltar_para_a_fila(job_id, indice, tipo, format!("a maioria ({k}) concordou num resultado que a conferência daqui recusou; {diagnostico}"), true);
                     return;
+                }
+                // a evidência do consenso: o registro e a assinatura de cada voto
+                // aceito, para uma auditoria refazer a conta depois
+                let caminho = self.pasta_do_job(job_id).join("consenso.jsonl");
+                for v in entregas.iter().filter(|x| aceitos.contains(&x.worker)) {
+                    let linha = format!(
+                        "{{\"indice\":{indice},\"worker\":\"{}\",\"resultado\":\"{}\",\"registro\":\"{}\",\"assinatura\":{}}}",
+                        hex(&v.worker),
+                        hex(&v.hash),
+                        hex(&v.registro.codificar()),
+                        v.assinatura.map_or("null".to_string(), |a| format!("\"{}\"", hex(&a)))
+                    );
+                    self.acrescentar(&caminho, &linha, None);
                 }
                 let rotulo: &'static str = match (k, votos.len()) {
                     (2, 2) => "CONSENSUS 2/2",
@@ -664,11 +747,17 @@ impl Ciencia {
                     let _ = crate::ciencia::relatorio::gravar(self, job_id);
                 }
             }
-            _ => self.voltar_para_a_fila(job_id, indice, tipo, format!("sem maioria entre workers de nós diferentes; {diagnostico}")),
+            _ => {
+                // só divergência de verdade (resultados diferentes) conta como
+                // falha da unidade; faltar voto (recusa, sumiço) só a devolve
+                let distintos: std::collections::BTreeSet<[u8; HASH_LEN]> = votos.iter().map(|(_, h)| *h).collect();
+                let divergiu = distintos.len() >= 2;
+                self.voltar_para_a_fila(job_id, indice, tipo, format!("sem maioria entre workers de nós diferentes; {diagnostico}"), divergiu);
+            }
         }
     }
 
-    fn voltar_para_a_fila(&self, job_id: &[u8; HASH_LEN], indice: u64, tipo: TipoDeTrabalho, motivo: String) {
+    fn voltar_para_a_fila(&self, job_id: &[u8; HASH_LEN], indice: u64, tipo: TipoDeTrabalho, motivo: String, contar: bool) {
         let mut eventos = Vec::new();
         let mut terminou_job = false;
         if let Ok(mut jobs) = self.jobs.lock()
@@ -677,7 +766,9 @@ impl Ciencia {
             job.em_voo.remove(&indice);
             job.cursor = job.cursor.min(indice);
             let n = job.falhas.entry(indice).or_insert(0);
-            *n = n.saturating_add(1);
+            if contar {
+                *n = n.saturating_add(1);
+            }
             let abandonar = *n >= super::FALHAS_POR_UNIDADE;
             if abandonar {
                 job.abandonadas.inserir_um(indice);
@@ -943,10 +1034,64 @@ mod testes {
     }
 
     #[test]
+    fn oferta_velha_ou_repetida_por_outro_par_nao_entra() {
+        let pasta = std::env::temp_dir().join(format!("hyurax-ciencia-oferta-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&pasta);
+        let c = Ciencia::abrir(&pasta, ed25519_public_key(&LOCAL), "teste").unwrap();
+        let agora = agora_ms();
+        let velha = MensagemUltrax::oferta(&W1, 0xffff, 1, 256, agora.saturating_sub(OFERTA_FRESCA_MS + 60_000));
+        c.tratar_ultrax(1, &velha.codificar().unwrap());
+        assert!(c.rede.lock().unwrap().ofertas.is_empty(), "oferta de horário velho não vale");
+        let fresca = MensagemUltrax::oferta(&W1, 0xffff, 1, 256, agora);
+        c.tratar_ultrax(1, &fresca.codificar().unwrap());
+        // outro par repete a mesma oferta assinada: não toma o lugar do primeiro
+        c.tratar_ultrax(2, &fresca.codificar().unwrap());
+        let r = c.rede.lock().unwrap();
+        assert_eq!(r.ofertas.keys().copied().collect::<Vec<_>>(), vec![1]);
+        drop(r);
+        let _ = std::fs::remove_dir_all(pasta);
+    }
+
+    #[test]
+    fn pedido_com_semente_que_nao_e_da_unidade_e_recusado() {
+        let pasta = std::env::temp_dir().join(format!("hyurax-ciencia-semente-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&pasta);
+        let partida = crate::ultrax::Partida { ligado: true, linhas: 1, uso_cpu: 100, memoria_mib: 256, debug: false, gpu: false, gpu_uso: 50 };
+        let u = crate::ultrax::Ultrax::abrir(&pasta, &[9; 32], 1, &partida, Box::new(|_, _| {}));
+        let c = Ciencia::abrir(&pasta, ed25519_public_key(&LOCAL), "teste").unwrap();
+        c.ligar(&u);
+        c.aceitar_da_rede(true);
+        let job = [3u8; HASH_LEN];
+        let remota = |semente| Remota {
+            par: 1,
+            pedido: 1,
+            job,
+            indice: 0,
+            esp: Especificacao::nova(TipoDeTrabalho::Matriz, 8, 0).unwrap(),
+            semente,
+            prazo_ms: agora_ms() + 60_000,
+            com_compromisso: true,
+        };
+        let motivo = c.aceitar_pedido(remota([7; HASH_LEN])).unwrap();
+        assert!(motivo.contains("semente"), "{motivo}");
+        assert!(c.aceitar_pedido(remota(hyurax_ultrax::job::semente_da_unidade(&job, 0))).is_none(), "a semente certa entra");
+        // o mesmo pedido de novo (outro par, mesma unidade): recusado
+        let mut outra = remota(hyurax_ultrax::job::semente_da_unidade(&job, 0));
+        outra.par = 2;
+        assert!(c.aceitar_pedido(outra).unwrap().contains("já calculo"));
+        u.encerrar_threads();
+        c.encerrar_vigia();
+        let _ = std::fs::remove_dir_all(pasta);
+    }
+
+    #[test]
     fn revelacao_que_nao_bate_com_o_compromisso_falha() {
         let (reps, estado, _, eventos) = rodada("revelacao", [Jeito::Honesto, Jeito::Honesto, Jeito::TrocaNaRevelacao]);
         assert_eq!(estado, EstadoDoJob::Concluido, "sobram 2 de 3 honestos");
-        assert_eq!(reps[2].recusadas, 1);
+        // a entrega trocada não conta, mas também não pesa na reputação da
+        // chave: o compromisso não é assinado pelo worker, e um par que repete
+        // a oferta de outro poderia forjá-lo para sujar um inocente
+        assert_eq!((reps[2].verificadas, reps[2].recusadas), (0, 0));
         assert!(eventos.iter().any(|e| e.contains("CONSENSUS") && e.contains("compromisso")));
     }
 }

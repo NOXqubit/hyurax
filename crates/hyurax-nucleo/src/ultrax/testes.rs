@@ -325,3 +325,33 @@ fn escapar_ida_e_volta() {
     assert_eq!(desescapar(&escapar(t)), t);
     assert!(!escapar(t).contains(' '));
 }
+
+#[test]
+fn linha_que_cai_solta_a_memoria_e_a_tarefa() {
+    let (u, p) = worker("linha-caida", &partida());
+    let esp = Especificacao::nova(TipoDeTrabalho::Matriz, 16, 0).unwrap();
+    assert!(u.reservar(esp.memoria_bytes()));
+    if let Ok(mut a) = u.ativas.lock() {
+        a.push(Ativa {
+            linha: 0,
+            gpu: None,
+            numero: 7,
+            id: [7; HASH_LEN],
+            especificacao: esp,
+            metodo: MetodoDeVerificacao::Freivalds,
+            desafio: false,
+            estado: Estado::Executando,
+            feitas: Arc::new(AtomicU64::new(0)),
+            total: 1,
+            operacoes: 0,
+            inicio_ms: agora_ms(),
+            memoria: esp.memoria_bytes(),
+            entrada: None,
+            job: None,
+        });
+    }
+    u.soltar_linha(0);
+    assert_eq!(u.reservada.load(Ordering::Relaxed), 0, "a memória da linha que caiu volta");
+    assert!(u.ativas.lock().unwrap().is_empty(), "a tarefa some do painel");
+    let _ = std::fs::remove_dir_all(p);
+}

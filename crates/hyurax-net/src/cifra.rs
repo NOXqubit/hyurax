@@ -157,6 +157,11 @@ fn eh_espera(e: &std::io::Error) -> bool {
 fn ler_exato(stream: &mut TcpStream, destino: &mut [u8], ate: Instant) -> Result<(), NetError> {
     let mut lido = 0usize;
     while lido < destino.len() {
+        // o prazo vale para a mensagem inteira: quem goteja um byte por vez
+        // não escapa dele
+        if Instant::now() >= ate {
+            return Err(NetError::Io(std::io::Error::from(std::io::ErrorKind::TimedOut)));
+        }
         let resto = destino.get_mut(lido..).ok_or_else(|| NetError::Cifra("leitura fora da faixa".into()))?;
         match stream.read(resto) {
             Ok(0) => return Err(NetError::Io(std::io::Error::from(std::io::ErrorKind::UnexpectedEof))),

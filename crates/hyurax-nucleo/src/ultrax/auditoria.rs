@@ -115,6 +115,13 @@ pub(super) fn conferir_linha(r: &Registro, t: Option<&Tarefa>, esperado: Option<
     }
     // as operações são a base do Work Score: precisam ser as do modelo de custo
     let semente = if r.desafio { semente_do_desafio(&r.especificacao) } else { t.map_or([0; HASH_LEN], |t| t.semente_para(&prova.worker)) };
+    // o INPUT_HASH do registro tem de ser o da entrada desta tarefa
+    if (r.desafio || t.is_some())
+        && let Ok(entrada) = hash_da_entrada(&r.especificacao, &semente)
+        && prova.entrada != entrada
+    {
+        a.problemas.push(format!("#{n:08}: o INPUT_HASH do registro não é o da entrada desta tarefa"));
+    }
     match operacoes_conhecidas(&r.especificacao, &semente) {
         Some(devidas) if r.operacoes != devidas => {
             a.problemas.push(format!("#{n:08}: declara {} operações, e a tarefa tem {devidas}", r.operacoes));

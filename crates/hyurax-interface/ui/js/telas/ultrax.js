@@ -55,7 +55,7 @@ function recursos(e) {
     ["Limite por linha", [el("span", { class: "num" }, `${u.uso_cpu}%`), " ", selo("AJUSTE", "fatia de tempo que cada linha pode usar; não é o uso")]],
     ["CPU deste programa", valorComOrigem(m.cpu_processo, 1)],
     ["CPU da máquina", valorComOrigem(m.cpu_total, 0)],
-    ["Memória reservada", [el("span", { class: "num" }, `${fmt(u.reservada_mib, 1)} MiB`), " ", selo("REAL", "somada pelo próprio worker para as tarefas em curso")]],
+    ["Memória reservada", [el("span", { class: "num" }, `${fmt(u.reservada_mib, 1)} MiB`), " ", selo("ESTIMADO", "reserva pelo modelo de custo de cada motor, não é a memória medida; a medida é a RAM deste programa")]],
     ["Teto de memória", [el("span", { class: "num" }, `${fmt(u.memoria_mib)} MiB`), " ", selo("AJUSTE")]],
     ["RAM deste programa", valorComOrigem(m.ram_processo, 0)],
     ["GPU", u.gpu?.ligada ? `${u.gpu.nome || "esperando a janela"} · fatia ${u.gpu.uso}% (AJUSTE)` : "desligada"],
@@ -73,7 +73,7 @@ function ativas(e) {
   const u = e.ultrax;
   tabela(
     "u-ativas",
-    [{ t: "#" }, { t: "Recurso" }, { t: "Trabalho" }, { t: "Origem" }, { t: "Método" }, { t: "Estado" }, { t: "Progresso" }, { t: "Operações", num: true }, { t: "Memória", num: true }, { t: "Há" }],
+    [{ t: "#" }, { t: "Recurso" }, { t: "Trabalho" }, { t: "Origem" }, { t: "Método" }, { t: "Estado" }, { t: "Progresso" }, { t: "Operações", num: true }, { t: "Reserva (modelo)", num: true }, { t: "Há" }],
     (u.ativas || []).map((a) => [
       { v: String(a.numero), num: true },
       el("span", { class: a.dispositivo === "GPU" ? "recurso-gpu" : null }, a.dispositivo === "GPU" ? "GPU" : `CPU ${a.linha}`),
@@ -83,7 +83,7 @@ function ativas(e) {
       a.estado,
       [barra(a.feitas / Math.max(1, a.total)), el("small", {}, `${fmt((a.feitas / Math.max(1, a.total)) * 100, 0)}%`)],
       { v: compacto(a.operacoes || a.feitas), num: true },
-      { v: `${fmt(a.memoria_mib, 1)} MiB`, num: true },
+      { v: `${fmt(a.memoria_mib, 1)} MiB`, num: true, title: "reserva pelo modelo de custo do motor (ESTIMADO), não medida" },
       a.inicio ? `${Math.max(0, Math.round((e.agora_ms - a.inicio) / 1000))} s` : "—",
     ]),
     { vazio: u.ligado ? "nenhuma tarefa agora (a fila está sendo preparada)" : "o ULTRAX está desligado" },

@@ -10,6 +10,7 @@ import { estado, ouvir } from "../estado.js";
 import { obter, postar, url } from "../api.js";
 import { desenharMolecula, desenharCurva } from "../moleculas.js";
 import { fatos, tabela, barra, linhaDeRegistro, resultado } from "./comum.js";
+import { montarHistorico } from "./historico.js";
 
 // Os campos de cada motor: rótulo, mínimo, máximo, padrão, como vira o u32
 // da especificação, passo. Faixas iguais às do motor (hyurax-ultrax).
@@ -288,6 +289,12 @@ async function detalhe() {
   const d = est.detalhe;
   if (!d) return;
   $("cj-detalhe-bloco").hidden = false;
+  $("cj-historico-bloco").hidden = false;
+  if (est.historicoDe && est.historicoDe !== d.id) {
+    // outro JOB escolhido: o histórico aberto era do anterior
+    est.historicoDe = null;
+    $("cj-historico").replaceChildren();
+  }
   texto("cj-detalhe-titulo", `JOB ${curto(d.id, 16)} · ${d.descricao_tipo}`);
   const fatosDl = el("dl", { class: "fatos", id: "cj-detalhe-fatos" });
   const dados = d.dados || {};
@@ -424,6 +431,12 @@ export function montar() {
   $("nj-estimar").addEventListener("click", estimar);
   $("nj-form").addEventListener("submit", submeter);
   $("b-rodar").addEventListener("click", rodarBenchmark);
+  $("cj-historico-abrir").addEventListener("click", () => {
+    const d = est.detalhe;
+    if (!d) return;
+    est.historicoDe = d.id;
+    montarHistorico($("cj-historico"), d.id, d.unidades);
+  });
   $("cj-aceitar").addEventListener("change", async (ev) => {
     const r = await postar("/ciencia/rede", { aceitar: ev.target.checked ? "1" : "0" });
     if (!r.ok) ev.target.checked = !ev.target.checked;

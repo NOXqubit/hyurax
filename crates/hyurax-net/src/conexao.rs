@@ -13,7 +13,7 @@
 use std::io::{Read, Write};
 use std::net::{Shutdown, TcpStream};
 use std::sync::{Arc, Mutex};
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use hyurax_wire::{Message, WireError, decode_frame, encode_frame};
 
@@ -23,6 +23,10 @@ use crate::cifra::{self, ETIQUETA, Identidade, MAX_MENSAGEM, MAX_PEDACO, Papel};
 /// (`MAX_FRAME_BODY` + cabeçalho). Passar disso é um par empurrando lixo, e a
 /// conexão cai antes de a memória crescer sem limite.
 const MAX_BUFFER: usize = (hyurax_wire::MAX_FRAME_BODY as usize) + 64;
+
+/// Prazo de cada escrita no socket: um par que para de ler é derrubado em
+/// vez de prender a thread de escrita (e a memória da fila) para sempre.
+pub const PRAZO_DE_ESCRITA: Duration = Duration::from_secs(30);
 
 /// Erro de conexão.
 #[derive(Debug)]
@@ -126,6 +130,16 @@ impl Escritor {
         let quadro = encode_frame(&self.magic, msg)?;
         escrever(&mut self.stream, self.escrita.as_ref(), &quadro)
     }
+
+    /// Manda um quadro já enquadrado (por [`encode_frame`]), cifrado se a
+    /// conexão tiver cifra. É o que a fila de saída de cada par carrega: o
+    /// quadro é montado uma vez, e o tamanho dele conta no teto da fila.
+    ///
+    /// # Errors
+    /// Socket fechado ou prazo de escrita estourado.
+    pub fn enviar_quadro(&mut self, quadro: &[u8]) -> Result<(), NetError> {
+        escrever(&mut self.stream, self.escrita.as_ref(), quadro)
+    }
 }
 
 fn escrever(stream: &mut TcpStream, escrita: Option<&CifraEscrita>, dados: &[u8]) -> Result<(), NetError> {
@@ -184,7 +198,9 @@ impl Conexao {
     /// # Errors
     /// Quando o socket não pode ser clonado.
     pub fn escritor(&self) -> std::io::Result<Escritor> {
-        Ok(Escritor { stream: self.stream.try_clone()?, magic: self.magic, escrita: self.escrita.clone() })
+        let stream = self.stream.try_clone()?;
+        stream.set_write_timeout(Some(PRAZO_DE_ESCRITA))?;
+        Ok(Escritor { stream, magic: self.magic, escrita: self.escrita.clone() })
     }
 
     /// Tempo máximo esperando bytes numa leitura. `None` bloqueia sem limite.
@@ -217,7 +233,26 @@ impl Conexao {
     /// `WouldBlock`/`TimedOut` no meio de um quadro é repassado como erro de
     /// I/O: quem chama decide se tenta de novo. Nada do que já chegou se perde.
     pub fn receber(&mut self) -> Result<Message, NetError> {
+        self.receber_ate(None)
+    }
+
+    /// Como [`Conexao::receber`], com prazo para um quadro começado terminar.
+    /// Passado o prazo: com pedaço de quadro no buffer, o par é lento demais
+    /// (ou goteja de propósito) e a conexão cai; sem nada no buffer, é só
+    /// silêncio, devolvido como timeout de I/O.
+    ///
+    /// # Errors
+    /// Os de [`Conexao::receber`], mais o prazo estourado no meio de um quadro.
+    pub fn receber_ate(&mut self, ate: Option<Instant>) -> Result<Message, NetError> {
         loop {
+            if ate.is_some_and(|a| Instant::now() >= a) {
+                let comecado = !self.buffer.is_empty() || self.leitura.as_ref().is_some_and(|c| !c.cru.is_empty());
+                return Err(if comecado {
+                    NetError::Handshake("par lento demais: o quadro não terminou de chegar no prazo".into())
+                } else {
+                    NetError::Io(std::io::Error::from(std::io::ErrorKind::TimedOut))
+                });
+            }
             // Tenta fechar um quadro com o que já está no buffer.
             match decode_frame(&self.magic, &self.buffer) {
                 Ok(lido) => {

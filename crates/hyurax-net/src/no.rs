@@ -340,6 +340,12 @@ impl No {
             }
 
             Message::Headers(cabecalhos) => {
+                // Spec 21.4: cabeçalhos que não encadeiam entre si derrubam a
+                // conexão (a prova de cada um é conferida quando o bloco chega).
+                let hashes: Vec<Hash> = cabecalhos.iter().map(hyurax_block::BlockHeader::block_hash).collect();
+                if cabecalhos.iter().skip(1).zip(hashes.iter()).any(|(h, anterior)| h.prev_hash != *anterior) {
+                    return Err(Malicia("cabeçalhos que não encadeiam".into()));
+                }
                 // Peço os blocos dos cabeçalhos que ainda não tenho, em ordem.
                 let faltam: Vec<Hash> = cabecalhos
                     .iter()
@@ -353,7 +359,12 @@ impl No {
             }
 
             Message::GetBlocks(hashes) => {
+                // o mesmo hash pedido 2000 vezes vira um bloco só, não 2000 cópias
+                let mut pedidos = std::collections::BTreeSet::new();
                 for h in hashes.iter().take(MAX_GET_BLOCKS as usize) {
+                    if !pedidos.insert(*h) {
+                        continue;
+                    }
                     if let Some(bloco) = self.chain.bloco_por_hash(h) {
                         r.respostas.push(Message::Block(Box::new(bloco.clone())));
                     }

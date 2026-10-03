@@ -1090,7 +1090,7 @@ impl Ciencia {
                         let registro_linha = format!(
                             "{{\"indice\":{},\"tarefa\":\"{}\",\"worker\":\"{}\",\"linha\":{},\"despachada\":{},\"inicio\":{},\"fim\":{},\
                              \"verificada\":{},\"entrada\":\"{}\",\"resultado\":\"{}\",\"operacoes\":{},\"operacoes_verificacao\":{},\
-                             \"ms_calculo\":{},\"ms_verificacao\":{},\"memoria\":{},\"gpu\":{},\"verificacao\":\"{verificacao}\",\"metodo\":{}}}",
+                             \"ms_calculo\":{},\"ms_verificacao\":{},\"memoria\":{},\"gpu\":{},\"verificacao\":\"{verificacao}\",\"metodo\":{},\"programa\":\"{}\"}}",
                             d.indice,
                             hex(&d.tarefa),
                             hex(&r.worker),
@@ -1108,6 +1108,7 @@ impl Ciencia {
                             d.memoria,
                             d.gpu.as_deref().map_or("null".to_string(), texto_json),
                             texto_json(r.metodo.nome()),
+                            self.versao,
                         );
                         if !job.registro_cortado {
                             let caminho = self.pasta_do_job(&job.id).join("unidades.jsonl");
@@ -1784,6 +1785,38 @@ mod testes {
         };
         let c = Ciencia::abrir(&p, [7; 32], "teste").unwrap();
         assert_eq!(estado(&c, &id).1, 1, "a unidade consolidada sobreviveu ao fechamento");
+        let _ = std::fs::remove_dir_all(p);
+    }
+
+    /// De ponta a ponta, pelas threads de verdade do worker (orquestrador e
+    /// linhas), sem desfecho fabricado: o JOB sai da fila, cada unidade é
+    /// calculada, conferida e consolidada, e o JOB fecha.
+    #[test]
+    fn job_na_cpu_pelas_linhas_do_worker_ate_concluir() {
+        let p = pasta("ponta-a-ponta");
+        let partida = crate::ultrax::Partida { ligado: true, linhas: 2, uso_cpu: 100, memoria_mib: 256, debug: false, gpu: false, gpu_uso: 50 };
+        let u = Ultrax::abrir(&p, &[9; 32], 2, &partida, Box::new(|_, _| {}));
+        u.lab.store(false, Ordering::Relaxed);
+        let c = Ciencia::abrir(&p, u.worker(), "teste").unwrap();
+        c.ligar(&u);
+        let id = c.submeter(pedido(6, 16)).unwrap();
+        u.iniciar();
+        let inicio = std::time::Instant::now();
+        while estado(&c, &id).0 != EstadoDoJob::Concluido && inicio.elapsed() < Duration::from_secs(180) {
+            std::thread::sleep(Duration::from_millis(100));
+        }
+        assert_eq!(estado(&c, &id), (EstadoDoJob::Concluido, 6, 0), "o JOB não fechou pelas linhas do worker");
+        let linhas = std::fs::read_to_string(c.pasta_do_job(&id).join("unidades.jsonl")).unwrap();
+        assert_eq!(linhas.lines().count(), 6, "uma linha por unidade, com o registro conferido");
+        assert!(linhas.lines().all(|l| l.contains("\"verificacao\":\"PASSED\"") && l.contains("\"programa\":\"teste\"")));
+        // nada ficou preso: memória devolvida e nenhuma tarefa ativa
+        let espera = std::time::Instant::now();
+        while u.ocupado() && espera.elapsed() < Duration::from_secs(10) {
+            std::thread::sleep(Duration::from_millis(50));
+        }
+        assert_eq!(u.memoria_reservada(), 0);
+        u.encerrar_threads();
+        c.encerrar_vigia();
         let _ = std::fs::remove_dir_all(p);
     }
 

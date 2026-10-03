@@ -87,7 +87,7 @@ fn incertezas(tipo: TipoDeTrabalho) -> &'static [&'static str] {
         TipoDeTrabalho::Difusao => &["Difusão em ponto fixo com passo explícito: é um modelo numérico simples, sem validação contra medida física."],
         TipoDeTrabalho::Mochila => &["Ótimo exato de cada instância, por programação dinâmica.", "As instâncias são sorteadas pela semente: não são dados de alocação real."],
         TipoDeTrabalho::Ia => &[
-            "A rede é pequena (10 → 16 → 1) e prevê log S com erro típico de cerca de 1,25 nas moléculas que ela nunca viu.",
+            "A rede é pequena (10 → 16 → 1). O erro dela nas moléculas de validação é o medido neste JOB (no resultado consolidado), não um número fixo; e essas moléculas são as usadas para escolher o melhor treino, então o erro em moléculas novas tende a ser maior.",
             "Prever solubilidade é uma etapa de triagem; não descobre remédio.",
         ],
         TipoDeTrabalho::Genetica => &["Modelo Wright-Fisher com os parâmetros de quem pediu: é um modelo estatístico, não uma previsão sobre uma população real."],
@@ -100,12 +100,18 @@ fn incertezas(tipo: TipoDeTrabalho) -> &'static [&'static str] {
     }
 }
 
-fn nivel_atingido(job: &Job) -> (u8, &'static str) {
+/// O nível de verificação que o JOB atingiu de fato, lido do registro por
+/// unidade: 3 só se toda unidade registrada passou por consenso entre nós.
+fn nivel_atingido(job: &Job, unidades: &str) -> (u8, &'static str) {
     if job.feitas.concluidas() == 0 {
         return (0, "nenhuma unidade conferida ainda");
     }
+    let linhas: Vec<&str> = unidades.lines().filter(|l| !l.trim().is_empty()).collect();
+    if !linhas.is_empty() && linhas.iter().all(|l| campo(l, "verificacao").is_some_and(|v| v.starts_with("CONSENSUS"))) {
+        return (3, "concordância por maioria entre workers de nós diferentes, com o resultado da maioria refeito aqui antes de entrar");
+    }
     if job.workers.len() >= 2 {
-        return (2, "reexecução por quem pediu; workers de mais de um nó (a concordância entre nós entra na Etapa D)");
+        return (2, "reexecução por quem pediu; workers de mais de um nó, mas nem toda unidade passou por consenso entre nós");
     }
     match job.esp.modelo().tipo() {
         TipoDeTrabalho::Matriz => (2, "reexecução nesta máquina, por algoritmo diferente (Freivalds); workers de um nó só"),
@@ -117,7 +123,12 @@ fn json(c: &Ciencia, job: &Job, unidades: &str) -> String {
     let esp = &job.esp;
     let modelo = esp.modelo();
     let (raiz, registradas) = raiz_das_unidades(unidades);
-    let (atingido, como) = nivel_atingido(job);
+    let (atingido, como) = nivel_atingido(job, unidades);
+    // as versões do programa que calcularam as unidades (não a de quem gera o relatório)
+    let mut versoes: Vec<&str> = unidades.lines().filter_map(|l| campo(l, "programa")).collect();
+    versoes.sort_unstable();
+    versoes.dedup();
+    let versoes: Vec<String> = versoes.iter().map(|v| texto_json(v)).collect();
     let falhas: Vec<String> = job.abandonadas.faixas().iter().take(100).map(|(a, b)| format!("[{a},{b}]")).collect();
     let parametros: Vec<String> = modelo.parametros().iter().map(u32::to_string).collect();
     let workers: Vec<String> = job.workers.iter().map(|w| format!("\"{}\"", hex(w))).collect();
@@ -126,7 +137,7 @@ fn json(c: &Ciencia, job: &Job, unidades: &str) -> String {
     let mut j = String::new();
     let _ = write!(
         j,
-        "{{\"relatorio\":\"hyurax-ciencia-v1\",\"programa\":\"{}\",\"job_id\":\"{}\",\"estado\":\"{}\",\"motivo\":{},\
+        "{{\"relatorio\":\"hyurax-ciencia-v1\",\"programa\":\"{}\",\"programas_que_calcularam\":[{}],\"job_id\":\"{}\",\"estado\":\"{}\",\"motivo\":{},\
          \"aviso\":{},\
          \"entrada\":{{\"dominio\":\"{}\",\"descricao\":{},\"motor\":\"{}\",\"motor_codigo\":{},\"descricao_motor\":{},\
          \"tamanho\":{},\"passos\":{},\"parametros\":[{}],\"unidades\":{},\"prazo_s\":{},\"orcamento_milicreditos\":{}}},\
@@ -141,6 +152,7 @@ fn json(c: &Ciencia, job: &Job, unidades: &str) -> String {
          \"comando\":\"hyurax-no ciencia refazer --pasta PASTA --job {} --unidade INDICE\",\"regra\":\"inteiros; o mesmo resultado bit a bit em qualquer maquina\"}},\
          \"hashes\":{{\"resumo_aditivo\":\"{}\",\"raiz_merkle_das_unidades_registradas\":\"{}\",\"unidades_registradas\":{registradas},\"registro_cortado\":{}}}}}",
         c.versao(),
+        versoes.join(","),
         hex(&job.id),
         job.estado.nome(),
         texto_json(&job.motivo),
@@ -253,7 +265,7 @@ fn linhas_de_texto(c: &Ciencia, job: &Job, unidades: &str) -> Vec<String> {
     let esp = &job.esp;
     let modelo = esp.modelo();
     let (raiz, registradas) = raiz_das_unidades(unidades);
-    let (atingido, como) = nivel_atingido(job);
+    let (atingido, como) = nivel_atingido(job, unidades);
     let mut l = vec![
         "HYURAX - RELATORIO DE COMPUTACAO CIENTIFICA".to_string(),
         format!("Programa {} - gerado a partir dos arquivos do JOB", c.versao()),

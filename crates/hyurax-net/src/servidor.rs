@@ -6,15 +6,31 @@
 //! Sem async e sem biblioteca de rede: `std::net` mais threads. Uma thread por
 //! par escala mal para milhares de conexões, e é de propósito — a testnet cabe
 //! nisso, e o código fica simples de auditar.
+//!
+//! Defesas (porta aberta para a internet):
+//! - **entrada:** teto de conexões ao mesmo tempo, no total e por IP,
+//!   conferido antes de abrir a thread; IP banido nem é atendido;
+//! - **prazos:** o aperto de mão e cada mensagem começada têm prazo para
+//!   terminar, também contra quem goteja um byte por vez; toda escrita tem
+//!   prazo (quem para de ler cai);
+//! - **fila de saída** de cada par com teto de mensagens e de bytes: quem pede
+//!   mais do que lê é derrubado, e um anúncio que não cabe é descartado só
+//!   para ele;
+//! - **livro de endereços** com teto, sem endereço inválido, e cada endereço
+//!   com espera crescente entre discagens (endereço aprendido não vira
+//!   conexão automática a cada volta, spec 21.6);
+//! - **banimento** por uma hora, da identidade e do IP, depois de malícia;
+//! - o trabalho que um par **anuncia** no aperto de mão só vale enquanto ele
+//!   está conectado.
 
-use std::collections::{BTreeMap, HashMap};
-use std::net::{SocketAddr, TcpListener, TcpStream, ToSocketAddrs};
-use std::sync::atomic::{AtomicBool, AtomicU16, AtomicU64, Ordering};
-use std::sync::mpsc::{Receiver, Sender, channel};
+use std::collections::{BTreeMap, BTreeSet, HashMap};
+use std::net::{IpAddr, SocketAddr, TcpListener, TcpStream, ToSocketAddrs};
+use std::sync::atomic::{AtomicBool, AtomicU16, AtomicU64, AtomicUsize, Ordering};
+use std::sync::mpsc::{Receiver, SyncSender, TrySendError, sync_channel};
 use std::sync::{Arc, Mutex};
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
-use hyurax_wire::{EnderecoDeRede, MAX_ADDRS, Message, Ponta};
+use hyurax_wire::{EnderecoDeRede, MAX_ADDRS, Message, Ponta, encode_frame};
 
 use crate::cifra::{Identidade, Papel};
 use crate::conexao::{Conexao, Escritor, NetError};
@@ -23,13 +39,36 @@ use crate::no::No;
 const TIMEOUT: Duration = Duration::from_millis(400);
 /// Tempo máximo para o par completar o aperto de mão.
 const PRAZO_APERTO: Duration = Duration::from_secs(10);
+/// Tempo máximo para uma mensagem começada terminar de chegar (o maior
+/// quadro, 2 MiB, passa com folga numa ligação de 20 KiB/s).
+const PRAZO_QUADRO: Duration = Duration::from_secs(120);
 const INTERVALO_MANUTENCAO: Duration = Duration::from_secs(2);
-/// Quantos pares o nó tenta manter conectados.
-const ALVO_PARES: usize = 8;
+/// Quantos pares de SAÍDA o nó tenta manter. As entradas não contam: quem
+/// conecta muitas vezes neste nó não o impede de escolher os próprios pares.
+const ALVO_SAIDAS: usize = 8;
+/// Conexões de entrada ao mesmo tempo, no total e por IP. O próprio
+/// computador (loopback) não tem teto por IP: vários nós numa máquina.
+const MAX_ENTRADAS: usize = 32;
+const MAX_ENTRADAS_POR_IP: usize = 4;
 /// Quantas transações do mempool entregar a um par que acabou de conectar.
 const MAX_MEMPOOL_NA_ENTRADA: usize = 1000;
 /// Quantos endereços anunciar num `ADDRS`.
 const MAX_ANUNCIO: usize = 64;
+/// Teto do livro de endereços.
+const MAX_LIVRO: usize = 2000;
+/// Discagens por volta da manutenção, cada uma com prazo.
+const DISCAGENS_POR_VOLTA: usize = 4;
+const PRAZO_DISCAGEM: Duration = Duration::from_secs(3);
+/// Espera mínima entre duas discagens ao mesmo endereço, e a máxima.
+const ESPERA_MINIMA_S: u64 = 30;
+const ESPERA_MAXIMA_S: u64 = 3600;
+/// Falhas seguidas que tiram do livro um endereço aprendido.
+const FALHAS_PARA_ESQUECER: u32 = 8;
+/// Fila de saída de cada par.
+const FILA_MENSAGENS: usize = 1024;
+const FILA_BYTES: usize = 32 * 1024 * 1024;
+/// Quanto tempo dura um banimento.
+const BANIMENTO_S: u64 = 3600;
 
 fn agora_seg() -> u64 {
     SystemTime::now().duration_since(UNIX_EPOCH).map_or(0, |d| d.as_secs())
@@ -45,10 +84,10 @@ fn nonce_sessao() -> u64 {
 
 /// `SocketAddr` num endereço de rede, com a porta de ESCUTA do par (não a
 /// efêmera da conexão). Só IPv4 e IPv6.
-fn para_endereco(ip: std::net::IpAddr, porta_escuta: u16) -> EnderecoDeRede {
+fn para_endereco(ip: IpAddr, porta_escuta: u16) -> EnderecoDeRede {
     match ip {
-        std::net::IpAddr::V4(v4) => EnderecoDeRede { familia: 4, ip: v4.octets().to_vec(), porta: porta_escuta, visto_em: agora_seg() },
-        std::net::IpAddr::V6(v6) => EnderecoDeRede { familia: 6, ip: v6.octets().to_vec(), porta: porta_escuta, visto_em: agora_seg() },
+        IpAddr::V4(v4) => EnderecoDeRede { familia: 4, ip: v4.octets().to_vec(), porta: porta_escuta, visto_em: agora_seg() },
+        IpAddr::V6(v6) => EnderecoDeRede { familia: 6, ip: v6.octets().to_vec(), porta: porta_escuta, visto_em: agora_seg() },
     }
 }
 
@@ -68,6 +107,18 @@ fn endereco_para_str(e: &EnderecoDeRede) -> Option<String> {
     }
 }
 
+/// Endereço que vale a pena guardar: porta e IP que alguém pode discar.
+fn endereco_util(texto: &str) -> bool {
+    let Ok(sa) = texto.parse::<SocketAddr>() else { return false };
+    if sa.port() == 0 {
+        return false;
+    }
+    match sa.ip() {
+        IpAddr::V4(v4) => !(v4.is_unspecified() || v4.is_broadcast() || v4.is_multicast() || v4.is_documentation()),
+        IpAddr::V6(v6) => !(v6.is_unspecified() || v6.is_multicast()),
+    }
+}
+
 /// Tipo de mensagem de rede que leva o ULTRAX (trabalho útil entre nós, fora
 /// do consenso). Quem não registrou tratador ignora, como toda mensagem de
 /// tipo desconhecido.
@@ -76,18 +127,77 @@ pub const TIPO_ULTRAX: u16 = 0x5558;
 /// Quem recebe as mensagens do ULTRAX: `(id do par, identidade do par, corpo)`.
 pub type TratadorUltrax = Arc<dyn Fn(u64, [u8; 32], &[u8]) + Send + Sync>;
 
+/// A fila de saída de um par: quadros já montados, com teto de mensagens
+/// (o canal) e de bytes (o contador, que a thread de escrita desconta).
+#[derive(Clone)]
+struct Saida {
+    fila: SyncSender<Vec<u8>>,
+    bytes: Arc<AtomicUsize>,
+}
+
+/// Por que um quadro não entrou na fila.
+enum Recusa {
+    /// A fila está no teto: o par não lê no ritmo do que recebe.
+    Cheia,
+    /// A conexão já acabou.
+    Fechada,
+}
+
+impl Saida {
+    fn mandar(&self, quadro: Vec<u8>) -> Result<(), Recusa> {
+        let n = quadro.len();
+        if self.bytes.fetch_add(n, Ordering::SeqCst).saturating_add(n) > FILA_BYTES {
+            self.bytes.fetch_sub(n, Ordering::SeqCst);
+            return Err(Recusa::Cheia);
+        }
+        match self.fila.try_send(quadro) {
+            Ok(()) => Ok(()),
+            Err(e) => {
+                self.bytes.fetch_sub(n, Ordering::SeqCst);
+                Err(match e {
+                    TrySendError::Full(_) => Recusa::Cheia,
+                    TrySendError::Disconnected(_) => Recusa::Fechada,
+                })
+            }
+        }
+    }
+}
+
+/// Uma vaga de conexão de entrada; solta sozinha quando a conexão acaba.
+struct VagaDeEntrada {
+    rede: Arc<Rede>,
+    ip: IpAddr,
+}
+
+impl Drop for VagaDeEntrada {
+    fn drop(&mut self) {
+        if let Ok(mut e) = self.rede.entradas.lock()
+            && let Some(n) = e.get_mut(&self.ip)
+        {
+            *n = n.saturating_sub(1);
+            if *n == 0 {
+                e.remove(&self.ip);
+            }
+        }
+    }
+}
+
 /// A rede vista por um nó: o estado compartilhado, os pares conectados e o
 /// livro de endereços conhecidos.
 pub struct Rede {
     /// O nó (cadeia e mempool), atrás de um cadeado.
     pub no: Arc<Mutex<No>>,
     magic: [u8; 4],
-    pares: Mutex<HashMap<u64, Sender<Message>>>,
+    pares: Mutex<HashMap<u64, Saida>>,
     proximo_id: AtomicU64,
     parar: AtomicBool,
     escuta: AtomicU16,
     /// Endereços conhecidos, `"ip:porta"` -> visto em (segundos Unix).
     livro: Mutex<BTreeMap<String, u64>>,
+    /// Sementes do dono: nunca saem do livro.
+    sementes: Mutex<BTreeSet<String>>,
+    /// Discagens por endereço: (falhas seguidas, próxima tentativa em segundos Unix).
+    discagens: Mutex<BTreeMap<String, (u32, u64)>>,
     /// Endereços de escuta dos pares conectados agora — para não reconectar.
     conectados: Mutex<BTreeMap<String, ()>>,
     manutencao_ligada: AtomicBool,
@@ -95,12 +205,19 @@ pub struct Rede {
     identidade: Identidade,
     /// Identidades com conexão aberta agora: uma conexão por nó, no máximo.
     identidades_conectadas: Mutex<BTreeMap<[u8; 32], ()>>,
-    /// Maior trabalho acumulado que algum par anunciou no aperto de mão.
-    maior_trabalho_visto: Mutex<[u8; 32]>,
+    /// O trabalho acumulado que cada par conectado anunciou no aperto de mão.
+    trabalho_dos_pares: Mutex<HashMap<u64, [u8; 32]>>,
     /// Quem trata as mensagens do ULTRAX, se alguém registrou.
     ultrax: Mutex<Option<TratadorUltrax>>,
     /// Identidade (chave estática da cifra) de cada par conectado, pelo id.
     identidade_do_par: Mutex<HashMap<u64, [u8; 32]>>,
+    /// Conexões de entrada abertas, por IP.
+    entradas: Mutex<HashMap<IpAddr, usize>>,
+    /// Pares de saída conectados agora.
+    saidas: AtomicUsize,
+    /// Banidos até (segundos Unix): identidades e IPs.
+    banidas: Mutex<BTreeMap<[u8; 32], u64>>,
+    ips_banidos: Mutex<BTreeMap<IpAddr, u64>>,
 }
 
 impl Rede {
@@ -124,14 +241,24 @@ impl Rede {
             parar: AtomicBool::new(false),
             escuta: AtomicU16::new(0),
             livro: Mutex::new(BTreeMap::new()),
+            sementes: Mutex::new(BTreeSet::new()),
+            discagens: Mutex::new(BTreeMap::new()),
             conectados: Mutex::new(BTreeMap::new()),
             manutencao_ligada: AtomicBool::new(false),
             identidade,
             identidades_conectadas: Mutex::new(BTreeMap::new()),
-            maior_trabalho_visto: Mutex::new([0u8; 32]),
+            trabalho_dos_pares: Mutex::new(HashMap::new()),
             ultrax: Mutex::new(None),
             identidade_do_par: Mutex::new(HashMap::new()),
+            entradas: Mutex::new(HashMap::new()),
+            saidas: AtomicUsize::new(0),
+            banidas: Mutex::new(BTreeMap::new()),
+            ips_banidos: Mutex::new(BTreeMap::new()),
         })
+    }
+
+    fn quadro(&self, msg: &Message) -> Option<Vec<u8>> {
+        encode_frame(&self.magic, msg).ok()
     }
 
     /// Registra quem trata as mensagens do ULTRAX.
@@ -142,19 +269,16 @@ impl Rede {
     }
 
     /// Manda uma mensagem do ULTRAX a um par. `false` se ele não está mais
-    /// conectado.
+    /// conectado, ou não está lendo.
     pub fn enviar_ultrax(&self, par: u64, corpo: Vec<u8>) -> bool {
-        self.pares
-            .lock()
-            .ok()
-            .and_then(|p| p.get(&par).map(|s| s.send(Message::Desconhecida { tipo: TIPO_ULTRAX, corpo }).is_ok()))
-            .unwrap_or(false)
+        let Some(quadro) = self.quadro(&Message::Desconhecida { tipo: TIPO_ULTRAX, corpo }) else { return false };
+        self.pares.lock().ok().and_then(|p| p.get(&par).map(|s| s.mandar(quadro).is_ok())).unwrap_or(false)
     }
 
     /// Manda uma mensagem do ULTRAX a todos os pares. Devolve a quantos.
     pub fn difundir_ultrax(&self, corpo: &[u8]) -> usize {
-        let msg = Message::Desconhecida { tipo: TIPO_ULTRAX, corpo: corpo.to_vec() };
-        self.pares.lock().map_or(0, |p| p.values().filter(|s| s.send(msg.clone()).is_ok()).count())
+        let Some(quadro) = self.quadro(&Message::Desconhecida { tipo: TIPO_ULTRAX, corpo: corpo.to_vec() }) else { return 0 };
+        self.pares.lock().map_or(0, |p| p.values().filter(|s| s.mandar(quadro.clone()).is_ok()).count())
     }
 
     /// Os ids dos pares conectados agora, com a identidade de cada um.
@@ -163,9 +287,9 @@ impl Rede {
     }
 
     /// Se a cadeia deste nó já tem pelo menos o trabalho que os pares
-    /// anunciaram. Sem nenhum par visto, é `false`.
+    /// conectados anunciaram. Sem nenhum par, é `false`.
     pub fn alcancou_os_pares(&self) -> bool {
-        let visto = self.maior_trabalho_visto.lock().map_or([0u8; 32], |v| *v);
+        let visto = self.trabalho_dos_pares.lock().ok().and_then(|t| t.values().max().copied()).unwrap_or([0u8; 32]);
         if visto == [0u8; 32] {
             return false;
         }
@@ -189,7 +313,11 @@ impl Rede {
     }
 
     /// Semeia o livro com um endereço de arranque (a "semente de descoberta").
+    /// Semente nunca sai do livro.
     pub fn semear(&self, addr: &str) {
+        if let Ok(mut s) = self.sementes.lock() {
+            s.insert(addr.to_string());
+        }
         if let Ok(mut livro) = self.livro.lock() {
             livro.insert(addr.to_string(), agora_seg());
         }
@@ -202,6 +330,29 @@ impl Rede {
 
     fn parando(&self) -> bool {
         self.parar.load(Ordering::Relaxed)
+    }
+
+    /// Bane uma identidade e um IP (que não seja deste computador) por uma hora.
+    fn banir(&self, chave: [u8; 32], ip: Option<IpAddr>) {
+        let ate = agora_seg().saturating_add(BANIMENTO_S);
+        if let Ok(mut b) = self.banidas.lock() {
+            b.retain(|_, fim| *fim > agora_seg());
+            b.insert(chave, ate);
+        }
+        if let Some(ip) = ip.filter(|i| !i.is_loopback())
+            && let Ok(mut b) = self.ips_banidos.lock()
+        {
+            b.retain(|_, fim| *fim > agora_seg());
+            b.insert(ip, ate);
+        }
+    }
+
+    fn ip_banido(&self, ip: IpAddr) -> bool {
+        self.ips_banidos.lock().is_ok_and(|b| b.get(&ip).is_some_and(|fim| *fim > agora_seg()))
+    }
+
+    fn identidade_banida(&self, chave: &[u8; 32]) -> bool {
+        self.banidas.lock().is_ok_and(|b| b.get(chave).is_some_and(|fim| *fim > agora_seg()))
     }
 
     fn meu_addr_loopback(&self) -> Option<String> {
@@ -224,7 +375,7 @@ impl Rede {
         }
     }
 
-    fn registrar(&self, saida: Sender<Message>) -> u64 {
+    fn registrar(&self, saida: Saida) -> u64 {
         let id = self.proximo_id.fetch_add(1, Ordering::Relaxed);
         if let Ok(mut pares) = self.pares.lock() {
             pares.insert(id, saida);
@@ -236,16 +387,29 @@ impl Rede {
         if let Ok(mut pares) = self.pares.lock() {
             pares.remove(&id);
         }
+        if let Ok(mut t) = self.trabalho_dos_pares.lock() {
+            t.remove(&id);
+        }
     }
 
     fn aprender(&self, addr: String) {
-        // Nunca aprende o próprio endereço de loopback.
-        if self.meu_addr_loopback().is_some_and(|meu| meu == addr) {
+        // Nunca aprende o próprio endereço de loopback, nem endereço inútil.
+        if self.meu_addr_loopback().is_some_and(|meu| meu == addr) || !endereco_util(&addr) {
             return;
         }
-        if let Ok(mut livro) = self.livro.lock() {
-            livro.insert(addr, agora_seg());
+        let Ok(mut livro) = self.livro.lock() else { return };
+        if !livro.contains_key(&addr) && livro.len() >= MAX_LIVRO {
+            // cheio: sai o endereço visto há mais tempo (semente nunca sai)
+            let sementes = self.sementes.lock().map(|s| s.clone()).unwrap_or_default();
+            let velho = livro.iter().filter(|(a, _)| !sementes.contains(*a)).min_by_key(|(_, v)| **v).map(|(a, _)| a.clone());
+            match velho {
+                Some(v) => {
+                    livro.remove(&v);
+                }
+                None => return,
+            }
         }
+        livro.insert(addr, agora_seg());
     }
 
     fn enderecos_para_anunciar(&self) -> Vec<EnderecoDeRede> {
@@ -253,8 +417,11 @@ impl Rede {
             Ok(l) => l,
             Err(_) => return Vec::new(),
         };
-        livro
-            .iter()
+        // os vistos mais recentemente primeiro
+        let mut todos: Vec<(&String, &u64)> = livro.iter().collect();
+        todos.sort_by(|a, b| b.1.cmp(a.1));
+        todos
+            .into_iter()
             .take(MAX_ANUNCIO.min(MAX_ADDRS as usize))
             .filter_map(|(addr, visto)| {
                 let sa: SocketAddr = addr.parse().ok()?;
@@ -266,12 +433,14 @@ impl Rede {
     }
 
     /// Manda uma mensagem a todos os pares, menos o de origem.
-    /// `exceto = u64::MAX` alcança todos (nenhum par tem esse id).
+    /// `exceto = u64::MAX` alcança todos (nenhum par tem esse id). Par cuja
+    /// fila está cheia perde só este anúncio.
     fn difundir(&self, exceto: u64, msg: &Message) {
+        let Some(quadro) = self.quadro(msg) else { return };
         if let Ok(pares) = self.pares.lock() {
             for (id, saida) in pares.iter() {
                 if *id != exceto {
-                    let _ = saida.send(msg.clone());
+                    let _ = saida.mandar(quadro.clone());
                 }
             }
         }
@@ -318,9 +487,12 @@ impl Rede {
                 }
                 match fluxo {
                     Ok(stream) => {
+                        // o teto e o banimento valem antes de abrir a thread
+                        let Some(vaga) = rede.vaga_de_entrada(&stream) else { continue };
                         let r = Arc::clone(&rede);
                         std::thread::spawn(move || {
-                            let _ = r.servir(stream, Papel::Recebeu);
+                            let _vaga = vaga;
+                            let _ = r.servir(stream, Papel::Recebeu, None);
                         });
                     }
                     Err(ref e) if e.kind() == std::io::ErrorKind::WouldBlock => {
@@ -333,19 +505,53 @@ impl Rede {
         Ok(porta)
     }
 
-    /// Disca para um par e sobe as threads da conexão.
+    fn vaga_de_entrada(self: &Arc<Self>, stream: &TcpStream) -> Option<VagaDeEntrada> {
+        let ip = stream.peer_addr().ok()?.ip();
+        if self.ip_banido(ip) {
+            return None;
+        }
+        let mut entradas = self.entradas.lock().ok()?;
+        let total: usize = entradas.values().sum();
+        let deste_ip = entradas.get(&ip).copied().unwrap_or(0);
+        if total >= MAX_ENTRADAS || (!ip.is_loopback() && deste_ip >= MAX_ENTRADAS_POR_IP) {
+            return None;
+        }
+        entradas.insert(ip, deste_ip.saturating_add(1));
+        drop(entradas);
+        Some(VagaDeEntrada { rede: Arc::clone(self), ip })
+    }
+
+    /// Disca para um par (com prazo) e sobe as threads da conexão.
+    ///
+    /// # Errors
+    /// Endereço que não resolve, ou nenhum dos endereços atende no prazo.
     pub fn conectar(self: &Arc<Self>, addr: impl ToSocketAddrs) -> std::io::Result<()> {
-        let stream = TcpStream::connect(addr)?;
-        self.garantir_manutencao();
-        let rede = Arc::clone(self);
-        std::thread::spawn(move || {
-            let _ = rede.servir(stream, Papel::Discou);
-        });
-        Ok(())
+        self.discar(addr, None)
+    }
+
+    fn discar(self: &Arc<Self>, addr: impl ToSocketAddrs, rotulo: Option<String>) -> std::io::Result<()> {
+        let mut ultimo = std::io::Error::from(std::io::ErrorKind::AddrNotAvailable);
+        for sa in addr.to_socket_addrs()? {
+            if self.ip_banido(sa.ip()) {
+                continue;
+            }
+            match TcpStream::connect_timeout(&sa, PRAZO_DISCAGEM) {
+                Ok(stream) => {
+                    self.garantir_manutencao();
+                    let rede = Arc::clone(self);
+                    std::thread::spawn(move || {
+                        let _ = rede.servir(stream, Papel::Discou, rotulo);
+                    });
+                    return Ok(());
+                }
+                Err(e) => ultimo = e,
+            }
+        }
+        Err(ultimo)
     }
 
     /// Sobe a thread de manutenção uma única vez: ela pede endereços aos pares
-    /// e disca para candidatos do livro até chegar a `ALVO_PARES`. É a base da
+    /// e disca para candidatos do livro até chegar a `ALVO_SAIDAS`. É a base da
     /// retomada automática da seção 22.
     fn garantir_manutencao(self: &Arc<Self>) {
         if self.manutencao_ligada.swap(true, Ordering::Relaxed) {
@@ -360,36 +566,65 @@ impl Rede {
                 }
                 // Pede a todos os pares o que eles conhecem.
                 rede.difundir(u64::MAX, &Message::GetAddrs);
-                // Disca para candidatos que ainda não são pares.
-                if rede.pares_conectados() < ALVO_PARES {
+                // Disca para alguns candidatos que ainda não são pares.
+                if rede.saidas.load(Ordering::Relaxed) < ALVO_SAIDAS {
                     for addr in rede.candidatos() {
-                        if rede.pares_conectados() >= ALVO_PARES {
+                        if rede.saidas.load(Ordering::Relaxed) >= ALVO_SAIDAS || rede.parando() {
                             break;
                         }
-                        let _ = rede.conectar(addr.as_str());
+                        let ok = rede.discar(addr.as_str(), Some(addr.clone())).is_ok();
+                        rede.anotar_discagem(&addr, ok);
                     }
                 }
             }
         });
     }
 
+    /// Anota o resultado de uma discagem: espera crescente para o próximo
+    /// discar no mesmo endereço, e endereço aprendido que falha demais sai.
+    fn anotar_discagem(&self, addr: &str, ok: bool) {
+        let agora = agora_seg();
+        let falhas = {
+            let Ok(mut d) = self.discagens.lock() else { return };
+            let e = d.entry(addr.to_string()).or_insert((0, 0));
+            e.0 = if ok { 0 } else { e.0.saturating_add(1) };
+            let espera = ESPERA_MINIMA_S.saturating_mul(1u64 << e.0.min(7)).min(ESPERA_MAXIMA_S);
+            e.1 = agora.saturating_add(espera);
+            e.0
+        };
+        let semente = self.sementes.lock().is_ok_and(|s| s.contains(addr));
+        if falhas >= FALHAS_PARA_ESQUECER && !semente {
+            if let Ok(mut l) = self.livro.lock() {
+                l.remove(addr);
+            }
+            if let Ok(mut d) = self.discagens.lock() {
+                d.remove(addr);
+            }
+        }
+    }
+
     fn candidatos(&self) -> Vec<String> {
         let conectados = self.conectados.lock().map(|c| c.keys().cloned().collect::<Vec<_>>()).unwrap_or_default();
         let meu = self.meu_addr_loopback();
+        let agora = agora_seg();
+        let discagens = self.discagens.lock().map(|d| d.clone()).unwrap_or_default();
         self.livro
             .lock()
             .map(|livro| {
                 livro
                     .keys()
                     .filter(|a| !conectados.contains(a) && meu.as_ref() != Some(*a))
+                    .filter(|a| discagens.get(*a).is_none_or(|(_, proxima)| *proxima <= agora))
+                    .take(DISCAGENS_POR_VOLTA)
                     .cloned()
                     .collect()
             })
             .unwrap_or_default()
     }
 
-    /// O aperto de mão e depois o laço de mensagens.
-    fn servir(self: &Arc<Self>, stream: TcpStream, papel: Papel) -> Result<(), NetError> {
+    /// O aperto de mão e depois o laço de mensagens. `rotulo`: o endereço
+    /// como foi discado (pode ser um nome), marcado como conectado também.
+    fn servir(self: &Arc<Self>, stream: TcpStream, papel: Papel, rotulo: Option<String>) -> Result<(), NetError> {
         // No Windows o socket aceito herda o modo não bloqueante do listener; no
         // Linux, não. Fixar o modo aqui faz os dois sistemas se comportarem igual.
         stream.set_nonblocking(false)?;
@@ -398,6 +633,10 @@ impl Rede {
         // Primeiro a cifra (Noise XX); o HELLO já viaja cifrado.
         let (mut conexao, chave_do_par) =
             Conexao::com_cifra(stream, self.magic, &self.identidade, papel, PRAZO_APERTO)?;
+        if self.identidade_banida(&chave_do_par) {
+            conexao.fechar();
+            return Err(NetError::Handshake("identidade banida por malícia".into()));
+        }
         // A identidade provada na cifra evita conexão duplicada com o mesmo nó
         // (os dois discando ao mesmo tempo, ou o mesmo nó por dois endereços) e
         // conexão consigo mesmo.
@@ -413,9 +652,21 @@ impl Rede {
                 return Err(NetError::Handshake("já existe conexão com este nó".into()));
             }
         }
-        let resultado = self.servir_cifrado(&mut conexao, papel, ip_par, chave_do_par);
+        if papel == Papel::Discou {
+            self.saidas.fetch_add(1, Ordering::Relaxed);
+        }
+        let resultado = self.servir_cifrado(&mut conexao, papel, ip_par, chave_do_par, rotulo);
+        if papel == Papel::Discou {
+            self.saidas.fetch_sub(1, Ordering::Relaxed);
+        }
         if let Ok(mut ids) = self.identidades_conectadas.lock() {
             ids.remove(&chave_do_par);
+        }
+        // malícia provada: a identidade e o IP ficam de fora por uma hora
+        if let Err(NetError::Handshake(m)) = &resultado
+            && m.starts_with("par malicioso")
+        {
+            self.banir(chave_do_par, ip_par);
         }
         conexao.fechar();
         resultado
@@ -426,15 +677,11 @@ impl Rede {
         self: &Arc<Self>,
         conexao: &mut Conexao,
         papel: Papel,
-        ip_par: Option<std::net::IpAddr>,
+        ip_par: Option<IpAddr>,
         chave_do_par: [u8; 32],
+        rotulo: Option<String>,
     ) -> Result<(), NetError> {
         let par_ponta = self.aperto_de_mao(conexao, papel)?;
-        if let Ok(mut visto) = self.maior_trabalho_visto.lock()
-            && par_ponta.trabalho > *visto
-        {
-            *visto = par_ponta.trabalho;
-        }
 
         // Aprende onde o par escuta, e marca como conectado para não rediscar.
         let addr_escuta = match (ip_par, par_ponta.porta_escuta) {
@@ -442,40 +689,54 @@ impl Rede {
             _ => None,
         };
         let addr_str = addr_escuta.as_ref().and_then(endereco_para_str);
+        let marcados: Vec<String> = addr_str.iter().chain(rotulo.iter()).cloned().collect();
         if let Some(a) = &addr_str {
             self.aprender(a.clone());
-            if let Ok(mut c) = self.conectados.lock() {
+        }
+        if let Ok(mut c) = self.conectados.lock() {
+            for a in &marcados {
                 c.insert(a.clone(), ());
             }
         }
 
         let escritor = conexao.escritor()?;
-        let (saida, entrada) = channel::<Message>();
+        let (fila, entrada) = sync_channel::<Vec<u8>>(FILA_MENSAGENS);
+        let bytes = Arc::new(AtomicUsize::new(0));
+        let saida = Saida { fila, bytes: Arc::clone(&bytes) };
         let id = self.registrar(saida.clone());
         if let Ok(mut m) = self.identidade_do_par.lock() {
             m.insert(id, chave_do_par);
         }
+        if let Ok(mut t) = self.trabalho_dos_pares.lock() {
+            t.insert(id, par_ponta.trabalho);
+        }
 
+        let mut iniciais = Vec::new();
         if let Ok(no) = self.no.lock() {
             let meu = no.chain.total_work().to_be32().unwrap_or([0xff; 32]);
             if par_ponta.trabalho > meu {
-                let _ = saida.send(no.pedir_sincronizacao());
+                iniciais.push(no.pedir_sincronizacao());
+            }
+            // Já pede endereços de cara, para a descoberta andar rápido.
+            iniciais.push(Message::GetAddrs);
+            // E entrega o que espera no mempool: um minerador que acabou de
+            // entrar precisa das transações que chegaram antes dele. Com teto,
+            // para uma conexão nova não virar enxurrada.
+            for tx in no.mempool_ordenado().into_iter().take(MAX_MEMPOOL_NA_ENTRADA) {
+                iniciais.push(Message::Tx(Box::new(tx)));
             }
         }
-        // Já pede endereços de cara, para a descoberta andar rápido.
-        let _ = saida.send(Message::GetAddrs);
-        // E entrega o que espera no mempool: um minerador que acabou de entrar
-        // precisa das transações que chegaram antes dele. Com teto, para uma
-        // conexão nova não virar enxurrada.
-        if let Ok(no) = self.no.lock() {
-            for tx in no.mempool_ordenado().into_iter().take(MAX_MEMPOOL_NA_ENTRADA) {
-                let _ = saida.send(Message::Tx(Box::new(tx)));
+        for m in &iniciais {
+            if let Some(q) = self.quadro(m)
+                && saida.mandar(q).is_err()
+            {
+                break;
             }
         }
 
         let rede_escrita = Arc::clone(self);
         let escritora = std::thread::spawn(move || {
-            escrever_laco(escritor, &entrada, &rede_escrita);
+            escrever_laco(escritor, &entrada, &rede_escrita, &bytes);
         });
 
         let resultado = self.ler_laco(conexao, id, &saida);
@@ -484,8 +745,10 @@ impl Rede {
         if let Ok(mut m) = self.identidade_do_par.lock() {
             m.remove(&id);
         }
-        if let (Some(a), Ok(mut c)) = (&addr_str, self.conectados.lock()) {
-            c.remove(a);
+        if let Ok(mut c) = self.conectados.lock() {
+            for a in &marcados {
+                c.remove(a);
+            }
         }
         conexao.fechar();
         drop(saida);
@@ -533,12 +796,22 @@ impl Rede {
         }
     }
 
-    fn ler_laco(&self, conexao: &mut Conexao, id: u64, saida: &Sender<Message>) -> Result<(), NetError> {
+    fn ler_laco(&self, conexao: &mut Conexao, id: u64, saida: &Saida) -> Result<(), NetError> {
+        // responder: o que não cabe na fila derruba o par (ele pede mais do que lê)
+        let responder = |msg: &Message| -> Result<(), NetError> {
+            let Some(q) = self.quadro(msg) else { return Ok(()) };
+            match saida.mandar(q) {
+                Ok(()) => Ok(()),
+                Err(Recusa::Cheia) => Err(NetError::Handshake("par não lê o que pede: fila de saída cheia".into())),
+                Err(Recusa::Fechada) => Err(NetError::Handshake("conexão fechada".into())),
+            }
+        };
         loop {
             if self.parando() {
                 return Ok(());
             }
-            let msg = match conexao.receber() {
+            let ate = Instant::now().checked_add(PRAZO_QUADRO);
+            let msg = match conexao.receber_ate(ate) {
                 Ok(m) => m,
                 Err(NetError::Io(e))
                     if matches!(e.kind(), std::io::ErrorKind::WouldBlock | std::io::ErrorKind::TimedOut) =>
@@ -552,7 +825,7 @@ impl Rede {
             // com o livro, antes de chegar ao nó.
             match msg {
                 Message::GetAddrs => {
-                    let _ = saida.send(Message::Addrs(self.enderecos_para_anunciar()));
+                    responder(&Message::Addrs(self.enderecos_para_anunciar()))?;
                     continue;
                 }
                 Message::Addrs(lista) => {
@@ -581,10 +854,8 @@ impl Rede {
             };
             match reacao {
                 Ok(r) => {
-                    for resposta in r.respostas {
-                        if saida.send(resposta).is_err() {
-                            return Ok(());
-                        }
+                    for resposta in &r.respostas {
+                        responder(resposta)?;
                     }
                     for anuncio in r.difundir {
                         self.difundir(id, &anuncio);
@@ -597,24 +868,27 @@ impl Rede {
 }
 
 /// Espera uma mensagem inteira por até `prazo`, tolerando os timeouts curtos
-/// de leitura do socket. Um par que fica mudo além do prazo é derrubado.
+/// de leitura do socket. Um par que fica mudo, ou goteja, além do prazo é
+/// derrubado.
 fn receber_com_prazo(conexao: &mut Conexao, prazo: Duration) -> Result<Message, NetError> {
-    let inicio = std::time::Instant::now();
+    let ate = Instant::now().checked_add(prazo);
     loop {
-        match conexao.receber() {
+        match conexao.receber_ate(ate) {
             Err(NetError::Io(e))
                 if matches!(e.kind(), std::io::ErrorKind::WouldBlock | std::io::ErrorKind::TimedOut)
-                    && inicio.elapsed() < prazo => {}
+                    && ate.is_some_and(|a| Instant::now() < a) => {}
             outro => return outro,
         }
     }
 }
 
-fn escrever_laco(mut escritor: Escritor, entrada: &Receiver<Message>, rede: &Arc<Rede>) {
+fn escrever_laco(mut escritor: Escritor, entrada: &Receiver<Vec<u8>>, rede: &Arc<Rede>, bytes: &AtomicUsize) {
     loop {
         match entrada.recv_timeout(TIMEOUT) {
-            Ok(msg) => {
-                if escritor.enviar(&msg).is_err() {
+            Ok(quadro) => {
+                let falhou = escritor.enviar_quadro(&quadro).is_err();
+                bytes.fetch_sub(quadro.len(), Ordering::SeqCst);
+                if falhou {
                     return;
                 }
             }
@@ -624,6 +898,21 @@ fn escrever_laco(mut escritor: Escritor, entrada: &Receiver<Message>, rede: &Arc
                 }
             }
             Err(std::sync::mpsc::RecvTimeoutError::Disconnected) => return,
+        }
+    }
+}
+
+#[cfg(test)]
+mod testes {
+    use super::*;
+
+    #[test]
+    fn so_endereco_util_entra_no_livro() {
+        assert!(endereco_util("8.8.8.8:8790"));
+        assert!(endereco_util("192.168.0.10:8790"));
+        assert!(endereco_util("127.0.0.1:8790"));
+        for ruim in ["0.0.0.0:8790", "8.8.8.8:0", "255.255.255.255:8790", "224.0.0.1:8790", "192.0.2.1:8790", "nome:8790", "lixo"] {
+            assert!(!endereco_util(ruim), "{ruim}");
         }
     }
 }

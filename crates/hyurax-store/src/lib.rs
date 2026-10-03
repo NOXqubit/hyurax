@@ -72,10 +72,18 @@ pub fn save_chain(chain: &Chain, caminho: &Path) -> Result<u64, StoreError> {
 /// troca de nome. Separado para quem segura uma trava: monta com a trava,
 /// solta, e só então vai ao disco, que pode ser lento.
 pub fn gravar_codificada(dados: &[u8], caminho: &Path) -> Result<(), StoreError> {
+    use std::io::Write as _;
     let mut temporario = PathBuf::from(caminho);
     temporario.as_mut_os_string().push(".tmp");
-    std::fs::write(&temporario, dados).map_err(|e| erro(format!("não consegui gravar: {e}")))?;
-    std::fs::rename(&temporario, caminho).map_err(|e| erro(format!("não consegui gravar: {e}")))?;
+    let falha = |e: std::io::Error| erro(format!("não consegui gravar: {e}"));
+    // os bytes chegam ao disco (sync_all) antes da troca de nome: uma queda
+    // de energia deixa a cadeia antiga ou a nova inteira, nunca um arquivo
+    // vazio com o nome certo
+    let mut f = std::fs::File::create(&temporario).map_err(falha)?;
+    f.write_all(dados).map_err(falha)?;
+    f.sync_all().map_err(falha)?;
+    drop(f);
+    std::fs::rename(&temporario, caminho).map_err(falha)?;
     Ok(())
 }
 

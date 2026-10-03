@@ -15,7 +15,7 @@
 
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::arithmetic_side_effects, clippy::indexing_slicing, clippy::collapsible_if)]
 
-use std::io::Write;
+use std::io::{Read, Write};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
@@ -635,4 +635,82 @@ fn transferencia_impagavel_nao_derruba_o_par() {
         extra_nonce: Vec::new(),
     });
     assert!(no.adicionar_qualquer_tx(coinbase).is_err(), "coinbase solta devia derrubar o par");
+}
+
+// ============================================================ PRAZOS E BANIMENTO
+
+#[test]
+#[ignore = "sobe sockets — ver cabeçalho do arquivo"]
+fn aperto_gotejado_cai_no_prazo() {
+    let alvo = rede(No::novo(regtest_com(1, MINERADOR)));
+    let porta = alvo.escutar("127.0.0.1:0").unwrap();
+    let mut s = std::net::TcpStream::connect(("127.0.0.1", porta)).unwrap();
+    s.set_read_timeout(Some(Duration::from_millis(100))).unwrap();
+    // anuncia uma mensagem de aperto de 200 bytes e goteja um byte a cada 300 ms:
+    // sem nunca dar timeout de leitura, como faria um atacante paciente
+    s.write_all(&200u16.to_be_bytes()).unwrap();
+    let inicio = Instant::now();
+    let mut caiu = false;
+    while inicio.elapsed() < Duration::from_secs(40) {
+        if s.write_all(&[0u8]).is_err() {
+            caiu = true;
+            break;
+        }
+        let mut b = [0u8; 1];
+        match s.read(&mut b) {
+            Ok(0) => {
+                caiu = true;
+                break;
+            }
+            Err(e) if !matches!(e.kind(), std::io::ErrorKind::WouldBlock | std::io::ErrorKind::TimedOut) => {
+                caiu = true;
+                break;
+            }
+            _ => {}
+        }
+        std::thread::sleep(Duration::from_millis(300));
+    }
+    assert!(caiu, "o aperto gotejado não caiu");
+    assert!(inicio.elapsed() < Duration::from_secs(25), "caiu tarde demais: {:?}", inicio.elapsed());
+    alvo_continua_vivo(porta, 1);
+    alvo.desligar();
+}
+
+fn apertar_com(porta: u16, magic: [u8; 4], identidade: &Identidade) -> Result<Conexao, String> {
+    let stream = std::net::TcpStream::connect(("127.0.0.1", porta)).map_err(|e| e.to_string())?;
+    let (mut c, _) = Conexao::com_cifra(stream, magic, identidade, Papel::Discou, Duration::from_secs(10)).map_err(|e| e.to_string())?;
+    let meu = Ponta { protocolo: PROTOCOL_VERSION, magic, altura: 0, trabalho: [0u8; 32], nonce: 0xB2, porta_escuta: 0 };
+    c.enviar(&Message::Hello(meu)).map_err(|e| e.to_string())?;
+    match c.receber() {
+        Ok(Message::HelloAck { .. }) => Ok(c),
+        Ok(outra) => Err(format!("esperava HELLO_ACK, veio {outra:?}")),
+        Err(e) => Err(e.to_string()),
+    }
+}
+
+#[test]
+#[ignore = "sobe sockets — ver cabeçalho do arquivo"]
+fn identidade_que_mostrou_malicia_fica_banida() {
+    let alvo = rede(No::novo(regtest_com(2, MINERADOR)));
+    let porta = alvo.escutar("127.0.0.1:0").unwrap();
+    let magic = ParametrosRede::REGTEST.magic;
+    let atacante = Identidade::nova().unwrap();
+
+    let espelho = alvo.no.lock().unwrap().chain.clone();
+    let mut forjado = espelho
+        .build_candidate(MINERADOR, vec![], Some(espelho.tip().unwrap().header.timestamp + 120), Vec::new())
+        .unwrap();
+    forjado.header.prev_hash = [0x66; 64];
+    forjado.header.bits = 0x0300_0001;
+    let mut c = apertar_com(porta, magic, &atacante).unwrap();
+    c.enviar(&Message::Block(Box::new(forjado))).unwrap();
+    assert!(esperar(Duration::from_secs(60), || alvo.pares_conectados() == 0), "o forjador não caiu");
+
+    // a mesma identidade volta: a cifra fecha, mas o alvo não a aceita como par
+    std::thread::sleep(Duration::from_millis(500));
+    assert!(apertar_com(porta, magic, &atacante).is_err(), "identidade banida voltou a ser par");
+    assert_eq!(alvo.pares_conectados(), 0);
+    // outra identidade, do mesmo computador, continua bem-vinda
+    alvo_continua_vivo(porta, 2);
+    alvo.desligar();
 }

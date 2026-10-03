@@ -768,11 +768,64 @@ impl Ultrax {
         }
         {
             let u = Arc::clone(self);
-            std::thread::spawn(move || u.orquestrar());
+            std::thread::spawn(move || u.supervisionar("o orquestrador", None, |u| u.orquestrar()));
         }
         for i in 0..self.nucleos {
             let u = Arc::clone(self);
-            std::thread::spawn(move || u.linha(i));
+            std::thread::spawn(move || u.supervisionar(&format!("a linha {i}"), Some(i), move |u| u.linha(i)));
+        }
+    }
+
+    /// Roda o laço de uma thread e, se ele cair por pânico (defeito, nunca
+    /// esperado), solta o que a linha segurava, avisa no registro e começa de
+    /// novo. Sem isto, a linha morria calada: a memória ficava reservada e a
+    /// unidade de JOB ficava "em voo" para sempre.
+    fn supervisionar(self: Arc<Self>, nome: &str, linha: Option<u32>, laco: impl Fn(Arc<Self>) + std::panic::RefUnwindSafe) {
+        loop {
+            let u = Arc::clone(&self);
+            let caiu = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| laco(u))).is_err();
+            if !caiu || self.encerrado() {
+                return;
+            }
+            if let Some(i) = linha {
+                self.soltar_linha(i);
+            }
+            (self.aviso)("erro", format!("{nome} do ULTRAX caiu por um defeito e foi reiniciada; o que ela calculava volta como falha"));
+            std::thread::sleep(Duration::from_secs(1));
+        }
+    }
+
+    /// Solta o que uma linha que caiu segurava: a memória reservada, a tarefa
+    /// no painel e, se era unidade de JOB, avisa o agendador (falha).
+    fn soltar_linha(&self, linha: u32) {
+        let presas: Vec<Ativa> = match self.ativas.lock() {
+            Ok(mut a) => {
+                let (presas, resto): (Vec<Ativa>, Vec<Ativa>) = a.drain(..).partition(|x| x.linha == linha && x.gpu.is_none());
+                *a = resto.into_iter().collect();
+                presas
+            }
+            Err(_) => return,
+        };
+        for x in presas {
+            self.liberar(x.memoria);
+            if let (Some((job, indice)), Some(a)) = (x.job, self.agendador()) {
+                a.terminou(DesfechoDeUnidade {
+                    job,
+                    indice,
+                    tarefa: x.id,
+                    estado: Estado::Cancelada,
+                    resultado: None,
+                    registro: None,
+                    assinatura: None,
+                    operacoes_verificacao: 0,
+                    ms_calculo: 0,
+                    ms_verificacao: 0,
+                    memoria: 0,
+                    gpu: None,
+                    nota: "a linha que calculava caiu por um defeito".into(),
+                    abandonada: true,
+                });
+            }
         }
     }
 
@@ -798,6 +851,12 @@ impl Ultrax {
 
     pub(super) fn encerrado(&self) -> bool {
         self.encerrado.load(Ordering::Relaxed)
+    }
+
+    /// Memória reservada agora pelas tarefas em curso, em bytes (pelo
+    /// modelo de custo de cada motor).
+    pub fn memoria_reservada(&self) -> u64 {
+        self.reservada.load(Ordering::Relaxed)
     }
 
     /// Tarefas na fila ou rodando (para esperar tudo terminar).
