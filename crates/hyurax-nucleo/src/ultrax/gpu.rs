@@ -22,12 +22,13 @@ impl Ultrax {
         }
     }
 
-    /// A página pede uma tarefa para a GPU dela. Devolve `(número, lado)`.
+    /// A página pede uma tarefa para a GPU dela. Devolve o número, o lado e,
+    /// se for unidade de JOB, o `JOB_ID` e o índice.
     ///
     /// Primeiro uma unidade de JOB de matriz, se houver: é trabalho pedido, e
     /// a GPU faz a mesma conta que a CPU faria (a unidade fecha no JOB igual).
     /// Sem nenhuma, e com o LAB ligado, uma matriz de carga de teste.
-    pub fn gpu_pegar(&self, nome: &str) -> Result<(u32, u32), String> {
+    pub fn gpu_pegar(&self, nome: &str) -> Result<(u32, u32, Option<UnidadeDoJob>), String> {
         if !self.ligado.load(Ordering::Relaxed) || !self.gpu_ligada.load(Ordering::Relaxed) {
             return Err("a GPU está desligada no ULTRAX".into());
         }
@@ -110,10 +111,11 @@ impl Ultrax {
         if let (Some((job, i)), Some(a)) = (item.job, self.agendador()) {
             a.comecou(&job, i, 0, entrada);
         }
+        let job = item.job;
         if let Ok(mut g) = self.gpu.lock() {
             g.push(NaGpu { item, semente, entrada, memoria, inicio_ms: agora_ms(), feitas, nome });
         }
-        Ok((numero, esp.tamanho()))
+        Ok((numero, esp.tamanho(), job))
     }
 
     /// As matrizes `A` e `B` de uma tarefa da GPU, em u32 little-endian, nessa ordem.

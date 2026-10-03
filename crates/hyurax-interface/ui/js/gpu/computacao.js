@@ -1,4 +1,5 @@
-// Hyurax — a GPU no ULTRAX, pelo WebGL2 da própria janela do programa.
+// Hyurax / Ultrax — o backend de GPU do ULTRAX: WebGL 2 usado para CALCULAR
+// (não para desenhar), num worker da própria janela do programa.
 //
 // Funciona na GPU integrada (Intel, AMD Ryzen) e na placa de vídeo. A conta é
 // C = A · B em inteiros de 32 bits: cada pixel de uma textura R32UI é uma
@@ -8,6 +9,9 @@
 //
 // O nó não confia na GPU: o resultado volta para ele, e a CPU confere por
 // Freivalds (outro algoritmo) antes de creditar qualquer coisa.
+//
+// A cada faixa lida de volta, uma linha real de C vai para a cena 3D
+// (`opcoes.faixa`): é o dado que a GPU acabou de calcular.
 //
 // O limite de uso é por tempo: a GPU calcula uma faixa de linhas, e a página
 // descansa na proporção escolhida antes da próxima (com 50%, descansa o mesmo
@@ -121,6 +125,9 @@ export function criarGpu() {
           const base = (linha0 + r) * n;
           for (let j = 0; j < n; j++) C[base + j] = lido[(r * n + j) * 4];
         }
+        // uma linha real desta faixa para a cena: a do meio
+        const meio = Math.floor(linhas / 2);
+        opcoes.faixa?.(linha0 + meio, C.subarray((linha0 + meio) * n, (linha0 + meio + 1) * n));
         linha0 += linhas;
         opcoes.progresso(linha0);
         const gasto = performance.now() - comeco;

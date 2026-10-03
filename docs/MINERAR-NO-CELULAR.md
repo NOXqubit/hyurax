@@ -1,25 +1,26 @@
-# Minerar Argon2id no celular
+# Minerar no celular
 
-O minerador `hyurax-minerar` (crate `crates/hyurax-pow`) é Rust puro, sem nenhum
+> **Rede de TESTE.** O HYX de teste não tem valor. Minerar hoje é teste e
+> medição, não ganho.
+
+O `hyurax-no` (o Hyurax / Ultrax 1.0 de terminal) é Rust puro, sem nenhum
 código em C. Por isso ele compila direto no celular, pelo Termux, sem preparar
-nada além do próprio Rust.
+nada além do próprio Rust. É o mesmo núcleo do programa com janela.
 
 ## O que já funciona e o que ainda não
 
 | Parte | Estado |
 |---|---|
-| Argon2id com os parâmetros de cada rede (32 MiB na mainnet) | pronto, igual ao gabarito byte a byte |
-| Medir a velocidade do aparelho (`medir`) | pronto |
-| Achar o nonce de um cabeçalho montado pelo nó (`cabecalho`) | pronto; acha o mesmo nonce que o Python |
+| Argon2id com os parâmetros de cada rede | pronto, igual ao gabarito byte a byte |
 | Várias linhas de execução, pausa contra aquecimento | pronto |
-| Prova de trabalho útil (seção 9A) em Rust | pronto (`crates/hyurax-usefulpow`), igual ao gabarito; o `medir` mostra quanto custa no aparelho |
+| Prova de trabalho útil (seção 9A) em Rust | pronto (`crates/hyurax-usefulpow`), igual ao gabarito |
 | Minerar blocos inteiros numa cadeia local gravada no disco (`hyurax-no`) | pronto; cada bloco passa pela validação completa |
 | Carteira de teste e saldo | pronto (`hyurax-no carteira`, `hyurax-no estado`) |
 | Conversar com outros nós (rede) | pronto: `--porta` e `--semente` põem o aparelho na rede; ele sincroniza e propaga o que minera |
 
 Ou seja: o celular já minera blocos de verdade, com as duas provas (trabalho
 útil e Argon2id), numa cadeia que fica salva no aparelho. O que ainda falta é
-essa cadeia conversar com a de outras pessoas.
+nós semente públicos no ar, para os aparelhos de pessoas diferentes se acharem.
 
 ## Por que o celular aguenta
 
@@ -35,13 +36,14 @@ Referência medida num PC com Atom (processador fraco, de 2012):
 
 | Medida | Resultado |
 |---|---|
-| Argon2id, mainnet | 5,7 a 6 tentativas por segundo por linha |
+| Argon2id com 32 MiB (o parâmetro previsto para a rede principal, que não existe) | 5,7 a 6 tentativas por segundo por linha |
 | Trabalho útil 256 × 256, fazer | 0,08 s |
 | Trabalho útil 256 × 256, conferir | 0,04 s |
 | Bloco inteiro na testnet local, 2 linhas | de 8 a 37 s (é sorteio: a média fica perto de 20 s) |
 
 Celulares recentes costumam ser mais rápidos por núcleo, mas isso é
-estimativa: o número que vale é o do `medir` no seu aparelho.
+estimativa: o número que vale é o ritmo que o `hyurax-no minerar` mostra no
+seu aparelho.
 
 ## Passo a passo no Termux
 
@@ -58,16 +60,18 @@ pkg install rust git
 
 3. Baixe o código do Hyurax (o arquivo `.zip` da seção "Engenharia aberta" do
    site, ou pelo Git) e entre na pasta do projeto.
-4. Compile só o minerador (a primeira vez demora alguns minutos):
+4. Compile o `hyurax-no` (a primeira vez demora alguns minutos):
 
 ```bash
-cargo build --release -p hyurax-pow
+cargo build --release -p hyurax-no
 ```
 
-5. Meça o aparelho:
+5. Meça o aparelho minerando na rede local de teste (`regtest`, quase sem
+   trabalho por bloco), com o endereço da carteira criada no passo 2 da seção
+   seguinte:
 
 ```bash
-./target/release/hyurax-minerar medir --linhas 2 --segundos 30
+./target/release/hyurax-no minerar --rede regtest --pasta medir --endereco SEU_ENDERECO --blocos 5 --linhas 2
 ```
 
 O Rust precisa ser 1.98 ou mais novo (`rustc --version`). Se o Termux tiver um
@@ -75,11 +79,7 @@ mais antigo, rode `pkg upgrade`.
 
 ## Minerar blocos de verdade (cadeia local)
 
-1. Compile o nó:
-
-```bash
-cargo build --release -p hyurax-no
-```
+1. Compile o nó (passo 4 acima), se ainda não compilou.
 
 2. Crie uma carteira de teste. Ela mostra o seu endereço:
 
@@ -100,8 +100,8 @@ cargo build --release -p hyurax-no
 ./target/release/hyurax-no estado --rede testnet --pasta dados --endereco SEU_ENDERECO
 ```
 
-A recompensa de cada bloco fica "esperando liberar" por 20 blocos na testnet
-(100 na mainnet), igual à regra do consenso.
+A recompensa de cada bloco fica "esperando liberar" por 20 blocos na testnet,
+igual à regra do consenso.
 
 ## Dois aparelhos na mesma rede (PC e celular)
 
@@ -137,7 +137,8 @@ guarda saldo.
 |---|---|---|
 | `regtest` | quase nenhum | testar o programa |
 | `testnet` | cerca de 256 tentativas | minerar de verdade no celular |
-| `mainnet` | cerca de 65 mil tentativas | parâmetros reais; horas por bloco num aparelho |
+
+O programa não aceita outra rede: a rede principal não existe.
 
 **Sobre o arquivo da carteira:** a chave secreta fica cifrada com a sua
 senha (mínimo de 10 caracteres). Quem copiar o arquivo sem saber a senha não
@@ -149,11 +150,11 @@ texto; proteja com `./target/release/hyurax-no carteira cifrar --arquivo carteir
 
 | Opção | O que faz | Padrão |
 |---|---|---|
-| `--rede mainnet\|testnet\|regtest` | parâmetros do Argon2id | `mainnet` |
-| `--linhas N` | quantos núcleos usar; cada um gasta 32 MiB | metade dos núcleos |
-| `--segundos S` | duração do `medir` | 20 |
+| `--rede testnet\|regtest` | a rede (e os parâmetros do Argon2id) | `testnet` |
+| `--linhas N` | quantos núcleos usar | metade dos núcleos |
 | `--pausa-ms P` | descanso depois de cada tentativa, para não esquentar | 0 |
-| `--nonce-inicial N` | de onde começa a busca | 0 |
+| `--blocos N` | quantos blocos minerar (0 = sem parar) | 1 |
+| `--porta P`, `--semente IP:PORTA` | entrar na rede com outros nós | — |
 
 ## Cuidados com o aparelho
 
@@ -165,5 +166,5 @@ texto; proteja com `./target/release/hyurax-no carteira cifrar --arquivo carteir
 - **O Android pode fechar o Termux em segundo plano.** Deixe a tela do Termux
   aberta, ou use `termux-wake-lock`.
 
-**Lembrete do projeto:** a rede pública não existe e o HYX não tem valor.
-Minerar hoje é teste e medição, não ganho.
+**Lembrete do projeto:** a rede é de teste e o HYX não tem valor. Minerar
+hoje é teste e medição, não ganho.

@@ -12,7 +12,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 /// O texto, em Markdown, com um comentário HTML no começo (que não aparece).
 pub const TEXTO: &str = include_str!("../../../docs/TERMOS-DE-USO.md");
 /// A versão dos termos. Mudança relevante no texto = versão nova.
-pub const VERSAO: u32 = 2;
+pub const VERSAO: u32 = 3;
 
 const ARQUIVO: &str = "termos.txt";
 

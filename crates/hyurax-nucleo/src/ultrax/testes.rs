@@ -265,7 +265,7 @@ fn treino_de_ia_guarda_o_melhor_modelo() {
 
 /// A GPU de mentira: faz a conta na CPU e manda como a página mandaria.
 fn fazer_na_gpu(u: &Ultrax, adulterar: bool) -> u32 {
-    let (numero, n) = u.gpu_pegar("GPU de teste").unwrap();
+    let (numero, n, _) = u.gpu_pegar("GPU de teste").unwrap();
     let entrada = u.gpu_entrada(numero).unwrap();
     let v: Vec<u64> = entrada.as_chunks::<4>().0.iter().map(|c| u64::from(u32::from_le_bytes(*c))).collect();
     let n = n as usize;
@@ -308,7 +308,7 @@ fn gpu_honesta_e_creditada_e_adulterada_e_recusada() {
 fn gpu_esquecida_vence_e_libera_a_memoria() {
     let (u, p) = worker("gpu-vence", &Partida { gpu: true, ..partida() });
     *u.ritmo_gpu.lock().unwrap() = 1.0e5;
-    let (numero, _) = u.gpu_pegar("x").unwrap();
+    let (numero, _, _) = u.gpu_pegar("x").unwrap();
     u.gpu_cancelar(numero, "a janela fechou");
     assert_eq!(u.placar().canceladas, 1);
     assert_eq!(u.reservada.load(Ordering::Relaxed), 0);

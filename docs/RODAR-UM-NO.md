@@ -1,7 +1,8 @@
 # Rode um nó do Hyurax em 5 minutos
 
-> **Rede de TESTE.** A rede pública ainda não existe e o HYX não tem valor.
-> Não há venda, pré-venda nem promessa de lucro. Rodar um nó hoje é testar,
+> **Hyurax / Ultrax 1.0, rede de TESTE.** O programa é a versão 1.0; a rede
+> é de teste e o HYX não tem valor. Não há venda, pré-venda nem promessa de
+> lucro. Rodar um nó hoje é testar,
 > medir e ajudar a achar falhas.
 
 Um nó guarda a cadeia, confere cada bloco e cada transação sozinho e conversa
@@ -104,16 +105,18 @@ separadas por vírgula) ou escreva um endereço por linha em
 ./hyurax-no painel --arquivo carteira.txt --semente IP:PORTA
 ```
 
-Abra `http://127.0.0.1:8800` no navegador. O painel mostra tudo ao vivo e
-tem o botão **MINERAR**:
-- os núcleos que minera, e a memória que eles usam;
-- a carteira, com o saldo gastável e o que ainda espera liberar;
-- o livro de blocos, em que ■ é bloco seu e □ é de outro nó;
-- o ritmo de tentativas;
-- o fluxo de eventos;
-- o ULTRAX, o motor de trabalho útil, separado da mineração: a tarefa que
-  está rodando, o progresso, a verificação, o Work Score e a reputação, com o
-  selo LAB (trabalho de teste gerado nesta máquina, sem valor em HYX).
+Abra `http://127.0.0.1:8800` no navegador. É o mesmo painel do programa com
+janela, com oito seções:
+- **Visão geral:** o trabalho em foco (trabalho → como → recurso → resultado →
+  verificação → impacto na rede), a cena 3D desenhada das amostras reais do
+  cálculo, as métricas desta máquina e o registro recente;
+- **ULTRAX:** liga o worker de trabalho útil, com linhas de CPU, limite por
+  linha, teto de memória e GPU; tarefas executando, placar e histórico;
+- **Computação científica:** JOBs, relatórios e o ULTRA BENCHMARK;
+- **Carteira, Cadeia e mineração, Rede, Registro e Ajustes.**
+
+Cada número diz de onde veio: REAL (medido), DERIVADO, ESTIMADO, SIMULADO
+(a carga LAB, gerada nesta máquina), AJUSTE (escolha sua) ou PENDENTE.
 
 Nada disso precisa de internet: o painel vem dentro do programa.
 

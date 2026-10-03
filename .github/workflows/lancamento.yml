@@ -1,8 +1,11 @@
 # Programas prontos para baixar, montados pelo próprio GitHub.
 #
-# Roda quando uma etiqueta `v*` é enviada (ou à mão, em Actions). Compila o
-# `hyurax-no` para cada sistema, monta o programa com janela para Windows, testa antes, e publica os pacotes numa Release com a
-# soma SHA-256 de cada arquivo.
+# Roda quando uma etiqueta `v*` é enviada (ou à mão, em Actions). Testa,
+# compila o `hyurax-no` (terminal) para cada sistema, monta o programa com
+# janela e o instalador para Windows, testa a instalação limpa, e publica os
+# pacotes numa Release com a soma SHA-256 de cada arquivo.
+#
+# Hyurax / Ultrax 1.0: o programa é a versão oficial; a rede é de TESTE.
 #
 # O código é Rust puro (sem compilador C), então a compilação cruzada para o
 # ARM de celular não precisa de nada além do linker do alvo.
@@ -88,138 +91,37 @@ jobs:
             ${{ env.ARQUIVO }}
             ${{ env.ARQUIVO }}.sha256
 
-  # O programa de verdade para quem não usa terminal: baixa, abre e minera.
-  # Fica num job à parte porque precisa da feature `janela`, que puxa o
-  # WebView2 e só faz sentido no Windows; os pacotes de terminal acima
-  # continuam sem ela.
-  minerador-windows:
-    name: minerador com janela (Windows)
+  # O programa com janela e o instalador, montados pelo mesmo roteiro que
+  # roda numa máquina Windows (scripts/empacotar-windows.ps1): --locked,
+  # caminhos trocados por nomes fixos e ligador sem carimbo de hora.
+  programa-windows:
+    name: programa e instalador (Windows)
     needs: testes
     runs-on: windows-latest
-    env:
-      # O executável carrega a biblioteca de C da Microsoft dentro dele. Sem
-      # isso ele pede o VCRUNTIME140.dll, que não vem num Windows recém-
-      # instalado, e o programa nem abre. O WebView2 já vem no Windows 10 e 11.
-      RUSTFLAGS: -C target-feature=+crt-static
     steps:
       - uses: actions/checkout@v5
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: x86_64-pc-windows-msvc
-      - name: compilar
-        shell: bash
-        run: cargo build --release --locked --target x86_64-pc-windows-msvc -p hyurax-no --features janela --bin hyurax
-      - name: empacotar
-        shell: bash
-        run: |
-          set -euo pipefail
-          # Nome sem versão de propósito: o site aponta para
-          # releases/latest/download/hyurax-windows-x86_64.zip, e
-          # esse link só continua valendo se o nome nunca mudar.
-          arquivo="hyurax-windows-x86_64.zip"
-          pasta="Hyurax"
-          mkdir -p "$pasta"
-          cp ".target/x86_64-pc-windows-msvc/release/hyurax.exe" "$pasta/Hyurax.exe"
-          # O programa liga no WebView2 por esta DLL pequena da Microsoft
-          # (redistribuível, vem dentro do pacote webview2-com-sys). Sem ela ao
-          # lado do .exe, o Windows nem abre o programa.
-          dll=$(ls .target/x86_64-pc-windows-msvc/release/build/webview2-com-sys-*/out/x64/WebView2Loader.dll | head -1)
-          cp "$dll" "$pasta/"
-          cp LICENSE-MIT LICENSE-APACHE "$pasta/"
-          # LEIA-ME em .txt porque quem baixa o zip abre no Bloco de Notas.
-          # Vai com marca UTF-8 e fim de linha do Windows para os acentos e as
-          # quebras de linha saírem certos em qualquer versão do Bloco de Notas.
-          {
-            printf '\xEF\xBB\xBF'
-            sed 's/$/\r/' <<'FIM'
-          HYURAX
-          ================
-
-          O que é
-          -------
-          O programa com janela do Hyurax (HYX): cria a carteira, minera,
-          mostra o saldo e envia HYX, sem precisar de terminal. É só abrir o
-          "Hyurax.exe". Na primeira vez ele mostra os termos de uso
-          (TERMOS-DE-USO.md no repositório), que precisam ser aceitos.
-
-          Trabalho útil (ULTRAX)
-          ----------------------
-          Na seção Trabalho, o computador faz contas conferíveis: matrizes,
-          otimização, simulação e o treino de uma IA sobre moléculas reais
-          (base AqSolDB). A CPU e a placa de vídeo, inclusive a integrada,
-          têm cada uma o seu limitador de uso. Cada resultado é conferido
-          antes de contar. O Work Score mede a contribuição: não é dinheiro
-          e não é HYX.
-
-          Segundo fator (opcional)
-          ------------------------
-          Em Carteira > Segurança dá para ligar o código de 6 dígitos do
-          Google Authenticator (ou Aegis, 2FAS, Authy). Ele passa a ser pedido
-          para enviar HYX e, se você quiser, para abrir o programa.
-          O segredo fica em "seguranca.txt", na pasta de dados: apagar esse
-          arquivo desliga o código e volta a valer só a senha da carteira.
-
-          Rede de TESTE
-          -------------
-          A rede pública ainda não existe e o HYX de teste não tem valor.
-          Não há venda, pré-venda nem promessa de lucro.
-
-          O Windows pode avisar
-          ---------------------
-          O programa ainda não tem assinatura digital, então o Windows pode
-          mostrar "O Windows protegeu o computador". Para abrir, clique em
-          "Mais informações" e depois em "Executar assim mesmo".
-          Antes disso, confira a soma SHA-256 publicada ao lado do zip na
-          página de lançamentos do projeto.
-
-          Onde ficam os dados
-          -------------------
-          %APPDATA%\Hyurax
-          (cole esse caminho na barra de endereço do Explorador de Arquivos)
-
-          Cuidado com a carteira
-          ----------------------
-          Guarde a senha e uma cópia do arquivo da carteira em lugar seguro.
-          Sem a senha e sem o arquivo da carteira, o saldo se perde. Ninguém
-          consegue recuperar, nem o projeto.
-
-          Licença: MIT ou Apache 2.0, à sua escolha (LICENSE-MIT e
-          LICENSE-APACHE nesta pasta).
-          Código: https://github.com/NOXqubit/hyurax
-          FIM
-          } > "$pasta/LEIA-ME.txt"
-          7z a "$arquivo" "$pasta" > /dev/null
-          # Mostra no registro o que foi para dentro do zip, para conferir.
-          7z l "$arquivo"
-          sha256sum "$arquivo" > "${arquivo}.sha256"
-          echo "ARQUIVO=$arquivo" >> "$GITHUB_ENV"
-      # O instalador leva dentro o mesmo Hyurax.exe e a mesma DLL do zip,
-      # mostra os termos de uso e instala sem pedir administrador. O nome
-      # também é fixo: o botão principal do site aponta para ele.
-      - name: instalador
-        shell: bash
-        run: |
-          set -euo pipefail
-          export HYURAX_CARGA_EXE="$(cygpath -w "$PWD/Hyurax/Hyurax.exe")"
-          export HYURAX_CARGA_DLL="$(cygpath -w "$PWD/Hyurax/WebView2Loader.dll")"
-          cargo build --release --locked --target x86_64-pc-windows-msvc -p hyurax-no --features instalador --bin hyurax-instalador
-          instalador="hyurax-instalador-windows-x86_64.exe"
-          cp ".target/x86_64-pc-windows-msvc/release/hyurax-instalador.exe" "$instalador"
-          sha256sum "$instalador" > "${instalador}.sha256"
-          echo "INSTALADOR=$instalador" >> "$GITHUB_ENV"
+      - name: montar
+        shell: pwsh
+        run: ./scripts/empacotar-windows.ps1
+      - name: instalar, abrir e desinstalar numa pasta isolada
+        shell: pwsh
+        run: ./scripts/testar-instalacao.ps1 -Instalador dist/hyurax-instalador-windows-x86_64.exe
       - uses: actions/upload-artifact@v4
         with:
           name: programa-windows-x86_64
           path: |
-            ${{ env.ARQUIVO }}
-            ${{ env.ARQUIVO }}.sha256
-            ${{ env.INSTALADOR }}
-            ${{ env.INSTALADOR }}.sha256
+            dist/hyurax-windows-x86_64.zip
+            dist/hyurax-windows-x86_64.zip.sha256
+            dist/hyurax-instalador-windows-x86_64.exe
+            dist/hyurax-instalador-windows-x86_64.exe.sha256
 
   publicar:
     name: publicar a Release
-    # Espera os dois: sem o minerador na Release, o link fixo do site quebra.
-    needs: [compilar, minerador-windows]
+    # Espera os dois: sem o programa na Release, o link fixo do site quebra.
+    needs: [compilar, programa-windows]
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     steps:
@@ -236,12 +138,14 @@ jobs:
           make_latest: true
           files: pacotes/*
           body: |
-            **Rede de TESTE.** A rede pública não existe e o HYX não tem valor.
-            Não há venda, pré-venda nem promessa de lucro.
+            **Hyurax / Ultrax 1.0 — rede de TESTE.** O programa é a versão 1.0; a rede é de teste e o HYX não tem valor.
+            Não há venda, pré-venda nem promessa de lucro. O Work Score e os créditos de computação não são dinheiro nem HYX.
+
+            Notas desta versão: [docs/NOTAS-1.0.md](https://github.com/NOXqubit/hyurax/blob/main/docs/NOTAS-1.0.md).
 
             Ao instalar ou abrir o programa pela primeira vez, você lê e aceita os [termos de uso](https://github.com/NOXqubit/hyurax/blob/main/docs/TERMOS-DE-USO.md): software experimental, sem garantia, e cada pessoa responde pelo uso que faz.
 
-            Como usar: o programa com janela traz um `LEIA-ME.txt`; os pacotes de terminal trazem o `LEIA-ME.md` (é o `docs/RODAR-UM-NO.md`).
+            Como usar: o programa com janela traz um `LEIA-ME.txt`; os pacotes de terminal trazem o `LEIA-ME.md` (é o `docs/RODAR-UM-NO.md`). Instalar a 1.0 por cima de uma versão anterior atualiza o programa sem tocar na carteira.
 
             | Pacote | Para |
             |---|---|

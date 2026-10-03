@@ -22,7 +22,7 @@ antes (ver "Armazenamento").
 | Pedido | Já existe | Onde |
 |---|---|---|
 | Worker CPU com limite de CPU, RAM, prazo e cancelar | sim | `hyurax-no/src/ultrax.rs` |
-| GPU (integrada inclusive) com limitador, conferida por Freivalds | sim | `painel/gpu.js`, `gpu-trabalhador.js`, `/api/ultrax/gpu/*` |
+| GPU (integrada inclusive) com limitador, conferida por Freivalds; calcula unidades de JOB de matriz | sim | `hyurax-interface/ui/js/gpu/`, `/api/v1/gpu/*` |
 | Tipos de trabalho determinísticos, em inteiros | matriz, mochila, difusão, IA | `hyurax-ultrax/src/trabalho.rs`, `ia.rs` |
 | Ciclo de vida com transições permitidas | sim | `tarefa.rs` |
 | Registro de prova assinado (TASK_ID, INPUT_HASH, RESULT_HASH, WORKER_ID) | sim | `prova.rs` |
@@ -201,40 +201,30 @@ JOB", pela chave.
 
 ### 2.8 Eventos, telemetria e a visão 3D
 
-O caminho:
+Na 1.0 o caminho é o descrito em [`ARQUITETURA.md`](ARQUITETURA.md):
 
-1. **motor:** cada pedaço executado chama `continuar(ops)`, como já é hoje;
-2. **evento:** cada mudança vira uma linha com `job_id`, `work_unit_id`,
-   `node_id`, `workload_type`, `operation`, `timestamp`, `progress`,
-   `input_hash`, `result_hash`, `execution_time_ms`, `cpu_*`, `gpu_*`,
-   `ram_*`, `throughput` e `verification`;
-3. **fluxo:** a tela lê por `/api/ciencia/eventos?desde=N`;
-4. **visão 3D:** WebGL2 próprio, sem biblioteca;
-5. **tela.**
+1. **motor:** cada motor tem `executar_observado`, que entrega amostras do
+   próprio estado (uma linha de C, a grade da difusão, a rota do 2-opt…)
+   sem mudar o resultado;
+2. **eventos:** cada mudança de unidade vira uma linha com `job_id`,
+   `work_unit_id`, `node_id`, `workload_type`, `operation`, `timestamp`,
+   `progress`, `input_hash`, `result_hash`, `execution_time_ms`, `cpu_usage`,
+   `ram_bytes`, `throughput` e `verification_status`;
+3. **fluxo:** a tela recebe tudo pelo SSE `/api/v1/fluxo` (eventos `ciencia`,
+   `tarefa` e `amostra`); `/api/v1/ciencia/eventos?desde=N` continua para
+   quem lê por consulta;
+4. **cena 3D:** WebGL 2 próprio, sem biblioteca, um visualizador por tipo de
+   trabalho, alimentado só pelas amostras;
+5. **tela:** a lista de JOBs, o detalhe (mapa das unidades, agregado, figura
+   do resultado) e os eventos.
 
-O que a visão 3D mostra, por tipo:
+A velocidade é a do cálculo: sem amostra nova, a cena fica parada.
 
-| Tipo | Representação |
-|---|---|
-| Matriz | Os blocos de linhas realmente feitos, na ordem em que ficaram prontos (CPU ou GPU) |
-| Triagem | As moléculas da faixa em execução, desenhadas do SMILES real, e a nota que cada uma recebeu |
-| Genética | As frequências alélicas de cada geração já calculada |
-| Rotas | A rota atual e o custo, quando a unidade entrega |
-| Nós | Este nó e os pares **conectados de verdade**, com os bytes medidos |
-
-A velocidade é a dos eventos: se o cálculo está lento, a tela está lenta.
-"Inspecionar cálculo" mostra os campos do evento, não uma descrição.
-
-**O que o navegador embutido não entrega, e fica escrito na tela:**
-
-- **Uso da GPU:** o WebGL não informa o uso da placa inteira, nem a
-  temperatura, o clock, a energia ou a VRAM livre.
-  - O que é medido é o **ciclo de trabalho da GPU pelo ULTRAX**: tempo de
-    conta dividido pelo tempo total.
-  - A VRAM mostrada é a **alocada pelo ULTRAX**, os bytes das texturas.
-  - O resto aparece como "indisponível pelo WebGL".
-- **Uso de CPU:** o do ULTRAX, medido pelo próprio limitador. Não é o da
-  máquina inteira.
+**Medidas da máquina:** o uso da CPU e da GPU (3D e cálculo) e a memória da
+GPU vêm dos contadores do Windows, para a máquina inteira e para o programa
+(REAL). O WebGL não informa temperatura, clock nem energia: a temperatura fica
+PENDENTE, e a energia é ESTIMADA a partir do uso medido e dos watts que o dono
+informa.
 
 ### 2.9 Créditos de computação, separados do HYX
 

@@ -11,6 +11,8 @@
 target/
 **/*.rs.bk
 *.pdb
+# saída do scripts/empacotar-windows.ps1
+dist/
 
 # ---------------------------------------------------------------------------
 # Python

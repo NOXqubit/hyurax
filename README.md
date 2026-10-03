@@ -1,9 +1,48 @@
-# Hyurax
+# Hyurax / Ultrax
 
-Blockchain com prova de trabalho, em desenvolvimento.
+Blockchain com prova de trabalho e trabalho computacional útil e conferível.
 
-**Estado: pré-testnet. Não existe mainnet. Não existe token com valor.**
-Qualquer pessoa que disser o contrário está mentindo.
+**Programa: versão 1.0. Rede: TESTNET.** A rede pública é de teste, o HYX de
+teste não tem valor e não existe mainnet. Não há venda, pré-venda nem promessa
+de lucro. Qualquer pessoa que disser o contrário está mentindo.
+
+## O programa 1.0
+
+Um programa só, com janela, que junta:
+
+- **o nó** da rede de teste (sincroniza, propaga e confere blocos e transações,
+  com conexão cifrada Noise XX);
+- **a carteira**, cifrada com senha (Argon2id e ChaCha20-Poly1305), com segundo
+  fator opcional (código de 6 dígitos);
+- **a mineração** (Argon2id + prova de trabalho útil por Freivalds em todo bloco);
+- **o ULTRAX**, o worker de trabalho útil: oito motores reais (matrizes, mochila,
+  difusão, treino de IA sobre moléculas reais, genética de populações,
+  melhoramento de plantas, rotas e triagem de moléculas), na CPU e na GPU pelo
+  WebGL 2, cada resultado conferido antes de contar;
+- **a computação científica**: JOBs divididos em unidades conferidas, com
+  relatório em JSON, CSV e PDF, e verificação entre nós;
+- **o painel**: estado do nó, carteira, mineração, tarefas, métricas da máquina
+  e a **visualização 3D (WebGL 2) desenhada a partir das amostras reais** que os
+  motores entregam enquanto calculam.
+
+Todo número na tela diz de onde veio: **REAL** (medido agora), **DERIVADO**
+(conta exata sobre um valor medido), **ESTIMADO** (depende de um parâmetro não
+medido), **SIMULADO** (conta de verdade sobre entrada gerada nesta máquina, a
+carga LAB), **AJUSTE** (escolha do dono) ou **PENDENTE** (ainda não medido). O
+Work Score e os créditos de computação medem contribuição: **não são dinheiro
+nem HYX**, e o trabalho do ULTRAX ainda não muda a recompensa do bloco (isso é
+mudança de consenso, PENDENTE na SPEC-02).
+
+Instalar: o **instalador para Windows** (sem administrador; termos de uso;
+desinstala pelo Windows sem tocar na carteira) ou os pacotes de terminal
+(`hyurax-no`) para Windows, Linux, celular (Termux) e Mac. Guia em
+[`docs/RODAR-UM-NO.md`](docs/RODAR-UM-NO.md); notas desta versão em
+[`docs/NOTAS-1.0.md`](docs/NOTAS-1.0.md); arquitetura em
+[`docs/ARQUITETURA.md`](docs/ARQUITETURA.md).
+
+Onde ficam as coisas (Windows): programa em `%LOCALAPPDATA%\Programs\Hyurax`;
+configuração e **carteira** em `%APPDATA%\Hyurax`; cadeia, ULTRAX, JOBs e
+registros em `%LOCALAPPDATA%\Hyurax`. No Linux, as pastas do XDG.
 
 ## O que existe hoje
 
@@ -12,26 +51,16 @@ Qualquer pessoa que disser o contrário está mentindo.
 | Especificação `HYURAX-SPEC-01` | escrita, congelável quando a tokenomics fechar |
 | Implementação de referência (Python) | completa, 177 testes |
 | Vetores de validação cruzada | 25 arquivos |
-| Nó de produção (Rust) | núcleo migrado e igual ao gabarito: `hyurax-types`, `hyurax-crypto`, `hyurax-codec`, `hyurax-pow`, `hyurax-usefulpow`, `hyurax-tx`, `hyurax-block`, `hyurax-consensus`, `hyurax-state`, `hyurax-chain`, `hyurax-store`, `hyurax-wire`, `hyurax-net` (80 testes) |
-| Rede entre nós | conexão TCP, aperto de mão, sincronização, propagação de blocos e transações, mempool, descoberta de pares (um nó novo acha a rede a partir de uma semente) e retomada automática — tudo em `hyurax-net`, mais reorganização profunda entre pares (a cadeia com mais trabalho vence, mesmo bifurcando fundo). **Conexão cifrada** com Noise XX e identidade de nó (protocolo versão 2) |
-| Nó local e minerador no celular | `hyurax-no` (carteira **com senha**, envio de HYX de teste, nó em rede com `--porta`/`--semente`, mineração de blocos inteiros, saldo) e `hyurax-minerar` (medição); rodam no Termux. Ver [`docs/MINERAR-NO-CELULAR.md`](docs/MINERAR-NO-CELULAR.md) |
-| Programas prontos | **instalador para Windows** (termos de uso, sem administrador, desinstala pelo Windows) e o programa com janela; pacotes de terminal para Windows, Linux, celular (Termux) e Mac, montados pelo GitHub a cada versão; guia em [`docs/RODAR-UM-NO.md`](docs/RODAR-UM-NO.md) |
-| ULTRAX (trabalho útil) | worker no programa, modo LAB: matrizes, otimização, simulação e treino de IA sobre 2.048 moléculas reais, na CPU e na GPU (inclusive a integrada), cada resultado conferido antes de contar; especificado em Python e igual no Rust por vetor. Ver [`docs/ULTRAX.md`](docs/ULTRAX.md). O Work Score mede contribuição: não é dinheiro nem HYX |
-| Computação científica (JOBs) | JOB dividido em unidades, cada uma conferida antes de contar, com checkpoint, retomada e relatório em JSON, CSV e PDF. Motores de verdade: genética de populações, melhoramento de plantas, rotas (logística), triagem de 8.289 moléculas reais, IA, matriz, mochila e difusão. Nível 3 de verificação manda a mesma unidade para workers **de outros nós**, com compromisso antes da revelação e maioria, e a conferência daqui recusa conluio. Visão 3D alimentada só por eventos reais, e ULTRA BENCHMARK com base, atual, alvo e ganho medidos. Créditos de computação separados do HYX, sem liquidação. Ensaiado com vários processos numa máquina; entre máquinas, fica para a testnet. Ver [`docs/COMPUTACAO-CIENTIFICA.md`](docs/COMPUTACAO-CIENTIFICA.md) |
-| Termos de uso | [`docs/TERMOS-DE-USO.md`](docs/TERMOS-DE-USO.md), versão 2, aceitos no instalador e na primeira abertura; revisados pelo projeto contra o CDC, a LGPD, o Marco Civil, o ECA, o Código Penal e a Lei 14.478 (lista no começo do arquivo), **sem assinatura de advogado** |
-| Assinatura digital do programa | não tem ainda; opções, custos e passo a passo em [`docs/ASSINATURA-DIGITAL.md`](docs/ASSINATURA-DIGITAL.md) |
-| Testnet pública | ensaiada com três processos separados (bloco e transferência atravessando a rede); passo a passo do lançamento em [`docs/LANCAR-A-REDE.md`](docs/LANCAR-A-REDE.md); lista de sementes publicada em [`rede/sementes-testnet.txt`](rede/sementes-testnet.txt), que o nó busca sozinho; kit do nó semente em [`docs/NO-SEMENTE.md`](docs/NO-SEMENTE.md); **nenhum semente no ar ainda**; roteiro de 12 semanas em [`docs/ROTEIRO-LANCAMENTO.md`](docs/ROTEIRO-LANCAMENTO.md) |
+| Nó de produção (Rust) | `hyurax-types`, `hyurax-crypto`, `hyurax-codec`, `hyurax-pow`, `hyurax-usefulpow`, `hyurax-tx`, `hyurax-block`, `hyurax-consensus`, `hyurax-state`, `hyurax-chain`, `hyurax-store`, `hyurax-wire`, `hyurax-net`, todos iguais ao gabarito por vetor |
+| Programa 1.0 | `hyurax-nucleo` (o núcleo, sem tela), `hyurax-interface` (a tela), `hyurax-app` (a janela), `hyurax-no` (terminal) e `hyurax-instalador`. Ver [`docs/ARQUITETURA.md`](docs/ARQUITETURA.md) |
+| ULTRAX (trabalho útil) | oito motores, especificados em Python e iguais no Rust por vetor; CPU com limitador por linha e GPU (WebGL 2) conferida pela CPU. Ver [`docs/ULTRAX.md`](docs/ULTRAX.md) |
+| Computação científica (JOBs) | unidades conferidas, checkpoint, retomada, relatório, verificação entre nós com compromisso antes da revelação. Ensaiado com vários processos numa máquina; entre máquinas, fica para a testnet. Ver [`docs/COMPUTACAO-CIENTIFICA.md`](docs/COMPUTACAO-CIENTIFICA.md) |
+| Termos de uso | [`docs/TERMOS-DE-USO.md`](docs/TERMOS-DE-USO.md), versão 3, aceitos no instalador e na primeira abertura; revisados pelo projeto (lista de leis no começo do arquivo), **sem assinatura de advogado** |
+| Assinatura digital do programa | não tem ainda; opções em [`docs/ASSINATURA-DIGITAL.md`](docs/ASSINATURA-DIGITAL.md) |
+| Testnet pública | ensaiada com três processos; lançamento em [`docs/LANCAR-A-REDE.md`](docs/LANCAR-A-REDE.md); sementes em [`rede/sementes-testnet.txt`](rede/sementes-testnet.txt); kit do nó semente em [`docs/NO-SEMENTE.md`](docs/NO-SEMENTE.md); **nenhum semente no ar ainda** |
 | Mainnet | não existe |
-| HYX Index (cesta de 7 referências: ouro, Bitcoin, prata, cobre, platina, paládio e petróleo) | medida informativa, fora do consenso, sem lastro e sem resgate; documento em [`docs/HYX-INDEX.md`](docs/HYX-INDEX.md); estado RED, nada calculado ainda |
-| Hyurax Flux (stablecoins e pagamentos) | arquitetura registrada em [`docs/HYURAX-FLUX.md`](docs/HYURAX-FLUX.md); estado RED, nada implementado |
-| Éter (transporte por qualquer meio) | núcleo pronto e testado em `hyurax-eter`: objeto fatiado em fragmentos que se provam sozinhos, espalhados por vários meios ao mesmo tempo; meios de hoje: pasta de arquivos e memória. Bluetooth, LoRa e rádio projetados, não implementados. Ver [`docs/HYURAX-ETER.md`](docs/HYURAX-ETER.md) |
-| Hyurax Direct, Resonance e Transport (pagamentos P2P, offline e mesh) | arquitetura registrada em [`docs/HYURAX-DIRECT-RESONANCE.md`](docs/HYURAX-DIRECT-RESONANCE.md); estado RED, nada implementado |
-
-## Rodar um nó
-
-Programas prontos e o passo a passo em [`docs/RODAR-UM-NO.md`](docs/RODAR-UM-NO.md):
-baixar, criar carteira com senha, colocar o nó no ar, minerar e enviar HYX de
-teste.
+| HYX Index, Hyurax Flux, Direct e Resonance | arquiteturas registradas em `docs/`; estado RED, nada implementado |
+| Éter (transporte por qualquer meio) | núcleo em `hyurax-eter` (pasta de arquivos e memória); Bluetooth, LoRa e rádio projetados, não implementados. Ver [`docs/HYURAX-ETER.md`](docs/HYURAX-ETER.md) |
 
 ## Como está organizado
 
@@ -39,8 +68,11 @@ teste.
 spec/          HYURAX-SPEC-01: as regras de consenso
 reference/     implementação Python. Não é o nó; é o oráculo
 vectors/       o contrato entre Python e Rust
-crates/        o nó de produção, em Rust
-scripts/       preparo de ambiente
+crates/        o nó e o programa, em Rust
+docs/          documentação (arquitetura, guias, termos, notas)
+rede/          lista pública de sementes da testnet
+scripts/       empacotamento, teste de instalação e preparo de ambiente
+site/          o site do projeto
 ```
 
 O Python **especifica**. O Rust **executa**. Os vetores **provam** que os dois
@@ -55,10 +87,11 @@ Referência Python, sem instalar nada além do numpy:
 python reference/tests/run_all_tests.py
 ```
 
-Nó Rust:
+Rust (testes e clippy):
 
 ```bash
-cargo test --workspace
+cargo test --workspace --no-fail-fast
+cargo clippy --workspace --all-targets -- -D warnings
 ```
 
 Os testes de integração da rede sobem nós de verdade em sockets e disputam CPU
@@ -68,6 +101,20 @@ auto-reanimação):
 
 ```bash
 cargo test -p hyurax-net -- --ignored --test-threads=1
+```
+
+O programa sem janela, com a interface no navegador (http://127.0.0.1:8800):
+
+```bash
+cargo run -p hyurax-no -- painel --rede regtest --pasta ./teste
+```
+
+Programa e instalador para Windows, e o teste da instalação limpa (pasta
+isolada, sem tocar na instalação de verdade):
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\empacotar-windows.ps1
+powershell -ExecutionPolicy Bypass -File scripts\testar-instalacao.ps1 -Instalador dist\hyurax-instalador-windows-x86_64.exe
 ```
 
 Terminal que não achar `cargo` ou `git`:
@@ -128,9 +175,9 @@ por construção, sem nonce aleatório que possa vazar a chave.
 minerador multiplicou matrizes do tamanho exigido (a mesma conta que sustenta
 IA), com instância derivada do bloco anterior e do minerador, conferida por
 Freivalds. O tamanho cresce com o trabalho validado da rede, separado do
-intervalo de bloco. O Argon2id continua como camada complementar. Tarefas de
-clientes de verdade ficam no mercado Ultrax, fora do consenso: nenhum bloco
-depende de alguém publicar tarefa. Limite atual, na spec (§9A): a prova viaja
+intervalo de bloco. O Argon2id continua como camada complementar. Os JOBs
+do ULTRAX ficam fora do consenso: nenhum bloco depende de alguém publicar
+tarefa. Limite atual, na spec (§9A): a prova viaja
 no bloco, então o tamanho tem teto (n = 256).
 
 **Criptografia com números reais.** Ed25519 dá ~128 bits clássicos; SHA-512,
@@ -160,8 +207,9 @@ publicados:
 ## Honestidade
 
 Este repositório declara o estado real da rede. Enquanto não houver mainnet,
-nenhum material do projeto vai dizer que há. Enquanto o Ultrax estiver fora do
+nenhum material do projeto vai dizer que há. Enquanto o ULTRAX estiver fora do
 consenso, nenhum material vai apresentá-lo como lastro econômico da moeda.
+Enquanto um número for estimado, simulado ou pendente, a tela diz isso.
 
 ## Contribuir e atacar
 

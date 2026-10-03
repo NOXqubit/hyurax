@@ -46,9 +46,10 @@ não é.
 | 26/09/2026 | Endereço com dígito verificador (Bech32m, `thyx1…`); painel sem a espera de 300 ms por resposta |
 | 26/09/2026 | Redesign do programa (navegação por seção, visão geral, fontes da marca); instalador com os termos de uso, sem administrador e com desinstalação pelo Windows; termos também na primeira abertura |
 | 26/09/2026 | Redesign do site (capítulos ULTRAX e IA com moléculas reais); fontes servidas pelo próprio site, sem nenhum terceiro; política de privacidade e cookies (LGPD), termos de uso, `security.txt` e CSP em todas as páginas |
-| 26/09/2026 | Versão `v0.3.0-teste.1` preparada: instalador na Release, notas em `docs/NOTAS-v0.3.0-teste.1.md` |
+| 26/09/2026 | Versão `v0.3.0-teste.1` preparada: instalador na Release, notas em `docs/historico/NOTAS-v0.3.0-teste.1.md` |
 | 27/09/2026 | Computação científica: JOBs com unidades conferidas, motores de genética, plantas, rotas e triagem de 8.289 moléculas, visão 3D por eventos reais, ULTRA BENCHMARK e cálculo entre nós com compromisso, maioria e conferência local (ensaio com 3 processos: 30/30 em consenso 3/3) |
-| 27/09/2026 | Termos de uso versão 2 (computação científica); versão `v0.4.0-teste.1` preparada, notas em `docs/NOTAS-v0.4.0-teste.1.md` |
+| 27/09/2026 | Termos de uso versão 2 (computação científica); versão `v0.4.0-teste.1` preparada, notas em `docs/historico/NOTAS-v0.4.0-teste.1.md` |
+| 02/10/2026 | **Hyurax / Ultrax 1.0** (programa oficial, rede de TESTE): núcleo separado da tela, API v1 com fluxo de eventos, painel novo, métricas reais com a origem de cada número, cena 3D feita das amostras reais dos motores, GPU calculando unidades de JOB, instalador com manifesto e teste de instalação limpa; termos versão 3. Notas em `docs/NOTAS-1.0.md` |
 
 Próximo: **o primeiro nó respondendo de fora**. O PC do autor serve para começar (`scripts/no-sempre-ligado.ps1` + porta 8790 no roteador + teste pelo 4G do celular). Os passos 1, 2 e 3 de `docs/LANCAR-A-REDE.md` são do autor: renomear e publicar o repositório, criar a etiqueta, e deixar o nó ligado.
 

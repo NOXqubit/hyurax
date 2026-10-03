@@ -1,0 +1,49 @@
+HYURAX / ULTRAX 1.0
+===================
+
+O que é
+-------
+O programa do Hyurax: o nó da rede, a carteira, a mineração e o ULTRAX
+(trabalho útil conferível), numa janela só. Na primeira vez ele mostra os
+termos de uso, que precisam ser aceitos.
+
+Rede de TESTE
+-------------
+O programa é a versão 1.0; a rede é de TESTE. O HYX de teste não tem valor.
+Não há venda, pré-venda nem promessa de lucro.
+
+Trabalho útil (ULTRAX)
+----------------------
+O computador faz contas conferíveis: matrizes, mochila, difusão, treino de
+IA sobre moléculas reais (AqSolDB), genética de populações, melhoramento de
+plantas, rotas e triagem de moléculas. Cada resultado é conferido antes de
+contar. A CPU e a GPU (inclusive a integrada) têm limitadores próprios.
+O Work Score e os créditos de computação medem contribuição: não são
+dinheiro e não são HYX.
+
+Onde ficam as coisas
+--------------------
+Programa:      %LOCALAPPDATA%\Programs\Hyurax
+Configuração e CARTEIRA:  %APPDATA%\Hyurax
+Cadeia, ULTRAX, registros: %LOCALAPPDATA%\Hyurax
+(cole o caminho na barra de endereço do Explorador de Arquivos)
+
+Atualizar e desinstalar
+-----------------------
+Instalar uma versão nova por cima atualiza o programa sem tocar na carteira
+nem nos dados. Desinstalar (Configurações > Aplicativos) apaga só os
+arquivos do programa listados em instalacao.txt; a carteira, a configuração
+e os dados continuam nas pastas acima.
+
+Cuidado com a carteira
+----------------------
+Guarde a senha e uma cópia do carteira.txt em lugar seguro. Sem os dois, o
+saldo se perde. Ninguém consegue recuperar, nem o projeto.
+
+O Windows pode avisar
+---------------------
+O programa ainda não tem assinatura digital, então o Windows pode mostrar
+"O Windows protegeu o computador". Confira antes a soma SHA-256 publicada
+ao lado do arquivo; depois, "Mais informações" e "Executar assim mesmo".
+
+Licença: MIT ou Apache 2.0, à sua escolha.

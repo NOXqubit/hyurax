@@ -1624,7 +1624,8 @@ mod testes {
         c.ligar(&u);
         let id = c.submeter(pedido(2, 16)).unwrap();
         for _ in 0..2 {
-            let (numero, n) = u.gpu_pegar("GPU de teste").unwrap();
+            let (numero, n, job) = u.gpu_pegar("GPU de teste").unwrap();
+            assert_eq!(job.map(|(j, _)| j), Some(id), "a GPU recebeu a unidade do JOB");
             assert_eq!(n, 16);
             let entrada = u.gpu_entrada(numero).unwrap();
             let v: Vec<u64> = entrada.as_chunks::<4>().0.iter().map(|x| u64::from(u32::from_le_bytes(*x))).collect();

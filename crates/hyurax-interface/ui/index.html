@@ -3,917 +3,336 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Hyurax</title>
 <meta name="color-scheme" content="dark">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14'/%3E%3Cg stroke='%23fff' stroke-width='3.6' stroke-linecap='round' opacity='.6'%3E%3Cline x1='18' y1='14' x2='18' y2='50'/%3E%3Cline x1='46' y1='14' x2='46' y2='50'/%3E%3Cline x1='18' y1='32' x2='46' y2='32'/%3E%3C/g%3E%3Cg fill='%23fff'%3E%3Ccircle cx='18' cy='14' r='5'/%3E%3Ccircle cx='18' cy='50' r='5'/%3E%3Ccircle cx='46' cy='14' r='5'/%3E%3Ccircle cx='46' cy='50' r='5'/%3E%3Ccircle cx='18' cy='32' r='5.6'/%3E%3Ccircle cx='46' cy='32' r='5.6'/%3E%3C/g%3E%3C/svg%3E">
-<!-- Preto desde o primeiro quadro: sem isso a janela pisca branca enquanto o
-     motor do navegador carrega a folha de estilo. -->
-<style>html, body { background: #030303; color: #f3f3f1; }</style>
-<link rel="preload" href="/fontes/archivo.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="/painel.css">
-<script src="/qrcode.min.js" defer></script>
-<script type="module" src="/painel.js"></script>
-<script type="module" src="/ciencia.js"></script>
+<title>Hyurax / Ultrax</title>
+<link rel="stylesheet" href="/estilo.css">
+<script src="/vendor/qrcode.min.js"></script>
+<script type="module" src="/js/app.js"></script>
 </head>
 <body>
-<!-- A casca do programa: navegação à esquerda, e a seção aberta à direita. -->
-<aside class="lateral" aria-label="Navegação">
-  <div class="marca">
-    <svg viewBox="0 0 64 64" aria-hidden="true"><g stroke="currentColor" stroke-width="3.6" stroke-linecap="round" opacity=".55"><line x1="18" y1="14" x2="18" y2="50"/><line x1="46" y1="14" x2="46" y2="50"/><line x1="18" y1="32" x2="46" y2="32"/></g><g fill="currentColor"><circle cx="18" cy="14" r="5"/><circle cx="18" cy="50" r="5"/><circle cx="46" cy="14" r="5"/><circle cx="46" cy="50" r="5"/><circle cx="18" cy="32" r="5.6"/><circle cx="46" cy="32" r="5.6"/></g></svg>
-    <span class="palavra">HYURAX</span>
-    <span class="sub" id="marca-rede">rede de teste</span>
-  </div>
-  <nav class="vistas" aria-label="Seções">
-    <button type="button" class="vista" data-vista="inicio" aria-current="page"><span class="vista-icone" aria-hidden="true">◎</span><span class="vista-nome">Visão geral</span></button>
-    <button type="button" class="vista" data-vista="ultrax"><span class="vista-icone" aria-hidden="true">◆</span><span class="vista-nome">ULTRAX</span><span class="vista-estado" id="n-ultrax"></span></button>
-    <button type="button" class="vista" data-vista="ia"><span class="vista-icone" aria-hidden="true">⬡</span><span class="vista-nome">IA · Moléculas</span><span class="vista-estado" id="n-ia"></span></button>
-    <button type="button" class="vista" data-vista="ciencia"><span class="vista-icone" aria-hidden="true">✦</span><span class="vista-nome">Ciência</span><span class="vista-estado" id="n-ciencia"></span></button>
-    <button type="button" class="vista" data-vista="mineracao"><span class="vista-icone" aria-hidden="true">▣</span><span class="vista-nome">Mineração</span><span class="vista-estado" id="n-mineracao"></span></button>
-    <button type="button" class="vista" data-vista="carteira"><span class="vista-icone" aria-hidden="true">◈</span><span class="vista-nome">Carteira</span></button>
-    <button type="button" class="vista" data-vista="rede"><span class="vista-icone" aria-hidden="true">⌖</span><span class="vista-nome">Rede</span><span class="vista-estado" id="n-rede"></span></button>
-  </nav>
-  <div class="lateral-pe">
-    <button type="button" id="abrir-paineis" class="lateral-botao" aria-haspopup="dialog">Organizar painéis</button>
-    <button type="button" id="abrir-ajustes" class="lateral-botao" aria-haspopup="dialog">Ajustes</button>
-    <p class="lateral-selo">Rede de teste · o HYX não tem valor</p>
-  </div>
-</aside>
 
-<div class="corpo">
-<header class="barra">
-  <h1 class="barra-titulo" id="vista-titulo">Visão geral</h1>
-  <dl class="leituras">
-    <div><dt>Rede</dt><dd id="l-rede">—</dd></div>
-    <div><dt>Altura</dt><dd id="l-altura" class="num">—</dd></div>
-    <div><dt>Ritmo</dt><dd><span id="l-ritmo" class="num">—</span> <small>tent/s</small></dd></div>
-    <div><dt>Pares</dt><dd id="l-pares" class="num">—</dd></div>
-    <div><dt>Ligado há</dt><dd id="l-ligado" class="num">—</dd></div>
-  </dl>
-  <div class="controles" id="controles">
-    <div class="nucleos" role="group" aria-label="Núcleos para minerar">
-      <button type="button" id="menos" aria-label="Menos núcleos">−</button>
-      <span><b id="linhas" class="num">1</b><small>/<span id="nucleos">1</span> núcleos · <span id="memoria">0</span> MiB</small></span>
-      <button type="button" id="mais" aria-label="Mais núcleos">+</button>
-    </div>
-    <button type="button" id="ultrax" class="minerar ultrax-botao" aria-pressed="false" aria-controls="painel-ultrax"
-            title="ULTRAX: trabalho útil verificável, separado da mineração">
-      <i aria-hidden="true"></i><span>ULTRAX</span>
-    </button>
-    <button type="button" id="minerar" class="minerar" aria-pressed="false">
-      <i aria-hidden="true"></i><span>MINERAR</span>
-    </button>
+<header id="topo">
+  <div class="marca">
+    <span class="marca-nome">HYURAX</span><span class="marca-barra">/</span><span class="marca-sub">ULTRAX</span>
+    <span class="versao num" id="topo-versao">—</span>
+    <span class="etiqueta-rede" id="topo-rede" title="A rede pública é de teste: o HYX não tem valor">REDE DE TESTE</span>
   </div>
-  <p class="so-ver" id="so-ver" hidden>Somente leitura · os comandos ficam no computador que minera</p>
+  <dl class="topo-fatos">
+    <div><dt>Conexão com o núcleo</dt><dd id="topo-conexao" class="estado-desligado">conectando…</dd></div>
+    <div><dt>Altura</dt><dd id="topo-altura" class="num">—</dd></div>
+    <div><dt>Pares</dt><dd id="topo-pares" class="num">—</dd></div>
+    <div><dt>Sincronização</dt><dd id="topo-sinc">—</dd></div>
+    <div><dt>Saldo</dt><dd id="topo-saldo" class="num">—</dd></div>
+  </dl>
 </header>
 
-<main class="grade">
-  <!-- Visão geral: o essencial num relance, e cada cartão leva à seção dele. -->
-  <section class="bloco inicio" id="painel-inicio" data-painel="inicio" aria-label="Visão geral">
-    <div class="inicio-frase">
-      <small>Agora, nesta máquina</small>
-      <p id="i-frase">Lendo o nó…</p>
+<nav id="navegacao" aria-label="Seções">
+  <a href="#visao" data-tela="visao">Visão geral</a>
+  <a href="#ultrax" data-tela="ultrax">ULTRAX</a>
+  <a href="#ciencia" data-tela="ciencia">Computação científica</a>
+  <a href="#carteira" data-tela="carteira">Carteira</a>
+  <a href="#cadeia" data-tela="cadeia">Cadeia e mineração</a>
+  <a href="#rede" data-tela="rede">Rede</a>
+  <a href="#registro" data-tela="registro">Registro</a>
+  <a href="#ajustes" data-tela="ajustes">Ajustes</a>
+  <p class="nav-rodape"><span id="nav-maquina">—</span></p>
+</nav>
+
+<main id="principal">
+
+  <!-- Visão geral -->
+  <section id="tela-visao" class="tela" aria-labelledby="t-visao">
+    <h1 id="t-visao">Visão geral</h1>
+    <ol class="leitura" id="leitura" aria-label="O trabalho em foco, do começo ao fim">
+      <li><span class="passo">Trabalho</span><strong id="l-trabalho">—</strong><small id="l-trabalho-nota"></small></li>
+      <li><span class="passo">Como</span><strong id="l-como">—</strong><small id="l-como-nota"></small></li>
+      <li><span class="passo">Recurso</span><strong id="l-recurso">—</strong><small id="l-recurso-nota"></small></li>
+      <li><span class="passo">Resultado</span><strong id="l-resultado">—</strong><small id="l-resultado-nota"></small></li>
+      <li><span class="passo">Verificação</span><strong id="l-verificacao">—</strong><small id="l-verificacao-nota"></small></li>
+      <li><span class="passo">Impacto na rede</span><strong id="l-impacto">—</strong><small id="l-impacto-nota"></small></li>
+    </ol>
+    <div class="grade-visao">
+      <article class="bloco bloco-cena">
+        <header class="bloco-cab">
+          <h2 id="cena-titulo">Visualização 3D</h2>
+          <div class="cena-ctrl">
+            <label for="cena-foco" class="rotulo-pequeno">Tarefa</label>
+            <select id="cena-foco" autocomplete="off"><option value="">seguir a mais recente</option></select>
+            <button type="button" id="cena-reenquadrar" class="botao-leve" title="Voltar ao enquadramento (ou duplo clique na cena)">Reenquadrar</button>
+          </div>
+        </header>
+        <div class="cena-caixa">
+          <canvas id="cena" aria-label="Visualização 3D do trabalho em execução; arraste para girar, role para aproximar"></canvas>
+          <p class="cena-vazia" id="cena-vazia">Nenhuma amostra ainda. Ligue o ULTRAX (ou submeta um JOB): a cena mostra o que o motor está calculando, a partir das amostras reais que ele entrega.</p>
+          <p class="cena-selo" id="cena-selo" hidden></p>
+        </div>
+        <ul class="cena-legenda" id="cena-legenda"></ul>
+        <p class="nota">Arraste para girar · role para aproximar · Shift+arrastar desloca · setas e +/− no teclado · duplo clique reenquadra.</p>
+      </article>
+      <article class="bloco bloco-maquina">
+        <h2>Esta máquina</h2>
+        <dl class="fatos" id="maquina-fatos"></dl>
+        <canvas id="maquina-grafico" class="grafico" aria-label="CPU da máquina e do programa nos últimos minutos"></canvas>
+        <p class="nota" id="maquina-nota"></p>
+      </article>
     </div>
-    <div class="inicio-cartoes">
-      <button type="button" class="cartao" data-ir="ultrax">
-        <span class="cartao-rotulo">ULTRAX · trabalho útil</span>
-        <b class="cartao-numero num" id="i-score">0,00</b>
-        <span class="cartao-legenda">Work Score · <span id="i-ultrax-estado">desligado</span></span>
-        <span class="cartao-pe num" id="i-tarefas">—</span>
-      </button>
-      <button type="button" class="cartao" data-ir="ia">
-        <span class="cartao-rotulo">IA · moléculas</span>
-        <b class="cartao-numero num" id="i-ia-erro">—</b>
-        <span class="cartao-legenda">erro típico do melhor modelo, em log S</span>
-        <span class="cartao-pe" id="i-ia-mol">—</span>
-      </button>
-      <button type="button" class="cartao" data-ir="mineracao">
-        <span class="cartao-rotulo">Mineração</span>
-        <b class="cartao-numero num" id="i-min-blocos">0</b>
-        <span class="cartao-legenda">blocos meus na cadeia · <span id="i-min-estado">parada</span></span>
-        <span class="cartao-pe num" id="i-min-ritmo">—</span>
-      </button>
-      <button type="button" class="cartao" data-ir="carteira">
-        <span class="cartao-rotulo">Carteira</span>
-        <b class="cartao-numero num" id="i-saldo">0</b>
-        <span class="cartao-legenda">HYX gastável · rede de teste, sem valor</span>
-        <span class="cartao-pe num" id="i-imaturo">—</span>
-      </button>
-      <button type="button" class="cartao" data-ir="rede">
-        <span class="cartao-rotulo">Rede</span>
-        <b class="cartao-numero num" id="i-altura">0</b>
-        <span class="cartao-legenda">altura da cadeia · <span id="i-pares">0 pares</span></span>
-        <span class="cartao-pe num" id="i-ponta">—</span>
-      </button>
+    <div class="grade-cartoes">
+      <article class="bloco"><h2>Nó e rede</h2><dl class="fatos" id="vg-no"></dl></article>
+      <article class="bloco"><h2>Carteira</h2><dl class="fatos" id="vg-carteira"></dl></article>
+      <article class="bloco"><h2>Mineração</h2><dl class="fatos" id="vg-mineracao"></dl></article>
+      <article class="bloco"><h2>ULTRAX</h2><dl class="fatos" id="vg-ultrax"></dl></article>
+      <article class="bloco bloco-largo"><h2>Registro recente</h2><ol class="registro" id="vg-registro"></ol></article>
     </div>
   </section>
 
-  <!-- ULTRAX: o que esta máquina está calculando agora, de verdade. -->
-  <section class="bloco ultrax" id="painel-ultrax" data-painel="ultrax" aria-label="ULTRAX, trabalho ativo">
-    <header class="rotulo">
-      <span>ULTRAX · Trabalho ativo</span>
-      <span class="rotulo-fim"><span class="selo-modo" id="u-modo" title="LAB: tarefas geradas e conferidas nesta máquina. Ninguém de fora encomendou este trabalho.">LAB · TESTNET WORKLOAD</span><span id="u-estado">desligado</span></span>
-    </header>
-    <div class="u-controles" id="u-controles">
-      <div class="nucleos" role="group" aria-label="Linhas do ULTRAX">
-        <button type="button" id="u-menos" aria-label="Menos linhas">−</button>
-        <span><b id="u-linhas" class="num">1</b><small>/<span id="u-nucleos">1</span> linhas</small></span>
-        <button type="button" id="u-mais" aria-label="Mais linhas">+</button>
+  <!-- ULTRAX -->
+  <section id="tela-ultrax" class="tela" aria-labelledby="t-ultrax" hidden>
+    <h1 id="t-ultrax">ULTRAX</h1>
+    <p class="introducao">O worker de trabalho útil. Executa tarefas reais, assina o registro de prova e confere cada resultado antes de contar. Sem JOB pedido, roda a carga <strong>LAB</strong>: conta de verdade sobre entrada gerada nesta máquina (<span class="selo selo-simulado">SIMULADO</span>). O Work Score mede contribuição: não é dinheiro nem HYX.</p>
+    <div class="grade-dupla">
+      <article class="bloco">
+        <h2>Controle</h2>
+        <div class="controles" id="u-controles"></div>
+        <p class="nota" id="u-controles-nota"></p>
+      </article>
+      <article class="bloco">
+        <h2>Recursos</h2>
+        <dl class="fatos" id="u-recursos"></dl>
+        <p class="nota" id="u-gpu-nota"></p>
+      </article>
+    </div>
+    <article class="bloco"><h2>Executando agora</h2><div class="tabela-caixa"><table id="u-ativas"></table></div></article>
+    <div class="grade-dupla">
+      <article class="bloco"><h2>Placar (medida local)</h2><dl class="fatos" id="u-placar"></dl></article>
+      <article class="bloco"><h2>Passos das tarefas</h2><ol class="registro" id="u-passos"></ol></article>
+    </div>
+    <article class="bloco"><h2>Tarefas encerradas</h2><div class="tabela-caixa"><table id="u-historico"></table></div></article>
+  </section>
+
+  <!-- Ciência -->
+  <section id="tela-ciencia" class="tela" aria-labelledby="t-ciencia" hidden>
+    <h1 id="t-ciencia">Computação científica</h1>
+    <p class="introducao">Um JOB é dividido em unidades. Cada unidade é calculada, conferida e só então soma no JOB, com relatório em JSON, CSV e PDF. No nível 3, a mesma unidade vai para workers de outros nós e decide a maioria, conferida aqui. Créditos de computação não são HYX.</p>
+    <div class="grade-dupla">
+      <article class="bloco">
+        <h2>Novo JOB</h2>
+        <form id="nj-form" class="formulario" autocomplete="off">
+          <label for="nj-dominio"><small>Área</small><select id="nj-dominio"></select></label>
+          <label for="nj-motor"><small>Motor</small><select id="nj-motor"></select></label>
+          <div id="nj-campos" class="campos"></div>
+          <div class="campos">
+            <label for="nj-unidades"><small>Unidades</small><input id="nj-unidades" type="number" min="1" max="1000000" value="12"></label>
+            <label for="nj-nivel"><small>Verificação</small><select id="nj-nivel">
+              <option value="1">1 · integridade</option>
+              <option value="2" selected>2 · recomputação aqui</option>
+              <option value="3">3 · concordância entre nós</option>
+            </select></label>
+            <label for="nj-redundancia"><small>Redundância (nível 3)</small><input id="nj-redundancia" type="number" min="1" max="5" value="1"></label>
+            <label for="nj-prazo"><small>Prazo (s, 0 = sem)</small><input id="nj-prazo" type="number" min="0" value="0"></label>
+            <label for="nj-orcamento"><small>Orçamento (créditos, 0 = sem)</small><input id="nj-orcamento" type="number" min="0" step="0.001" value="0"></label>
+          </div>
+          <label for="nj-descricao"><small>Descrição</small><input id="nj-descricao" maxlength="200" placeholder="para que serve este JOB"></label>
+          <div class="acoes">
+            <button type="button" id="nj-estimar" class="botao-leve">Estimar</button>
+            <button type="submit" class="botao">Submeter JOB</button>
+          </div>
+          <p class="saida" id="nj-saida" role="status"></p>
+        </form>
+      </article>
+      <article class="bloco">
+        <h2>Entre nós</h2>
+        <label class="chave" for="cj-aceitar"><input type="checkbox" id="cj-aceitar"><span>Calcular unidades que outros nós pedirem</span></label>
+        <dl class="fatos" id="cj-rede"></dl>
+        <h2 class="sub">ULTRA BENCHMARK</h2>
+        <p class="nota">Mede o agendador, os motores e um JOB de ponta a ponta nesta máquina. A base é a primeira medida registrada aqui; o ganho é atual ÷ base.</p>
+        <button type="button" id="b-rodar" class="botao-leve">Medir agora</button>
+        <p class="saida" id="b-estado" role="status"></p>
+        <div class="tabela-caixa"><table id="b-tabela"></table></div>
+      </article>
+    </div>
+    <article class="bloco"><h2>JOBs</h2><div class="tabela-caixa"><table id="cj-lista"></table></div></article>
+    <article class="bloco" id="cj-detalhe-bloco" hidden>
+      <h2 id="cj-detalhe-titulo">JOB</h2>
+      <div id="cj-detalhe"></div>
+    </article>
+    <article class="bloco"><h2>Eventos da ciência</h2><ol class="registro" id="cj-eventos"></ol></article>
+  </section>
+
+  <!-- Carteira -->
+  <section id="tela-carteira" class="tela" aria-labelledby="t-carteira" hidden>
+    <h1 id="t-carteira">Carteira</h1>
+    <div id="c-sem-carteira" hidden>
+      <article class="bloco">
+        <h2>Nenhuma carteira neste computador</h2>
+        <p>A chave é criada aqui e cifrada com a sua senha (Argon2id e ChaCha20-Poly1305). O projeto nunca recebe a chave nem a senha, e ninguém consegue recuperar uma senha esquecida.</p>
+        <div class="grade-dupla">
+          <form id="c-nova" class="formulario" autocomplete="off">
+            <h3>Criar</h3>
+            <label for="c-senha"><small>Senha (mínimo 10 caracteres)</small><input id="c-senha" type="password" autocomplete="new-password"></label>
+            <label for="c-senha2"><small>Repita a senha</small><input id="c-senha2" type="password" autocomplete="new-password"></label>
+            <button type="submit" class="botao">Criar carteira</button>
+            <p class="saida" id="c-nova-saida" role="status"></p>
+          </form>
+          <form id="c-importar" class="formulario" autocomplete="off">
+            <h3>Importar</h3>
+            <label for="c-conteudo"><small>Conteúdo do arquivo carteira.txt</small><textarea id="c-conteudo" rows="6" spellcheck="false"></textarea></label>
+            <button type="submit" class="botao-leve">Importar</button>
+            <p class="saida" id="c-importar-saida" role="status"></p>
+          </form>
+        </div>
+      </article>
+    </div>
+    <div id="c-com-carteira" hidden>
+      <div class="grade-dupla">
+        <article class="bloco">
+          <h2>Saldo</h2>
+          <p class="saldo num" id="c-saldo">—</p>
+          <dl class="fatos" id="c-fatos"></dl>
+          <p class="endereco" id="c-endereco">—</p>
+          <div id="c-qr" class="qr" role="img" aria-label="QR Code do endereço"></div>
+        </article>
+        <article class="bloco">
+          <h2>Enviar HYX de teste</h2>
+          <form id="c-enviar" class="formulario" autocomplete="off">
+            <label for="e-para"><small>Para (endereço thyx1…)</small><input id="e-para" spellcheck="false"></label>
+            <div class="campos">
+              <label for="e-valor"><small>Valor (HYX)</small><input id="e-valor" inputmode="decimal" placeholder="1.5"></label>
+              <label for="e-taxa"><small>Taxa (HYX)</small><input id="e-taxa" inputmode="decimal"></label>
+            </div>
+            <div id="e-confirmar" hidden>
+              <p id="e-resumo" class="saida"></p>
+              <label for="e-senha"><small>Senha da carteira</small><input id="e-senha" type="password" autocomplete="current-password"></label>
+              <label for="e-codigo" id="e-codigo-rotulo" hidden><small>Código de 6 dígitos</small><input id="e-codigo" inputmode="numeric" maxlength="6"></label>
+            </div>
+            <div class="acoes"><button type="submit" class="botao" id="e-botao">Conferir</button><button type="reset" class="botao-leve" id="e-cancelar" hidden>Cancelar</button></div>
+            <p class="saida" id="e-saida" role="status"></p>
+          </form>
+        </article>
       </div>
-      <div class="segmentos compacto" role="group" aria-label="Limite de CPU do ULTRAX">
-        <label for="u-cpu-25"><input type="radio" name="u-cpu" id="u-cpu-25" value="25" autocomplete="off"><span>25%</span></label>
-        <label for="u-cpu-50"><input type="radio" name="u-cpu" id="u-cpu-50" value="50" autocomplete="off"><span>50%</span></label>
-        <label for="u-cpu-75"><input type="radio" name="u-cpu" id="u-cpu-75" value="75" autocomplete="off"><span>75%</span></label>
-        <label for="u-cpu-100"><input type="radio" name="u-cpu" id="u-cpu-100" value="100" autocomplete="off"><span>100%</span></label>
-      </div>
-      <label class="u-campo" for="u-memoria"><small>Memória</small>
-        <select id="u-memoria" autocomplete="off">
-          <option value="64">até 64 MiB</option>
-          <option value="128">até 128 MiB</option>
-          <option value="256">até 256 MiB</option>
-          <option value="512">até 512 MiB</option>
-          <option value="1024">até 1 GiB</option>
-        </select>
-      </label>
-      <label class="chave-liga u-debug" for="u-debug"><input type="checkbox" id="u-debug" autocomplete="off"><span>DEBUG</span></label>
-    </div>
-    <div class="u-controles u-gpu" id="u-gpu-controles">
-      <label class="chave-liga u-debug" for="u-gpu"><input type="checkbox" id="u-gpu" autocomplete="off"><span>GPU</span></label>
-      <div class="segmentos compacto" role="group" aria-label="Limite de uso da GPU">
-        <label for="u-gpu-25"><input type="radio" name="u-gpu-uso" id="u-gpu-25" value="25" autocomplete="off"><span>25%</span></label>
-        <label for="u-gpu-50"><input type="radio" name="u-gpu-uso" id="u-gpu-50" value="50" autocomplete="off"><span>50%</span></label>
-        <label for="u-gpu-75"><input type="radio" name="u-gpu-uso" id="u-gpu-75" value="75" autocomplete="off"><span>75%</span></label>
-        <label for="u-gpu-100"><input type="radio" name="u-gpu-uso" id="u-gpu-100" value="100" autocomplete="off"><span>100%</span></label>
-      </div>
-      <small class="u-gpu-nome" id="u-gpu-nome">A GPU trabalha enquanto esta janela estiver aberta; a CPU confere cada resultado.</small>
-    </div>
-    <dl class="u-recursos" aria-label="Recursos do ULTRAX">
-      <div><dt>CPU × linhas</dt><dd id="u-r-cpu" class="num">—</dd></div>
-      <div><dt>Memória</dt><dd id="u-r-mem" class="num">—</dd></div>
-      <div><dt>Na fila</dt><dd id="u-r-fila" class="num">—</dd></div>
-      <div><dt>GPU</dt><dd id="u-r-gpu">não usada</dd></div>
-      <div><dt>Temperatura</dt><dd title="O programa não lê sensor de temperatura; não inventa número.">não medida</dd></div>
-    </dl>
-    <div class="u-ativas" id="u-ativas" aria-live="polite"></div>
-    <div class="u-vazio" id="u-vazio">
-      <p><b>O ULTRAX está desligado.</b> Ligado, ele gera tarefas reais (multiplicação de matrizes, otimização da mochila, difusão de calor), executa, assina o resultado e confere, uma de cada vez por linha.</p>
-      <p><small>Modo LAB: o trabalho nasce nesta máquina e é conferido por ela mesma. É carga de teste, não serviço para alguém de fora, e não rende HYX. Separado da mineração: os dois podem rodar juntos, cada um com o seu limite.</small></p>
-      <button type="button" id="u-ligar" class="acao">Ligar o ULTRAX</button>
+      <article class="bloco"><h2>Movimentos</h2><div class="tabela-caixa"><table id="c-historico"></table></div></article>
+      <article class="bloco">
+        <h2>Segundo fator (código de 6 dígitos)</h2>
+        <div id="c-seguranca"></div>
+      </article>
     </div>
   </section>
 
-  <!-- IA: a rede neural que o ULTRAX treina, e uma molécula de verdade. -->
-  <section class="bloco ia" id="painel-ia" data-painel="ia" aria-label="IA, solubilidade de moléculas">
-    <header class="rotulo"><span>IA · Moléculas</span><span class="rotulo-fim"><span class="selo-modo">AI WORK · LAB</span><span id="ia-treinos">—</span></span></header>
-    <div class="ia-grade">
-      <figure class="ia-molecula">
-        <canvas id="ia-desenho" role="img" aria-label="Estrutura da molécula"></canvas>
-        <figcaption><b id="ia-nome">—</b><span id="ia-formula" class="num">—</span></figcaption>
-      </figure>
-      <div class="ia-numeros">
-        <small>Solubilidade na água</small>
-        <dl class="pares ia-sol">
-          <div><dt>Medida no laboratório</dt><dd id="ia-medido" class="num">—</dd></div>
-          <div><dt>Prevista pela IA</dt><dd id="ia-previsto" class="num">—</dd></div>
-          <div><dt>Diferença</dt><dd id="ia-diferenca" class="num">—</dd></div>
-        </dl>
-        <small>Melhor modelo desta máquina</small>
-        <p class="ia-erro"><b id="ia-rmse" class="num">—</b> <span>erro típico, em log S, nas <span id="ia-validacao">410</span> moléculas que ele nunca viu no treino</span></p>
-        <canvas id="ia-curva" class="ia-curva" role="img" aria-label="Erro durante o último treino"></canvas>
-        <p class="v-regra">Curva do último treino: o erro caindo a cada passo.</p>
-      </div>
+  <!-- Cadeia e mineração -->
+  <section id="tela-cadeia" class="tela" aria-labelledby="t-cadeia" hidden>
+    <h1 id="t-cadeia">Cadeia e mineração</h1>
+    <p class="introducao">Cada bloco leva a prova de trabalho Argon2id e uma prova de trabalho útil (multiplicação de matrizes que todo nó confere por Freivalds). A recompensa do bloco vem da mineração; o trabalho científico do ULTRAX não muda a recompensa (isso depende de uma especificação nova, PENDENTE).</p>
+    <div class="grade-dupla">
+      <article class="bloco"><h2>Mineração</h2><div class="controles" id="m-controles"></div><dl class="fatos" id="m-fatos"></dl><canvas id="m-grafico" class="grafico" aria-label="Tentativas por segundo"></canvas></article>
+      <article class="bloco"><h2>Cadeia</h2><dl class="fatos" id="k-fatos"></dl></article>
     </div>
-    <p class="nota nota-painel ia-nota">A rede neural (10 descritores → 16 neurônios → 1) aprende a prever a solubilidade a partir de 2.048 moléculas da AqSolDB (domínio público). Prever solubilidade é uma etapa de triagem na pesquisa de remédios; isto não descobre remédio. Modo LAB: ninguém encomendou este treino.</p>
+    <article class="bloco"><h2>Blocos recentes</h2><div class="tabela-caixa"><table id="k-blocos"></table></div></article>
   </section>
 
-  <!-- Verificação, contribuição, reputação e o nó: as respostas do ULTRAX. -->
-  <section class="bloco verificacao" id="painel-verificacao" data-painel="verificacao" aria-label="Verificação e contribuição">
-    <header class="rotulo"><span>Verificação · Contribuição</span><span class="rotulo-fim"><span id="v-desde">—</span></span></header>
-    <div class="v-grade">
-      <div class="v-score">
-        <small>Work Score</small>
-        <b id="v-score" class="num">0,00</b>
-        <p class="v-regra">1 ponto = 1 milhão de operações de tarefas <em>verificadas</em>. Medida de contribuição: não é dinheiro nem HYX.</p>
-      </div>
-      <div class="v-reputacao">
-        <small>Reputação local</small>
-        <b><span id="v-nota" class="num">500</span><span class="v-de">/1000</span></b>
-        <div class="v-trilho" aria-hidden="true"><i id="v-nota-barra"></i></div>
-        <p class="v-regra">(verificadas + 1) ÷ (verificadas + recusadas + 2). Só recusa com evidência baixa a nota. No LAB, não conta para a rede.</p>
-      </div>
+  <!-- Rede -->
+  <section id="tela-rede" class="tela" aria-labelledby="t-rede" hidden>
+    <h1 id="t-rede">Rede</h1>
+    <div class="grade-dupla">
+      <article class="bloco"><h2>Este nó</h2><dl class="fatos" id="r-fatos"></dl></article>
+      <article class="bloco">
+        <h2>Sementes</h2>
+        <form id="r-sementes" class="formulario" autocomplete="off">
+          <label for="r-lista"><small>IP:PORTA, uma por linha (vazio: a lista publicada da testnet)</small><textarea id="r-lista" rows="4" spellcheck="false"></textarea></label>
+          <button type="submit" class="botao-leve">Salvar e conectar</button>
+          <p class="saida" id="r-saida" role="status"></p>
+        </form>
+      </article>
     </div>
-    <dl class="pares v-contas">
-      <div><dt>Entregues</dt><dd id="v-enviadas" class="num">0</dd></div>
-      <div><dt>Verificadas</dt><dd id="v-verificadas" class="num">0</dd></div>
-      <div><dt>Recusadas</dt><dd id="v-recusadas" class="num">0</dd></div>
-      <div><dt>Em disputa · divergentes</dt><dd id="v-disputa" class="num">0 · 0</dd></div>
-      <div><dt>Desafios certos · errados</dt><dd id="v-desafios" class="num">0 · 0</dd></div>
-      <div><dt>Canceladas · expiradas · abandonadas</dt><dd id="v-paradas" class="num">0 · 0 · 0</dd></div>
-      <div><dt>Operações verificadas</dt><dd id="v-operacoes" class="num">0</dd></div>
-      <div><dt>Tempo de cálculo · de conferência</dt><dd id="v-tempo" class="num">—</dd></div>
-      <div><dt>Ligado, no total</dt><dd id="v-ligado" class="num">—</dd></div>
-      <div><dt>Quem confere</dt><dd id="v-verificador">esta máquina (LAB)</dd></div>
-    </dl>
-    <h3 class="rotulo-secao">Nó</h3>
-    <dl class="pares v-no">
-      <div><dt>Estado · versão</dt><dd id="v-no-estado">—</dd></div>
-      <div><dt>Pares · latência</dt><dd id="v-no-pares">—</dd></div>
-      <div><dt>Worker</dt><dd><button type="button" id="v-worker" class="link num" title="Copiar a chave pública do worker">—</button></dd></div>
-    </dl>
+    <article class="bloco">
+      <h2>As suas outras máquinas</h2>
+      <p class="nota">Só leitura: cada máquina precisa estar com "ver no celular" ligado. Comando continua valendo só de dentro de cada computador.</p>
+      <form id="r-maquinas" class="formulario" autocomplete="off">
+        <label for="r-maquinas-lista"><small>IP:PORTA do painel (8800), uma por linha</small><textarea id="r-maquinas-lista" rows="3" spellcheck="false"></textarea></label>
+        <button type="submit" class="botao-leve">Salvar</button>
+        <p class="saida" id="r-maquinas-saida" role="status"></p>
+      </form>
+      <div class="tabela-caixa"><table id="r-maquinas-tabela"></table></div>
+    </article>
   </section>
 
-  <!-- A mineração continua: é ela que protege a cadeia e rende HYX. -->
-  <section class="bloco mineracao" id="painel-mineracao" data-painel="mineracao" aria-label="Mineração">
-    <header class="rotulo"><span>Mineração</span><span class="rotulo-fim"><button type="button" id="abrir-trabalho" class="link" aria-haspopup="dialog">ver o trabalho do bloco</button><span id="estado-rodada">parado</span></span></header>
-    <dl class="pares">
-      <div><dt>Tentativas</dt><dd id="e-tentativas" class="num">0</dd></div>
-      <div><dt>Rodada atual</dt><dd id="e-rodada" class="num">—</dd></div>
-      <div><dt>Meus blocos</dt><dd id="e-meus" class="num">0</dd></div>
-      <div><dt>Perdidos na corrida</dt><dd id="e-perdidos" class="num">0</dd></div>
-      <div><dt>Energia estimada</dt><dd id="e-energia" class="num">0 W</dd></div>
-      <div><dt>Limite de CPU</dt><dd id="e-limite" class="num">100%</dd></div>
-    </dl>
-    <p class="nota nota-painel">A mineração protege a cadeia (Argon2id) e cada bloco carrega uma multiplicação de matrizes que a rede confere. É ela que rende HYX. O ULTRAX é outra coisa: trabalho útil fora do bloco, medido em Work Score.</p>
-  </section>
-
-    <section class="bloco carteira" id="painel-carteira" data-painel="carteira" aria-label="Carteira">
-      <header class="rotulo"><span>Carteira</span><span class="rotulo-fim"><button type="button" id="copiar" class="link">copiar endereço</button></span></header>
-      <p class="endereco" id="endereco">—</p>
-      <p class="saldo"><span id="saldo" class="num">0.00000000</span><small>HYX</small></p>
-      <p class="legenda">Gastável agora</p>
-      <div class="carteira-acoes">
-        <button type="button" id="abrir-enviar" class="acao" aria-haspopup="dialog">Enviar</button>
-        <button type="button" id="abrir-receber" class="acao" aria-haspopup="dialog">Receber</button>
-        <button type="button" id="abrir-seguranca" class="acao" aria-haspopup="dialog">Segurança</button>
-      </div>
-      <dl class="pares">
-        <div><dt>Esperando liberar</dt><dd><span id="imaturo" class="num">0</span> HYX</dd></div>
-        <div><dt>Recompensa do próximo bloco</dt><dd><span id="recompensa" class="num">0</span> HYX</dd></div>
-        <div><dt>Libera depois de</dt><dd><span id="maturidade" class="num">0</span> blocos</dd></div>
-      </dl>
-      <h3 class="rotulo-secao">Últimos movimentos</h3>
-      <ol class="movimentos" id="movimentos"></ol>
-      <p class="nota nota-painel" id="sem-movimentos">Nada ainda. O primeiro movimento aparece quando você minerar um bloco ou receber HYX.</p>
-    </section>
-    <section class="bloco rede" id="painel-rede" data-painel="rede" aria-label="Rede">
-      <header class="rotulo"><span>Rede</span><span class="rotulo-fim"><span id="r-nome">—</span></span></header>
-      <dl class="pares">
-        <div><dt>Emitido</dt><dd><span id="r-emitido" class="num">0</span> HYX</dd></div>
-        <div><dt>Transações esperando</dt><dd id="r-mempool" class="num">0</dd></div>
-        <div><dt>Trabalho acumulado</dt><dd id="r-trabalho" class="num curto">0</dd></div>
-        <div><dt>Ponta da cadeia</dt><dd id="r-ponta" class="num curto">—</dd></div>
-      </dl>
-    </section>
-
-  <section class="bloco historico" id="painel-historico" data-painel="historico" aria-label="Histórico de tarefas do ULTRAX">
-    <header class="rotulo"><span>Histórico de tarefas</span><span class="rotulo-fim"><span class="chave"><i class="q meu"></i>verificada <i class="q"></i>não</span></span></header>
-    <div class="rolar">
-      <table>
-        <thead><tr><th>Tarefa</th><th>Trabalho</th><th>Estado</th><th>Operações</th><th>Cálculo</th><th>Conferência</th></tr></thead>
-        <tbody id="u-historico"></tbody>
-      </table>
+  <!-- Registro -->
+  <section id="tela-registro" class="tela" aria-labelledby="t-registro" hidden>
+    <h1 id="t-registro">Registro</h1>
+    <div class="filtros">
+      <label for="g-filtro"><small>Categoria</small><select id="g-filtro"><option value="">todas</option></select></label>
+      <label for="g-busca"><small>Contém</small><input id="g-busca" type="search"></label>
     </div>
-    <p class="nota nota-painel" id="u-historico-vazio">Nenhuma tarefa ainda. Cada tarefa encerrada aparece aqui, e fica gravada em PASTA/ultrax/historico.txt, assinada pelo worker.</p>
+    <ol class="registro registro-cheio" id="g-lista"></ol>
+    <p class="nota" id="g-arquivo"></p>
   </section>
 
-  <section class="bloco telemetria" id="painel-telemetria" data-painel="telemetria" aria-label="Telemetria do ULTRAX">
-    <header class="rotulo"><span>Telemetria</span><span class="rotulo-fim"><span id="u-debug-estado">DEBUG desligado</span></span></header>
-    <ol id="u-telemetria" class="rolar"></ol>
-  </section>
-
-  <section class="bloco livro" id="painel-livro" data-painel="livro" aria-label="Livro de blocos">
-    <header class="rotulo"><span>Livro de blocos</span><span class="rotulo-fim"><span class="chave"><i class="q meu"></i>meu <i class="q"></i>outro nó</span></span></header>
-    <div class="rolar">
-      <table>
-        <thead><tr><th>Altura</th><th>Hash</th><th>Intervalo</th><th>Trabalho útil</th><th>Tx</th></tr></thead>
-        <tbody id="livro"></tbody>
-      </table>
+  <!-- Ajustes -->
+  <section id="tela-ajustes" class="tela" aria-labelledby="t-ajustes" hidden>
+    <h1 id="t-ajustes">Ajustes</h1>
+    <div class="grade-dupla">
+      <article class="bloco">
+        <h2>Estimativa de energia</h2>
+        <p class="nota">A energia não é medida: é uma estimativa pelo uso de CPU medido do programa e pelos watts por núcleo que você informar.</p>
+        <form id="a-energia" class="formulario" autocomplete="off">
+          <div class="campos">
+            <label for="a-watts"><small>Watts por núcleo trabalhando</small><input id="a-watts" type="number" min="1" max="200"></label>
+            <label for="a-kwh"><small>Preço do kWh (R$)</small><input id="a-kwh" type="number" min="0.01" max="999" step="0.01"></label>
+          </div>
+          <button type="submit" class="botao-leve">Salvar</button>
+          <p class="saida" id="a-energia-saida" role="status"></p>
+        </form>
+      </article>
+      <article class="bloco">
+        <h2>Painel e avisos</h2>
+        <label class="chave" for="a-na-rede"><input type="checkbox" id="a-na-rede"><span>Ver no celular (outros aparelhos da rede local leem o painel; comando continua só daqui)</span></label>
+        <p class="nota" id="a-url"></p>
+        <div id="a-qr" class="qr" role="img" aria-label="QR Code do endereço do painel" hidden></div>
+        <label class="chave" for="a-avisar"><input type="checkbox" id="a-avisar"><span>Avisar quando um bloco deste nó entrar</span></label>
+        <label class="chave" for="a-som"><input type="checkbox" id="a-som"><span>Com som</span></label>
+      </article>
     </div>
-  </section>
-
-  <section class="bloco ritmo" id="painel-ritmo" data-painel="ritmo" aria-label="Ritmo da mineração">
-    <header class="rotulo"><span>Ritmo · 2 min</span><span class="rotulo-fim"><span><span id="g-atual" class="num">0</span> tent/s</span></span></header>
-    <canvas id="grafico" aria-label="Tentativas por segundo nos últimos dois minutos" role="img"></canvas>
-  </section>
-
-  <section class="bloco fluxo" id="painel-fluxo" data-painel="fluxo" aria-label="Fluxo de eventos">
-    <header class="rotulo"><span>Fluxo</span><span class="rotulo-fim"><span id="relogio" class="num">--:--:--</span></span></header>
-    <ol id="fluxo" class="rolar"></ol>
-  </section>
-  <section class="bloco mercado" id="painel-mercado" data-painel="mercado" aria-label="Mercado das criptomoedas">
-    <header class="rotulo"><span>Mercado</span><span class="rotulo-fim"><span id="m-quando">desligado</span></span></header>
-    <div class="rolar">
-      <table>
-        <thead><tr><th>Moeda</th><th>Preço (R$)</th><th>Dólar</th><th>24 h</th></tr></thead>
-        <tbody id="mercado"></tbody>
-      </table>
-    </div>
-    <p class="nota nota-painel" id="m-aviso">Desligado. Ligue nos Ajustes: o programa passa a consultar a api.coingecko.com a cada 2 minutos.</p>
-  </section>
-
-  <section class="bloco maquinas" id="painel-maquinas" data-painel="maquinas" aria-label="Minhas máquinas">
-    <header class="rotulo"><span>Minhas máquinas</span><span class="rotulo-fim"><span id="mq-total">—</span></span></header>
-    <div class="somas" id="mq-somas">
-      <div><small>Ritmo somado</small><b id="mq-ritmo" class="num">0</b></div>
-      <div><small>Núcleos minerando</small><b id="mq-nucleos" class="num">0</b></div>
-      <div><small>Energia somada</small><b id="mq-watts" class="num">0 W</b></div>
-    </div>
-    <div class="rolar">
-      <table>
-        <thead><tr><th>Máquina</th><th>Estado</th><th>Ritmo</th><th>Núcleos</th><th>Altura</th></tr></thead>
-        <tbody id="maquinas"></tbody>
-      </table>
-    </div>
-    <p class="nota nota-painel" id="mq-aviso">Some as suas outras máquinas aqui: em cada uma, ligue “ver no celular” nos Ajustes e anote o endereço dela. Depois escreva os endereços em Ajustes › Minhas máquinas. Este painel só lê; cada máquina continua sendo comandada nela mesma.</p>
-  </section>
-
-
-  <!-- ================================================================== -->
-  <!-- Ciência: JOBs de computação científica. Tudo que aparece aqui vem  -->
-  <!-- de /api/ciencia e dos eventos do nó (ciencia.js); nada é simulado. -->
-  <!-- ================================================================== -->
-  <section class="bloco ciencia" id="painel-ciencia" data-painel="ciencia" aria-label="Computação científica: painel técnico e JOBs">
-    <header class="rotulo"><span>Computação científica · painel técnico</span><span class="rotulo-fim"><span id="cj-total">—</span></span></header>
-    <dl class="ct-grade" aria-label="Métricas medidas">
-      <div><dt>Nós ativos</dt><dd id="ct-nos" class="num">—</dd><small id="ct-nos-nota"></small></div>
-      <div><dt>JOBs rodando</dt><dd id="ct-jobs" class="num">—</dd><small id="ct-jobs-nota"></small></div>
-      <div><dt>Unidades conferidas</dt><dd id="ct-unidades" class="num">—</dd><small>de todas as unidades pedidas</small></div>
-      <div><dt>Em voo · fila</dt><dd class="num"><span id="ct-voo">—</span> · <span id="ct-fila">—</span></dd><small>despachadas · na fila do worker</small></div>
-      <div><dt>CPU</dt><dd id="ct-cpu" class="num">—</dd><small id="ct-cpu-nota"></small></div>
-      <div><dt>GPU</dt><dd id="ct-gpu">—</dd><small id="ct-gpu-nota"></small></div>
-      <div><dt>VRAM</dt><dd id="ct-vram">—</dd><small>o WebGL não informa memória de vídeo</small></div>
-      <div><dt>RAM</dt><dd id="ct-ram" class="num">—</dd><small id="ct-ram-nota"></small></div>
-      <div><dt>Rede</dt><dd id="ct-rede">—</dd><small>mensagens do ULTRAX entre nós (bytes: não medidos)</small></div>
-      <div><dt>Vazão</dt><dd id="ct-vazao" class="num">—</dd><small>operações conferidas, último minuto</small></div>
-      <div><dt>Operações</dt><dd id="ct-ops" class="num">—</dd><small>executadas nas unidades conferidas</small></div>
-      <div><dt>Candidatos</dt><dd id="ct-candidatos" class="num">—</dd><small>moléculas reais triadas</small></div>
-      <div><dt>Verificadas</dt><dd id="ct-verificadas" class="num">—</dd><small>unidades conferidas</small></div>
-      <div><dt>Falhas</dt><dd id="ct-falhas" class="num">—</dd><small>recusadas quatro vezes</small></div>
-      <div><dt>Repetidas</dt><dd id="ct-repetidas" class="num">—</dd><small>recusas e reenvios</small></div>
-      <div><dt>Energia</dt><dd id="ct-energia">—</dd><small>pelo consumo estimado dos núcleos</small></div>
-      <div><dt>Tempo de execução</dt><dd id="ct-tempo" class="num">—</dd><small>cálculo e conferência</small></div>
-      <div><dt>Créditos</dt><dd id="ct-creditos" class="num">—</dd><small>v1: 1 = 10⁹ operações; não é HYX</small></div>
-    </dl>
-    <div class="cj-rede">
-      <label class="chave-liga" for="cj-aceitar"><input type="checkbox" id="cj-aceitar" autocomplete="off"><span>Calcular unidades que outros nós pedirem</span></label>
-      <small id="cj-rede-texto">—</small>
-    </div>
-    <div class="cj-lista" id="cj-lista" aria-live="polite"></div>
-    <p class="nota nota-painel" id="cj-vazio">Nenhum JOB ainda. Um JOB divide um problema em unidades, calcula cada uma no ULTRAX (que precisa estar ligado), confere e consolida. Peça um em “Novo JOB”.</p>
-  </section>
-
-  <section class="bloco visao3d" id="painel-visao3d" data-painel="visao3d" aria-label="Visão 3D do cálculo">
-    <header class="rotulo"><span>Visão 3D do cálculo</span><span class="rotulo-fim"><span id="v3-modo">AO VIVO</span></span></header>
-    <p class="v3-job" id="v3-job">Escolha um JOB na lista (“ver na 3D”).</p>
-    <div class="v3-corpo">
-      <canvas id="v3-canvas" class="v3-canvas" aria-label="Unidades do JOB em 3D"></canvas>
-      <div class="v3-lado">
-        <canvas id="v3-detalhe" class="v3-detalhe" aria-label="O que a unidade está calculando"></canvas>
-        <p class="v3-detalhe-texto" id="v3-detalhe-texto"></p>
-      </div>
-    </div>
-    <p class="nota nota-painel" id="v3-legenda">Branco: conferida · âmbar: executando · azul: conferindo · cinza: na fila · vermelho: falha.</p>
-    <div class="v3-controles">
-      <label for="v3-vel"><small>Reprodução</small>
-        <select id="v3-vel" autocomplete="off"><option value="1">1×</option><option value="10" selected>10×</option><option value="100">100×</option><option value="1000">1000×</option></select>
-      </label>
-      <button type="button" id="v3-ao-vivo" class="link">voltar ao vivo</button>
-    </div>
-    <div class="v3-inspecao" id="v3-inspecao-caixa" hidden>
-      <header class="rotulo"><span id="v3-inspecao-titulo">Inspecionar cálculo</span><span class="rotulo-fim"><button type="button" class="link" id="v3-inspecao-fechar">fechar</button></span></header>
-      <dl id="v3-inspecao"></dl>
-    </div>
-  </section>
-
-  <section class="bloco novojob" id="painel-novojob" data-painel="novojob" aria-label="Novo JOB">
-    <header class="rotulo"><span>Novo JOB</span><span class="rotulo-fim"><span>pedido deste computador</span></span></header>
-    <form id="nj-form" class="nj-form">
-      <label class="nj-campo" for="nj-dominio"><small>Área</small><select id="nj-dominio" autocomplete="off"></select></label>
-      <label class="nj-campo" for="nj-motor"><small>Motor</small><select id="nj-motor" autocomplete="off"></select></label>
-      <div class="nj-campos" id="nj-campos"></div>
-      <div class="nj-campos">
-        <label class="nj-campo" for="nj-unidades"><small>Unidades (réplicas, partidas ou faixas)</small><input type="number" id="nj-unidades" min="1" value="12" autocomplete="off"></label>
-        <label class="nj-campo" for="nj-nivel"><small>Verificação</small>
-          <select id="nj-nivel" autocomplete="off">
-            <option value="1">1 · integridade</option>
-            <option value="2" selected>2 · reexecução</option>
-            <option value="3">3 · concordância entre nós (espera outros nós)</option>
-            <option value="4">4 · independente (espera outros nós)</option>
-            <option value="5">5 · reprodutibilidade (espera outros nós)</option>
-          </select>
-        </label>
-        <label class="nj-campo" for="nj-redundancia"><small>Redundância (workers por unidade)</small><input type="number" id="nj-redundancia" min="1" max="7" value="1" autocomplete="off"></label>
-        <label class="nj-campo" for="nj-prazo"><small>Prazo (s; 0 = sem)</small><input type="number" id="nj-prazo" min="0" value="0" autocomplete="off"></label>
-        <label class="nj-campo" for="nj-orcamento"><small>Orçamento (créditos; 0 = sem teto)</small><input type="number" id="nj-orcamento" min="0" step="0.001" value="0" autocomplete="off"></label>
-      </div>
-      <label class="nj-campo nj-largo" for="nj-descricao"><small>O que se quer descobrir</small><textarea id="nj-descricao" rows="2" maxlength="2000" autocomplete="off"></textarea></label>
-      <div class="nj-botoes">
-        <button type="button" id="nj-estimar" class="link">estimar custo e tempo</button>
-        <button type="submit" id="nj-submeter" class="acao">Submeter o JOB</button>
-      </div>
-      <p class="nj-saida" id="nj-saida" aria-live="polite"></p>
-      <p class="nota">Só motores compilados no programa rodam; nenhum código vem de fora. Áreas sem motor (materiais, energia, meio ambiente, regeneração) aparecem para ficar claro que ainda não calculam nada. Resultado computacional precisa de validação científica.</p>
-    </form>
-  </section>
-
-  <section class="bloco eventos" id="painel-eventos" data-painel="eventos" aria-label="Eventos da computação científica">
-    <header class="rotulo"><span>Eventos · JOBs</span><span class="rotulo-fim"><span>os mesmos do registro gravado</span></span></header>
-    <div class="ev-lista rolar" id="ev-lista" aria-live="off"></div>
-  </section>
-
-  <section class="bloco bancada" id="painel-bancada" data-painel="bancada" aria-label="ULTRA BENCHMARK">
-    <header class="rotulo"><span>ULTRA BENCHMARK</span><span class="rotulo-fim"><span id="b-estado">—</span></span></header>
-    <div class="b-rolar">
-      <table class="b-tabela">
-        <thead><tr><th>Métrica</th><th>Base</th><th>Atual</th><th>Alvo (10×)</th><th>Ganho real</th><th>Unidade</th></tr></thead>
-        <tbody id="b-tabela"></tbody>
-      </table>
-    </div>
-    <p class="nota nota-painel" id="b-nota">A base é a primeira medida desta métrica nesta máquina. Se o ganho for 2×, aparece 2×.</p>
-    <div class="nj-botoes"><button type="button" id="b-rodar" class="acao">Rodar o benchmark</button></div>
+    <article class="bloco">
+      <h2>Pastas deste programa</h2>
+      <dl class="fatos" id="a-pastas"></dl>
+      <button type="button" id="a-abrir" class="botao-leve">Abrir a pasta de dados</button>
+    </article>
+    <article class="bloco">
+      <h2>Termos de uso</h2>
+      <p class="nota" id="a-termos-estado"></p>
+      <button type="button" id="a-termos" class="botao-leve">Ler os termos</button>
+    </article>
+    <article class="bloco">
+      <h2>O que ainda não existe na 1.0</h2>
+      <ul class="pendencias">
+        <li><span class="selo selo-pendente">PENDENTE</span> Temperatura da CPU e da GPU: sem leitura confiável sem administrador.</li>
+        <li><span class="selo selo-pendente">PENDENTE</span> Energia medida (só estimada) e bytes da rede.</li>
+        <li><span class="selo selo-pendente">PENDENTE</span> GPU nos motores além da matriz, e backend nativo (Vulkan/DX12).</li>
+        <li><span class="selo selo-pendente">PENDENTE</span> Coordenadas 3D reais das moléculas (a tela mostra a estrutura plana do SMILES).</li>
+        <li><span class="selo selo-pendente">PENDENTE</span> Trabalho científico valendo na recompensa do bloco (mudança de consenso, SPEC-02).</li>
+        <li><span class="selo selo-pendente">PENDENTE</span> Nós semente públicos da testnet e assinatura digital do programa.</li>
+      </ul>
+    </article>
   </section>
 </main>
 
-<footer class="fita" aria-hidden="true"><div id="fita-trilho"></div></footer>
-</div>
-<p id="desligado" class="desligado" hidden>Sem resposta do nó. O programa ainda está aberto?</p>
-
-<!-- Achou um bloco: o aviso que vale a pena interromper alguém. -->
-<div id="aviso-bloco" class="aviso-bloco" role="status" aria-live="polite" hidden>
-  <div class="aviso-marca" aria-hidden="true">
-    <svg viewBox="0 0 64 64"><g stroke="currentColor" stroke-width="3.6" stroke-linecap="round" opacity=".55"><line x1="18" y1="14" x2="18" y2="50"/><line x1="46" y1="14" x2="46" y2="50"/><line x1="18" y1="32" x2="46" y2="32"/></g><g fill="currentColor"><circle cx="18" cy="14" r="5"/><circle cx="18" cy="50" r="5"/><circle cx="46" cy="14" r="5"/><circle cx="46" cy="50" r="5"/><circle cx="18" cy="32" r="5.6"/><circle cx="46" cy="32" r="5.6"/></g></svg>
+<div class="sobre" id="janela-termos" role="dialog" aria-modal="true" aria-labelledby="jt-titulo" hidden>
+  <div class="janela">
+    <h2 id="jt-titulo">Termos de uso</h2>
+    <div class="termos" id="jt-texto" tabindex="0"></div>
+    <label class="chave" for="jt-li"><input type="checkbox" id="jt-li" disabled><span id="jt-rotulo">Role os termos até o fim para poder aceitar</span></label>
+    <div class="acoes"><button type="button" class="botao" id="jt-aceitar" disabled>Aceito os termos</button><button type="button" class="botao-leve" id="jt-fechar" hidden>Fechar</button></div>
   </div>
-  <div>
-    <p class="aviso-titulo">O bloco é seu</p>
-    <p class="aviso-texto" id="aviso-bloco-texto">—</p>
-  </div>
-  <button type="button" id="aviso-fechar" class="aviso-fechar" aria-label="Fechar o aviso">×</button>
 </div>
 
-<!-- ------------------------------------------------------------------ -->
-<!-- A abertura do programa: a partida, o cadeado e a primeira carteira. -->
-<!-- Aparece desde o primeiro quadro, antes de qualquer resposta do nó.  -->
-<!-- ------------------------------------------------------------------ -->
-<section id="boot" class="boot" aria-label="Abertura do Hyurax">
-  <aside class="boot-lado">
-    <div class="boot-marca">
-      <svg viewBox="0 0 64 64" aria-hidden="true"><g stroke="currentColor" stroke-width="3.6" stroke-linecap="round" opacity=".55"><line x1="18" y1="14" x2="18" y2="50"/><line x1="46" y1="14" x2="46" y2="50"/><line x1="18" y1="32" x2="46" y2="32"/></g><g fill="currentColor"><circle cx="18" cy="14" r="5"/><circle cx="18" cy="50" r="5"/><circle cx="46" cy="14" r="5"/><circle cx="46" cy="50" r="5"/><circle cx="18" cy="32" r="5.6"/><circle cx="46" cy="32" r="5.6"/></g></svg>
-      <div>
-        <p class="boot-palavra">HYURAX</p>
-        <p class="boot-sub">nó · carteira · minerador</p>
-      </div>
-    </div>
-
-    <ol class="boot-passos" id="boot-passos" hidden>
-      <li data-passo="1"><span class="boot-numero">1</span><span><b>Boas-vindas</b><small>o que este programa faz</small></span></li>
-      <li data-passo="2"><span class="boot-numero">2</span><span><b>Carteira</b><small>onde a recompensa cai</small></span></li>
-      <li data-passo="3"><span class="boot-numero">3</span><span><b>Guardar</b><small>o que não pode se perder</small></span></li>
-    </ol>
-
-    <ul class="boot-registro" id="boot-registro" aria-live="polite">
-      <li data-linha="nó">ligando o nó</li>
-      <li data-linha="cadeia">lendo a cadeia gravada</li>
-      <li data-linha="painel">abrindo o painel</li>
-    </ul>
-
-    <p class="boot-pe"><span id="boot-versao">Hyurax</span> · rede de TESTE · o HYX daqui não tem valor</p>
-  </aside>
-
-  <div class="boot-palco">
-    <div class="boot-trilho" aria-hidden="true"><i id="boot-avanco"></i></div>
-
-    <!-- Termos: antes de tudo, no programa com janela, até o aceite da versão atual. -->
-    <div class="boot-cena" id="cena-termos" hidden>
-      <p class="boot-etiqueta">Antes de começar</p>
-      <h1 class="boot-titulo">Termos de uso</h1>
-      <p class="boot-texto">Rede de teste, HYX sem valor, sua carteira só com você, e o que o programa faz no seu computador. Leia até o fim.</p>
-      <div class="termos-texto" id="termos-texto" tabindex="0" aria-label="Texto dos termos de uso">Carregando os termos…</div>
-      <label class="chave-liga" for="termos-li"><input type="checkbox" id="termos-li" autocomplete="off" disabled><span id="termos-li-rotulo">Role até o fim para poder aceitar</span></label>
-      <p class="erro" id="erro-termos" role="alert"></p>
-      <div class="acoes"><button type="button" id="termos-aceitar" class="principal" disabled>Aceito e quero continuar</button></div>
-    </div>
-
-    <!-- Partida: o que aparece enquanto o primeiro estado não chega. -->
-    <div class="boot-cena" id="cena-partida">
-      <p class="boot-etiqueta">Abrindo</p>
-      <h1 class="boot-titulo">Ligando o seu nó</h1>
-      <p class="boot-texto">Carregando a cadeia gravada neste computador e entrando na rede de teste. Em computador antigo isso leva alguns segundos.</p>
-      <p class="boot-erro erro" id="erro-partida" role="alert"></p>
-    </div>
-
-    <!-- Cadeado: o programa pede o código de 6 dígitos antes de mostrar algo. -->
-    <div class="boot-cena" id="cena-trava" hidden>
-      <p class="boot-etiqueta">Trancado</p>
-      <h1 class="boot-titulo">Digite o código do seu celular</h1>
-      <p class="boot-texto">Este programa está trancado com o código de 6 dígitos do aplicativo de autenticação. Enquanto ele não vier, nada do saldo nem da carteira aparece nesta tela. O nó continua ligado e minerando atrás desta tela: o cadeado guarda o que se vê e o que se manda, não a máquina.</p>
-      <form id="f-destravar" class="pilha">
-        <div class="campo">
-          <label for="codigo-trava">Código de 6 dígitos</label>
-          <input type="text" id="codigo-trava" name="codigo" class="codigo" inputmode="numeric" autocomplete="one-time-code" maxlength="7" spellcheck="false" placeholder="000000">
-        </div>
-        <p class="erro" id="erro-trava" role="alert"></p>
-        <div class="acoes esquerda"><button type="submit" id="destravar" class="principal" disabled>Destrancar</button></div>
-      </form>
-      <p class="boot-nota">Perdeu o celular? O cadeado mora no arquivo <b>seguranca.txt</b>, dentro da pasta de dados do programa. Apagar esse arquivo desliga o código e volta a valer só a senha da carteira.</p>
-    </div>
-
-    <!-- Passo 1: o que é isto. -->
-    <div class="boot-cena" id="cena-1" hidden>
-      <p class="boot-etiqueta">Passo 1 de 3</p>
-      <h1 class="boot-titulo" id="boot-titulo">Este computador vira um nó do Hyurax</h1>
-      <p class="boot-texto">Nada de servidor, nada de conta em site. O programa guarda a cadeia aqui, conversa com os outros nós e usa a sua CPU para procurar blocos.</p>
-      <dl class="fatos">
-        <div><dt>O que a máquina faz</dt><dd>Resolve uma multiplicação de matrizes que a rede inteira confere. É o trabalho que prova o bloco.</dd></div>
-        <div><dt>O que você ganha</dt><dd>Cada bloco achado paga uma recompensa em HYX, que cai direto na sua carteira.</dd></div>
-        <div><dt>E o ULTRAX</dt><dd>Um motor de trabalho útil, separado da mineração: executa contas reais, confere e mede a contribuição. Hoje em modo de teste (LAB).</dd></div>
-        <div><dt>Quanto custa</dt><dd>Energia. O programa estima os watts e o custo do mês, e você limita quanto da CPU ele pode tomar.</dd></div>
-      </dl>
-      <p class="aviso-teste"><b>REDE DE TESTE.</b> A rede pública ainda não existe e o HYX minerado aqui não tem valor. Não há venda, pré-venda nem promessa de lucro.</p>
-      <div class="acoes"><button type="button" id="boot-comecar" class="principal">Continuar</button></div>
-    </div>
-
-    <!-- Passo 2: criar ou importar a carteira. -->
-    <div class="boot-cena" id="cena-2" hidden>
-      <p class="boot-etiqueta">Passo 2 de 3</p>
-      <h1 class="boot-titulo">Sua carteira</h1>
-      <p class="boot-texto">A recompensa precisa de um endereço para cair. Crie uma carteira nova neste computador, ou traga a que você já tem.</p>
-
-      <fieldset class="caminhos" id="caminhos">
-        <legend class="rotulo-campo">Como você quer começar</legend>
-        <div class="segmentos">
-          <label for="c-criar"><input type="radio" name="caminho" id="c-criar" value="criar" autocomplete="off" checked><span>Criar carteira nova</span></label>
-          <label for="c-importar"><input type="radio" name="caminho" id="c-importar" value="importar" autocomplete="off"><span>Já tenho uma carteira</span></label>
-        </div>
-      </fieldset>
-
-      <form id="f-criar" class="pilha">
-        <div class="campo">
-          <label for="senha">Senha da carteira</label>
-          <div class="com-botao">
-            <input type="password" id="senha" name="senha" autocomplete="new-password" spellcheck="false" aria-describedby="r-tamanho">
-            <button type="button" id="ver-senha" class="secundario" aria-label="Mostrar as senhas">mostrar</button>
-          </div>
-        </div>
-        <div class="forca" id="forca-caixa" hidden>
-          <div class="forca-trilho" aria-hidden="true"><i id="forca-barra"></i></div>
-          <p class="forca-texto" id="forca-texto">—</p>
-        </div>
-        <div class="campo">
-          <label for="senha2">Repita a senha</label>
-          <input type="password" id="senha2" name="senha2" autocomplete="new-password" spellcheck="false" aria-describedby="r-iguais">
-        </div>
-        <ul class="regras">
-          <li id="r-tamanho">0 de no mínimo 10 caracteres</li>
-          <li id="r-iguais">Repita a senha no segundo campo</li>
-        </ul>
-        <p class="nota">A senha não é pedida para minerar, só para enviar HYX. Ela não vai para lugar nenhum: fica só neste computador, embaralhada dentro do arquivo da carteira.</p>
-        <p class="texto dica" id="dica-criar" hidden>A senha é embaralhada de propósito devagar, para ninguém adivinhar por tentativa. Em computador antigo isso leva até um minuto.</p>
-        <p class="erro" id="erro-criar" role="alert"></p>
-        <div class="acoes"><button type="submit" id="criar" class="principal" disabled>Criar carteira</button></div>
-      </form>
-
-      <form id="f-importar" class="pilha" hidden>
-        <div class="campo">
-          <label for="arquivo">Escolha o arquivo carteira.txt</label>
-          <input type="file" id="arquivo" accept=".txt,text/plain">
-        </div>
-        <div class="campo">
-          <label for="conteudo">Ou cole aqui o conteúdo do arquivo</label>
-          <textarea id="conteudo" name="conteudo" rows="6" spellcheck="false" autocomplete="off" autocapitalize="off" placeholder="formato=HYURAX-CARTEIRA-v2&#10;endereco=…"></textarea>
-        </div>
-        <p class="nota">Minerar só precisa do endereço. A senha continua sendo a mesma de quando a carteira foi criada, e só é pedida para enviar HYX.</p>
-        <p class="erro" id="erro-importar" role="alert"></p>
-        <div class="acoes"><button type="submit" id="importar" class="principal" disabled>Importar</button></div>
-      </form>
-    </div>
-
-    <!-- Passo 3: o endereço, o aviso que não pode passar batido, e a largada. -->
-    <div class="boot-cena" id="cena-3" hidden>
-      <p class="boot-etiqueta">Passo 3 de 3</p>
-      <h1 class="boot-titulo" id="pronto-titulo" tabindex="-1">Carteira pronta</h1>
-      <div class="pronto-grade">
-        <div class="pilha">
-          <div class="campo">
-            <span class="rotulo-campo">Seu endereço</span>
-            <p class="endereco-grande" id="pronto-endereco"></p>
-          </div>
-          <div class="acoes esquerda">
-            <button type="button" id="pronto-copiar" class="secundario">Copiar endereço</button>
-            <button type="button" id="abrir-pasta-carteira" class="secundario">Abrir a pasta</button>
-          </div>
-          <p class="nota" id="pronto-pasta"></p>
-        </div>
-        <div class="pronto-qr">
-          <div id="pronto-qr" class="qr" aria-hidden="true"></div>
-          <p class="nota">Quem for te pagar aponta a câmera para este código.</p>
-        </div>
-      </div>
-      <p class="aviso-forte">Guarde a senha e uma cópia do arquivo <b>carteira.txt</b> fora deste computador. Sem os dois, o saldo se perde para sempre — nem o projeto consegue recuperar.</p>
-      <label class="chave-liga" for="pronto-entendi"><input type="checkbox" id="pronto-entendi" autocomplete="off"><span>Anotei a senha e guardei uma cópia do arquivo</span></label>
-      <p class="erro" id="erro-pronto" role="alert"></p>
-      <div class="acoes">
-        <button type="button" id="so-olhar" class="secundario">Entrar sem minerar</button>
-        <button type="button" id="comecar" class="principal" disabled>Começar a minerar</button>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- Enviar HYX: conferir, assinar, e o comprovante. -->
-<dialog id="enviar" class="dialogo" aria-labelledby="enviar-titulo">
-  <header class="rotulo"><h2 id="enviar-titulo">Enviar HYX</h2><span class="rotulo-fim"><span id="enviar-saldo">—</span></span></header>
-
-  <form class="dialogo-corpo pilha" id="f-enviar">
-    <div class="campo">
-      <label for="en-para">Endereço de destino</label>
-      <textarea id="en-para" name="para" rows="2" spellcheck="false" autocomplete="off" autocapitalize="off" placeholder="thyx1… (o formato antigo, com 40 dígitos, também vale)"></textarea>
-    </div>
-    <div class="dois">
-      <div class="campo">
-        <label for="en-valor">Valor (HYX)</label>
-        <div class="com-botao">
-          <input type="text" id="en-valor" name="valor" inputmode="decimal" autocomplete="off" spellcheck="false" placeholder="0.00000000">
-          <button type="button" id="en-tudo" class="secundario">tudo</button>
-        </div>
-      </div>
-      <div class="campo">
-        <label for="en-taxa">Taxa (HYX)</label>
-        <input type="text" id="en-taxa" name="taxa" inputmode="decimal" autocomplete="off" spellcheck="false" placeholder="0.00000000">
-      </div>
-    </div>
-    <p class="nota">Enviar é definitivo: não existe desfazer nem estornar. Confira o endereço com calma — HYX mandado para o endereço errado fica com quem o recebeu.</p>
-    <p class="erro" id="erro-enviar" role="alert"></p>
-    <div class="acoes">
-      <button type="button" id="enviar-fechar" class="secundario">Cancelar</button>
-      <button type="submit" id="en-conferir" class="principal">Conferir</button>
-    </div>
+<div class="sobre" id="janela-trava" role="dialog" aria-modal="true" aria-labelledby="jv-titulo" hidden>
+  <form class="janela janela-pequena" id="jv-form" autocomplete="off">
+    <h2 id="jv-titulo">Programa trancado</h2>
+    <p>Digite o código de 6 dígitos do seu aplicativo autenticador.</p>
+    <label for="jv-codigo"><small>Código</small><input id="jv-codigo" inputmode="numeric" maxlength="6" autocomplete="one-time-code"></label>
+    <button type="submit" class="botao">Destrancar</button>
+    <p class="saida" id="jv-saida" role="status"></p>
   </form>
+</div>
 
-  <div class="dialogo-corpo pilha" id="enviar-conferir" hidden>
-    <h3 class="rotulo-campo">Confira antes de assinar</h3>
-    <dl class="pares conferencia">
-      <div><dt>Vai para</dt><dd id="cf-para" class="num quebra">—</dd></div>
-      <div><dt>Valor</dt><dd><span id="cf-valor" class="num">—</span> HYX</dd></div>
-      <div><dt>Taxa</dt><dd><span id="cf-taxa" class="num">—</span> HYX</dd></div>
-      <div><dt>Sai da carteira</dt><dd><span id="cf-total" class="num">—</span> HYX</dd></div>
-      <div><dt>Sobra depois</dt><dd><span id="cf-sobra" class="num">—</span> HYX</dd></div>
-    </dl>
-    <div class="campo">
-      <label for="en-senha">Senha da carteira</label>
-      <input type="password" id="en-senha" name="senha" autocomplete="current-password" spellcheck="false">
-    </div>
-    <div class="campo" id="en-codigo-caixa" hidden>
-      <label for="en-codigo">Código de 6 dígitos</label>
-      <input type="text" id="en-codigo" name="codigo" class="codigo" inputmode="numeric" autocomplete="one-time-code" maxlength="7" spellcheck="false" placeholder="000000">
-    </div>
-    <p class="texto dica" id="dica-enviar" hidden>Abrindo a carteira. A senha é embaralhada devagar de propósito; em computador antigo isso leva até um minuto.</p>
-    <p class="erro" id="erro-assinar" role="alert"></p>
-    <div class="acoes">
-      <button type="button" id="en-voltar" class="secundario">Voltar</button>
-      <button type="button" id="en-assinar" class="principal">Assinar e enviar</button>
-    </div>
-  </div>
-
-  <div class="dialogo-corpo pilha" id="enviar-pronto" hidden>
-    <h3 class="rotulo-campo">Enviado</h3>
-    <p class="texto" id="en-resumo">—</p>
-    <div class="campo">
-      <span class="rotulo-campo">Identificador da transação</span>
-      <p class="endereco-grande" id="en-txid"></p>
-    </div>
-    <p class="nota">Ela está esperando num bloco. Assim que algum minerador a incluir, o saldo dos dois lados muda. Até lá, ela aparece como <b>esperando</b> na lista de movimentos.</p>
-    <div class="acoes"><button type="button" id="en-terminar" class="principal">Fechar</button></div>
-  </div>
-</dialog>
-
-<!-- Receber: o endereço em letra grande e o QR Code. -->
-<dialog id="receber" class="dialogo" aria-labelledby="receber-titulo">
-  <header class="rotulo"><h2 id="receber-titulo">Receber HYX</h2><span class="rotulo-fim"><span>rede de teste</span></span></header>
-  <div class="dialogo-corpo pilha">
-    <p class="texto">Este é o seu endereço. Ele pode ser mostrado para qualquer pessoa: serve só para receber.</p>
-    <div class="pronto-grade">
-      <div class="pilha">
-        <p class="endereco-grande" id="rc-endereco">—</p>
-        <div class="acoes esquerda"><button type="button" id="rc-copiar" class="secundario">Copiar endereço</button></div>
-      </div>
-      <div class="pronto-qr"><div id="rc-qr" class="qr" aria-hidden="true"></div></div>
-    </div>
-    <p class="nota">Nunca mostre a senha nem o arquivo carteira.txt. O endereço sozinho não deixa ninguém gastar nada.</p>
-    <div class="acoes"><button type="button" id="rc-fechar" class="secundario">Fechar</button></div>
-  </div>
-</dialog>
-
-<!-- Segundo fator: o código de 6 dígitos do aplicativo de autenticação. -->
-<dialog id="seguranca" class="dialogo" aria-labelledby="seg-titulo">
-  <header class="rotulo"><h2 id="seg-titulo">Segurança</h2><span class="rotulo-fim"><span id="seg-estado">—</span></span></header>
-
-  <div class="dialogo-corpo pilha" id="seg-desligado">
-    <p class="texto">Ligando o segundo fator, enviar HYX passa a pedir um código de 6 dígitos que só existe no seu celular. Funciona com <b>Google Authenticator</b>, Aegis, 2FAS, Authy — qualquer um que leia um QR Code.</p>
-    <dl class="fatos">
-      <div><dt>Protege contra</dt><dd>quem usa este computador e descobre (ou vê você digitar) a sua senha</dd></div>
-      <div><dt>Não protege contra</dt><dd>quem copia a pasta de dados: o segredo vai junto no arquivo</dd></div>
-      <div><dt>Onde fica</dt><dd>seguranca.txt, ao lado da carteira. Apagar esse arquivo desliga o código</dd></div>
-    </dl>
-    <p class="erro" id="erro-seg" role="alert"></p>
-    <div class="acoes"><button type="button" id="seg-ligar" class="principal">Ligar o segundo fator</button></div>
-  </div>
-
-  <div class="dialogo-corpo pilha" id="seg-ligando" hidden>
-    <h3 class="rotulo-campo">1 · Leia o código no aplicativo</h3>
-    <div class="pronto-grade">
-      <div class="pronto-qr"><div id="seg-qr" class="qr" aria-hidden="true"></div></div>
-      <div class="pilha">
-        <p class="nota">Não consegue ler o QR? Digite esta chave no aplicativo, do jeito que está:</p>
-        <p class="caminho" id="seg-segredo">—</p>
-        <p class="nota">Tipo: baseado em tempo · 6 dígitos · 30 segundos.</p>
-      </div>
-    </div>
-    <h3 class="rotulo-campo">2 · Confirme com o código que apareceu</h3>
-    <form id="f-seg-confirmar" class="pilha">
-      <div class="campo">
-        <label for="seg-codigo">Código de 6 dígitos</label>
-        <input type="text" id="seg-codigo" name="codigo" class="codigo" inputmode="numeric" autocomplete="one-time-code" maxlength="7" spellcheck="false" placeholder="000000">
-      </div>
-      <label class="chave-liga" for="seg-trava-nova"><input type="checkbox" id="seg-trava-nova" autocomplete="off"><span>Pedir também o código ao abrir o programa</span></label>
-      <p class="erro" id="erro-seg-confirmar" role="alert"></p>
-      <div class="acoes">
-        <button type="button" id="seg-cancelar" class="secundario">Cancelar</button>
-        <button type="submit" id="seg-confirmar" class="principal" disabled>Confirmar</button>
-      </div>
-    </form>
-    <p class="aviso-teste">Guarde a chave acima num lugar seguro. Trocando de celular sem ela, o jeito de voltar é apagar o arquivo seguranca.txt neste computador.</p>
-  </div>
-
-  <div class="dialogo-corpo pilha" id="seg-ligado" hidden>
-    <p class="texto">O segundo fator está ligado. Para mudar qualquer coisa aqui, digite o código do celular — é assim que ele protege.</p>
-    <form id="f-seg-mudar" class="pilha">
-      <label class="chave-liga" for="seg-exige"><input type="checkbox" id="seg-exige" autocomplete="off" checked><span>Pedir o código para enviar HYX</span></label>
-      <label class="chave-liga" for="seg-trava"><input type="checkbox" id="seg-trava" autocomplete="off"><span>Pedir o código ao abrir o programa</span></label>
-      <div class="campo">
-        <label for="seg-codigo-mudar">Código de 6 dígitos</label>
-        <input type="text" id="seg-codigo-mudar" name="codigo" class="codigo" inputmode="numeric" autocomplete="one-time-code" maxlength="7" spellcheck="false" placeholder="000000">
-      </div>
-      <p class="erro" id="erro-seg-mudar" role="alert"></p>
-      <div class="acoes esquerda"><button type="button" id="seg-desligar" class="secundario">Desligar o segundo fator</button></div>
-      <div class="acoes"><button type="submit" id="seg-salvar" class="principal">Salvar</button></div>
-    </form>
-  </div>
-
-  <div class="dialogo-corpo"><div class="acoes"><button type="button" id="seg-fechar" class="secundario">Fechar</button></div></div>
-</dialog>
-
-<!-- Ajustes: fecha com Esc e com o botão Fechar. -->
-<dialog id="ajustes" class="dialogo" aria-labelledby="ajustes-titulo">
-  <header class="rotulo"><h2 id="ajustes-titulo">Ajustes</h2></header>
-  <div class="dialogo-corpo pilha">
-    <section class="grupo pilha" aria-labelledby="a-pasta-titulo">
-      <h3 class="rotulo-campo" id="a-pasta-titulo">Pasta de dados</h3>
-      <p class="caminho" id="a-dados">—</p>
-      <p class="nota">A carteira (carteira.txt) fica nesta pasta. Guarde uma cópia dela fora deste computador.</p>
-      <div class="acoes esquerda"><button type="button" id="a-abrir" class="secundario">Abrir pasta</button></div>
-      <p class="erro" id="a-abrir-erro" role="alert"></p>
-    </section>
-
-    <form class="grupo pilha" id="f-sementes">
-      <div class="campo">
-        <label for="sementes">Nós semente</label>
-        <div class="com-botao">
-          <input type="text" id="sementes" name="lista" autocomplete="off" spellcheck="false" autocapitalize="off" placeholder="203.0.113.5:8790, 198.51.100.7:8790" aria-describedby="sementes-dica">
-          <button type="submit" id="sementes-salvar" class="secundario">Salvar</button>
-        </div>
-      </div>
-      <p class="nota" id="sementes-dica">Os nós que este programa procura para entrar na rede. Separe por vírgula, no formato IP:PORTA.</p>
-      <p class="salvo" id="sementes-ok" role="status"></p>
-      <p class="erro" id="sementes-erro" role="alert"></p>
-    </form>
-
-    <form class="grupo pilha" id="f-maquinas">
-      <div class="campo">
-        <label for="maquinas-lista">Minhas máquinas</label>
-        <div class="com-botao">
-          <input type="text" id="maquinas-lista" name="lista" autocomplete="off" spellcheck="false" autocapitalize="off" placeholder="192.168.0.12:8800, 192.168.0.30:8800" aria-describedby="maquinas-dica">
-          <button type="submit" id="maquinas-salvar" class="secundario">Salvar</button>
-        </div>
-      </div>
-      <p class="nota" id="maquinas-dica">Os outros computadores seus que rodam o Hyurax. O painel soma o ritmo, os núcleos e a energia de todos. Em cada máquina, ligue “ver no celular” para ela responder — o endereço aparece lá.</p>
-      <p class="salvo" id="maquinas-ok" role="status"></p>
-      <p class="erro" id="maquinas-erro" role="alert"></p>
-    </form>
-
-    <section class="grupo pilha" aria-labelledby="a-desempenho-titulo">
-      <h3 class="rotulo-campo" id="a-desempenho-titulo">Desempenho</h3>
-      <p class="nota">Quanto da máquina a mineração pode tomar. O limite é medido nesta máquina, então vale igual em computador fraco e em computador forte.</p>
-      <div class="segmentos" role="group" aria-label="Perfil de desempenho">
-        <label for="p-leve"><input type="radio" name="perfil" id="p-leve" value="leve" autocomplete="off"><span>Leve</span></label>
-        <label for="p-equilibrado"><input type="radio" name="perfil" id="p-equilibrado" value="equilibrado" autocomplete="off"><span>Equilibrado</span></label>
-        <label for="p-turbo"><input type="radio" name="perfil" id="p-turbo" value="turbo" autocomplete="off"><span>Turbo</span></label>
-        <label for="p-manual"><input type="radio" name="perfil" id="p-manual" value="manual" autocomplete="off"><span>Manual</span></label>
-      </div>
-      <div class="campo">
-        <label for="a-uso">Limite de CPU: <b id="a-uso-valor" class="num">100%</b></label>
-        <input type="range" id="a-uso" min="10" max="100" step="5" value="100" autocomplete="off">
-      </div>
-      <div class="campo">
-        <label for="a-linhas">Núcleos minerando: <b id="a-linhas-valor" class="num">1</b> de <span id="a-nucleos" class="num">1</span></label>
-        <input type="range" id="a-linhas" min="1" max="8" step="1" value="1" autocomplete="off">
-      </div>
-      <p class="nota" id="a-memoria">Memória usada: —</p>
-    </section>
-
-    <section class="grupo pilha" aria-labelledby="a-energia-titulo">
-      <h3 class="rotulo-campo" id="a-energia-titulo">Energia</h3>
-      <p class="nota">Estimativa, não medição: o programa não lê o consumo real da máquina. Ajuste os dois números para a sua realidade.</p>
-      <div class="dois">
-        <div class="campo">
-          <label for="a-watts">Watts por núcleo</label>
-          <input type="number" id="a-watts" min="1" max="200" step="1" value="12" inputmode="numeric" autocomplete="off">
-        </div>
-        <div class="campo">
-          <label for="a-kwh">Preço do kWh (centavos)</label>
-          <input type="number" id="a-kwh" min="1" max="99999" step="1" value="90" inputmode="numeric" autocomplete="off">
-        </div>
-      </div>
-      <p class="nota" id="a-custo">—</p>
-    </section>
-
-    <section class="grupo pilha" aria-labelledby="a-celular-titulo">
-      <h3 class="rotulo-campo" id="a-celular-titulo">Ver no celular</h3>
-      <p class="nota">Ligando isto, qualquer aparelho no mesmo Wi-Fi abre este painel só para olhar. Ninguém de fora manda nada: os comandos continuam só neste computador. É também assim que as suas outras máquinas aparecem no painel “Minhas máquinas”.</p>
-      <label class="chave-liga" for="a-na-rede"><input type="checkbox" id="a-na-rede" autocomplete="off"><span>Mostrar o painel na rede local</span></label>
-      <div id="a-qr-caixa" hidden>
-        <div id="a-qr" class="qr" aria-hidden="true"></div>
-        <p class="caminho" id="a-url">—</p>
-        <p class="nota">Aponte a câmera do celular para o código, ou digite o endereço no navegador dele.</p>
-      </div>
-    </section>
-
-    <section class="grupo pilha" aria-labelledby="a-mercado-titulo">
-      <h3 class="rotulo-campo" id="a-mercado-titulo">Mercado das criptomoedas</h3>
-      <p class="nota">Ligando isto, o programa passa a consultar a <b>api.coingecko.com</b> a cada 2 minutos para mostrar os preços. É a única coisa aqui que fala com um site de fora. Nada seu vai junto: o pedido é a lista fixa de moedas.</p>
-      <label class="chave-liga" for="a-mercado"><input type="checkbox" id="a-mercado" autocomplete="off"><span>Acompanhar o mercado</span></label>
-    </section>
-
-    <section class="grupo pilha" aria-labelledby="a-avisos-titulo">
-      <h3 class="rotulo-campo" id="a-avisos-titulo">Avisos</h3>
-      <p class="nota">Achar um bloco é raro e leva tempo. O programa pode chamar você quando acontecer.</p>
-      <label class="chave-liga" for="a-avisar"><input type="checkbox" id="a-avisar" autocomplete="off"><span>Avisar na tela quando o bloco for meu</span></label>
-      <label class="chave-liga" for="a-som"><input type="checkbox" id="a-som" autocomplete="off"><span>Tocar um som junto</span></label>
-      <p class="nota">O som é um tom curto feito pelo próprio programa, sem arquivo nem internet. Alguns navegadores só deixam tocar depois do primeiro clique na janela.</p>
-    </section>
-
-    <section class="grupo pilha" aria-labelledby="a-sobre-titulo">
-      <h3 class="rotulo-campo" id="a-sobre-titulo">Sobre</h3>
-      <dl class="pares">
-        <div><dt>Versão</dt><dd id="a-versao">—</dd></div>
-        <div><dt>Rede</dt><dd id="a-rede">—</dd></div>
-        <div><dt>Porta P2P</dt><dd id="a-porta" class="num">—</dd></div>
-      </dl>
-    </section>
-
-    <div class="acoes"><button type="button" id="ajustes-fechar" class="secundario">Fechar</button></div>
-  </div>
-</dialog>
-
-<!-- O trabalho que a máquina está fazendo de verdade, sem enfeite. -->
-<dialog id="trabalho" class="dialogo largo" aria-labelledby="trabalho-titulo">
-  <header class="rotulo"><h2 id="trabalho-titulo">O trabalho desta máquina</h2><span class="rotulo-fim"><span id="t-estado">parado</span></span></header>
-  <div class="dialogo-corpo pilha">
-    <p class="texto">Minerar no Hyurax não é só embaralhar números: cada bloco carrega uma conta grande que a rede inteira confere. Hoje essa conta é <b>multiplicação de matrizes</b>, o cálculo que está por baixo de simulação, engenharia e treino de inteligência artificial.</p>
-    <div class="trabalho-grade">
-      <canvas id="t-matriz" width="420" height="220" aria-label="Desenho das matrizes sendo multiplicadas" role="img"></canvas>
-      <dl class="pares">
-        <div><dt>Tipo</dt><dd>Matrizes A×B = C</dd></div>
-        <div><dt>Tamanho agora</dt><dd><span id="t-n" class="num">—</span> × <span id="t-n2" class="num">—</span></dd></div>
-        <div><dt>Contas por bloco</dt><dd><span id="t-contas" class="num">—</span></dd></div>
-        <div><dt>Conferências (Freivalds)</dt><dd><span id="t-rodadas" class="num">—</span></dd></div>
-        <div><dt>Resultado guardado</dt><dd><span id="t-bytes" class="num">—</span></dd></div>
-        <div><dt>Faixa da rede</dt><dd><span id="t-faixa">—</span></dd></div>
-      </dl>
-    </div>
-    <section class="grupo pilha">
-      <h3 class="rotulo-campo">Tipos de trabalho</h3>
-      <ul class="tipos">
-        <li><b>Matrizes conferidas por Freivalds</b> — <span class="marca-estado">em uso agora</span><br><small>A conta que todo bloco carrega hoje. O tamanho sobe e desce com a dificuldade da rede.</small></li>
-        <li><b>ULTRAX, fora do bloco</b> — <span class="marca-estado">em uso, modo LAB</span><br><small>Matrizes, mochila e difusão geradas nesta máquina, conferidas e medidas em Work Score. É carga de teste: ninguém de fora encomendou.</small></li>
-        <li><b>Trabalho encomendado de fora</b> — <span class="marca-estado planejado">planejado</span><br><small>Alguém manda a conta, paga por ela, e os workers resolvem. Exige clientes, uma fila de pedidos entre nós e pagamento na rede, que ainda não existem.</small></li>
-        <li><b>Escolher o tipo</b> — <span class="marca-estado planejado">depende do de cima</span><br><small>Enquanto só existe uma família de trabalho, escolher seria enfeite: o consenso recusa bloco de qualquer outra família.</small></li>
-      </ul>
-    </section>
-    <p class="nota">Quem confere não refaz a conta: quatro sorteios bastam para pegar qualquer resultado errado, e custam quase nada. É por isso que a rede aceita trabalho pesado sem cada nó repetir o trabalho.</p>
-    <p class="aviso-teste"><b>O que ainda não é.</b> As contas de hoje são geradas pelo próprio bloco, não vêm de ninguém de fora. O próximo passo do projeto é abrir a fila para trabalho de verdade — genética, clima, engenharia — com quem precisa pagando pela conta. Enquanto isso não existe, o programa não vai dizer que existe.</p>
-    <div class="acoes"><button type="button" id="trabalho-fechar" class="secundario">Fechar</button></div>
-  </div>
-</dialog>
-
-<!-- Quais painéis ficam abertos, em que ordem, e quais viram janela à parte. -->
-<dialog id="paineis" class="dialogo" aria-labelledby="paineis-titulo">
-  <header class="rotulo"><h2 id="paineis-titulo">Painéis</h2><span class="rotulo-fim"><span>a janela é sua</span></span></header>
-  <div class="dialogo-corpo pilha">
-    <p class="nota">Marque o que quer ver, use as setas para mudar a ordem, e o botão de destacar para abrir um painel numa janela separada.</p>
-    <ul class="lista-paineis" id="lista-paineis"></ul>
-    <div class="acoes esquerda"><button type="button" id="paineis-padrao" class="secundario">Voltar ao padrão</button></div>
-    <p class="erro" id="paineis-erro" role="alert"></p>
-    <div class="acoes"><button type="button" id="paineis-fechar" class="secundario">Fechar</button></div>
-  </div>
-</dialog>
+<div class="aviso-bloco" id="aviso-bloco" role="status" hidden></div>
 </body>
 </html>

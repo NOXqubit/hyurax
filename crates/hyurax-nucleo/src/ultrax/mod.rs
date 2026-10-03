@@ -568,6 +568,9 @@ struct Marca {
 /// Quem recebe os avisos que merecem ir para o fluxo de eventos do painel.
 pub type Aviso = Box<dyn Fn(&'static str, String) + Send + Sync>;
 
+/// Uma unidade de JOB: o `JOB_ID` e o índice.
+pub type UnidadeDoJob = ([u8; HASH_LEN], u64);
+
 /// De onde veio uma amostra: a tarefa, a unidade de JOB (se for), a linha e o
 /// recurso que calculou.
 #[derive(Clone, Debug)]

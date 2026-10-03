@@ -141,7 +141,7 @@ pub fn estado(n: &Nucleo, pode_mandar: bool, url_celular: &str) -> Value {
         "meus_cadeia": meus_na_cadeia,
         "perdidos": m.perdidos.load(Ordering::Relaxed),
         "rodada": m.rodada().map(|(s, a)| json!({ "segundos": s, "altura": a })),
-        "memoria_mib": u64::from(n.config.rede.pow.memoria_kib / 1024).saturating_mul(u64::from(linhas)),
+        "memoria_mib": f64::from(n.config.rede.pow.memoria_kib) / 1024.0 * f64::from(linhas),
         "amostras": m.amostras().iter().map(|(t, x)| json!([t, x])).collect::<Vec<_>>(),
     });
     let ajustes = n.ajustes.lock().map(|a| a.clone()).unwrap_or_default();

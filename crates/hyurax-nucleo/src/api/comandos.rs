@@ -165,7 +165,9 @@ pub(super) fn atender(s: &mut TcpStream, p: &Pedido, n: &Arc<Nucleo>) -> std::io
         "/api/v1/termos/aceitar" if janela => crate::termos::aceitar(&n.config.pastas.config, "programa").map(|()| json!({ "ok": true })),
         "/api/v1/abrir-pasta" if janela => abrir_pasta(&n.config.pastas.dados).map(|()| json!({ "ok": true })),
         // o canal do backend da GPU (o worker WebGL 2 da janela)
-        "/api/v1/gpu/pegar" => n.ultrax.gpu_pegar(&texto("nome")).map(|(numero, lado)| json!({ "numero": numero, "n": lado })),
+        "/api/v1/gpu/pegar" => n.ultrax.gpu_pegar(&texto("nome")).map(|(numero, lado, job)| {
+            json!({ "numero": numero, "n": lado, "origem": if job.is_some() { "JOB" } else { "LAB" }, "job": job.map(|(j, _)| hex(&j)), "unidade": job.map(|(_, i)| i) })
+        }),
         r if r.starts_with("/api/v1/gpu/progresso/") => {
             if let (Ok(numero), Some(linhas)) =
                 (r.trim_start_matches("/api/v1/gpu/progresso/").parse::<u32>(), campo(&c, "linhas").and_then(|v| v.parse::<u64>().ok()))

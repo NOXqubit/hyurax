@@ -1,6 +1,7 @@
 <!--
-Termos de uso do programa Hyurax, versão 2, de 27/09/2026.
-(Versão 1, de 26/09/2026: sem a computação científica.)
+Termos de uso do programa Hyurax / Ultrax, versão 3, de 02/10/2026.
+(Versão 2, de 27/09/2026: ainda com o painel de preços do CoinGecko e uma
+pasta só para tudo. Versão 1, de 26/09/2026: sem a computação científica.)
 O instalador e o programa mostram este texto e guardam o aceite com a versão.
 Mudar o texto de forma relevante = subir a versão (termos::VERSAO no código),
 para o programa pedir o aceite de novo. Depois de mudar, rode
@@ -21,16 +22,16 @@ valor de verdade, essa revisão é recomendada.
 
 # Termos de uso e isenção de responsabilidade
 
-**Versão 2 · 27 de setembro de 2026**
+**Versão 3 · 2 de outubro de 2026**
 
 Leia com atenção. Ao instalar ou usar o Hyurax, você declara que leu,
 entendeu e concorda com estes termos. Se não concorda, não instale nem use.
 
 ## 1. O que é o Hyurax
 
-O Hyurax é um **software livre e experimental**, distribuído de graça sob a
-licença MIT ou a Apache-2.0, à escolha de quem usa. Ele liga o seu computador
-a uma **rede de teste**.
+O Hyurax / Ultrax é um **software livre**, distribuído de graça sob a
+licença MIT ou a Apache-2.0, à escolha de quem usa. A versão do programa é a
+1.0; a rede a que ele liga o seu computador é uma **rede de teste**.
 
 - O HYX desta rede **não tem valor econômico**. Ele existe para testar o
   software.
@@ -148,32 +149,29 @@ Para funcionar, o programa:
     nó, que os outros nós veem. Ela não leva o seu nome nem a sua carteira;
 - baixa a **lista pública de nós semente** do repositório do projeto no
   GitHub;
-- consulta a **api.coingecko.com** para mostrar preços de criptomoedas, **só**
-  se você ligar o painel "Mercado" nos ajustes;
 - se você ligar "ver no celular", deixa o painel visível para aparelhos da sua
   rede local, só para leitura.
 
 O programa **não envia dados de uso, não tem rastreamento e não mostra
-anúncios**. Os serviços de terceiros citados aqui (GitHub e CoinGecko) têm
-regras e políticas de privacidade próprias.
+anúncios**. O GitHub, de onde vem a lista de nós semente, tem regras e
+política de privacidade próprias.
 
 ## 9. Privacidade (LGPD)
 
 - **O projeto não coleta nem recebe dados pessoais seus.** Os dados do
-  programa ficam na pasta `%APPDATA%\Hyurax` do seu computador:
-  - a cadeia;
-  - a carteira cifrada;
-  - o histórico do ULTRAX;
-  - os JOBs científicos e os relatórios;
-  - os ajustes.
+  programa ficam no seu computador, em duas pastas (no Windows):
+  - `%APPDATA%\Hyurax`: a carteira cifrada, o segundo fator e os ajustes;
+  - `%LOCALAPPDATA%\Hyurax`: a cadeia, o histórico do ULTRAX, os JOBs
+    científicos, os relatórios e o registro do programa.
 - O **endereço IP** é dado pessoal pela LGPD. Os nós com que você se conecta
   são de outras pessoas, e cada uma responde pelo que fizer com o que vê. O
   projeto não controla esses nós.
 - As **transações na cadeia são públicas** por natureza: qualquer nó vê os
   endereços e valores. Não coloque informação pessoal em lugar nenhum da
   cadeia.
-- Para apagar tudo, feche o programa e apague a pasta `%APPDATA%\Hyurax`.
-  **Isso apaga também a carteira**: guarde uma cópia antes, se quiser.
+- Desinstalar o programa **não** apaga essas pastas. Para apagar tudo,
+  feche o programa e apague as duas. **Isso apaga também a carteira**:
+  guarde uma cópia antes, se quiser.
 
 ## 10. Uso de acordo com a lei
 

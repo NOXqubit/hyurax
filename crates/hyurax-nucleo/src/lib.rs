@@ -16,6 +16,7 @@
 //! | módulo | o que faz |
 //! |---|---|
 //! | [`pastas`] | onde ficam configuração e dados do usuário |
+//! | [`instalacao`] | a pasta do programa e o manifesto do instalador (Windows) |
 //! | [`config`] | rede, portas e sementes |
 //! | [`ajustes`] | as escolhas do dono, em `ajustes.txt` |
 //! | [`cadeia`] | abrir, subir, sincronizar e gravar a cadeia |
@@ -37,6 +38,7 @@ pub mod carteira;
 pub mod ciencia;
 pub mod config;
 pub mod identidade;
+pub mod instalacao;
 pub mod maquinas;
 pub mod metricas;
 pub mod mineracao;
