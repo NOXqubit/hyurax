@@ -108,6 +108,7 @@ impl Contas {
 
     fn gravar(&self) -> Result<(), String> {
         let Some(p) = &self.pasta else { return Ok(()) };
+        std::fs::create_dir_all(p).map_err(|e| format!("não consegui criar {}: {e}", p.display()))?;
         let contas = self.contas.lock().map_err(|_| "contas travadas")?.clone();
         let mut t = String::from("# Hyurax: contas da API externa. Só o SHA-512 da chave fica aqui.\n# id nome(hex) sha512_da_chave limite_milicreditos criada revogada\n");
         for c in &contas {
