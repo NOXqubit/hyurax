@@ -1,4 +1,4 @@
-# Hyurax / Ultrax — monta o programa e o instalador para Windows.
+﻿# Hyurax / Ultrax — monta o programa e o instalador para Windows.
 #
 # O mesmo que o GitHub Actions faz (.github/workflows/lancamento.yml), para
 # rodar numa máquina com Windows:
@@ -70,6 +70,14 @@ cargo build --release --locked --target $alvo -p hyurax-instalador
 if ($LASTEXITCODE -ne 0) { throw "falhou a montagem do instalador" }
 $instalador = Join-Path $dist "hyurax-instalador-windows-x86_64.exe"
 Copy-Item (Join-Path $destinoCargo "hyurax-instalador.exe") $instalador
+if ($alvo -notlike "*-msvc") {
+    # Com o alvo GNU, o webview2-com-sys liga a WebView2Loader.dll em vez do
+    # carregador estático (que só existe para MSVC): este instalador precisa
+    # da DLL ao lado dele. Serve para testar aqui; o lançamento usa MSVC, que
+    # dá um instalador de um arquivo só.
+    Copy-Item (Join-Path $pasta "WebView2Loader.dll") $dist
+    Write-Host "AVISO: alvo $alvo - o instalador precisa da WebView2Loader.dll ao lado (o de MSVC não precisa)"
+}
 
 foreach ($a in @($zip, $instalador, (Join-Path $dist "hyurax-no.exe"))) {
     $h = (Get-FileHash -Algorithm SHA256 $a).Hash.ToLower()

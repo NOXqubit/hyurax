@@ -216,16 +216,25 @@ fn desinstalar() -> String {
             );
         }
     };
-    let _ = std::process::Command::new("reg.exe").args(["delete", &manifesto.chave, "/f"]).creation_flags(SEM_JANELA).status();
-    let falhas = instalacao::remover_arquivos(&aqui, &manifesto, &["Hyurax.exe"]);
-    // depois que este processo sair: o .exe, e a pasta só se ficar vazia
-    let pasta = aqui.display().to_string().replace('\'', "''");
-    let exe = aqui.join("Hyurax.exe").display().to_string().replace('\'', "''");
+    let _ = std::process::Command::new("reg.exe").args(["delete", &manifesto.chave, "/f"]).creation_flags(SEM_JANELA).output();
+    // Os atalhos e o que não estiver em uso saem agora. O que este processo
+    // segura (o .exe e, na montagem GNU, a WebView2Loader.dll) sai depois.
+    let pasta_texto = aqui.display().to_string();
+    let falhas: Vec<String> = instalacao::remover_arquivos(&aqui, &manifesto, &["Hyurax.exe"])
+        .into_iter()
+        .filter(|f| !f.starts_with(&pasta_texto))
+        .collect();
+    // depois que este processo sair: o resto do manifesto (nomes soltos,
+    // conferidos por Manifesto::ler), e a pasta só se ficar vazia
+    let aspas = |s: &str| s.replace('\'', "''");
+    let arquivos: Vec<String> = manifesto.arquivos.iter().map(|n| format!("'{}'", aspas(&aqui.join(n).display().to_string()))).collect();
+    let pasta = aspas(&pasta_texto);
     let script = format!(
         "Wait-Process -Id {} -ErrorAction SilentlyContinue; Start-Sleep -Seconds 1; \
-         Remove-Item -LiteralPath '{exe}' -Force -ErrorAction SilentlyContinue; \
+         foreach ($a in @({})) {{ Remove-Item -LiteralPath $a -Force -ErrorAction SilentlyContinue }}; \
          if (-not (Get-ChildItem -LiteralPath '{pasta}' -Force -ErrorAction SilentlyContinue)) {{ Remove-Item -LiteralPath '{pasta}' -Force -ErrorAction SilentlyContinue }}",
-        std::process::id()
+        std::process::id(),
+        arquivos.join(",")
     );
     let _ = std::process::Command::new("powershell.exe")
         .args(["-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-Command", &script])

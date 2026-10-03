@@ -219,6 +219,15 @@ fn instalar(chave: &str, area_de_trabalho: bool, abrir: bool) -> Result<PathBuf,
     for a in &atalhos {
         atalho(a, &exe, &destino)?;
     }
+    // instalar por cima: os atalhos da instalação anterior que ainda existem
+    // continuam no manifesto, para a desinstalação achar todos
+    if let Ok(anterior) = Manifesto::da_pasta(&destino) {
+        for a in anterior.atalhos {
+            if a.exists() && !atalhos.contains(&a) {
+                atalhos.push(a);
+            }
+        }
+    }
 
     // o manifesto: a desinstalação apaga só o que está nele
     let manifesto = Manifesto {

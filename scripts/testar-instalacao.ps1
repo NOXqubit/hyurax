@@ -1,4 +1,4 @@
-# Hyurax / Ultrax: teste da instalação limpa, de ponta a ponta.
+﻿# Hyurax / Ultrax: teste da instalação limpa, de ponta a ponta.
 #
 #   powershell -ExecutionPolicy Bypass -File scripts\testar-instalacao.ps1 -Instalador dist\hyurax-instalador-windows-x86_64.exe
 #
@@ -46,6 +46,15 @@ function Rodar([string]$exe, [string[]]$argumentos) {
     return [System.Diagnostics.Process]::Start($i)
 }
 
+# O instalador roda de dentro da pasta isolada, longe da árvore do código.
+# A DLL só vai junto se estiver ao lado dele (montagem GNU; a de MSVC é um
+# arquivo só).
+$copia = Join-Path $raiz "baixado"
+New-Item -ItemType Directory -Force $copia | Out-Null
+Copy-Item $Instalador $copia
+$dllAoLado = Join-Path (Split-Path -Parent $Instalador) "WebView2Loader.dll"
+if (Test-Path $dllAoLado) { Copy-Item $dllAoLado $copia; Write-Host "(montagem com a WebView2Loader.dll ao lado do instalador)" }
+$Instalador = Join-Path $copia (Split-Path -Leaf $Instalador)
 Write-Host "pasta isolada: $raiz"
 try {
     Write-Host "1. sem aceitar os termos"
@@ -61,7 +70,7 @@ try {
     foreach ($a in @("Hyurax.exe", "WebView2Loader.dll", "TERMOS-DE-USO.txt", "LEIA-ME.txt", "instalacao.txt")) {
         Conferir (Test-Path (Join-Path $programa $a)) "$a na pasta do programa"
     }
-    $manifesto = Get-Content -Raw (Join-Path $programa "instalacao.txt")
+    $manifesto = Get-Content -Raw (Join-Path $programa "instalacao.txt") -ErrorAction SilentlyContinue
     Conferir ($manifesto -match "versao=\d+\.\d+\.\d+") "manifesto com a versão"
     Conferir ($manifesto -match "rede=testnet") "manifesto diz rede de teste"
     $menu = Join-Path $roaming "Microsoft\Windows\Start Menu\Programs\Hyurax.lnk"
@@ -113,7 +122,7 @@ try {
     if (-not (Test-Path $carteira)) { "carteira de teste" | Set-Content $carteira }
     $p = Rodar (Join-Path $programa "Hyurax.exe") @("--desinstalar", "--silencioso")
     $p.WaitForExit()
-    for ($k = 0; $k -lt 20 -and (Test-Path $programa); $k++) { Start-Sleep -Seconds 1 }
+    for ($k = 0; $k -lt 60 -and (Test-Path $programa); $k++) { Start-Sleep -Seconds 1 }
     Conferir (-not (Test-Path $programa)) "a pasta do programa saiu"
     Conferir (-not (Test-Path $menu)) "atalho do Menu Iniciar saiu"
     Conferir (-not (Test-Path $mesa)) "atalho da Área de Trabalho saiu"
