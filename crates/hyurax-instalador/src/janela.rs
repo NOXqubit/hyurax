@@ -51,12 +51,14 @@ pub fn main() {
     // escrito na linha de comando, que tem o mesmo peso do "li e aceito".
     let argumentos: Vec<String> = std::env::args().skip(1).collect();
     let chave = chave_do_registro(&argumentos);
+    // aberto pela atualização segura do próprio programa: espera ele fechar
+    let esperar = argumentos.iter().position(|a| a == "--esperar-pid").and_then(|i| argumentos.get(i + 1)).and_then(|p| p.parse::<u32>().ok());
     if argumentos.iter().any(|a| a == "--silencioso") {
         let tem = |nome: &str| argumentos.iter().any(|a| a == nome);
         let codigo = if !tem("--aceito-os-termos") {
             2
         } else {
-            match instalar(&chave, tem("--area-de-trabalho"), tem("--abrir")) {
+            match instalar(&chave, esperar, tem("--area-de-trabalho"), tem("--abrir")) {
                 Ok(_) => 0,
                 Err(e) => {
                     let _ = std::fs::write(std::env::temp_dir().join("hyurax-instalador-erro.txt"), &e);
@@ -108,7 +110,7 @@ pub fn main() {
         *controle = ControlFlow::Wait;
         match evento {
             Event::UserEvent(Pedido::Instalar { area_de_trabalho, abrir }) => {
-                let r = instalar(&chave, area_de_trabalho, abrir);
+                let r = instalar(&chave, esperar, area_de_trabalho, abrir);
                 let js = match r {
                     Ok(destino) => format!("pronto({})", texto_js(&destino.display().to_string())),
                     Err(e) => format!("falhou({})", texto_js(&e)),
@@ -198,9 +200,17 @@ fn atalho(arquivo: &Path, alvo: &Path, pasta: &Path) -> Result<(), String> {
     )
 }
 
-fn instalar(chave: &str, area_de_trabalho: bool, abrir: bool) -> Result<PathBuf, String> {
+fn instalar(chave: &str, esperar: Option<u32>, area_de_trabalho: bool, abrir: bool) -> Result<PathBuf, String> {
     if PROGRAMA.is_empty() || DLL.is_empty() {
         return Err("este instalador foi montado sem o programa dentro (faltou HYURAX_CARGA_EXE/HYURAX_CARGA_DLL no empacotamento)".into());
+    }
+    if let Some(pid) = esperar {
+        // o programa antigo pediu esta atualização e está fechando: o .exe
+        // dele só pode ser trocado depois que o processo terminar
+        let _ = rodar(
+            "powershell.exe",
+            &["-NoProfile", "-NonInteractive", "-Command", &format!("Wait-Process -Id {pid} -Timeout 60 -ErrorAction SilentlyContinue")],
+        );
     }
     let destino = instalacao::pasta_do_programa()?;
     std::fs::create_dir_all(&destino).map_err(|e| format!("não consegui criar {}: {e}", destino.display()))?;

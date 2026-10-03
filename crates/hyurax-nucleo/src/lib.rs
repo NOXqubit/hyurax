@@ -16,6 +16,7 @@
 //! | módulo | o que faz |
 //! |---|---|
 //! | [`pastas`] | onde ficam configuração e dados do usuário |
+//! | [`atualizacao`] | atualização segura: manifesto assinado pela chave de lançamento |
 //! | [`instalacao`] | a pasta do programa e o manifesto do instalador (Windows) |
 //! | [`config`] | rede, portas e sementes |
 //! | [`ajustes`] | as escolhas do dono, em `ajustes.txt` |
@@ -32,6 +33,7 @@
 pub mod ajustes;
 pub mod api;
 pub mod arquivos;
+pub mod atualizacao;
 pub mod barramento;
 pub mod cadeia;
 pub mod carteira;

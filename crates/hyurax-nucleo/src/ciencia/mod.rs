@@ -1806,6 +1806,8 @@ mod testes {
             std::thread::sleep(Duration::from_millis(100));
         }
         assert_eq!(estado(&c, &id), (EstadoDoJob::Concluido, 6, 0), "o JOB não fechou pelas linhas do worker");
+        // o estado muda um instante antes do registro descer ao disco
+        c.esvaziar(false);
         let linhas = std::fs::read_to_string(c.pasta_do_job(&id).join("unidades.jsonl")).unwrap();
         assert_eq!(linhas.lines().count(), 6, "uma linha por unidade, com o registro conferido");
         assert!(linhas.lines().all(|l| l.contains("\"verificacao\":\"PASSED\"") && l.contains("\"programa\":\"teste\"")));

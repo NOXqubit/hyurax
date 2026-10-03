@@ -8,6 +8,7 @@ mod cadeia;
 mod carteira;
 mod ciencia;
 mod opcoes;
+mod lancamento;
 mod painel;
 mod ultrax;
 
@@ -52,6 +53,12 @@ Com --pasta P, tudo fica em P. Redes: testnet (padrão) e regtest (local).
       Computação científica: JOBs divididos em unidades conferidas, com
       relatório em JSON, CSV e PDF. `hyurax-no ciencia` mostra as opções.
 
+  hyurax-no lancamento chave --saida ARQUIVO
+  hyurax-no lancamento assinar --chave ARQUIVO --instalador EXE --versao X [--notas TEXTO] [--saida atualizacao.txt]
+  hyurax-no lancamento conferir --arquivo atualizacao.txt [--instalador EXE]
+      Para quem publica: a chave de lançamento (nasce fora do repositório) e
+      o manifesto assinado que a atualização segura do programa confere.
+
 Opções de rede (comandos que sobem o nó):
   --rede testnet|regtest   --porta P   --semente IP:PORTA[,…]   --sem-sementes-padrao
 
@@ -70,6 +77,7 @@ fn principal(args: &[String]) -> Result<(), String> {
         "estado" => cadeia::estado(resto),
         "ultrax" => ultrax::comando(resto),
         "ciencia" => ciencia::comando(resto),
+        "lancamento" => lancamento::comando(resto),
         "versao" | "--versao" | "-V" => {
             println!("{} {} · rede de teste", hyurax_nucleo::PRODUTO, hyurax_nucleo::VERSAO);
             Ok(())

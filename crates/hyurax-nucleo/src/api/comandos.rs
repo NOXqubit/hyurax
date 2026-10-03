@@ -167,6 +167,12 @@ pub(super) fn atender(s: &mut TcpStream, p: &Pedido, n: &Arc<Nucleo>) -> std::io
             json!({ "maquinas": l })
         }),
         "/api/v1/termos/aceitar" if janela => crate::termos::aceitar(&n.config.pastas.config, "programa").map(|()| json!({ "ok": true })),
+        "/api/v1/atualizacao/buscar" if janela => {
+            let n = Arc::clone(n);
+            std::thread::spawn(move || n.buscar_atualizacao());
+            ok()
+        }
+        "/api/v1/atualizacao/instalar" if janela => n.instalar_atualizacao().map(|()| json!({ "ok": true })),
         "/api/v1/abrir-pasta" if janela => abrir_pasta(&n.config.pastas.dados).map(|()| json!({ "ok": true })),
         // o canal do backend da GPU (o worker WebGL 2 da janela)
         "/api/v1/gpu/pegar" => n.ultrax.gpu_pegar(&texto("nome")).map(|(numero, lado, job)| {

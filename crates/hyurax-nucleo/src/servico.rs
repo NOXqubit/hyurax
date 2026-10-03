@@ -88,6 +88,11 @@ pub struct Nucleo {
     /// A chave de sessão do painel desta abertura (ver `api`): sem ela, nem
     /// um programa deste computador manda comando.
     pub chave_painel: String,
+    /// A atualização segura (manifesto assinado).
+    pub atualizacao: Mutex<crate::atualizacao::Estado>,
+    /// Quem fecha o programa quando o instalador da versão nova abre (a
+    /// janela registra; no terminal, ninguém).
+    pub ao_sair: Mutex<Option<Box<dyn Fn() + Send + Sync>>>,
     /// A trava da pasta de dados (solta quando o núcleo some).
     _trava: std::fs::File,
 }
@@ -189,8 +194,24 @@ impl Nucleo {
             inicio: Instant::now(),
             nucleos,
             chave_painel,
+            atualizacao: Mutex::new(crate::atualizacao::Estado::default()),
+            ao_sair: Mutex::new(None),
             _trava: trava,
         });
+        // a atualização segura: um minuto depois de abrir, e a cada 12 h (só
+        // no programa com janela; o terminal confere à mão, se quiser)
+        if n.modo == Modo::Janela && crate::atualizacao::chave_do_projeto().is_some() {
+            let fraco = Arc::downgrade(&n);
+            std::thread::spawn(move || {
+                std::thread::sleep(std::time::Duration::from_secs(60));
+                loop {
+                    let Some(n) = fraco.upgrade() else { return };
+                    n.buscar_atualizacao();
+                    drop(n);
+                    std::thread::sleep(std::time::Duration::from_secs(12 * 3600));
+                }
+            });
+        }
         if n.carteira.endereco().is_none() && n.modo == Modo::Janela {
             n.barramento.registrar("carteira", "nenhuma carteira ainda: crie ou importe uma para minerar e receber HYX de teste");
         }
@@ -279,6 +300,81 @@ impl Nucleo {
             }
         }
         Ok(novas)
+    }
+
+    /// Busca o manifesto da versão mais nova e confere a assinatura.
+    pub fn buscar_atualizacao(&self) {
+        let r = crate::atualizacao::buscar();
+        let mut nova = None;
+        if let Ok(mut e) = self.atualizacao.lock() {
+            e.verificado_ms = crate::util::agora_ms();
+            match r {
+                Ok(m) if crate::atualizacao::mais_nova(&m.versao, VERSAO) => {
+                    e.erro = None;
+                    if e.disponivel.as_ref().map(|x| &x.versao) != Some(&m.versao) {
+                        nova = Some(m.versao.clone());
+                    }
+                    e.disponivel = Some(m);
+                }
+                Ok(_) => {
+                    e.erro = None;
+                    e.disponivel = None;
+                }
+                Err(erro) => e.erro = Some(erro),
+            }
+        }
+        if let Some(v) = nova {
+            self.barramento.registrar("sistema", format!("versão {v} disponível: manifesto assinado pela chave de lançamento e conferido"));
+        }
+    }
+
+    /// Baixa o instalador da versão nova, confere contra o manifesto assinado,
+    /// abre o instalador (que espera este programa fechar) e pede para fechar.
+    ///
+    /// # Errors
+    /// Sem versão nova conferida, ou já baixando.
+    pub fn instalar_atualizacao(self: &Arc<Self>) -> Result<(), String> {
+        let m = {
+            let mut e = self.atualizacao.lock().map_err(|_| "estado da atualização travado".to_string())?;
+            if e.baixando {
+                return Err("já estou baixando a atualização".into());
+            }
+            let m = e.disponivel.clone().ok_or("não há versão nova conferida: busque de novo")?;
+            e.baixando = true;
+            e.erro = None;
+            m
+        };
+        let n = Arc::clone(self);
+        std::thread::spawn(move || {
+            let pasta = n.config.pastas.dados.join("atualizacoes");
+            n.barramento.registrar("sistema", format!("baixando o instalador da versão {} e conferindo com o manifesto assinado", m.versao));
+            let r = crate::atualizacao::baixar(&m, &pasta).and_then(|instalador| {
+                std::process::Command::new(&instalador)
+                    .arg("--esperar-pid")
+                    .arg(std::process::id().to_string())
+                    .spawn()
+                    .map(|_| ())
+                    .map_err(|e| format!("não consegui abrir o instalador: {e}"))
+            });
+            if let Ok(mut e) = n.atualizacao.lock() {
+                e.baixando = false;
+                if let Err(erro) = &r {
+                    e.erro = Some(erro.clone());
+                }
+            }
+            match r {
+                Ok(()) => {
+                    n.barramento.registrar("sistema", format!("instalador da versão {} conferido e aberto; o programa fecha para ele atualizar", m.versao));
+                    if let Ok(s) = n.ao_sair.lock()
+                        && let Some(f) = s.as_ref()
+                    {
+                        f();
+                    }
+                }
+                Err(erro) => n.barramento.registrar("erro", format!("atualização: {erro}")),
+            }
+        });
+        Ok(())
     }
 
     /// Para a mineração e o ULTRAX e grava a cadeia: chamar antes de fechar.

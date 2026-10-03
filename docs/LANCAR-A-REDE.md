@@ -73,6 +73,39 @@ Confira **antes de divulgar**: baixe o instalador do Windows, confira a soma, in
 programa. A versão que ele mostra tem que ser a mesma da etiqueta
 (`1.0.0`), com "rede de teste" na barra de cima.
 
+### Passo 2b — assinar a atualização (você, a partir da 1.0.1)
+
+Os programas instalados só aceitam versão nova cujo manifesto foi assinado
+pela chave de lançamento (o segredo fica em `D:\chaves-hyurax\lancamento.chave`,
+fora de qualquer repositório; a chave pública está em
+`rede/chave-de-lancamento.pub`). O GitHub não tem o segredo, então este passo
+é feito aqui, depois que a Release sai:
+
+1. Baixe da Release o `hyurax-instalador-windows-x86_64.exe`.
+2. Assine:
+
+```bash
+hyurax-no lancamento assinar --chave D:\chaves-hyurax\lancamento.chave --instalador hyurax-instalador-windows-x86_64.exe --versao 1.0.1 --notas "o que mudou"
+```
+
+3. Confira e publique o `atualizacao.txt` na mesma Release:
+
+```bash
+hyurax-no lancamento conferir --arquivo atualizacao.txt --instalador hyurax-instalador-windows-x86_64.exe
+```
+
+```bash
+gh release upload v1.0.1 atualizacao.txt
+```
+
+Os programas abertos acham a versão nova em até 12 horas (ou na hora, em
+Ajustes → Atualização → Buscar agora), conferem a assinatura, baixam o
+instalador, conferem tamanho e SHA-512 e só então o abrem.
+
+**Guarde uma cópia do segredo fora deste computador** (pendrive guardado,
+por exemplo). Perder o segredo obriga a publicar uma versão nova com outra
+chave pública, que os programas antigos não aceitam sozinhos.
+
 ## Passo 3 — o primeiro nó sempre ligado (você)
 
 Uma rede precisa de pelo menos um endereço fixo para os novos baterem. Três

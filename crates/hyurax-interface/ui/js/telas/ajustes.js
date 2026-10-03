@@ -1,7 +1,7 @@
 // Hyurax / Ultrax — Ajustes: estimativa de energia, painel na rede local,
 // avisos, pastas do programa e termos de uso.
 
-import { $, el, texto } from "../util.js";
+import { $, el, texto, hora, fmt } from "../util.js";
 import { postar } from "../api.js";
 import { fatos, resultado } from "./comum.js";
 
@@ -40,6 +40,33 @@ export function montar(opcoes) {
     if (!r.ok) resultado("a-energia-saida", r);
   });
   $("a-termos").addEventListener("click", () => abrirTermos(false));
+  $("a-atu-buscar").addEventListener("click", async () => {
+    const r = await postar("/atualizacao/buscar");
+    resultado("a-atu-saida", r, "Buscando o manifesto e conferindo a assinatura…");
+  });
+  $("a-atu-instalar").addEventListener("click", async () => {
+    if (!confirm("Baixar a versão nova, conferir e abrir o instalador? O programa fecha para ele atualizar.")) return;
+    const r = await postar("/atualizacao/instalar");
+    resultado("a-atu-saida", r, "Baixando e conferindo o instalador…");
+  });
+}
+
+function atualizacao(e) {
+  const a = e.atualizacao;
+  if (!a) return;
+  const janela = e.modo === "janela" && e.pode_mandar;
+  const d = a.disponivel;
+  fatos("a-atu", [
+    ["Versão instalada", a.atual],
+    ["Chave de lançamento", a.chave ? "embutida" : "PENDENTE: este programa foi montado sem a chave"],
+    ["Última busca", a.verificado_ms ? hora(a.verificado_ms) : "ainda não"],
+    ["Versão nova", d ? `${d.versao} (${fmt(d.tamanho / 1048576, 1)} MiB, assinada e conferida)${d.notas ? ` · ${d.notas}` : ""}` : "nenhuma"],
+    a.erro ? ["Problema", a.erro] : null,
+    a.baixando ? ["Agora", "baixando e conferindo o instalador"] : null,
+  ]);
+  $("a-atu-buscar").disabled = !janela || !a.chave;
+  $("a-atu-instalar").hidden = !d;
+  $("a-atu-instalar").disabled = !janela || a.baixando;
 }
 
 export function atualizar(e) {
@@ -79,6 +106,7 @@ export function atualizar(e) {
     ["Versão", `${e.produto} ${e.versao}`],
     ["Rede", `${e.rede?.nome} (${e.rede?.tipo})`],
   ]);
+  atualizacao(e);
   texto("a-termos-estado", e.termos?.aceitos ? `Versão ${e.termos.versao} aceita neste computador.` : `Versão ${e.termos?.versao ?? "—"} ainda não aceita.`);
 }
 

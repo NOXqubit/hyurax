@@ -169,6 +169,25 @@ Segurança: comando só com Host e Origin locais; com "ver no celular" ligado,
 a rede local só lê; programa trancado (segundo fator) recusa tudo menos
 `/destravar`.
 
+## Atualização segura
+
+`hyurax_nucleo::atualizacao`. Cada versão publicada leva um
+`atualizacao.txt`: versão, rede, nome e endereço do instalador (só das
+Releases do projeto), tamanho, SHA-512 e a assinatura Ed25519 dessas linhas
+pela chave de lançamento. A chave pública vem embutida
+(`rede/chave-de-lancamento.pub`); o segredo nunca entra no repositório.
+
+O programa com janela busca o manifesto um minuto depois de abrir e a cada
+12 horas (pelo `curl` do sistema, só HTTPS), confere a assinatura, e em
+Ajustes oferece a versão nova. Instalar baixa o instalador, confere tamanho e
+SHA-512 contra o manifesto assinado, abre o instalador com
+`--esperar-pid` e fecha; o instalador espera o processo antigo terminar,
+mostra os termos e troca os arquivos (o manifesto da instalação diz o que
+apagar depois). Quem publica usa `hyurax-no lancamento chave|assinar|conferir`.
+
+PENDENTE: assinatura Authenticode do próprio `.exe` (certificado), que é o que
+o Windows confere; a assinatura Ed25519 protege o caminho da atualização.
+
 ## Decisões registradas
 
 - **Tag de consenso congelada.** As etiquetas de domínio do ULTRAX passaram a

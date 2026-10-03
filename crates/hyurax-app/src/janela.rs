@@ -80,6 +80,8 @@ fn ligar() -> Result<(String, Arc<Nucleo>), String> {
 enum Pedido {
     /// A página pediu uma janela nova (botão "destacar" de um painel).
     Janela(String),
+    /// O instalador da versão nova abriu: fecha para ele trocar os arquivos.
+    Sair,
 }
 
 /// Monta uma janela com o painel dentro. Serve para a principal e para as
@@ -155,12 +157,27 @@ fn abrir_janela(url: Option<&str>, erro: Option<&str>, motor: Option<Arc<Nucleo>
         return;
     };
     let id_principal = principal.id();
+    // o instalador da versão nova (conferido) pede para o programa fechar
+    if let Some(n) = &motor
+        && let Ok(mut s) = n.ao_sair.lock()
+    {
+        let p = proxy.clone();
+        *s = Some(Box::new(move || {
+            let _ = p.send_event(Pedido::Sair);
+        }));
+    }
     // As janelas destacadas ficam guardadas: fechar uma não fecha o programa.
     let mut janelas: HashMap<WindowId, (Window, WebView)> = HashMap::new();
 
     laco.run(move |evento, alvo, controle| {
         *controle = ControlFlow::Wait;
         match evento {
+            Event::UserEvent(Pedido::Sair) => {
+                if let Some(n) = &motor {
+                    n.encerrar();
+                }
+                *controle = ControlFlow::Exit;
+            }
             Event::UserEvent(Pedido::Janela(endereco)) => {
                 if let Some((j, v)) = montar_janela(alvo, &mut contexto, &proxy, &origem, Ok(&endereco), false) {
                     janelas.insert(j.id(), (j, v));

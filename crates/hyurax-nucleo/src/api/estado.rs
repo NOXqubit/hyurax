@@ -169,6 +169,18 @@ pub fn estado(n: &Nucleo, pode_mandar: bool, url_celular: &str) -> Value {
         o.insert("registros".into(), Value::Array(registros));
         o.insert("maquinas".into(), Value::Array(maquinas));
         o.insert("ultimo_evento".into(), json!(n.barramento.ultimo_seq()));
+        let atu = n.atualizacao.lock().map(|a| a.clone()).unwrap_or_default();
+        o.insert(
+            "atualizacao".into(),
+            json!({
+                "atual": VERSAO,
+                "chave": crate::atualizacao::chave_do_projeto().is_some(),
+                "verificado_ms": atu.verificado_ms,
+                "disponivel": atu.disponivel.as_ref().map(|m| json!({ "versao": m.versao, "notas": m.notas, "tamanho": m.tamanho })),
+                "erro": atu.erro,
+                "baixando": atu.baixando,
+            }),
+        );
         o.insert(
             "ajustes".into(),
             json!({

@@ -1,0 +1,4 @@
+# Chave pública de lançamento do Hyurax / Ultrax (Ed25519, hexadecimal).
+# O programa só instala atualização cujo manifesto (atualizacao.txt) foi
+# assinado pelo segredo desta chave. Vazia: atualização automática PENDENTE.
+b7b3e5b524f2a996139d3be88fac69d17e0d320976f2078d7be96c1d817033c7
