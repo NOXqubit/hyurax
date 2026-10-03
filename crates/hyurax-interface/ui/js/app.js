@@ -145,6 +145,24 @@ ouvir("bloco", (b) => {
   }
 });
 
+// ---------- aviso de JOB que terminou ou parou ----------
+const AVISOS_DE_JOB = {
+  JOB_COMPLETED: "concluído: o relatório está pronto em Computação científica",
+  JOB_EXPIRED: "venceu o prazo antes de terminar",
+  JOB_OUT_OF_BUDGET: "parou: o orçamento de créditos acabou",
+  JOB_WAITING_FOR_NODES: "esperando workers de outros nós para continuar",
+};
+let avisoAte = 0;
+ouvir("ciencia", (d) => {
+  const msg = AVISOS_DE_JOB[d?.event];
+  if (!msg || !d.job_id) return;
+  const a = $("aviso-bloco");
+  a.textContent = `JOB ${String(d.job_id).slice(0, 10)}… ${msg}`;
+  a.hidden = false;
+  avisoAte = Date.now() + 8000;
+  setTimeout(() => { if (Date.now() >= avisoAte) a.hidden = true; }, 8100);
+});
+
 // ---------- tudo junto ----------
 ouvir("estado", (e) => {
   atualizarTopo(e);
