@@ -1,9 +1,9 @@
 formato=HYURAX-ATUALIZACAO-v1
-versao=1.3.2
+versao=1.4.0
 rede=testnet
 instalador=hyurax-instalador-windows-x86_64.exe
-endereco=https://github.com/NOXqubit/hyurax/releases/download/v1.3.2/hyurax-instalador-windows-x86_64.exe
-tamanho=10212864
-sha512=46fa3aca07fc6bb4b0170305774b1f7b4ed5315435a978449ab4f6d55e02bb96508885499560e40ddeab9c53627178cf13d2ff63827de2fd03980e2cf4a19ca8
-notas=Correção importante: na 1.3.1 o núcleo travava ("o núcleo não está respondendo") assim que o programa se conectava a outro nó, e a mineração parava junto. Corrigido e testado conectado à semente pública.
-assinatura=8babfa3f545bab61fdb86d9182668e4ea1cbb5a4a57087ceaa0685dec1dd65d3c42f70ac9f1afb80e49ef5871db020d721d8a5a9680b9e1b2e6f1f1ffdbf810c
+endereco=https://github.com/NOXqubit/hyurax/releases/download/v1.4.0/hyurax-instalador-windows-x86_64.exe
+tamanho=10249728
+sha512=6f0187af46a5445883f96ae87a11ad2f2a3ce2462125caa0395050dfe1c55d4407f6d28d14c724da654b8f382cae7f7d780f0385ba291c6bb6b65fe9d1f1874b
+notas=Nova tela Planos: Comunidade (grátis), Pro, Equipe e Empresa, com o que entra em cada um. A venda ainda não abriu; o plano pago se ativa com um voucher assinado pelo projeto, conferido pelo próprio programa, e reduz a comissão da plataforma no mercado.
+assinatura=bbebeafd1ef66d478a36602d638ad88978e14421c2d6402f12ccdb899832de525a250e41607623aaebbcf9324958ef83d372fe5d33c3745ddf299fce04dcf405
