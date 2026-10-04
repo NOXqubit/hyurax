@@ -1,9 +1,9 @@
 formato=HYURAX-ATUALIZACAO-v1
-versao=1.1.0
+versao=1.2.0
 rede=testnet
 instalador=hyurax-instalador-windows-x86_64.exe
-endereco=https://github.com/NOXqubit/hyurax/releases/download/v1.1.0/hyurax-instalador-windows-x86_64.exe
-tamanho=8384512
-sha512=974eb7bd403826372f07d9f7339ee2dff957531bbee6bfa0619719cae00337b8fa420db8b787a9d817407ea8fa89082fec7bb691cdc5ab84c04b8641b7952400
-notas=Visual novo (aprovado no Claude Design): tela Início com um botão para ajudar a rede, Computar, Mercado de máquinas, Arquivos cifrados na nuvem entre os nós e Carteira; tema claro e escuro. Nuvem: armazenamento distribuído com Reed-Solomon, aluguel de capacidade com recibo assinado e livro de contas (créditos, sem valor real).
-assinatura=cc31238523aee41f9708c7e3818109f57c15dbb395d300f390ae785ea15481ce8d177d3b107b6bbaf77cebf248b0dbfb5f82e789c1f718edf911e4dce8f7bc09
+endereco=https://github.com/NOXqubit/hyurax/releases/download/v1.2.0/hyurax-instalador-windows-x86_64.exe
+tamanho=8474112
+sha512=12a0ee509a546c693d0af0888fc79f8b8144bb969c175840cef0fc50f1a9ddeab81ccd887ccb20ada205b687009a93f2f0878c10811bb05970320aaac3384fde
+notas=Logotipo novo (o H com a travessa em âmbar), agora também como ícone na Área de Trabalho e no Menu Iniciar. Tela Moléculas: mais de 8 mil moléculas reais em 3D; gire, faça vibrar e compare a solubilidade medida em laboratório com a prevista pela IA do ULTRAX. O Painel ao vivo mostra os bytes da rede.
+assinatura=b4f62481528667fca7d8386c88798e9d7cbb294d700aeaba483dc9c86c4e9943c6ee206a953f60d91df982f896d8caecb18419a7d472023fb8e04ea1ad17b108
