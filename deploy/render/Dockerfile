@@ -33,5 +33,6 @@ WORKDIR /dados
 ENV PORT=10000
 EXPOSE 10000
 # --porta 8790: a porta TCP de sempre, só dentro do contêiner (o Render não a
-# abre para fora); --ws-porta $PORT: a que o Render publica em HTTPS.
-CMD ["sh", "-c", "exec hyurax-no no --rede testnet --pasta /dados/no --porta 8790 --ws-porta \"${PORT}\" --sem-malha"]
+# abre para fora); --ws-porta $PORT: a que o Render publica em HTTPS;
+# --sem-sementes-padrao: a semente não disca para si mesma.
+CMD ["sh", "-c", "exec hyurax-no no --rede testnet --pasta /dados/no --porta 8790 --ws-porta \"${PORT}\" --sem-malha --sem-sementes-padrao"]

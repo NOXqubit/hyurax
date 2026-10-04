@@ -29,4 +29,6 @@
 # Para sair: apague a sua linha. Não há trava nenhuma.
 #
 # --------------------------------------------------------------------------
-# (nenhum nó semente publicado ainda — a rede de teste pública ainda não subiu)
+# Semente do projeto no Render (grátis): só HTTPS, por isso WebSocket.
+# Saúde: https://hyurax-semente.onrender.com/saude
+wss://hyurax-semente.onrender.com/p2p

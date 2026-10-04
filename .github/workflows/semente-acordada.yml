@@ -1,0 +1,22 @@
+# Mantém acordada a semente da rede de teste no Render (plano grátis): ele
+# dorme depois de 15 minutos sem tráfego, e quem chegasse esperaria quase um
+# minuto. Um toque na página de saúde a cada 10 minutos basta. As 750 horas do
+# plano grátis cobrem um serviço ligado o mês inteiro.
+
+name: semente-acordada
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  tocar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: saúde da semente
+        run: |
+          curl -fsS --max-time 120 https://hyurax-semente.onrender.com/saude

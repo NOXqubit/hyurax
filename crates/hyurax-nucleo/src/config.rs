@@ -13,10 +13,11 @@ pub const PORTA_P2P: u16 = 8790;
 /// Porta padrão do painel local (API e interface).
 pub const PORTA_PAINEL: u16 = 8800;
 
-/// Nós semente da rede de teste pública, embutidos no programa. Vazio enquanto
-/// nenhum semente estiver no ar: a lista só ganha um endereço depois de ele
-/// responder de verdade (ver `docs/rede/NO-SEMENTE.md`).
-pub const SEMENTES_TESTNET: &[&str] = &[];
+/// Nós semente da rede de teste pública, embutidos no programa. Só entra
+/// endereço que já respondeu de verdade (ver `docs/NO-SEMENTE.md`). A semente
+/// do projeto roda no plano grátis do Render, atrás de HTTPS: por isso é
+/// WebSocket (`wss://…/p2p`), conferida de ponta a ponta em 04/10/2026.
+pub const SEMENTES_TESTNET: &[&str] = &["wss://hyurax-semente.onrender.com/p2p"];
 
 /// As redes que o programa aceita: a de teste pública e a local, para testes.
 /// Não existe rede principal (mainnet).
