@@ -13,7 +13,7 @@ e na rede, e o que só o autor pode decidir.
 
 | Critério do roteiro | Estado | Como foi medido |
 |---|---|---|
-| Testnet pública rodando 4 semanas sem falha grave | **não começou** | `rede/sementes-testnet.txt` não tem nenhuma semente pública; não há nó respondendo de fora |
+| Testnet pública rodando 4 semanas sem falha grave | **começou em 04/10/2026** | semente `wss://hyurax-semente.onrender.com/p2p` no ar (Render, grátis); um nó novo a acha sozinho pela lista publicada. Contar 4 semanas a partir daqui |
 | Nenhuma falha de consenso sem correção e teste | cumprido até aqui | nenhuma falha aberta; os ataques conhecidos têm teste em `crates/hyurax-net/tests` |
 | Cifra da conexão e carteira com senha em uso | cumprido | Noise XX desde o protocolo v2; carteira `HYURAX-CARTEIRA-v2` (Argon2id + ChaCha20-Poly1305), no PC e no celular |
 | Pelo menos 5 nós de pessoas diferentes | **0 de 5** | depende da testnet pública |
@@ -21,18 +21,18 @@ e na rede, e o que só o autor pode decidir.
 | Spec congelada, com o hash publicado | **não** | recompensa e halving ainda marcados PROVISÓRIO (`consensus.py:150`, `crates/hyurax-consensus/src/lib.rs:62`) |
 | Aviso público de que HYX não é investimento | cumprido | README, termos de uso v3, programa e app |
 
-**O que trava tudo é a semente pública.** Sem ela não há testnet pública, e
-sem as 4 semanas de testnet pública a mainnet não sai. Contando de hoje, a
+**A semente pública subiu em 04/10/2026** (Render, plano grátis, via WebSocket).
+Agora o que falta é gente de fora rodando nós e alguém minerando na testnet
+(a cadeia pública começou do zero). Contando de hoje, a
 data mais cedo possível para a mainnet fica por volta de **meados de
 novembro**, e só se a semente subir já e aparecerem nós de fora. O 13/12
 continua possível, mas está em risco.
 
 ## Decisões que só o autor toma
 
-1. **Onde roda a semente pública.** A Oracle pede cartão. O PC de casa
-   expõe o IP de casa (e o anonimato). Outras saídas: uma VPS barata paga
-   sem cartão (Pix ou boleto), ou um amigo de confiança com porta aberta. O
-   kit já está pronto (`deploy/instalar-semente.sh`, `docs/NO-SEMENTE.md`).
+1. ~~Onde roda a semente pública~~: **resolvido** em 04/10/2026, no Render
+   grátis (sem cartão), com o nó falando WebSocket. Uma segunda semente, em
+   outro lugar, deixaria a rede menos dependente de um provedor só.
 2. **A emissão.** Hoje: 50 HYX por bloco, halving a cada 210.000 blocos,
    bloco a cada 2 minutos (oferta total ≈ 21 milhões). Precisa ser
    confirmada, ou trocada, **antes** de congelar a spec. Mudar depois da

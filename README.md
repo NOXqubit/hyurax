@@ -60,7 +60,7 @@ registros em `%LOCALAPPDATA%\Hyurax`. No Linux, as pastas do XDG.
 | Economia | para que o HYX é necessário (e para que não é) em [`docs/ECONOMIA.md`](docs/ECONOMIA.md); nada de venda, pré-venda ou promessa de valorização |
 | Termos de uso | [`docs/TERMOS-DE-USO.md`](docs/TERMOS-DE-USO.md), versão 3, aceitos no instalador e na primeira abertura; revisados pelo projeto (lista de leis no começo do arquivo), **sem assinatura de advogado** |
 | Assinatura digital do programa | não tem ainda; opções em [`docs/ASSINATURA-DIGITAL.md`](docs/ASSINATURA-DIGITAL.md) |
-| Testnet pública | ensaiada com três processos; lançamento em [`docs/LANCAR-A-REDE.md`](docs/LANCAR-A-REDE.md); sementes em [`rede/sementes-testnet.txt`](rede/sementes-testnet.txt); kit do nó semente em [`docs/NO-SEMENTE.md`](docs/NO-SEMENTE.md); **nenhum semente no ar ainda** |
+| Testnet pública | ensaiada com três processos; lançamento em [`docs/LANCAR-A-REDE.md`](docs/LANCAR-A-REDE.md); sementes em [`rede/sementes-testnet.txt`](rede/sementes-testnet.txt); kit do nó semente em [`docs/NO-SEMENTE.md`](docs/NO-SEMENTE.md); semente pública no ar desde 04/10/2026: `wss://hyurax-semente.onrender.com/p2p` (Render, grátis; saúde em https://hyurax-semente.onrender.com/saude) |
 | Aplicativo do celular | carteira Android (Expo), chave só no aparelho, APK montado pelo GitHub. Ver [`docs/APP-CELULAR.md`](docs/APP-CELULAR.md) |
 | Mainnet | não existe; o que falta e o que o autor decide em [`docs/MAINNET.md`](docs/MAINNET.md) |
 | HYX Index, Hyurax Flux, Direct e Resonance | arquiteturas registradas em `docs/`; estado RED, nada implementado |
