@@ -1,9 +1,9 @@
 formato=HYURAX-ATUALIZACAO-v1
-versao=1.2.0
+versao=1.3.1
 rede=testnet
 instalador=hyurax-instalador-windows-x86_64.exe
-endereco=https://github.com/NOXqubit/hyurax/releases/download/v1.2.0/hyurax-instalador-windows-x86_64.exe
-tamanho=8474112
-sha512=12a0ee509a546c693d0af0888fc79f8b8144bb969c175840cef0fc50f1a9ddeab81ccd887ccb20ada205b687009a93f2f0878c10811bb05970320aaac3384fde
-notas=Logotipo novo (o H com a travessa em âmbar), agora também como ícone na Área de Trabalho e no Menu Iniciar. Tela Moléculas: mais de 8 mil moléculas reais em 3D; gire, faça vibrar e compare a solubilidade medida em laboratório com a prevista pela IA do ULTRAX. O Painel ao vivo mostra os bytes da rede.
-assinatura=b4f62481528667fca7d8386c88798e9d7cbb294d700aeaba483dc9c86c4e9943c6ee206a953f60d91df982f896d8caecb18419a7d472023fb8e04ea1ad17b108
+endereco=https://github.com/NOXqubit/hyurax/releases/download/v1.3.1/hyurax-instalador-windows-x86_64.exe
+tamanho=10218496
+sha512=344f12cc2e5286b059d03b5fc6ca8770b9a9ced63dad2754911677605080ccc44a912f9d6b8eb30f3d3937ee2fa286cc30193819b6176e08aff8853d639cac17
+notas=Carteiras de celular: o programa pode servir o aplicativo Hyurax do celular (Ajustes → Carteiras de celular). A rede agora também conversa por WebSocket, o que permite um nó semente público grátis. Correção: o painel não espera mais o cálculo da soma do próprio programa.
+assinatura=01fdcd8fbee77fb5e0924c9b17ec2a7e8d13fab7b90aacfcaa33fe357ff8e284d94b3ba3559f372d48d80814021f9421b02a5426635e40b78d457ca07ced020a
