@@ -42,7 +42,7 @@ export function lerSmiles(smiles) {
       pendente = null;
       continue;
     }
-    let el = null, arom = false, carga = 0;
+    let el = null, arom = false, carga = 0, hExplicito, colchete = false;
     if (c === "[") {
       const fim = smiles.indexOf("]", i);
       const dentro = smiles.slice(i + 1, fim < 0 ? smiles.length : fim);
@@ -52,6 +52,10 @@ export function lerSmiles(smiles) {
       arom = el === el.toLowerCase();
       const cargas = /([+-]+)(\d*)$/.exec(dentro);
       if (cargas) carga = (cargas[1][0] === "+" ? 1 : -1) * (cargas[2] ? Number(cargas[2]) : cargas[1].length);
+      // hidrogênios escritos no colchete ([nH], [NH3+]); sem H, nenhum
+      const hs = /^\d*(?:[A-Z][a-z]?|[a-z]{1,2})[@]*H(\d?)/.exec(dentro);
+      hExplicito = hs ? (hs[1] ? Number(hs[1]) : 1) : 0;
+      colchete = true;
     } else {
       const dois = smiles.slice(i, i + 2);
       if (ORGANICOS.includes(dois)) { el = dois; i += 2; }
@@ -60,7 +64,7 @@ export function lerSmiles(smiles) {
       else { i++; continue; }
     }
     const nome = arom ? el[0].toUpperCase() + el.slice(1) : el;
-    atomos.push({ el: nome, arom, carga });
+    atomos.push({ el: nome, arom, carga, hExplicito, colchete });
     const novo = atomos.length - 1;
     if (anterior >= 0) ligar(anterior, novo, pendente);
     pendente = null;

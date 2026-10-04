@@ -141,6 +141,7 @@ body.desconectado #principal .tela { opacity: 0.6; }
 .orbe .nucleo { position: absolute; inset: 26px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #FFE3A8, #F2B544 45%, #B97A15); }
 .orbe.parado .nucleo { background: radial-gradient(circle at 35% 30%, #8E8E93, #48484A 60%, #2C2C2E); }
 .orbe svg { position: relative; width: 52px; height: 52px; }
+.orbe:not(.parado) .travessa { stroke: #1D1D1F; }
 @keyframes pulso { 0% { transform: scale(0.6); opacity: 0.55; } 100% { transform: scale(1.35); opacity: 0; } }
 
 /* ---------- números, passos, atividade ---------- */
@@ -445,3 +446,45 @@ input[type="file"] { padding: 8px; }
 @media (prefers-reduced-motion: reduce) {
   * { scroll-behavior: auto !important; transition: none !important; animation: none !important; }
 }
+
+/* ---------- Moléculas em 3D ---------- */
+.lab { display: flex; flex-wrap: wrap; gap: 20px; align-items: stretch; }
+.lab-palco { position: relative; flex: 999 1 520px; min-width: 0; min-height: 520px; border-radius: var(--raio-grande); overflow: hidden; background: radial-gradient(120% 90% at 30% 20%, #2A3150 0%, #121626 55%, #07080F 100%); box-shadow: 0 30px 60px -30px rgba(8, 10, 20, 0.6); }
+.lab-palco canvas { position: absolute; inset: 0; width: 100%; height: 100%; cursor: grab; touch-action: none; outline: none; }
+.lab-palco canvas:active { cursor: grabbing; }
+.lab-palco canvas:focus-visible { box-shadow: inset 0 0 0 3px var(--luz); }
+.lab-topo { position: absolute; top: 16px; left: 16px; right: 16px; display: flex; flex-wrap: wrap; gap: 10px; justify-content: space-between; pointer-events: none; }
+.lab-topo .segmentado { pointer-events: auto; background: rgba(255, 255, 255, 0.08); backdrop-filter: blur(12px); }
+.lab-topo .segmentado button { color: rgba(245, 245, 247, 0.72); min-height: 34px; padding: 0 14px; font-size: 13.5px; }
+.lab-topo .segmentado button[aria-pressed="true"] { background: rgba(255, 255, 255, 0.92); color: #1D1D1F; }
+.lab-base { position: absolute; left: 16px; right: 16px; bottom: 14px; display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: center; justify-content: space-between; color: rgba(245, 245, 247, 0.8); font-size: 13px; pointer-events: none; }
+.lab-base label { display: flex; align-items: center; gap: 10px; pointer-events: auto; padding: 6px 14px; border-radius: var(--raio-pilula); background: rgba(255, 255, 255, 0.08); backdrop-filter: blur(12px); }
+.lab-base label b { font: 600 13px var(--mono); color: var(--luz); min-width: 52px; }
+.lab-base input[type="range"] { width: 140px; accent-color: var(--luz); }
+.lab-legenda { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px 12px; }
+.lab-legenda li { display: inline-flex; align-items: center; gap: 6px; }
+.lab-legenda i { width: 10px; height: 10px; border-radius: 50%; box-shadow: inset -2px -2px 3px rgba(0, 0, 0, 0.35); }
+.lab-lado { flex: 1 1 320px; min-width: 0; display: grid; gap: 14px; align-content: start; }
+.lab-busca { display: flex; gap: 8px; }
+.lab-busca input { flex: 1; min-width: 0; min-height: var(--alvo); border-radius: var(--raio-pilula); padding: 0 18px; border: 1px solid var(--fio-forte); background: var(--painel); color: var(--tinta); font: inherit; }
+.lab-busca .botao-leve { padding: 0 16px; }
+.lab-achadas { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; max-height: 132px; overflow: auto; }
+.lab-achadas:empty { display: none; }
+.lab-achadas button { border: 0; cursor: pointer; padding: 6px 12px; border-radius: var(--raio-pilula); background: var(--painel-3); color: var(--tinta-2); font: 500 13px var(--texto); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lab-achadas button[aria-current="true"] { background: var(--destaque); color: var(--sobre-destaque); }
+.lab-ficha { background: var(--painel); border-radius: var(--raio); padding: 24px; display: grid; gap: 12px; box-shadow: var(--sombra-alta); }
+.lab-ficha h2 { margin: 0; font-size: 24px; line-height: 1.2; text-wrap: balance; overflow-wrap: anywhere; }
+.lab-formula { margin: 0; font: 600 14px var(--mono); color: var(--luz-texto); letter-spacing: 0.02em; }
+.lab-ficha .fatos { margin: 0; }
+.lab-comparar { display: grid; gap: 8px; padding-top: 14px; border-top: 1px solid var(--fio); }
+.lab-comparar h3 { margin: 0; font-size: 15px; }
+.lab-regua { position: relative; height: 12px; margin: 10px 0 4px; }
+.lab-regua .faixa { position: absolute; inset: 3px 0; border-radius: var(--raio-pilula); background: linear-gradient(90deg, #C2382A 0%, #F2B544 50%, #1F8F57 100%); opacity: 0.85; }
+.lab-regua i { position: absolute; top: -5px; width: 22px; height: 22px; margin-left: -11px; border-radius: 50%; border: 3px solid var(--painel); box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25); transition: left 0.5s cubic-bezier(.2, .8, .2, 1); }
+.lab-regua .medido { background: var(--tinta); }
+.lab-regua .previsto { background: var(--luz); width: 16px; height: 16px; margin-left: -8px; top: -2px; }
+.lab-regua-rotulos { display: flex; justify-content: space-between; font-size: 12px; color: var(--tinta-3); }
+.lab-veredito { margin: 4px 0 0; line-height: 1.55; color: var(--tinta-2); }
+.lab-veredito b { color: var(--tinta); }
+@media (max-width: 640px) { .lab-palco { min-height: 380px; } .lab-topo .segmentado button { padding: 0 10px; } }
+@media (prefers-reduced-motion: reduce) { .lab-regua i { transition: none; } }

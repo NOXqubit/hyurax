@@ -126,3 +126,43 @@ fn chave_host_e_origin_protegem_a_api_local() {
     n.encerrar();
     let _ = std::fs::remove_dir_all(pasta);
 }
+
+#[test]
+fn moleculas_se_buscam_e_vem_com_a_previsao_da_ia() {
+    let (n, porta, pasta) = ligar("moleculas");
+    let chave = n.chave_painel.clone();
+    let cab = [("X-Hyurax-Chave", chave.as_str())];
+
+    // busca por nome, com espaço codificado, sem diferença de maiúsculas
+    let (s, corpo) = pedido(porta, "GET", "/api/v1/ciencia/moleculas?busca=CAFFEINE", &cab, "");
+    assert_eq!(s, 200);
+    let v: serde_json::Value = serde_json::from_str(&corpo).unwrap();
+    assert!(v["total"].as_u64().unwrap() > 8000);
+    let cafeina = v["achadas"].as_array().unwrap().iter().find(|a| a["nome"] == "caffeine").expect("cafeína no catálogo");
+    assert_eq!(cafeina["formula"], "C8H10N4O2");
+    let (_, corpo) = pedido(porta, "GET", "/api/v1/ciencia/moleculas?busca=salicylic%20acid", &cab, "");
+    let v: serde_json::Value = serde_json::from_str(&corpo).unwrap();
+    assert!(v["achadas"].as_array().unwrap().iter().all(|a| a["nome"].as_str().unwrap().to_lowercase().contains("salicylic acid")));
+    let (_, corpo) = pedido(porta, "GET", "/api/v1/ciencia/moleculas?busca=", &cab, "");
+    let v: serde_json::Value = serde_json::from_str(&corpo).unwrap();
+    assert_eq!(v["achadas"].as_array().unwrap().len(), 24);
+
+    // a molécula: medido, previsto pelo modelo embutido e o erro típico dele
+    let i = cafeina["indice"].as_u64().unwrap();
+    let (s, corpo) = pedido(porta, "GET", &format!("/api/v1/ciencia/molecula/{i}"), &cab, "");
+    assert_eq!(s, 200);
+    let m: serde_json::Value = serde_json::from_str(&corpo).unwrap();
+    assert_eq!(m["formula"], "C8H10N4O2");
+    let medido = m["logs_medido_mili"].as_i64().unwrap();
+    let previsto = m["previsto_mili"].as_i64().expect("modelo embutido");
+    let erro = m["erro_tipico_mili"].as_u64().unwrap();
+    assert!((-3000..1000).contains(&medido), "{medido}");
+    assert!((-6000..3000).contains(&previsto), "{previsto}");
+    assert!((100..3000).contains(&erro), "{erro}");
+
+    // sem a chave, nada
+    assert_eq!(pedido(porta, "GET", "/api/v1/ciencia/moleculas?busca=x", &[], "").0, 401);
+
+    n.encerrar();
+    let _ = std::fs::remove_dir_all(pasta);
+}

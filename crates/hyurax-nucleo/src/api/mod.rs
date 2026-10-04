@@ -348,6 +348,10 @@ fn ler(mut s: TcpStream, p: &Pedido, n: &Arc<Nucleo>, arquivos: Arquivos, daqui:
             let desde = p.parametro("desde").and_then(|v| v.parse::<u64>().ok()).unwrap_or(0);
             responder(&mut s, "200 OK", "application/json; charset=utf-8", n.ciencia.eventos_desde(desde).as_bytes())
         }
+        "/api/v1/ciencia/moleculas" => {
+            let busca = p.parametro("busca").and_then(http::decodificar).unwrap_or_default();
+            json_ok(&mut s, buscar_moleculas(&busca))
+        }
         r if r.starts_with("/api/v1/ciencia/molecula/") => {
             match r.trim_start_matches("/api/v1/ciencia/molecula/").parse::<usize>().ok().and_then(json_da_molecula) {
                 Some(j) => json_ok(&mut s, j),
@@ -450,7 +454,18 @@ fn fluxo(mut s: TcpStream, p: &Pedido, n: &Arc<Nucleo>, daqui: bool, porta: u16)
 /// Uma molécula do catálogo da triagem, com os descritores, para a tela
 /// desenhar a que está sendo calculada.
 fn json_da_molecula(i: usize) -> Option<serde_json::Value> {
-    let m = hyurax_ultrax::triagem::catalogo().moleculas.get(i)?;
+    use hyurax_ultrax::{ia, triagem};
+    let c = triagem::catalogo();
+    let m = c.moleculas.get(i)?;
+    // a previsão do modelo de referência (o mesmo da triagem) e o erro
+    // típico dele (raiz do erro quadrático médio da validação, em log S)
+    let (previsto, erro) = match triagem::modelo() {
+        Some(md) => {
+            let (y, _) = ia::prever(&md.pesos, &m.x);
+            (Some(triagem::logs_de(y, c.media_mili, c.desvio_mili)), Some(ia::rmse_em_logs(md.erro_validacao, ia::Base::embutida())))
+        }
+        None => (None, None),
+    };
     Some(json!({
         "indice": i,
         "id": m.id,
@@ -459,5 +474,27 @@ fn json_da_molecula(i: usize) -> Option<serde_json::Value> {
         "smiles": m.smiles,
         "logs_medido_mili": m.logs_mili,
         "descritores": m.bruto,
+        "previsto_mili": previsto,
+        "erro_tipico_mili": erro,
+        "total": c.moleculas.len(),
     }))
+}
+
+/// Até 24 moléculas do catálogo cujo nome, fórmula ou id contém o texto
+/// (sem diferença de maiúsculas). Sem texto: as primeiras.
+fn buscar_moleculas(busca: &str) -> serde_json::Value {
+    const MAXIMO: usize = 24;
+    let c = hyurax_ultrax::triagem::catalogo();
+    let alvo = busca.trim().to_lowercase();
+    let achadas: Vec<serde_json::Value> = c
+        .moleculas
+        .iter()
+        .enumerate()
+        .filter(|(_, m)| {
+            alvo.is_empty() || m.nome.to_lowercase().contains(&alvo) || m.formula.to_lowercase().contains(&alvo) || m.id.to_lowercase().contains(&alvo)
+        })
+        .take(MAXIMO)
+        .map(|(i, m)| json!({ "indice": i, "nome": m.nome, "formula": m.formula }))
+        .collect();
+    json!({ "total": c.moleculas.len(), "achadas": achadas })
 }

@@ -7,6 +7,7 @@ import { obter, postar, pegarChaveDoEndereco, chaveDaSessao } from "./api.js";
 import * as visao from "./telas/visao.js";
 import * as inicio from "./telas/inicio.js";
 import * as computar from "./telas/computar.js";
+import * as laboratorio from "./telas/laboratorio.js";
 import * as ultrax from "./telas/ultrax.js";
 import * as ciencia from "./telas/ciencia.js";
 import * as carteira from "./telas/carteira.js";
@@ -23,7 +24,7 @@ import * as ajustes from "./telas/ajustes.js";
 // a chave de sessão vem no endereço; tira dele antes de qualquer coisa
 pegarChaveDoEndereco();
 
-const TELAS = { inicio, computar, mercado, armazenamento, carteira, visao, ultrax, ciencia, faturamento, cadeia, rede, seguranca, registro, ajustes };
+const TELAS = { inicio, computar, laboratorio, mercado, armazenamento, carteira, visao, ultrax, ciencia, faturamento, cadeia, rede, seguranca, registro, ajustes };
 let atual = "inicio";
 
 // ---------- navegação ----------

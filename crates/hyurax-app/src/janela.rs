@@ -303,31 +303,8 @@ fn pagina_de_erro(erro: &str) -> String {
     )
 }
 
-/// O "H" de nós do Hyurax, desenhado em 64×64 sem arquivo de imagem.
+/// A marca do Hyurax em 64×64 RGBA, feita por `scripts/gerar-marca.py`.
 fn icone() -> Option<Icon> {
-    const T: usize = 64;
-    let mut rgba = vec![0u8; T * T * 4];
-    let linhas: [((f32, f32), (f32, f32)); 3] = [((18.0, 14.0), (18.0, 50.0)), ((46.0, 14.0), (46.0, 50.0)), ((18.0, 32.0), (46.0, 32.0))];
-    let nos: [(f32, f32, f32); 6] = [(18.0, 14.0, 5.0), (18.0, 50.0, 5.0), (46.0, 14.0, 5.0), (46.0, 50.0, 5.0), (18.0, 32.0, 5.6), (46.0, 32.0, 5.6)];
-    // Cobertura suave de 1 px: borda sem serrilhado.
-    let cobre = |d: f32| (0.5 - d).clamp(0.0, 1.0);
-    for (i, px) in rgba.as_chunks_mut::<4>().0.iter_mut().enumerate() {
-        let (x, y) = ((i % T) as f32 + 0.5, (i / T) as f32 + 0.5);
-        // Fundo: quadrado preto de cantos arredondados (raio 14).
-        let (cx, cy) = (x.clamp(14.0, 50.0), y.clamp(14.0, 50.0));
-        let fundo = cobre(((x - cx).powi(2) + (y - cy).powi(2)).sqrt() - 14.0);
-        let mut branco = 0.0f32;
-        for ((x1, y1), (x2, y2)) in linhas {
-            let (dx, dy) = (x2 - x1, y2 - y1);
-            let t = (((x - x1) * dx + (y - y1) * dy) / (dx * dx + dy * dy)).clamp(0.0, 1.0);
-            let d = ((x - x1 - t * dx).powi(2) + (y - y1 - t * dy).powi(2)).sqrt();
-            branco = branco.max(cobre(d - 1.8) * 0.6);
-        }
-        for (nx, ny, r) in nos {
-            branco = branco.max(cobre(((x - nx).powi(2) + (y - ny).powi(2)).sqrt() - r));
-        }
-        let v = (branco * 243.0) as u8;
-        px.copy_from_slice(&[v, v, v, (fundo * 255.0) as u8]);
-    }
-    Icon::from_rgba(rgba, T as u32, T as u32).ok()
+    const RGBA: &[u8] = include_bytes!("../../../design/marca/icone-64.rgba");
+    Icon::from_rgba(RGBA.to_vec(), 64, 64).ok()
 }

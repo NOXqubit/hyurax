@@ -346,7 +346,7 @@ async function detalhe() {
     }
     if (m) {
       desenharMolecula(figura, m.smiles, cores);
-      legenda.textContent = `A de maior nota até aqui: ${m.nome || m.id} (${m.formula}) · log S medido ${fmt(m.logs_medido_mili / 1000, 2)}, previsto ${fmt(t.previsto_mili / 1000, 2)} (nota ${t.nota}). Estrutura plana desenhada do SMILES; coordenadas 3D reais: PENDENTE. Erro do modelo nas triadas: ${fmt(dados.rmse_log_s, 2)} log S.`;
+      legenda.textContent = `A de maior nota até aqui: ${m.nome || m.id} (${m.formula}) · log S medido ${fmt(m.logs_medido_mili / 1000, 2)}, previsto ${fmt(t.previsto_mili / 1000, 2)} (nota ${t.nota}). Estrutura plana desenhada do SMILES; em 3D na tela Moléculas. Erro do modelo nas triadas: ${fmt(dados.rmse_log_s, 2)} log S.`;
     }
   } else if (d.tipo === "routing" && dados.rota?.length) {
     const chave = `${d.parametros[0]}/${d.tamanho}`;

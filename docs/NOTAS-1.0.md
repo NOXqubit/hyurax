@@ -67,9 +67,13 @@ créditos de computação medem contribuição: não são dinheiro e não são H
 
 ## O que ainda não existe (PENDENTE)
 
-- Temperatura da CPU e da GPU; energia medida; bytes da rede.
+- Temperatura da CPU e da GPU; energia medida (hoje é estimada).
 - GPU nos motores além da matriz; backend nativo (Vulkan/DX12).
-- Coordenadas 3D reais das moléculas (a cena mostra o grafo plano do SMILES).
+- Conformação 3D otimizada das moléculas (RDKit/ETKDG ou campo de força). Desde
+  a 1.2.0, a tela Moléculas mostra um 3D aproximado (ver abaixo).
+- Furo de NAT direto (transporte UDP); hoje quem não tem porta aberta passa
+  por ponte.
+- Cobrança em dinheiro no mercado: os preços são em créditos de computação.
 - Cena da rede (pares e unidades atravessando) e do bloco.
 - Trabalho científico valendo na recompensa do bloco: mudança de consenso,
   especificação nova (SPEC-02).
@@ -96,3 +100,34 @@ para quem usa:
   maior no texto secundário.
 - **Operação:** `/api/v1/saude` para monitoramento e o manual
   [OPERACAO.md](OPERACAO.md).
+
+## 1.2.0 (04/10/2026)
+
+- **Marca nova:** o H com a travessa em subida, em âmbar
+  (`design/marca/`, gerado por `scripts/gerar-marca.py`). O instalador grava
+  `Hyurax.ico` ao lado do programa e aponta para ele os atalhos (Área de
+  Trabalho e Menu Iniciar) e a entrada em "Aplicativos". Antes os atalhos
+  ficavam sem ícone. A janela usa a mesma marca.
+- **Tela Moléculas:** 8.289 moléculas reais da AqSolDB em 3D. A geometria é
+  calculada no próprio programa, sem biblioteca:
+  - hidrogênios completados pela valência;
+  - comprimento de ligação pelos raios covalentes;
+  - ângulo pela hibridização;
+  - anéis aromáticos e conjugados planos;
+  - distâncias resolvidas em 4D e achatadas para 3D.
+
+  Em 20 moléculas do catálogo, o desvio médio das ligações ficou entre 0,00 e
+  0,08 Å. Os comandos da tela são:
+  - **Vibrar:** dinâmica clássica nas mesmas molas, com temperatura ajustável;
+  - **Bastões** e **Esferas** (raios de van der Waals);
+  - busca por nome ou fórmula.
+
+  Ao lado de cada molécula aparecem a solubilidade medida em laboratório e a
+  prevista pela IA do ULTRAX, com o erro típico do modelo (medido em
+  moléculas que ele não viu no treino). Não é cálculo quântico: o rótulo da
+  tela diz isso.
+- **Bytes da rede:** contados no socket, nos dois sentidos, e mostrados no
+  Painel ao vivo (REAL).
+- **API:** `GET /api/v1/ciencia/moleculas?busca=` (até 24 resultados). A
+  rota `GET /api/v1/ciencia/molecula/<i>` agora traz também `previsto_mili`,
+  `erro_tipico_mili` e `total`.

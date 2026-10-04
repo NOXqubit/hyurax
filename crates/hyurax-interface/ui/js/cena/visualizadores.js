@@ -372,7 +372,7 @@ const VIS = {
         at
           ? `em cima: ${at.nome || at.id} (${at.formula}) · log S medido ${fmt(at.logs_medido_mili / 1000, 2)}, previsto ${fmt(at.amostra.previsto_mili / 1000, 2)}`
           : "em cima: a molécula em avaliação (carregando o SMILES)",
-        "estrutura desenhada do SMILES real, com arranjo plano por forças · coordenadas 3D reais (conformação): PENDENTE",
+        "estrutura desenhada do SMILES real, com arranjo plano por forças · 3D aproximado na tela Moléculas; conformação otimizada: PENDENTE",
       ];
     },
   },

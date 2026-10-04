@@ -368,6 +368,7 @@ impl Metricas {
         let custo_mes = watts.map(|w| w * 24.0 * 30.0 / 1000.0 * f64::from(centavos_kwh) / 100.0);
         let fonte = self.fonte;
         let pendente = |motivo: &str| valor(None, "", Origem::Pendente, motivo);
+        let (enviados, recebidos) = hyurax_net::bytes_no_fio();
         json!({
             "fonte": fonte,
             "problema": problema,
@@ -394,6 +395,8 @@ impl Metricas {
             "gpu_calculo": valor(gpu_calc, "%", origem(gpu_calc), "motores de cálculo da GPU, todos os programas"),
             "gpu_memoria_dedicada": valor(gpu_ded, "MiB", origem(gpu_ded), "memória dedicada da GPU em uso, todos os programas"),
             "gpu_memoria_compartilhada": valor(gpu_comp, "MiB", origem(gpu_comp), "memória compartilhada da GPU em uso, todos os programas"),
+            "rede_enviados": valor(Some(enviados as f64), "B", Origem::Real, "bytes mandados aos pares desde que o programa abriu, contados no socket (cifrados)"),
+            "rede_recebidos": valor(Some(recebidos as f64), "B", Origem::Real, "bytes recebidos dos pares desde que o programa abriu, contados no socket (cifrados)"),
             "temperatura": pendente("sem leitura confiável de temperatura sem administrador; a zona térmica ACPI, quando existe, não é a da CPU"),
             "energia": valor(watts, "W", if watts.is_some() { Origem::Estimado } else { Origem::Pendente },
                 &format!("CPU medida do programa × {} núcleos × {watts_nucleo} W por núcleo (valor informado, não medido)", s.nucleos_logicos)),

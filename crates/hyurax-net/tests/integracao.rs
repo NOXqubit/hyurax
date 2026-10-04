@@ -852,3 +852,29 @@ fn pacote_do_eter_leva_blocos_e_transacoes_sem_rede() {
     outra[4] ^= 1;
     assert!(zerado().importar_pacote(&outra).unwrap_err().contains("outra rede"));
 }
+
+/// Os bytes que passam pelo socket entram na contagem do fio, nos dois
+/// sentidos (a contagem é do processo inteiro: só cresce).
+#[test]
+fn bytes_no_fio_contam_o_que_passa_pelo_socket() {
+    let ouvinte = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+    let endereco = ouvinte.local_addr().unwrap();
+    let magic = *b"HYXt";
+    let (env0, rec0) = hyurax_net::bytes_no_fio();
+    let lado = std::thread::spawn(move || {
+        let (s, _) = ouvinte.accept().unwrap();
+        let mut c = Conexao::nova(s, magic);
+        c.definir_timeout(Some(Duration::from_secs(5))).unwrap();
+        let m = c.receber().unwrap();
+        c.enviar(&m).unwrap();
+    });
+    let mut c = Conexao::nova(std::net::TcpStream::connect(endereco).unwrap(), magic);
+    c.definir_timeout(Some(Duration::from_secs(5))).unwrap();
+    c.enviar(&Message::Ping(7)).unwrap();
+    assert_eq!(c.receber().unwrap(), Message::Ping(7));
+    lado.join().unwrap();
+    let (env1, rec1) = hyurax_net::bytes_no_fio();
+    // dois quadros de ida (um de cada lado) e dois de volta
+    assert!(env1 - env0 >= 2 * 9, "enviados {}", env1 - env0);
+    assert!(rec1 - rec0 >= 2 * 9, "recebidos {}", rec1 - rec0);
+}

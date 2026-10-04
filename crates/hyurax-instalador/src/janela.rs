@@ -35,6 +35,8 @@ use hyurax_nucleo::termos;
 
 const PROGRAMA: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/Hyurax.exe"));
 const DLL: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/WebView2Loader.dll"));
+/// A marca (H com a travessa em subida), feita por `scripts/gerar-marca.py`.
+const ICONE: &[u8] = include_bytes!("../../../design/marca/Hyurax.ico");
 const LEIA_ME: &str = include_str!("../LEIA-ME.txt");
 const VERSAO: &str = env!("CARGO_PKG_VERSION");
 /// Não mostra janela preta de console para os comandos que o instalador roda.
@@ -191,12 +193,12 @@ fn rodar_com(programa: &str, args: &[&str], ambiente: &[(&str, &Path)]) -> Resul
 }
 
 /// Atalho do Windows (.lnk), pelo próprio Windows (WScript.Shell).
-fn atalho(arquivo: &Path, alvo: &Path, pasta: &Path) -> Result<(), String> {
-    let script = "$a=(New-Object -ComObject WScript.Shell).CreateShortcut($env:HYX_ATALHO);$a.TargetPath=$env:HYX_ALVO;$a.WorkingDirectory=$env:HYX_PASTA;$a.Description='Hyurax / Ultrax: nó, carteira, mineração e trabalho útil (rede de teste)';$a.Save()";
+fn atalho(arquivo: &Path, alvo: &Path, pasta: &Path, icone: &Path) -> Result<(), String> {
+    let script = "$a=(New-Object -ComObject WScript.Shell).CreateShortcut($env:HYX_ATALHO);$a.TargetPath=$env:HYX_ALVO;$a.WorkingDirectory=$env:HYX_PASTA;$a.IconLocation=$env:HYX_ICONE+',0';$a.Description='Hyurax / Ultrax: nó, carteira, mineração e trabalho útil (rede de teste)';$a.Save()";
     rodar_com(
         "powershell.exe",
         &["-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-Command", script],
-        &[("HYX_ATALHO", arquivo), ("HYX_ALVO", alvo), ("HYX_PASTA", pasta)],
+        &[("HYX_ATALHO", arquivo), ("HYX_ALVO", alvo), ("HYX_PASTA", pasta), ("HYX_ICONE", icone)],
     )
 }
 
@@ -222,6 +224,9 @@ fn instalar(chave: &str, esperar: Option<u32>, area_de_trabalho: bool, abrir: bo
     std::fs::write(destino.join("TERMOS-DE-USO.txt"), para_o_bloco_de_notas(termos::TEXTO))
         .map_err(|e| format!("não consegui gravar os termos: {e}"))?;
     std::fs::write(destino.join("LEIA-ME.txt"), para_o_bloco_de_notas(LEIA_ME)).map_err(|e| format!("não consegui gravar o LEIA-ME: {e}"))?;
+    // o ícone dos atalhos e de "Aplicativos" (o .exe não leva recurso de ícone)
+    let icone = destino.join("Hyurax.ico");
+    std::fs::write(&icone, ICONE).map_err(|e| format!("não consegui gravar o ícone: {e}"))?;
 
     // Menu Iniciar, sempre; Área de Trabalho, se a pessoa quis.
     let menu = std::env::var_os("APPDATA")
@@ -236,7 +241,7 @@ fn instalar(chave: &str, esperar: Option<u32>, area_de_trabalho: bool, abrir: bo
         }
     }
     for a in &atalhos {
-        atalho(a, &exe, &destino)?;
+        atalho(a, &exe, &destino, &icone)?;
     }
     // instalar por cima: os atalhos da instalação anterior que ainda existem
     // continuam no manifesto, para a desinstalação achar todos
@@ -260,6 +265,7 @@ fn instalar(chave: &str, esperar: Option<u32>, area_de_trabalho: bool, abrir: bo
 
     // "Aplicativos", só para este usuário.
     let exe_texto = exe.display().to_string();
+    let icone_texto = icone.display().to_string();
     let desinstalar = format!("\"{exe_texto}\" --desinstalar");
     let tamanho_kb = ((PROGRAMA.len() + DLL.len()) / 1024).to_string();
     let local = destino.display().to_string();
@@ -268,7 +274,7 @@ fn instalar(chave: &str, esperar: Option<u32>, area_de_trabalho: bool, abrir: bo
         ("DisplayVersion", "REG_SZ", VERSAO),
         ("Publisher", "REG_SZ", "Projeto Hyurax (independente)"),
         ("Comments", "REG_SZ", "Programa 1.0; a rede é de teste e o HYX não tem valor."),
-        ("DisplayIcon", "REG_SZ", exe_texto.as_str()),
+        ("DisplayIcon", "REG_SZ", icone_texto.as_str()),
         ("InstallLocation", "REG_SZ", local.as_str()),
         ("UninstallString", "REG_SZ", desinstalar.as_str()),
         ("URLInfoAbout", "REG_SZ", "https://github.com/NOXqubit/hyurax"),

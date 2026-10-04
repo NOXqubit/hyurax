@@ -24,7 +24,7 @@ pub const CHAVE_PADRAO: &str = r"HKCU\Software\Microsoft\Windows\CurrentVersion\
 pub const NOME: &str = "Hyurax / Ultrax";
 
 /// Os arquivos que o instalador põe na pasta do programa.
-pub const ARQUIVOS: &[&str] = &["Hyurax.exe", "WebView2Loader.dll", "TERMOS-DE-USO.txt", "LEIA-ME.txt", MANIFESTO];
+pub const ARQUIVOS: &[&str] = &["Hyurax.exe", "WebView2Loader.dll", "TERMOS-DE-USO.txt", "LEIA-ME.txt", "Hyurax.ico", MANIFESTO];
 
 /// A pasta do programa: `%LOCALAPPDATA%\Programs\Hyurax` (sem administrador).
 ///

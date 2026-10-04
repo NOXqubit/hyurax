@@ -116,6 +116,7 @@ function maquina(e) {
     ["Memória dedicada da GPU", valorComOrigem(m.gpu_memoria_dedicada, 0)],
     ["Memória compartilhada da GPU", valorComOrigem(m.gpu_memoria_compartilhada, 0)],
     ["Temperatura", valorComOrigem(m.temperatura)],
+    ["Rede (enviado · recebido)", m.rede_enviados ? [el("span", { class: "num" }, `${bytes(m.rede_enviados.valor)} · ${bytes(m.rede_recebidos?.valor ?? 0)}`), " ", selo(m.rede_enviados.origem, m.rede_enviados.fonte)] : valorComOrigem(null)],
     ["Energia", valorComOrigem(m.energia, 0)],
     ["Custo por mês", valorComOrigem(m.custo_mes, 2)],
   ]);

@@ -12,6 +12,7 @@
 
 use std::io::{Read, Write};
 use std::net::{Shutdown, TcpStream};
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
@@ -68,6 +69,20 @@ impl From<WireError> for NetError {
     }
 }
 
+/// Bytes que passaram pelos sockets dos pares desde que o programa abriu,
+/// contados no fio (já cifrados, com o enquadramento): enviados e recebidos.
+static ENVIADOS: AtomicU64 = AtomicU64::new(0);
+static RECEBIDOS: AtomicU64 = AtomicU64::new(0);
+
+/// `(enviados, recebidos)` no fio, desde que o programa abriu.
+pub fn bytes_no_fio() -> (u64, u64) {
+    (ENVIADOS.load(Ordering::Relaxed), RECEBIDOS.load(Ordering::Relaxed))
+}
+
+fn contar(contador: &AtomicU64, n: usize) {
+    contador.fetch_add(u64::try_from(n).unwrap_or(u64::MAX), Ordering::Relaxed);
+}
+
 /// A metade de escrita da cifra, compartilhada entre quem escreve.
 ///
 /// O nonce e a escrita no socket ficam atrás do mesmo cadeado: o que sai
@@ -92,6 +107,7 @@ impl CifraEscrita {
             let tamanho = u16::try_from(n).map_err(|_| NetError::Cifra("pedaço cifrado grande demais".into()))?;
             stream.write_all(&tamanho.to_be_bytes())?;
             stream.write_all(saida.get(..n).unwrap_or_default())?;
+            contar(&ENVIADOS, n.saturating_add(2));
         }
         stream.flush()?;
         Ok(())
@@ -147,6 +163,7 @@ fn escrever(stream: &mut TcpStream, escrita: Option<&CifraEscrita>, dados: &[u8]
         Some(c) => c.escrever(stream, dados),
         None => {
             stream.write_all(dados)?;
+            contar(&ENVIADOS, dados.len());
             stream.flush()?;
             Ok(())
         }
@@ -274,6 +291,7 @@ impl Conexao {
                     if lido == 0 {
                         return Err(NetError::Io(std::io::Error::from(std::io::ErrorKind::UnexpectedEof)));
                     }
+                    contar(&RECEBIDOS, lido);
                     self.buffer.extend_from_slice(pedaco.get(..lido).unwrap_or(&[]));
                 }
                 Some(c) => {
@@ -285,6 +303,7 @@ impl Conexao {
                     if lido == 0 {
                         return Err(NetError::Io(std::io::Error::from(std::io::ErrorKind::UnexpectedEof)));
                     }
+                    contar(&RECEBIDOS, lido);
                     c.cru.extend_from_slice(pedaco.get(..lido).unwrap_or(&[]));
                 }
             }
