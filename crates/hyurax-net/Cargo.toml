@@ -17,6 +17,9 @@ hyurax-consensus.workspace = true
 hyurax-crypto.workspace = true
 snow.workspace = true
 hyurax-codec.workspace = true
+rustls.workspace = true
+rustls-rustcrypto.workspace = true
+webpki-roots.workspace = true
 
 [dev-dependencies]
 serde_json.workspace = true

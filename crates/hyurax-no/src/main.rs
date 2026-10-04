@@ -53,6 +53,9 @@ Com --pasta P, tudo fica em P. Redes: testnet (padrão) e regtest (local).
   hyurax-no no [--exportar resumo.json]
       Só o nó: escuta, sincroniza, serve e propaga. Sem minerar.
       --exportar grava um resumo público da cadeia (explorador de blocos).
+      --ws-porta P também escuta nós por WebSocket (rota /p2p; saúde em /saude),
+      para semente atrás de HTTPS, como no Render. Sementes podem ser
+      wss://nome/p2p além de IP:PORTA.
 
   hyurax-no estado [--endereco ENDERECO]
       Altura da cadeia e, com --endereco, o saldo.

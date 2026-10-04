@@ -37,6 +37,10 @@ pub const MAXIMO: usize = 16;
 /// estranho. Serve para IPv4, nome de domínio e IPv6 entre colchetes.
 #[must_use]
 pub fn valida(s: &str) -> bool {
+    // semente atrás de HTTPS: wss://nome/p2p (ver docs/NO-SEMENTE.md)
+    if s.starts_with("ws://") || s.starts_with("wss://") {
+        return hyurax_net::endereco_websocket_valido(s);
+    }
     let Some((host, porta)) = s.rsplit_once(':') else { return false };
     !host.is_empty()
         && host.len() <= 253
@@ -99,6 +103,21 @@ pub fn url_publicada() -> &'static str {
 #[allow(clippy::unwrap_used, clippy::indexing_slicing)]
 mod testes {
     use super::*;
+
+    #[test]
+    fn semente_por_websocket() {
+        assert!(valida("wss://hyurax-semente.onrender.com/p2p"));
+        assert!(valida("ws://127.0.0.1:9000/p2p"));
+        assert!(!valida("wss:///p2p"));
+        assert!(!valida("https://hyurax-semente.onrender.com/p2p"));
+        assert!(!valida("wss://a b/p2p"));
+        let lista = ler_lista("# comentário
+wss://s.onrender.com/p2p
+203.0.113.7:8790
+lixo
+");
+        assert_eq!(lista, vec!["wss://s.onrender.com/p2p".to_string(), "203.0.113.7:8790".to_string()]);
+    }
 
     #[test]
     fn so_aceita_host_e_porta() {

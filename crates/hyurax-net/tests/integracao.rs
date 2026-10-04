@@ -878,3 +878,51 @@ fn bytes_no_fio_contam_o_que_passa_pelo_socket() {
     assert!(env1 - env0 >= 2 * 9, "enviados {}", env1 - env0);
     assert!(rec1 - rec0 >= 2 * 9, "recebidos {}", rec1 - rec0);
 }
+
+// ============================================================ WEBSOCKET
+
+/// A semente atrás de HTTPS (o Render): o nó escuta WebSocket, o outro disca
+/// `ws://…/p2p`, e por dentro é a mesma conexão de sempre: aperto Noise,
+/// sincronização e bloco novo atravessando. A página de saúde responde.
+#[test]
+#[ignore = "sobe sockets — ver cabeçalho do arquivo"]
+fn no_por_websocket_sincroniza_e_recebe_bloco() {
+    let semente = rede(No::novo(cadeia_com(4)));
+    let porta_ws = semente.escutar_ws(0).unwrap();
+    let b = zerado();
+    b.conectar_texto(&format!("ws://127.0.0.1:{porta_ws}/p2p")).unwrap();
+    assert!(esperar(Duration::from_secs(60), || altura(&b) == 4), "não sincronizou pelo WebSocket: {}", altura(&b));
+    assert_eq!(ponta(&semente), ponta(&b));
+    assert_eq!((semente.pares_conectados(), b.pares_conectados()), (1, 1));
+
+    // bloco novo do lado da semente chega pelo cano
+    let bloco = {
+        let no = semente.no.lock().unwrap();
+        let ts = no.chain.tip().unwrap().header.timestamp + ParametrosRede::REGTEST.target_spacing;
+        no.chain.mine(MINERADOR, vec![], Some(ts), 2).unwrap()
+    };
+    assert!(semente.submeter_bloco(bloco).unwrap());
+    assert!(esperar(Duration::from_secs(60), || altura(&b) == 5), "bloco não atravessou: {}", altura(&b));
+
+    // a página de saúde (o Render confere por ela) e o 404
+    let get = |caminho: &str| {
+        let mut s = std::net::TcpStream::connect(("127.0.0.1", porta_ws)).unwrap();
+        s.set_read_timeout(Some(Duration::from_secs(10))).unwrap();
+        s.write_all(format!("GET {caminho} HTTP/1.1\r\nHost: x\r\n\r\n").as_bytes()).unwrap();
+        let mut r = String::new();
+        let _ = s.read_to_string(&mut r);
+        r
+    };
+    let saude = get("/saude");
+    assert!(saude.starts_with("HTTP/1.1 200") && saude.contains("altura=5"), "{saude}");
+    assert!(get("/nada").starts_with("HTTP/1.1 404"));
+    // upgrade sem a chave não vira conexão
+    let mut s = std::net::TcpStream::connect(("127.0.0.1", porta_ws)).unwrap();
+    s.set_read_timeout(Some(Duration::from_secs(5))).unwrap();
+    s.write_all(b"GET /p2p HTTP/1.1\r\nHost: x\r\nUpgrade: websocket\r\n\r\n").unwrap();
+    let mut r = String::new();
+    let _ = s.read_to_string(&mut r);
+    assert!(!r.contains("101"), "{r}");
+    semente.desligar();
+    b.desligar();
+}

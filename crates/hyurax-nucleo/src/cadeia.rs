@@ -65,9 +65,14 @@ pub fn subir(config: &ConfigDoNo, saida: &Saida) -> Result<Arc<Rede>, String> {
             ligar_malha(&rede, porta, config.rede.nome == ParametrosRede::REGTEST.nome, saida);
         }
     }
+    // semente atrás de HTTPS (Render): os outros nós chegam por wss://…/p2p
+    if config.porta_ws > 0 {
+        let porta = rede.escutar_ws(config.porta_ws).map_err(|e| format!("não consegui escutar WebSocket na porta {}: {e}", config.porta_ws))?;
+        saida(format!("escutando outros nós por WebSocket na porta {porta} (rota /p2p; saúde em /saude)"));
+    }
     for semente in config.sementes.iter().filter(|s| !s.is_empty()) {
         rede.semear(semente);
-        match rede.conectar(semente.as_str()) {
+        match rede.conectar_texto(semente) {
             Ok(()) => saida(format!("conectando em {semente}")),
             Err(e) => saida(format!("não consegui conectar em {semente}: {e}")),
         }
@@ -147,7 +152,7 @@ fn procurar_a_rede(config: &ConfigDoNo, rede: &Arc<Rede>, saida: &Saida) {
             Ok(lista) => {
                 for semente in lista {
                     rede.semear(&semente);
-                    match rede.conectar(semente.as_str()) {
+                    match rede.conectar_texto(&semente) {
                         Ok(()) => saida(format!("conectando em {semente} (lista publicada)")),
                         Err(e) => saida(format!("não consegui conectar em {semente}: {e}")),
                     }

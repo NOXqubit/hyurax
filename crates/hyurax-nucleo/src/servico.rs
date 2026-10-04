@@ -363,7 +363,7 @@ impl Nucleo {
         self.gravar_ajustes();
         for s in &novas {
             self.rede.semear(s);
-            match self.rede.conectar(s.as_str()) {
+            match self.rede.conectar_texto(s) {
                 Ok(()) => self.barramento.registrar("rede", format!("conectando em {s}")),
                 Err(e) => self.barramento.registrar("rede", format!("não consegui conectar em {s}: {e}")),
             }

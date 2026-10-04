@@ -26,7 +26,7 @@ members = [
 ]
 
 [workspace.package]
-version = "1.2.0"
+version = "1.3.0"
 edition = "2024"
 rust-version = "1.98"
 authors = ["Projeto Hyurax"]
@@ -74,6 +74,18 @@ hyurax-ultrax = { path = "crates/hyurax-ultrax" }
 hyurax-nuvem = { path = "crates/hyurax-nuvem" }
 hyurax-nucleo = { path = "crates/hyurax-nucleo" }
 hyurax-interface = { path = "crates/hyurax-interface" }
+
+# TLS só para o transporte por WebSocket (`wss://`), que leva a rede através
+# de lugares que só aceitam HTTPS (a semente no plano grátis do Render).
+# Exceção autorizada pelo autor em 04/10/2026: dependência nova, mas Rust puro,
+# conferido com `cargo tree` (sem `cc`, `ring`, `aws-lc` nem `cmake`; o
+# provedor de criptografia é o rustls-rustcrypto, sobre o RustCrypto).
+# O rustls-rustcrypto ainda é alfa. Isso foi aceito porque o TLS aqui é só o
+# cano: quem prova a identidade do par e cifra o tráfego entre nós é o Noise XX,
+# por dentro. Versões exatas: nada de TLS novo por `cargo update`.
+rustls = { version = "=0.23.45", default-features = false, features = ["std", "tls12", "logging"] }
+rustls-rustcrypto = "=0.0.2-alpha"
+webpki-roots = "=1.0.9"
 
 # Vetores de teste. Rust puro.
 serde = { version = "1", features = ["derive"] }

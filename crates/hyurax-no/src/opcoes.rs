@@ -52,6 +52,7 @@ pub fn ler(args: &[String]) -> Result<Opcoes, String> {
     let mut rede = config::REDE_PADRAO;
     let mut pasta: Option<PathBuf> = None;
     let mut porta = 0u16;
+    let mut porta_ws = 0u16;
     let mut sementes = Vec::new();
     let mut sem_padrao = false;
     let mut sem_malha = false;
@@ -108,6 +109,7 @@ pub fn ler(args: &[String]) -> Result<Opcoes, String> {
             "--endereco" => endereco_texto = Some(valor.clone()),
             "--blocos" => o.blocos = numero("--blocos")?,
             "--porta" => porta = valor.parse().map_err(|_| "--porta precisa ser número")?,
+            "--ws-porta" => porta_ws = valor.parse().map_err(|_| "--ws-porta precisa ser número")?,
             "--painel-porta" => o.painel_porta = valor.parse().map_err(|_| "--painel-porta precisa ser número")?,
             "--semente" => sementes.extend(valor.split(',').map(|s| s.trim().to_string()).filter(|s| !s.is_empty())),
             "--pausa-ms" => o.pausa_ms = numero("--pausa-ms")?,
@@ -126,6 +128,7 @@ pub fn ler(args: &[String]) -> Result<Opcoes, String> {
     };
     o.no = ConfigDoNo::nova(rede, pastas, porta, sementes, sem_padrao);
     o.no.malha = !sem_malha;
+    o.no.porta_ws = porta_ws;
     if let Some(t) = endereco_texto {
         o.endereco = Some(endereco::ler(&t, rede.nome).map_err(|e| format!("--endereco: {e}"))?);
     }

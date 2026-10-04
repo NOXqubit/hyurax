@@ -18,12 +18,44 @@ máquina ligada 24 horas por dia, com uma porta aberta.
 
 | Opção | O que dá | Observação |
 |---|---|---|
+| **Render (plano grátis)** | Contêiner sempre no ar (750 h por mês), só HTTPS | **Sem cartão**, entra com a conta do GitHub. Como só passa HTTPS, o nó usa WebSocket (`wss://…/p2p`); ver a seção abaixo |
 | **Oracle Cloud "Always Free"** | Máquina ARM de até 4 núcleos e 24 GB, sem prazo | É a mais folgada. Pede cartão para confirmar a identidade, sem cobrança no plano gratuito |
 | **Google Cloud e2-micro** | 2 vCPU compartilhadas, 1 GB, em algumas regiões dos EUA | Pede cartão. O tráfego de saída tem limite mensal |
 | **Um computador em casa** | Sem custo novo | Precisa ficar ligado e ter a porta 8790 redirecionada no roteador |
 
 Os limites e as regras mudam: confira no site do provedor antes de criar a
 conta. **A conta é sua**, e o cadastro você mesmo faz.
+
+## No Render (grátis, sem cartão)
+
+O Render só deixa entrar HTTPS, e não uma porta TCP qualquer. Desde a 1.3.0, o
+nó também escuta **WebSocket** (`--ws-porta`), e as sementes podem ser escritas
+como `wss://NOME.onrender.com/p2p`. Por dentro do WebSocket passa a mesma
+conexão de sempre, com o aperto de mão Noise XX e a validação de cada bloco.
+
+1. No Render: **New → Web Service → Public Git Repository**, com o endereço
+   `https://github.com/NOXqubit/hyurax`. Não precisa ligar o GitHub ao
+   Render, porque o repositório é público.
+2. Linguagem **Docker**; **Dockerfile Path** `deploy/render/Dockerfile`;
+   **Docker Build Context** `deploy/render`; plano **Free**.
+3. **Health Check Path**: `/saude`.
+4. Depois de subir, `https://NOME.onrender.com/saude` mostra a altura e os
+   pares. Coloque `wss://NOME.onrender.com/p2p` em `rede/sementes-testnet.txt`.
+
+O que o plano grátis impõe:
+
+- **Dorme depois de 15 minutos sem tráfego.** A conexão dos nós já mantém o
+  serviço acordado, e o workflow `semente-acordada.yml` dá um toque a cada
+  10 minutos. Quem chega com ele dormindo espera cerca de um minuto (o nó
+  espera até 90 segundos pela resposta).
+- **O disco some a cada reinício:** a cadeia é baixada de novo dos outros
+  nós, e a identidade do nó muda. Para uma semente, que é só porta de
+  entrada, tudo bem.
+- **750 horas por mês**: dá um serviço ligado o mês inteiro.
+
+O TLS do `wss://` usa o rustls com criptografia em Rust puro
+(rustls-rustcrypto, ainda em versão alfa). Isso foi aceito porque o TLS ali é
+só o cano: quem prova a identidade e cifra o tráfego entre os nós é o Noise.
 
 ## Passo a passo (qualquer Linux com systemd)
 

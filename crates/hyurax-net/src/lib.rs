@@ -25,4 +25,4 @@ mod servidor;
 pub use cifra::{Identidade, PADRAO_NOISE, Papel};
 pub use conexao::{Conexao, Escritor, NetError, bytes_no_fio};
 pub use no::{Malicia, No, Reacao};
-pub use servidor::{EstadoDaMalha, Rede, ResultadoDoPacote, TIPO_ULTRAX, TratadorUltrax};
+pub use servidor::{EstadoDaMalha, Rede, ResultadoDoPacote, TIPO_ULTRAX, TratadorUltrax, endereco_websocket_valido};

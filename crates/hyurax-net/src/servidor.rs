@@ -38,6 +38,7 @@ use crate::no::No;
 
 mod pacote;
 mod ponte;
+mod websocket;
 pub use pacote::ResultadoDoPacote;
 pub use ponte::EstadoDaMalha;
 
@@ -118,7 +119,17 @@ fn endereco_para_str(e: &EnderecoDeRede) -> Option<String> {
 }
 
 /// Endereço que vale a pena guardar: porta e IP que alguém pode discar.
+/// `ws://host[:porta]/caminho` ou `wss://…` bem formado (semente atrás de
+/// HTTPS, como no Render).
+#[must_use]
+pub fn endereco_websocket_valido(texto: &str) -> bool {
+    websocket::ler_url(texto).is_some()
+}
+
 fn endereco_util(texto: &str) -> bool {
+    if texto.starts_with("ws://") || texto.starts_with("wss://") {
+        return websocket::ler_url(texto).is_some();
+    }
     let Ok(sa) = texto.parse::<SocketAddr>() else { return false };
     if sa.port() == 0 {
         return false;
@@ -599,6 +610,35 @@ impl Rede {
         self.discar(enderecos.as_slice(), None)
     }
 
+    /// Conecta num endereço escrito: `IP:porta`, `nome:porta` ou uma semente
+    /// por WebSocket (`wss://nome/p2p`). É o que as sementes usam.
+    ///
+    /// # Errors
+    /// Endereço que não resolve ou não atende (no WebSocket, a discagem segue
+    /// numa linha própria e o erro só aparece no registro de discagens).
+    pub fn conectar_texto(self: &Arc<Self>, texto: &str) -> std::io::Result<()> {
+        if texto.starts_with("ws://") || texto.starts_with("wss://") {
+            if websocket::ler_url(texto).is_none() {
+                return Err(std::io::Error::new(std::io::ErrorKind::InvalidInput, "endereço WebSocket inválido"));
+            }
+            self.aprender(texto.to_string());
+            self.discar_ws(texto.to_string());
+            return Ok(());
+        }
+        self.conectar(texto)
+    }
+
+    fn discar_texto(self: &Arc<Self>, addr: &str) -> bool {
+        if addr.starts_with("ws://") || addr.starts_with("wss://") {
+            // anota o resultado sozinho quando terminar
+            self.discar_ws(addr.to_string());
+            return true;
+        }
+        let ok = self.discar(addr, Some(addr.to_string())).is_ok();
+        self.anotar_discagem(addr, ok);
+        ok
+    }
+
     fn discar(self: &Arc<Self>, addr: impl ToSocketAddrs, rotulo: Option<String>) -> std::io::Result<()> {
         let mut ultimo = std::io::Error::from(std::io::ErrorKind::AddrNotAvailable);
         for sa in addr.to_socket_addrs()? {
@@ -642,8 +682,7 @@ impl Rede {
                         if rede.saidas.load(Ordering::Relaxed) >= ALVO_SAIDAS || rede.parando() {
                             break;
                         }
-                        let ok = rede.discar(addr.as_str(), Some(addr.clone())).is_ok();
-                        rede.anotar_discagem(&addr, ok);
+                        rede.discar_texto(&addr);
                     }
                 }
                 rede.cuidar_da_malha();
