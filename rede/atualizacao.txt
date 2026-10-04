@@ -1,9 +1,9 @@
 formato=HYURAX-ATUALIZACAO-v1
-versao=1.0.3
+versao=1.1.0
 rede=testnet
 instalador=hyurax-instalador-windows-x86_64.exe
-endereco=https://github.com/NOXqubit/hyurax/releases/download/v1.0.3/hyurax-instalador-windows-x86_64.exe
-tamanho=7618560
-sha512=d1cf5adae52d43efbee8bdebe9eafdd0fb5e21b041935980b7bcc66a7ddff00a76a86a7b18634d153782b9836e990f5348da102e8e5239e8d96e51ba71fdcfd9
-notas=Malha: os nós se acham na rede local, abrem a porta no roteador sozinhos (UPnP/NAT-PMP), conversam por pontes quando não há porta aberta (agora com desempate quando os dois discam juntos), e blocos e transações viajam em pacotes do Éter.
-assinatura=9e463c3de420ef89e0ad80c849f7505d4cce1a9323db8de9c90efe457239871476471de8e4d0e7a30ce756532a37b6348cbb7273a9099b2b3c5270ac0275f109
+endereco=https://github.com/NOXqubit/hyurax/releases/download/v1.1.0/hyurax-instalador-windows-x86_64.exe
+tamanho=8384512
+sha512=974eb7bd403826372f07d9f7339ee2dff957531bbee6bfa0619719cae00337b8fa420db8b787a9d817407ea8fa89082fec7bb691cdc5ab84c04b8641b7952400
+notas=Visual novo (aprovado no Claude Design): tela Início com um botão para ajudar a rede, Computar, Mercado de máquinas, Arquivos cifrados na nuvem entre os nós e Carteira; tema claro e escuro. Nuvem: armazenamento distribuído com Reed-Solomon, aluguel de capacidade com recibo assinado e livro de contas (créditos, sem valor real).
+assinatura=cc31238523aee41f9708c7e3818109f57c15dbb395d300f390ae785ea15481ce8d177d3b107b6bbaf77cebf248b0dbfb5f82e789c1f718edf911e4dce8f7bc09
