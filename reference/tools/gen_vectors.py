@@ -26,7 +26,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 OUT_DIR = ROOT.parent / "vectors"
 
-from hyurax import argon2, codec, consensus, crypto, endereco, genetica, ia, identidade, job, malha, melhoramento, nuvem, rede_ultrax, rotas, triagem, usefulpow, ultrax  # noqa: E402
+from hyurax import argon2, codec, consensus, crypto, endereco, genetica, plano, ia, identidade, job, malha, melhoramento, nuvem, rede_ultrax, rotas, triagem, usefulpow, ultrax  # noqa: E402
 from hyurax.block import BlockHeader  # noqa: E402
 from hyurax.chain import Chain, make_genesis  # noqa: E402
 from hyurax.consensus import MAINNET, REGTEST, TESTNET  # noqa: E402
@@ -1684,6 +1684,73 @@ def vec_enderecos() -> dict:
     return {"validos": validos, "aceitos": aceitos, "recusas": recusas}
 
 
+def vec_plano() -> dict:
+    """Planos (reference/hyurax/plano.py): catálogo, vouchers assinados,
+    quando valem e as recusas com a mensagem exata."""
+    emissor = bytes(range(32))
+    pub = crypto.ed25519_public_key(emissor)
+    w1, w2 = crypto.H(b"worker-1")[:32], crypto.H(b"worker-2")[:32]
+    dia = 86_400_000
+    inicio = 1_791_000_000_000
+    catalogo = [{"id": k, "nome": n, "mensal_centavos": m, "anual_centavos": a, "creditos_mes": c,
+                 "armazenamento_gib": g, "comissao_bp": bp} for k, (n, m, a, c, g, bp) in sorted(plano.CATALOGO.items())]
+    vouchers = []
+    for id_, quem, dias, serie in [(plano.PRO, w1, 30, 1), (plano.EQUIPE, w2, 365, 2), (plano.EMPRESA, w1, 31, 3)]:
+        b = plano.emitir(emissor, id_, quem, inicio, inicio + dias * dia, serie)
+        v = plano.ler(b)
+        momentos = [inicio - 1, inicio, inicio + dia, inicio + dias * dia - 1, inicio + dias * dia]
+        vouchers.append({
+            "bytes": h(b), "texto": plano.texto(b), "plano": id_, "beneficiario": h(quem), "inicio_ms": inicio,
+            "fim_ms": inicio + dias * dia, "serie": serie, "creditos_mes": v["creditos_mes"],
+            "armazenamento_gib": v["armazenamento_gib"], "comissao_bp": v["comissao_bp"],
+            "vale": [{"worker": h(w), "agora_ms": m, "vale": plano.vale(v, pub, w, m)} for w in (w1, w2) for m in momentos],
+        })
+    base = bytes.fromhex(vouchers[0]["bytes"])
+    adulterado = bytearray(base)
+    adulterado[60] ^= 1  # créditos mudados: a assinatura não fecha
+    falsificado = plano.emitir(bytes([7] * 32), plano.PRO, w1, inicio, inicio + 30 * dia, 9)
+    nao_confere = [
+        {"bytes": h(bytes(adulterado)), "motivo": "créditos alterados depois de assinar"},
+        {"bytes": h(falsificado), "motivo": "assinado por outra chave"},
+    ]
+    for c in nao_confere:
+        v = plano.ler(bytes.fromhex(c["bytes"]))
+        assert not plano.assinatura_confere(v, pub)
+
+    def trocar(pos: int, novo: bytes) -> bytes:
+        return base[:pos] + novo + base[pos + len(novo):]
+
+    entradas = [
+        trocar(0, b"\x02"),                                    # versão
+        trocar(1, b"\x00"),                                    # plano gratuito
+        trocar(1, b"\x09"),                                    # plano que não existe
+        trocar(34, codec.enc_u64(inicio + 30 * dia)),            # inicio == fim
+        trocar(42, codec.enc_u64(inicio + 401 * dia)),           # mais de 400 dias
+        trocar(62, codec.enc_u16(10_001)),                       # comissão > 100%
+        base[:-1],                                              # truncado
+        base + b"\x00",                                         # sobra
+    ]
+    recusas = []
+    for e in entradas:
+        try:
+            plano.ler(e)
+        except (ValueError, codec.CodecError) as erro:
+            recusas.append({"bytes": h(e), "erro": str(erro)})
+        else:
+            raise AssertionError("devia recusar")
+    textos_ruins = ["hyurax-plano:zz", "plano:" + vouchers[0]["bytes"], "hyurax-plano:" + vouchers[0]["bytes"][:-2]]
+    recusas_texto = []
+    for x in textos_ruins:
+        try:
+            plano.ler_texto(x)
+        except ValueError as erro:
+            recusas_texto.append({"texto": x, "erro": str(erro)})
+        else:
+            raise AssertionError("devia recusar")
+    return {"emissor_publica": h(pub), "catalogo": catalogo, "vouchers": vouchers,
+            "nao_confere": nao_confere, "recusas": recusas, "recusas_texto": recusas_texto}
+
+
 FILES = {
     "units.json": vec_units,
     "crypto_ed25519.json": vec_crypto,
@@ -1713,6 +1780,7 @@ FILES = {
     "malha.json": vec_malha,
     "nuvem.json": vec_nuvem,
     "enderecos.json": vec_enderecos,
+    "plano.json": vec_plano,
 }
 
 

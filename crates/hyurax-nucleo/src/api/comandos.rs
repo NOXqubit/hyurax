@@ -48,6 +48,11 @@ pub(super) fn atender(s: &mut TcpStream, p: &Pedido, n: &Arc<Nucleo>) -> std::io
             n.gravar_ajustes();
             ok()
         }
+        "/api/v1/planos/ativar" => n.planos.ativar(&texto("voucher"), &n.ultrax.worker(), crate::util::agora_ms()).map(|v| {
+            let nome = hyurax_nuvem::plano::do_catalogo(v.plano).map_or("?", |p| p.nome);
+            n.barramento.registrar("planos", format!("plano {nome} ativado (voucher {}), até {}", v.serie, crate::util::data_curta(v.fim_ms)));
+            json!({ "plano": v.plano, "fim_ms": v.fim_ms })
+        }),
         "/api/v1/ultrax" => {
             n.ultrax.ajustar_tudo(numero("linhas"), numero("limite_cpu"), numero("memoria_mib"), sim("debug"), sim("gpu"), numero("gpu_limite"));
             if let Some(ligar) = sim("ligar") {

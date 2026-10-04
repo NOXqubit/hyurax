@@ -49,6 +49,7 @@
   <a href="#mercado" data-tela="mercado"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9h16l-1.4 10.2a2 2 0 0 1-2 1.8H7.4a2 2 0 0 1-2-1.8z"/><path d="M8.5 9V7a3.5 3.5 0 0 1 7 0v2"/></svg>Mercado<span class="nav-contador" id="nav-mercado" hidden></span></a>
   <a href="#armazenamento" data-tela="armazenamento"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 18.5h10.5a4 4 0 0 0 .6-7.96A6 6 0 0 0 6.5 9.6 4.5 4.5 0 0 0 7 18.5z"/></svg>Arquivos<span class="nav-contador" id="nav-armazenamento" hidden></span></a>
   <a href="#carteira" data-tela="carteira"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="6" width="18" height="13" rx="3"/><path d="M16 12.5h2.5M3 9.5h18"/></svg>Carteira</a>
+  <a href="#planos" data-tela="planos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 4 7l8 4 8-4z"/><path d="m4 12 8 4 8-4M4 17l8 4 8-4"/></svg>Planos<span class="nav-contador luz" id="nav-plano" hidden></span></a>
   <span class="nav-grupo">Mais</span>
   <div class="nav-mais">
     <a href="#cadeia" data-tela="cadeia"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="9" width="8" height="6" rx="2"/><rect x="13" y="9" width="8" height="6" rx="2"/><path d="M11 12h2"/></svg>Mineração e cadeia</a>
@@ -397,6 +398,39 @@
   </section>
 
   <!-- Faturamento -->
+  <section id="tela-planos" class="tela" aria-labelledby="t-planos" hidden>
+    <header class="tela-cab">
+      <div><h1 id="t-planos">Planos</h1><p class="subtitulo">A rede é sua e continua grátis. Os planos pagam a capacidade que o projeto mantém sempre ligada: cálculos com prazo, arquivos guardados com redundância garantida e comissão menor no mercado.</p></div>
+      <div class="segmentado" role="group" aria-label="Cobrança" id="pl-periodo">
+        <button type="button" data-periodo="mensal" aria-pressed="true">Mensal</button>
+        <button type="button" data-periodo="anual" aria-pressed="false">Anual · 2 meses grátis</button>
+      </div>
+    </header>
+    <div class="pl-aviso" id="pl-aviso" role="note"><b>A venda ainda não abriu.</b> Os preços são a proposta inicial, e o plano pago só pode ser ativado com um voucher emitido pelo projeto. Créditos são unidade de serviço: não são HYX, não são dinheiro e não voltam a ser reais.</div>
+    <div class="pl-grade" id="pl-grade" aria-live="polite"></div>
+    <div class="pl-baixo">
+      <article class="bloco pl-ativar" aria-labelledby="pl-ativar-t">
+        <h2 id="pl-ativar-t">Ativar um plano</h2>
+        <p class="nota">Ao comprar, informe o código deste computador. O voucher que chega de volta é colado aqui; o programa confere a assinatura do projeto sozinho, sem conta nem senha.</p>
+        <div class="pl-codigo"><span>Código deste computador</span><code id="pl-worker">—</code><button type="button" class="botao-leve" id="pl-copiar">Copiar</button></div>
+        <form id="pl-form" class="formulario" autocomplete="off">
+          <label for="pl-voucher"><small>Voucher</small><textarea id="pl-voucher" rows="3" placeholder="hyurax-plano:…" spellcheck="false"></textarea></label>
+          <div class="acoes"><button type="submit" class="botao" id="pl-ativar">Ativar</button></div>
+          <p class="saida" id="pl-saida" role="status"></p>
+        </form>
+      </article>
+      <article class="bloco" aria-labelledby="pl-atual-t">
+        <h2 id="pl-atual-t">Seu plano</h2>
+        <dl class="fatos" id="pl-atual"></dl>
+      </article>
+    </div>
+    <article class="bloco" aria-labelledby="pl-tabela-t">
+      <h2 id="pl-tabela-t">Compare</h2>
+      <div class="pl-tabela-rolagem"><table class="pl-tabela" id="pl-tabela"></table></div>
+      <p class="nota">Capacidade gerenciada: máquinas que o projeto mantém sempre ligadas, com prazo e redundância. 1 crédito ≈ 0,5 a 1 s de um núcleo de CPU. Comissão: a parte da plataforma quando a sua máquina é alugada no mercado (o resto vai para você; 5% de reserva). Detalhes em docs/MONETIZACAO.md.</p>
+    </article>
+  </section>
+
   <section id="tela-faturamento" class="tela" aria-labelledby="t-faturamento" hidden>
     <div class="tela-cab">
       <h1 id="t-faturamento">Faturamento</h1>

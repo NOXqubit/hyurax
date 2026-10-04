@@ -412,3 +412,22 @@ h1, h2, h3 { text-wrap: balance; }
 .texto-legal code { font-size: 0.88em; }
 .texto-legal .voltar { font-family: var(--mono); font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase; }
 .texto-legal .versao { font-family: var(--mono); font-size: 0.76rem; color: rgba(0, 0, 0, 0.55); }
+
+/* ---------- Planos ---------- */
+.plano-aviso { font-family: var(--mono); font-size: 0.82rem; color: var(--tinta-2); border-left: 2px solid var(--tinta); padding-left: 0.9rem; max-width: 72ch; }
+.planos-grade { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0; border: 1px solid var(--fio); margin-block: 2.5rem 1.5rem; }
+.plano { display: flex; flex-direction: column; gap: 0.9rem; padding: 1.8rem 1.5rem; border: 1px solid var(--fio); margin: -1px 0 0 -1px; min-width: 0; }
+.plano.destaque { background: var(--tinta); color: var(--fundo); }
+.plano h3 { margin: 0; font-size: 1.35rem; letter-spacing: -0.01em; }
+.plano-desc { margin: 0; color: var(--tinta-3); font-size: 0.92rem; min-height: 2.6em; }
+.plano.destaque .plano-desc { color: rgba(255, 255, 255, 0.7); }
+.plano.destaque li { color: rgba(255, 255, 255, 0.85); }
+.plano-preco { margin: 0.2rem 0 0; font-size: 2.3rem; font-weight: 700; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
+.plano-preco small { font-size: 0.85rem; font-weight: 500; letter-spacing: 0; margin-left: 0.2rem; opacity: 0.65; }
+.plano-preco small.antes { display: block; margin: 0 0 0.2rem; }
+.plano ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.55rem; flex: 1; }
+.plano li { font-size: 0.9rem; color: var(--tinta-2); padding-left: 1.1rem; position: relative; line-height: 1.45; }
+.plano li::before { content: "+"; position: absolute; left: 0; font-family: var(--mono); }
+.plano-acao { font-family: var(--mono); font-size: 0.74rem; text-transform: uppercase; letter-spacing: 0.08em; border: 1px solid currentColor; padding: 0.7rem 0.9rem; text-align: center; opacity: 0.75; }
+@media (max-width: 1100px) { .planos-grade { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 640px) { .planos-grade { grid-template-columns: 1fr; } }

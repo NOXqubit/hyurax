@@ -107,3 +107,58 @@ fn livro_e_partilha_iguais_ao_gabarito() {
         assert_eq!(vec![partes.0, partes.1, partes.2], esperado);
     }
 }
+
+// ------------------------------------------------------------------ planos
+
+fn carregar_plano() -> Value {
+    let caminho: PathBuf = [env!("CARGO_MANIFEST_DIR"), "..", "..", "vectors", "plano.json"].iter().collect();
+    let bruto = std::fs::read_to_string(&caminho).unwrap_or_else(|e| panic!("não consegui ler {}: {e}", caminho.display()));
+    serde_json::from_str::<Value>(&bruto).unwrap()["data"].clone()
+}
+
+#[test]
+fn planos_batem_com_o_gabarito() {
+    use hyurax_nuvem::plano::{CATALOGO, Voucher};
+    let d = carregar_plano();
+    let emissor: [u8; 32] = fixo(&d["emissor_publica"]);
+    let segredo: [u8; 32] = core::array::from_fn(|i| i as u8);
+    assert_eq!(hyurax_crypto::ed25519_public_key(&segredo), emissor);
+
+    // o catálogo do Rust é o do gabarito
+    let cat = d["catalogo"].as_array().unwrap();
+    assert_eq!(cat.len(), CATALOGO.len());
+    for (c, p) in cat.iter().zip(CATALOGO.iter()) {
+        assert_eq!(c["id"].as_u64().unwrap(), u64::from(p.id));
+        assert_eq!(c["nome"].as_str().unwrap(), p.nome);
+        assert_eq!(c["mensal_centavos"].as_u64().unwrap(), p.mensal_centavos);
+        assert_eq!(c["anual_centavos"].as_u64().unwrap(), p.anual_centavos);
+        assert_eq!(c["creditos_mes"].as_u64().unwrap(), p.creditos_mes);
+        assert_eq!(c["armazenamento_gib"].as_u64().unwrap(), u64::from(p.armazenamento_gib));
+        assert_eq!(c["comissao_bp"].as_u64().unwrap(), u64::from(p.comissao_bp));
+    }
+
+    for v in d["vouchers"].as_array().unwrap() {
+        let id = u8::try_from(v["plano"].as_u64().unwrap()).unwrap();
+        let quem: [u8; 32] = fixo(&v["beneficiario"]);
+        let serie = u32::try_from(v["serie"].as_u64().unwrap()).unwrap();
+        let emitido = Voucher::emitir(&segredo, id, quem, v["inicio_ms"].as_u64().unwrap(), v["fim_ms"].as_u64().unwrap(), serie).unwrap();
+        assert_eq!(emitido.bytes().unwrap(), bytes(&v["bytes"]), "emitir igual ao gabarito");
+        assert_eq!(emitido.texto().unwrap(), v["texto"].as_str().unwrap());
+        let lido = Voucher::ler_texto(v["texto"].as_str().unwrap()).unwrap();
+        assert_eq!(lido, emitido);
+        for caso in v["vale"].as_array().unwrap() {
+            let w: [u8; 32] = fixo(&caso["worker"]);
+            assert_eq!(lido.vale(&emissor, &w, caso["agora_ms"].as_u64().unwrap()), caso["vale"].as_bool().unwrap(), "{caso}");
+        }
+    }
+    for c in d["nao_confere"].as_array().unwrap() {
+        let v = Voucher::ler(&bytes(&c["bytes"])).unwrap();
+        assert!(!v.assinatura_confere(&emissor), "{c}");
+    }
+    for r in d["recusas"].as_array().unwrap() {
+        assert_eq!(Voucher::ler(&bytes(&r["bytes"])).unwrap_err().to_string(), r["erro"].as_str().unwrap(), "{r}");
+    }
+    for r in d["recusas_texto"].as_array().unwrap() {
+        assert_eq!(Voucher::ler_texto(r["texto"].as_str().unwrap()).unwrap_err().to_string(), r["erro"].as_str().unwrap(), "{r}");
+    }
+}

@@ -14,6 +14,7 @@ mod identidade;
 mod opcoes;
 mod lancamento;
 mod painel;
+mod planos;
 mod ultrax;
 
 use std::process::ExitCode;
@@ -75,6 +76,12 @@ Com --pasta P, tudo fica em P. Redes: testnet (padrão) e regtest (local).
       Para quem publica: a chave de lançamento (nasce fora do repositório) e
       o manifesto assinado que a atualização segura do programa confere.
 
+  hyurax-no planos catalogo | chave --saida ARQUIVO
+  hyurax-no planos emitir --chave ARQUIVO --plano pro|equipe|empresa --para WORKER --serie N [--dias 30]
+  hyurax-no planos conferir --voucher hyurax-plano:...
+      Para quem vende os planos (docs/MONETIZACAO.md): a chave de planos
+      (nasce fora do repositório) e o voucher que o cliente cola na tela Planos.
+
   hyurax-no identidade ver|girar
       ver: a identidade deste nó na rede e o WORKER_ID do ULTRAX.
       girar: troca a identidade (com o programa fechado). A antiga fica
@@ -111,6 +118,7 @@ fn principal(args: &[String]) -> Result<(), String> {
         "ultrax" => ultrax::comando(resto),
         "ciencia" => ciencia::comando(resto),
         "lancamento" => lancamento::comando(resto),
+        "planos" => planos::comando(resto),
         "identidade" => identidade::comando(resto),
         "contas" => contas::comando(resto),
         "copia" => copia::comando(resto),

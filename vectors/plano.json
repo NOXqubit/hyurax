@@ -1,0 +1,297 @@
+{
+  "data": {
+    "catalogo": [
+      {
+        "anual_centavos": 0,
+        "armazenamento_gib": 0,
+        "comissao_bp": 1500,
+        "creditos_mes": 0,
+        "id": 0,
+        "mensal_centavos": 0,
+        "nome": "Comunidade"
+      },
+      {
+        "anual_centavos": 29000,
+        "armazenamento_gib": 50,
+        "comissao_bp": 1000,
+        "creditos_mes": 150000,
+        "id": 1,
+        "mensal_centavos": 2900,
+        "nome": "Pro"
+      },
+      {
+        "anual_centavos": 149000,
+        "armazenamento_gib": 500,
+        "comissao_bp": 800,
+        "creditos_mes": 1000000,
+        "id": 2,
+        "mensal_centavos": 14900,
+        "nome": "Equipe"
+      },
+      {
+        "anual_centavos": 990000,
+        "armazenamento_gib": 5000,
+        "comissao_bp": 500,
+        "creditos_mes": 10000000,
+        "id": 3,
+        "mensal_centavos": 99000,
+        "nome": "Empresa"
+      }
+    ],
+    "emissor_publica": "03a107bff3ce10be1d70dd18e74bc09967e4d6309ba50d5f1ddc8664125531b8",
+    "nao_confere": [
+      {
+        "bytes": "01019e730c0b07867d6b00d9b0dfff718e2909c4052bd3a2324ab40dccc0f3752b4b000001a0ffeb3600000001a19a69fe0000000000000249f00000013203e8000000014b0ba19668bde05ae1cc51281637ef5af94daafd1ca0e9926fc3c718d9b595e52b9f0aa34a283f80bb22acee12c767d7ace1583a6088e328d47ed377a6ed3d0e",
+        "motivo": "créditos alterados depois de assinar"
+      },
+      {
+        "bytes": "01019e730c0b07867d6b00d9b0dfff718e2909c4052bd3a2324ab40dccc0f3752b4b000001a0ffeb3600000001a19a69fe0000000000000249f00000003203e80000000985b921cb7d75d4d1250eb53efb7f6a7be8eaf90b162dc4fc4bb57e654b7bcf7721b96178365976b826de4110697b14db9a4999ba808d4bf07146d5284d114806",
+        "motivo": "assinado por outra chave"
+      }
+    ],
+    "recusas": [
+      {
+        "bytes": "02019e730c0b07867d6b00d9b0dfff718e2909c4052bd3a2324ab40dccc0f3752b4b000001a0ffeb3600000001a19a69fe0000000000000249f00000003203e8000000014b0ba19668bde05ae1cc51281637ef5af94daafd1ca0e9926fc3c718d9b595e52b9f0aa34a283f80bb22acee12c767d7ace1583a6088e328d47ed377a6ed3d0e",
+        "erro": "versão de voucher desconhecida"
+      },
+      {
+        "bytes": "01009e730c0b07867d6b00d9b0dfff718e2909c4052bd3a2324ab40dccc0f3752b4b000001a0ffeb3600000001a19a69fe0000000000000249f00000003203e8000000014b0ba19668bde05ae1cc51281637ef5af94daafd1ca0e9926fc3c718d9b595e52b9f0aa34a283f80bb22acee12c767d7ace1583a6088e328d47ed377a6ed3d0e",
+        "erro": "plano desconhecido"
+      },
+      {
+        "bytes": "01099e730c0b07867d6b00d9b0dfff718e2909c4052bd3a2324ab40dccc0f3752b4b000001a0ffeb3600000001a19a69fe0000000000000249f00000003203e8000000014b0ba19668bde05ae1cc51281637ef5af94daafd1ca0e9926fc3c718d9b595e52b9f0aa34a283f80bb22acee12c767d7ace1583a6088e328d47ed377a6ed3d0e",
+        "erro": "plano desconhecido"
+      },
+      {
+        "bytes": "01019e730c0b07867d6b00d9b0dfff718e2909c4052bd3a2324ab40dccc0f3752b4b000001a19a69fe00000001a19a69fe0000000000000249f00000003203e8000000014b0ba19668bde05ae1cc51281637ef5af94daafd1ca0e9926fc3c718d9b595e52b9f0aa34a283f80bb22acee12c767d7ace1583a6088e328d47ed377a6ed3d0e",
+        "erro": "o voucher acaba antes de começar"
+      },
+      {
+        "bytes": "01019e730c0b07867d6b00d9b0dfff718e2909c4052bd3a2324ab40dccc0f3752b4b000001a0ffeb3600000001a91101520000000000000249f00000003203e8000000014b0ba19668bde05ae1cc51281637ef5af94daafd1ca0e9926fc3c718d9b595e52b9f0aa34a283f80bb22acee12c767d7ace1583a6088e328d47ed377a6ed3d0e",
+        "erro": "voucher mais longo que 400 dias"
+      },
+      {
+        "bytes": "01019e730c0b07867d6b00d9b0dfff718e2909c4052bd3a2324ab40dccc0f3752b4b000001a0ffeb3600000001a19a69fe0000000000000249f0000000322711000000014b0ba19668bde05ae1cc51281637ef5af94daafd1ca0e9926fc3c718d9b595e52b9f0aa34a283f80bb22acee12c767d7ace1583a6088e328d47ed377a6ed3d0e",
+        "erro": "comissão acima de 100%"
+      },
+      {
+        "bytes": "01019e730c0b07867d6b00d9b0dfff718e2909c4052bd3a2324ab40dccc0f3752b4b000001a0ffeb3600000001a19a69fe0000000000000249f00000003203e8000000014b0ba19668bde05ae1cc51281637ef5af94daafd1ca0e9926fc3c718d9b595e52b9f0aa34a283f80bb22acee12c767d7ace1583a6088e328d47ed377a6ed3d",
+        "erro": "fim inesperado: pediu 64 bytes, restam 63"
+      },
+      {
+        "bytes": "01019e730c0b07867d6b00d9b0dfff718e2909c4052bd3a2324ab40dccc0f3752b4b000001a0ffeb3600000001a19a69fe0000000000000249f00000003203e8000000014b0ba19668bde05ae1cc51281637ef5af94daafd1ca0e9926fc3c718d9b595e52b9f0aa34a283f80bb22acee12c767d7ace1583a6088e328d47ed377a6ed3d0e00",
+        "erro": "1 bytes não consumidos no fim"
+      }
+    ],
+    "recusas_texto": [
+      {
+        "erro": "voucher com tamanho errado ou caractere inválido",
+        "texto": "hyurax-plano:zz"
+      },
+      {
+        "erro": "isto não é um voucher de plano do Hyurax",
+        "texto": "plano:01019e730c0b07867d6b00d9b0dfff718e2909c4052bd3a2324ab40dccc0f3752b4b000001a0ffeb3600000001a19a69fe0000000000000249f00000003203e8000000014b0ba19668bde05ae1cc51281637ef5af94daafd1ca0e9926fc3c718d9b595e52b9f0aa34a283f80bb22acee12c767d7ace1583a6088e328d47ed377a6ed3d0e"
+      },
+      {
+        "erro": "voucher com tamanho errado ou caractere inválido",
+        "texto": "hyurax-plano:01019e730c0b07867d6b00d9b0dfff718e2909c4052bd3a2324ab40dccc0f3752b4b000001a0ffeb3600000001a19a69fe0000000000000249f00000003203e8000000014b0ba19668bde05ae1cc51281637ef5af94daafd1ca0e9926fc3c718d9b595e52b9f0aa34a283f80bb22acee12c767d7ace1583a6088e328d47ed377a6ed3d"
+      }
+    ],
+    "vouchers": [
+      {
+        "armazenamento_gib": 50,
+        "beneficiario": "9e730c0b07867d6b00d9b0dfff718e2909c4052bd3a2324ab40dccc0f3752b4b",
+        "bytes": "01019e730c0b07867d6b00d9b0dfff718e2909c4052bd3a2324ab40dccc0f3752b4b000001a0ffeb3600000001a19a69fe0000000000000249f00000003203e8000000014b0ba19668bde05ae1cc51281637ef5af94daafd1ca0e9926fc3c718d9b595e52b9f0aa34a283f80bb22acee12c767d7ace1583a6088e328d47ed377a6ed3d0e",
+        "comissao_bp": 1000,
+        "creditos_mes": 150000,
+        "fim_ms": 1793592000000,
+        "inicio_ms": 1791000000000,
+        "plano": 1,
+        "serie": 1,
+        "texto": "hyurax-plano:01019e730c0b07867d6b00d9b0dfff718e2909c4052bd3a2324ab40dccc0f3752b4b000001a0ffeb3600000001a19a69fe0000000000000249f00000003203e8000000014b0ba19668bde05ae1cc51281637ef5af94daafd1ca0e9926fc3c718d9b595e52b9f0aa34a283f80bb22acee12c767d7ace1583a6088e328d47ed377a6ed3d0e",
+        "vale": [
+          {
+            "agora_ms": 1790999999999,
+            "vale": false,
+            "worker": "9e730c0b07867d6b00d9b0dfff718e2909c4052bd3a2324ab40dccc0f3752b4b"
+          },
+          {
+            "agora_ms": 1791000000000,
+            "vale": true,
+            "worker": "9e730c0b07867d6b00d9b0dfff718e2909c4052bd3a2324ab40dccc0f3752b4b"
+          },
+          {
+            "agora_ms": 1791086400000,
+            "vale": true,
+            "worker": "9e730c0b07867d6b00d9b0dfff718e2909c4052bd3a2324ab40dccc0f3752b4b"
+          },
+          {
+            "agora_ms": 1793591999999,
+            "vale": true,
+            "worker": "9e730c0b07867d6b00d9b0dfff718e2909c4052bd3a2324ab40dccc0f3752b4b"
+          },
+          {
+            "agora_ms": 1793592000000,
+            "vale": false,
+            "worker": "9e730c0b07867d6b00d9b0dfff718e2909c4052bd3a2324ab40dccc0f3752b4b"
+          },
+          {
+            "agora_ms": 1790999999999,
+            "vale": false,
+            "worker": "a1afb389441598cd808b6caec2c2af886bf1e4039a0248242b7cba165670f22a"
+          },
+          {
+            "agora_ms": 1791000000000,
+            "vale": false,
+            "worker": "a1afb389441598cd808b6caec2c2af886bf1e4039a0248242b7cba165670f22a"
+          },
+          {
+            "agora_ms": 1791086400000,
+            "vale": false,
+            "worker": "a1afb389441598cd808b6caec2c2af886bf1e4039a0248242b7cba165670f22a"
+          },
+          {
+            "agora_ms": 1793591999999,
+            "vale": false,
+            "worker": "a1afb389441598cd808b6caec2c2af886bf1e4039a0248242b7cba165670f22a"
+          },
+          {
+            "agora_ms": 1793592000000,
+            "vale": false,
+            "worker": "a1afb389441598cd808b6caec2c2af886bf1e4039a0248242b7cba165670f22a"
+          }
+        ]
+      },
+      {
+        "armazenamento_gib": 500,
+        "beneficiario": "a1afb389441598cd808b6caec2c2af886bf1e4039a0248242b7cba165670f22a",
+        "bytes": "0102a1afb389441598cd808b6caec2c2af886bf1e4039a0248242b7cba165670f22a000001a0ffeb3600000001a8579c620000000000000f4240000001f4032000000002ad5a6c2f493c57179f2d4b5d843e932cb09c2093380c83ba0ca0d98b270a6c4497f476e272394cf8c011a5fd0b8072c6bf065b45e6bd5db394750a1a755d0c00",
+        "comissao_bp": 800,
+        "creditos_mes": 1000000,
+        "fim_ms": 1822536000000,
+        "inicio_ms": 1791000000000,
+        "plano": 2,
+        "serie": 2,
+        "texto": "hyurax-plano:0102a1afb389441598cd808b6caec2c2af886bf1e4039a0248242b7cba165670f22a000001a0ffeb3600000001a8579c620000000000000f4240000001f4032000000002ad5a6c2f493c57179f2d4b5d843e932cb09c2093380c83ba0ca0d98b270a6c4497f476e272394cf8c011a5fd0b8072c6bf065b45e6bd5db394750a1a755d0c00",
+        "vale": [
+          {
+            "agora_ms": 1790999999999,
+            "vale": false,
+            "worker": "9e730c0b07867d6b00d9b0dfff718e2909c4052bd3a2324ab40dccc0f3752b4b"
+          },
+          {
+            "agora_ms": 1791000000000,
+            "vale": false,
+            "worker": "9e730c0b07867d6b00d9b0dfff718e2909c4052bd3a2324ab40dccc0f3752b4b"
+          },
+          {
+            "agora_ms": 1791086400000,
+            "vale": false,
+            "worker": "9e730c0b07867d6b00d9b0dfff718e2909c4052bd3a2324ab40dccc0f3752b4b"
+          },
+          {
+            "agora_ms": 1822535999999,
+            "vale": false,
+            "worker": "9e730c0b07867d6b00d9b0dfff718e2909c4052bd3a2324ab40dccc0f3752b4b"
+          },
+          {
+            "agora_ms": 1822536000000,
+            "vale": false,
+            "worker": "9e730c0b07867d6b00d9b0dfff718e2909c4052bd3a2324ab40dccc0f3752b4b"
+          },
+          {
+            "agora_ms": 1790999999999,
+            "vale": false,
+            "worker": "a1afb389441598cd808b6caec2c2af886bf1e4039a0248242b7cba165670f22a"
+          },
+          {
+            "agora_ms": 1791000000000,
+            "vale": true,
+            "worker": "a1afb389441598cd808b6caec2c2af886bf1e4039a0248242b7cba165670f22a"
+          },
+          {
+            "agora_ms": 1791086400000,
+            "vale": true,
+            "worker": "a1afb389441598cd808b6caec2c2af886bf1e4039a0248242b7cba165670f22a"
+          },
+          {
+            "agora_ms": 1822535999999,
+            "vale": true,
+            "worker": "a1afb389441598cd808b6caec2c2af886bf1e4039a0248242b7cba165670f22a"
+          },
+          {
+            "agora_ms": 1822536000000,
+            "vale": false,
+            "worker": "a1afb389441598cd808b6caec2c2af886bf1e4039a0248242b7cba165670f22a"
+          }
+        ]
+      },
+      {
+        "armazenamento_gib": 5000,
+        "beneficiario": "9e730c0b07867d6b00d9b0dfff718e2909c4052bd3a2324ab40dccc0f3752b4b",
+        "bytes": "01039e730c0b07867d6b00d9b0dfff718e2909c4052bd3a2324ab40dccc0f3752b4b000001a0ffeb3600000001a19f905a0000000000009896800000138801f40000000362cac6ad5b7f7b5f48804ca39482f03f9b7f3efcf2eb611607597e95ff11f4163fdbaebae456a7d391b2069f60da72151a77681e786be216bd96a5f103d7a401",
+        "comissao_bp": 500,
+        "creditos_mes": 10000000,
+        "fim_ms": 1793678400000,
+        "inicio_ms": 1791000000000,
+        "plano": 3,
+        "serie": 3,
+        "texto": "hyurax-plano:01039e730c0b07867d6b00d9b0dfff718e2909c4052bd3a2324ab40dccc0f3752b4b000001a0ffeb3600000001a19f905a0000000000009896800000138801f40000000362cac6ad5b7f7b5f48804ca39482f03f9b7f3efcf2eb611607597e95ff11f4163fdbaebae456a7d391b2069f60da72151a77681e786be216bd96a5f103d7a401",
+        "vale": [
+          {
+            "agora_ms": 1790999999999,
+            "vale": false,
+            "worker": "9e730c0b07867d6b00d9b0dfff718e2909c4052bd3a2324ab40dccc0f3752b4b"
+          },
+          {
+            "agora_ms": 1791000000000,
+            "vale": true,
+            "worker": "9e730c0b07867d6b00d9b0dfff718e2909c4052bd3a2324ab40dccc0f3752b4b"
+          },
+          {
+            "agora_ms": 1791086400000,
+            "vale": true,
+            "worker": "9e730c0b07867d6b00d9b0dfff718e2909c4052bd3a2324ab40dccc0f3752b4b"
+          },
+          {
+            "agora_ms": 1793678399999,
+            "vale": true,
+            "worker": "9e730c0b07867d6b00d9b0dfff718e2909c4052bd3a2324ab40dccc0f3752b4b"
+          },
+          {
+            "agora_ms": 1793678400000,
+            "vale": false,
+            "worker": "9e730c0b07867d6b00d9b0dfff718e2909c4052bd3a2324ab40dccc0f3752b4b"
+          },
+          {
+            "agora_ms": 1790999999999,
+            "vale": false,
+            "worker": "a1afb389441598cd808b6caec2c2af886bf1e4039a0248242b7cba165670f22a"
+          },
+          {
+            "agora_ms": 1791000000000,
+            "vale": false,
+            "worker": "a1afb389441598cd808b6caec2c2af886bf1e4039a0248242b7cba165670f22a"
+          },
+          {
+            "agora_ms": 1791086400000,
+            "vale": false,
+            "worker": "a1afb389441598cd808b6caec2c2af886bf1e4039a0248242b7cba165670f22a"
+          },
+          {
+            "agora_ms": 1793678399999,
+            "vale": false,
+            "worker": "a1afb389441598cd808b6caec2c2af886bf1e4039a0248242b7cba165670f22a"
+          },
+          {
+            "agora_ms": 1793678400000,
+            "vale": false,
+            "worker": "a1afb389441598cd808b6caec2c2af886bf1e4039a0248242b7cba165670f22a"
+          }
+        ]
+      }
+    ]
+  },
+  "generator": "reference/tools/gen_vectors.py",
+  "spec": "HYURAX-SPEC-01"
+}

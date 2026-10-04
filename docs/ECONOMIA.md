@@ -64,7 +64,7 @@ vetores e nova SPEC.
 
 | Item do documento | Estado | O que falta para existir |
 |---|---|---|
-| Cobrança (por computação, assinatura, plano) | AUSENTE | Empresa (CNPJ), conta PJ, contador, termos comerciais. O software nunca deve tocar no dinheiro do cliente. |
+| Cobrança (por computação, assinatura, plano) | PARCIAL (04/10/2026) | Planos, preços e voucher assinado prontos ([MONETIZACAO.md](MONETIZACAO.md), Fase M0). Falta a Fase M1: conta PJ, provedor de pagamento, contador e termos comerciais. O software nunca toca no dinheiro do cliente. |
 | Preços e estimativas de custo | PARCIAL | A estimativa em créditos existe antes de submeter (operações previstas pelo modelo de custo); preço em moeda depende da cobrança. |
 | Liquidação em HYX | AUSENTE de propósito | Demonstrar a necessidade (tabela acima); SPEC-02; estrutura jurídica. |
 | Liquidez, listagem, venda | AUSENTE de propósito | Nada disso entra antes de rede principal, auditoria externa e parecer jurídico. |

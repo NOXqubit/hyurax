@@ -11,6 +11,7 @@
 //! - [`anuncio`]: a máquina que se oferece no mercado, assinada pelo worker.
 //! - [`recibo`]: o cliente assina quanto trabalho verificado o fornecedor fez.
 //! - [`mensagem`]: o que viaja entre os nós, tipo de rede [`TIPO_NUVEM`].
+//! - [`plano`]: o catálogo de planos e o voucher assinado (docs/MONETIZACAO.md).
 //! - [`livro`]: o encadeamento por hash do livro de contas e a partilha de um
 //!   consumo entre provedor, plataforma e reserva.
 
@@ -27,6 +28,7 @@ pub mod anuncio;
 pub mod codigo;
 pub mod livro;
 pub mod mensagem;
+pub mod plano;
 pub mod recibo;
 
 /// Tipo da mensagem de rede da nuvem ("NV").

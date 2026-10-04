@@ -49,6 +49,7 @@ pub const ARQUIVOS: &[Arquivo] = &[
     arquivo!("js/telas/mercado.js", JS),
     arquivo!("js/telas/armazenamento.js", JS),
     arquivo!("js/telas/faturamento.js", JS),
+    arquivo!("js/telas/planos.js", JS),
     arquivo!("js/telas/seguranca.js", JS),
     arquivo!("js/telas/ajustes.js", JS),
     arquivo!("vendor/qrcode.min.js", JS),

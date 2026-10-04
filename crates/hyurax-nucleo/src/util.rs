@@ -60,6 +60,21 @@ pub fn agora_ms() -> u64 {
     SystemTime::now().duration_since(UNIX_EPOCH).map_or(0, |d| u64::try_from(d.as_millis()).unwrap_or(u64::MAX))
 }
 
+/// `dd/mm/aaaa` (UTC) de um instante em ms desde 1970. Calendário
+/// gregoriano pelo algoritmo de dias civis de Howard Hinnant.
+pub fn data_curta(ms: u64) -> String {
+    let dias = i64::try_from(ms / 86_400_000).unwrap_or(0) + 719_468;
+    let era = dias / 146_097;
+    let doe = dias - era * 146_097;
+    let yoe = (doe - doe / 1460 + doe / 36_524 - doe / 146_096) / 365;
+    let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);
+    let mp = (5 * doy + 2) / 153;
+    let d = doy - (153 * mp + 2) / 5 + 1;
+    let m = if mp < 10 { mp + 3 } else { mp - 9 };
+    let a = yoe + era * 400 + i64::from(m <= 2);
+    format!("{d:02}/{m:02}/{a}")
+}
+
 /// Base64 padrão (RFC 4648, com `=`).
 pub fn base64(bytes: &[u8]) -> String {
     const TABELA: &[u8; 64] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
@@ -87,6 +102,13 @@ pub fn texto_json(s: &str) -> String {
 #[allow(clippy::unwrap_used)]
 mod testes {
     use super::*;
+
+    #[test]
+    fn data_curta_confere() {
+        assert_eq!(data_curta(0), "01/01/1970");
+        assert_eq!(data_curta(951_782_400_000), "29/02/2000");
+        assert_eq!(data_curta(1_791_129_525_000), "04/10/2026");
+    }
 
     #[test]
     fn hyx_vai_e_volta_sem_ponto_flutuante() {

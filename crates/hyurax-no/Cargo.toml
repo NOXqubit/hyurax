@@ -15,6 +15,7 @@ path = "src/main.rs"
 hyurax-nucleo.workspace = true
 hyurax-interface.workspace = true
 hyurax-crypto.workspace = true
+hyurax-nuvem.workspace = true
 hyurax-consensus.workspace = true
 hyurax-chain.workspace = true
 hyurax-net.workspace = true

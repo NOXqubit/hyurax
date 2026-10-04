@@ -85,6 +85,8 @@ pub struct Nucleo {
     pub carteiras_leves: AtomicBool,
     /// As contas de cliente da API externa.
     pub contas: crate::contas::Contas,
+    /// O plano deste nó (vouchers assinados; ver `crate::planos`).
+    pub planos: crate::planos::Planos,
     /// Porta do nó para outros nós (0: não escuta).
     pub porta_p2p: u16,
     /// Quando o núcleo ligou.
@@ -240,6 +242,7 @@ impl Nucleo {
             api_externa: AtomicBool::new(ajustes.api_externa),
             carteiras_leves: AtomicBool::new(ajustes.carteiras_leves),
             contas: crate::contas::Contas::abrir(Some(pastas.config.clone())),
+            planos: crate::planos::Planos::abrir(Some(&pastas.config)),
             sementes: Mutex::new(sementes),
             ajustes: Mutex::new(ajustes.clone()),
             inicio: Instant::now(),
@@ -258,6 +261,13 @@ impl Nucleo {
                 let jobs: Vec<([u8; hyurax_crypto::HASH_LEN], u64)> =
                     n.ciencia.jobs.lock().map(|j| j.iter().map(|x| (x.id, x.consumo.milicreditos())).collect()).unwrap_or_default();
                 jobs.into_iter().map(|(id, mili)| (id, n.contas.conta_do_job(&id).unwrap_or(0), mili)).collect()
+            }));
+        }
+        // a comissão da plataforma no livro segue o plano do nó
+        {
+            let fraco = Arc::downgrade(&n);
+            n.nuvem.ao_cobrar_comissao(Box::new(move || {
+                fraco.upgrade().map_or(15, |n| n.planos.comissao_pct(&n.ultrax.worker(), crate::util::agora_ms()))
             }));
         }
         // a atualização segura: um minuto depois de abrir, e a cada 12 h (só

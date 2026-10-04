@@ -43,6 +43,7 @@ MODULES = [
     ("test_19_malha.py", "malha: alcance, pontes e vizinhos na rede local"),
     ("test_20_nuvem.py", "nuvem: Reed-Solomon, anúncio de máquina, recibo e livro"),
     ("test_21_endereco.py", "endereco Bech32m: BIP-350, redes e erro de digitacao"),
+    ("test_22_plano.py", "planos: voucher assinado, quando vale e o catalogo"),
 ]
 
 

@@ -151,3 +151,19 @@ para quem usa:
   congela como o programa congelou; com a correção, passa. Num ensaio na
   rede de teste real, ligado à semente pelo WebSocket, o estado respondeu
   em 15 ms durante 3 minutos.
+
+## 1.4.0 (04/10/2026): planos
+
+- **Planos** ([MONETIZACAO.md](MONETIZACAO.md)): Comunidade (grátis), Pro
+  (R$ 29/mês), Equipe (R$ 149/mês) e Empresa (a partir de R$ 990/mês),
+  com o que entra em cada um e de onde vêm os números.
+- **Voucher de plano assinado:** especificado em `reference/hyurax/plano.py`
+  e conferido pelo Python, pelo Rust (`hyurax-nuvem/src/plano.rs`) e pelos
+  vetores (`vectors/plano.json`). O programa confere sozinho, sem conta nem
+  senha; o beneficiário é a chave do worker, não uma pessoa.
+- **Efeito real já hoje:** com plano ativo, a comissão da plataforma no livro
+  de contas cai (15% → 10% no Pro, 8% no Equipe).
+- **Tela Planos** no programa e **seção de preços** no site (4 idiomas),
+  marcadas "a venda ainda não abriu".
+- **`hyurax-no planos`**: catálogo, chave de planos (fora do repositório),
+  emitir e conferir voucher.

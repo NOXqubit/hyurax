@@ -226,6 +226,8 @@ pub struct Ganchos {
 }
 
 type Consumos = Box<dyn Fn() -> Vec<([u8; HASH_LEN], u32, u64)> + Send + Sync>;
+/// A comissão da plataforma do plano do nó, em % (ver `crate::planos`).
+type ComissaoDoPlano = Box<dyn Fn() -> u8 + Send + Sync>;
 type DesafioNoAr = BTreeMap<([u8; 32], Alvo), ([u8; 32], [u8; HASH_LEN], u64)>;
 /// Um fragmento chegando: (guardião, tamanho, hash, bytes até aqui).
 type Chegando = ([u8; 32], u32, [u8; HASH_LEN], Vec<u8>);
@@ -269,6 +271,7 @@ pub struct Nuvem {
     ultimo_recibo: AtomicU64,
     ganchos: Ganchos,
     consumos: Mutex<Option<Consumos>>,
+    comissao_do_plano: Mutex<Option<ComissaoDoPlano>>,
 }
 
 fn arquivo_de_hex(t: &str) -> Option<[u8; 32]> {
@@ -319,6 +322,7 @@ impl Nuvem {
             ultimo_recibo: AtomicU64::new(0),
             ganchos,
             consumos: Mutex::new(None),
+            comissao_do_plano: Mutex::new(None),
         })
     }
 
@@ -327,6 +331,25 @@ impl Nuvem {
         if let Ok(mut c) = self.consumos.lock() {
             *c = Some(f);
         }
+    }
+
+    /// Quem diz a comissão da plataforma pelo plano do nó: com plano pago,
+    /// ela vale no lugar da dos ajustes (a reserva continua a mesma).
+    pub fn ao_cobrar_comissao(&self, f: ComissaoDoPlano) {
+        if let Ok(mut c) = self.comissao_do_plano.lock() {
+            *c = Some(f);
+        }
+    }
+
+    /// A divisão (fornecedor %, plataforma %) que o livro usa agora.
+    pub fn divisao(&self) -> (u8, u8) {
+        let (p, pl) = self.ajustes.lock().map(|a| (a.provedor_pct, a.plataforma_pct)).unwrap_or((80, 15));
+        let Some(do_plano) = self.comissao_do_plano.lock().ok().and_then(|c| c.as_ref().map(|f| f())) else { return (p, pl) };
+        if do_plano >= pl {
+            return (p, pl);
+        }
+        // o que a plataforma deixa de cobrar vai para o fornecedor
+        (p.saturating_add(pl.saturating_sub(do_plano)).min(100), do_plano)
     }
 
     /// Liga à rede: registra o tratador e começa a manutenção (a cada 2 s).
@@ -1183,7 +1206,7 @@ impl Nuvem {
     pub fn liquidar(&self, agora: u64) {
         let jobs = self.consumos.lock().ok().and_then(|c| c.as_ref().map(|f| f()));
         let Some(jobs) = jobs else { return };
-        let (p, pl) = self.ajustes.lock().map(|a| (a.provedor_pct, a.plataforma_pct)).unwrap_or((80, 15));
+        let (p, pl) = self.divisao();
         let com_fornecedor: Vec<livro::JobALiquidar> = jobs.into_iter().map(|(j, c, v)| (j, c, v, self.fornecedor(&j))).collect();
         if let Err(e) = self.livro.liquidar(agora, &com_fornecedor, p, pl) {
             (self.ganchos.registrar)("erro", format!("livro de contas: {e}"));

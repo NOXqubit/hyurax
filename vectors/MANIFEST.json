@@ -68,6 +68,10 @@
       "bytes": 29790,
       "sha512_16": "75214a7c1d00ae719dd1d0cb5ea35224"
     },
+    "plano.json": {
+      "bytes": 13718,
+      "sha512_16": "ff6cea6363b56699eba7e01098d37973"
+    },
     "rede_ultrax.json": {
       "bytes": 4899,
       "sha512_16": "183f1d1c560c4bf4cc908f0e5d97e4fa"

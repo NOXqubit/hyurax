@@ -399,12 +399,13 @@ fn ler(mut s: TcpStream, p: &Pedido, n: &Arc<Nucleo>, arquivos: Arquivos, daqui:
                 _ => responder(&mut s, "404 Not Found", "text/plain", b"nao existe"),
             }
         }
+        "/api/v1/planos" => json_ok(&mut s, n.planos.json(&n.ultrax.worker(), crate::util::agora_ms())),
         "/api/v1/nuvem" => {
             let c = Arc::clone(&n.ciencia);
             json_ok(&mut s, n.nuvem.json(&move |w| c.reputacao_de(w)))
         }
         "/api/v1/nuvem/livro" => {
-            let (pv, pl) = n.nuvem.ajustes.lock().map(|a| (a.provedor_pct, a.plataforma_pct)).unwrap_or((80, 15));
+            let (pv, pl) = n.nuvem.divisao();
             json_ok(&mut s, n.nuvem.livro.json(500, pv, pl))
         }
         // o arquivo recuperado: só para a janela deste computador

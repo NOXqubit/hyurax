@@ -488,3 +488,43 @@ input[type="file"] { padding: 8px; }
 .lab-veredito b { color: var(--tinta); }
 @media (max-width: 640px) { .lab-palco { min-height: 380px; } .lab-topo .segmentado button { padding: 0 10px; } }
 @media (prefers-reduced-motion: reduce) { .lab-regua i { transition: none; } }
+
+
+/* ---------- Planos ---------- */
+.pl-aviso { background: var(--luz-fundo); color: var(--tinta-2); border-radius: var(--raio-p); padding: 14px 18px; line-height: 1.55; max-width: 92ch; }
+.pl-aviso b { color: var(--luz-texto); }
+.pl-grade { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 16px; align-items: stretch; }
+.pl-cartao { position: relative; display: flex; flex-direction: column; gap: 14px; background: var(--painel); border-radius: var(--raio-grande); padding: 26px 24px; box-shadow: var(--sombra); border: 1px solid var(--fio); }
+.pl-cartao.destaque { background: linear-gradient(160deg, #1B2033 0%, #0D101B 100%); color: #F5F5F7; border: 0; box-shadow: 0 30px 60px -30px rgba(8, 10, 20, 0.6); }
+.pl-cartao.destaque .pl-desc, .pl-cartao.destaque .pl-lista li { color: rgba(245, 245, 247, 0.78); }
+.pl-cartao.destaque .pl-preco small { color: rgba(245, 245, 247, 0.6); }
+.pl-cartao.atual { outline: 2px solid var(--luz); outline-offset: -2px; }
+.pl-selo { position: absolute; top: 18px; right: 18px; }
+.pl-nome { margin: 0; font-size: 20px; font-weight: 700; }
+.pl-desc { margin: 0; color: var(--tinta-3); font-size: 14px; line-height: 1.5; min-height: 42px; }
+.pl-preco { margin: 4px 0 0; font: 700 38px/1 var(--texto); letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
+.pl-preco small { font: 500 14px var(--texto); color: var(--tinta-3); letter-spacing: 0; margin-left: 4px; }
+.pl-lista { list-style: none; margin: 0; padding: 0; display: grid; gap: 9px; flex: 1; }
+.pl-lista li { display: grid; grid-template-columns: 18px 1fr; gap: 8px; font-size: 14px; color: var(--tinta-2); line-height: 1.45; }
+.pl-lista li::before { content: ""; width: 14px; height: 14px; margin-top: 3px; border-radius: 50%; background: var(--luz) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%231D1D1F' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 12 4 4 8-9'/%3E%3C/svg%3E") center / 10px no-repeat; }
+.pl-cartao .botao, .pl-cartao .botao-leve { width: 100%; }
+.pl-cartao.destaque .botao { background: var(--luz); color: var(--sobre-luz); }
+.pl-baixo { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
+.pl-codigo { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; background: var(--painel-2); border-radius: var(--raio-p); padding: 12px 14px; }
+.pl-codigo span { font-size: 13px; color: var(--tinta-3); width: 100%; }
+.pl-codigo code { flex: 1; min-width: 0; font: 500 12.5px var(--mono); overflow-wrap: anywhere; color: var(--tinta); }
+.pl-ativar textarea { width: 100%; min-height: 84px; font: 500 12.5px var(--mono); border-radius: var(--raio-p); border: 1px solid var(--fio-forte); background: var(--painel); color: var(--tinta); padding: 10px 12px; resize: vertical; }
+.pl-tabela-rolagem { overflow-x: auto; }
+.pl-tabela { width: 100%; border-collapse: collapse; font-size: 14px; min-width: 620px; }
+.pl-tabela th, .pl-tabela td { text-align: left; padding: 11px 12px; border-bottom: 1px solid var(--fio); }
+.pl-tabela thead th { font-size: 13px; color: var(--tinta-3); font-weight: 600; }
+.pl-tabela td:not(:first-child), .pl-tabela th:not(:first-child) { text-align: center; font-variant-numeric: tabular-nums; }
+.pl-tabela .sim { color: var(--ok); font-weight: 700; }
+.pl-tabela .nao { color: var(--tinta-3); }
+.nav-contador.luz { background: var(--luz-fundo); color: var(--luz-texto); }
+.tela-cab > #pl-periodo { display: inline-flex; flex-wrap: nowrap; align-self: flex-end; }
+#pl-periodo button { white-space: nowrap; }
+.pl-cartao.destaque .botao:disabled { background: rgba(255, 255, 255, 0.12); color: rgba(245, 245, 247, 0.75); opacity: 1; }
+.pl-tabela th, .pl-tabela td { text-transform: none; letter-spacing: 0; font-family: var(--texto); }
+.pl-tabela tbody th { font-weight: 560; color: var(--tinta-2); font-size: 14px; }
+.pl-tabela thead th { font-size: 13.5px; color: var(--tinta); font-weight: 650; }
