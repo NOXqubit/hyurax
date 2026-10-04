@@ -3,8 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="color-scheme" content="dark">
+<meta name="color-scheme" content="dark light">
 <title>Hyurax / Ultrax</title>
+<script src="/js/tema.js"></script>
+<link rel="stylesheet" href="/tokens.css">
 <link rel="stylesheet" href="/estilo.css">
 <script src="/vendor/qrcode.min.js"></script>
 <script type="module" src="/js/app.js"></script>
@@ -15,6 +17,7 @@
 
 <header id="topo">
   <div class="marca">
+    <svg class="marca-simbolo" viewBox="0 0 64 64" aria-hidden="true"><g stroke="currentColor" stroke-width="3.6" stroke-linecap="round" opacity="0.6"><line x1="18" y1="14" x2="18" y2="50"/><line x1="46" y1="14" x2="46" y2="50"/><line x1="18" y1="32" x2="46" y2="32"/></g><g fill="currentColor"><circle cx="18" cy="14" r="5"/><circle cx="18" cy="50" r="5"/><circle cx="46" cy="14" r="5"/><circle cx="46" cy="50" r="5"/><circle cx="18" cy="32" r="5.6"/><circle cx="46" cy="32" r="5.6"/></g><circle cx="33" cy="32" r="2.8" fill="currentColor"/></svg>
     <span class="marca-nome">HYURAX</span><span class="marca-barra">/</span><span class="marca-sub">ULTRAX</span>
     <span class="versao num" id="topo-versao">—</span>
     <span class="etiqueta-rede" id="topo-rede" title="A rede pública é de teste: o HYX não tem valor">REDE DE TESTE</span>
@@ -24,17 +27,26 @@
     <div><dt>Altura</dt><dd id="topo-altura" class="num">—</dd></div>
     <div><dt>Pares</dt><dd id="topo-pares" class="num">—</dd></div>
     <div><dt>Sincronização</dt><dd id="topo-sinc">—</dd></div>
+    <div><dt>Créditos consumidos</dt><dd id="topo-creditos" class="num">—</dd></div>
     <div><dt>Saldo</dt><dd id="topo-saldo" class="num">—</dd></div>
   </dl>
 </header>
 
 <nav id="navegacao" aria-label="Seções">
-  <a href="#visao" data-tela="visao">Visão geral</a>
-  <a href="#ultrax" data-tela="ultrax">ULTRAX</a>
-  <a href="#ciencia" data-tela="ciencia">Computação científica</a>
+  <span class="nav-grupo">Operação</span>
+  <a href="#visao" data-tela="visao">Visão geral <span class="nav-contador alerta" id="nav-alertas" hidden></span></a>
+  <a href="#ultrax" data-tela="ultrax">Worker (ULTRAX)</a>
+  <a href="#ciencia" data-tela="ciencia">JOBs científicos</a>
+  <span class="nav-grupo">Nuvem entre nós</span>
+  <a href="#mercado" data-tela="mercado">Mercado de máquinas <span class="nav-contador" id="nav-mercado" hidden></span></a>
+  <a href="#armazenamento" data-tela="armazenamento">Armazenamento <span class="nav-contador" id="nav-armazenamento" hidden></span></a>
+  <a href="#faturamento" data-tela="faturamento">Faturamento</a>
+  <span class="nav-grupo">Rede e ativos</span>
   <a href="#carteira" data-tela="carteira">Carteira</a>
   <a href="#cadeia" data-tela="cadeia">Cadeia e mineração</a>
   <a href="#rede" data-tela="rede">Rede</a>
+  <span class="nav-grupo">Sistema</span>
+  <a href="#seguranca" data-tela="seguranca">Segurança</a>
   <a href="#registro" data-tela="registro">Registro</a>
   <a href="#ajustes" data-tela="ajustes">Ajustes</a>
   <p class="nav-rodape"><span id="nav-maquina">—</span></p>
@@ -49,7 +61,15 @@
 
   <!-- Visão geral -->
   <section id="tela-visao" class="tela" aria-labelledby="t-visao">
-    <h1 id="t-visao">Visão geral</h1>
+    <div class="tela-cab">
+      <h1 id="t-visao">Visão geral</h1>
+      <span class="estado estado-parado" id="vg-estado">conectando…</span>
+    </div>
+    <div class="metricas" id="vg-metricas" aria-label="Os números principais deste nó"></div>
+    <div class="grade-dupla">
+      <article class="bloco"><h2>Alertas</h2><ul class="alertas" id="vg-alertas"></ul></article>
+      <article class="bloco"><h2>Nuvem entre nós</h2><dl class="fatos" id="vg-nuvem"></dl></article>
+    </div>
     <ol class="leitura" id="leitura" aria-label="O trabalho em foco, do começo ao fim">
       <li><span class="passo">Trabalho</span><strong id="l-trabalho">—</strong><small id="l-trabalho-nota"></small></li>
       <li><span class="passo">Como</span><strong id="l-como">—</strong><small id="l-como-nota"></small></li>
@@ -169,6 +189,168 @@
       <div id="cj-historico"></div>
     </article>
     <article class="bloco"><h2>Eventos da ciência</h2><ol class="registro" id="cj-eventos"></ol></article>
+  </section>
+
+  <!-- Mercado de máquinas -->
+  <section id="tela-mercado" class="tela" aria-labelledby="t-mercado" hidden>
+    <div class="tela-cab">
+      <h1 id="t-mercado">Mercado de máquinas</h1>
+      <span class="estado estado-parado" id="mk-estado">—</span>
+    </div>
+    <p class="introducao">Máquinas que outros nós anunciaram, assinadas por eles e repassadas de par em par, sem servidor. Alugar capacidade é um JOB que só manda unidades para aquela máquina: cada unidade volta e é <strong>refeita aqui</strong> antes de contar, e você assina um recibo do trabalho verificado. Preços em créditos de computação, que não são dinheiro nem HYX.</p>
+    <div class="metricas" id="mk-metricas"></div>
+    <div class="grade-dupla">
+      <article class="bloco">
+        <h2>Esta máquina no mercado</h2>
+        <form id="mk-form" class="formulario" autocomplete="off">
+          <label class="chave" for="mk-anunciar"><input type="checkbox" id="mk-anunciar"><span>Anunciar esta máquina (o anúncio sai assinado e vale 1 hora; é refeito sozinho)</span></label>
+          <div class="campos">
+            <label for="mk-tipo"><small>O que oferece</small><select id="mk-tipo">
+              <option value="capacidade">Capacidade (CPU, GPU, disco)</option>
+              <option value="maquina_inteira">Máquina inteira</option>
+              <option value="venda">Venda da máquina (só listagem)</option>
+            </select></label>
+            <label for="mk-preco"><small>Preço por crédito verificado</small><input id="mk-preco" type="number" min="0" step="0.001" inputmode="decimal"></label>
+            <label for="mk-gb"><small>Armazenamento (créditos por GB/mês)</small><input id="mk-gb" type="number" min="0" step="0.001" inputmode="decimal"></label>
+            <label for="mk-disco"><small>Disco oferecido (MiB)</small><input id="mk-disco" type="number" min="0" step="1"></label>
+            <label for="mk-venda" id="mk-venda-rotulo"><small>Preço de venda (R$)</small><input id="mk-venda" type="number" min="0" step="0.01" inputmode="decimal"></label>
+          </div>
+          <label for="mk-descricao"><small>Descrição (até 200 caracteres)</small><input id="mk-descricao" maxlength="200" placeholder="ex.: PC de casa, ligado à noite"></label>
+          <div class="acoes"><button type="submit" class="botao">Salvar e anunciar</button></div>
+          <p class="saida" id="mk-saida" role="status"></p>
+        </form>
+      </article>
+      <article class="bloco">
+        <h2>Como o anúncio aparece para os outros</h2>
+        <div id="mk-previa"></div>
+        <p class="nota">Linhas, memória e GPU saem das métricas reais desta máquina. O benchmark é <span class="selo selo-estimado">ESTIMADO</span>: ninguém confere o que o dono declara; a reputação de cada máquina é a que o SEU nó mediu conferindo trabalho dela.</p>
+      </article>
+    </div>
+    <article class="bloco">
+      <div class="bloco-cab">
+        <h2>Máquinas anunciadas</h2>
+        <div class="acoes">
+          <label for="mk-filtro" class="rotulo-pequeno">Mostrar</label>
+          <select id="mk-filtro" style="width:auto">
+            <option value="">todas</option>
+            <option value="capacidade">capacidade</option>
+            <option value="maquina_inteira">máquina inteira</option>
+            <option value="venda">venda</option>
+            <option value="conectadas">só conectadas agora</option>
+          </select>
+        </div>
+      </div>
+      <div class="lista-cartoes" id="mk-lista"></div>
+    </article>
+    <article class="bloco" id="mk-aluguel-bloco" hidden>
+      <h2 id="mk-aluguel-titulo">Alugar capacidade</h2>
+      <form id="mk-aluguel" class="formulario" autocomplete="off">
+        <p class="nota" id="mk-aluguel-nota"></p>
+        <div class="campos">
+          <label for="mk-al-lado"><small>Matriz (lado)</small><select id="mk-al-lado">
+            <option value="64">64 × 64</option>
+            <option value="128" selected>128 × 128</option>
+            <option value="256">256 × 256</option>
+          </select></label>
+          <label for="mk-al-unidades"><small>Unidades</small><input id="mk-al-unidades" type="number" min="1" max="10000" value="12"></label>
+          <label for="mk-al-orcamento"><small>Orçamento (créditos, 0 = sem)</small><input id="mk-al-orcamento" type="number" min="0" step="0.001" value="0"></label>
+        </div>
+        <label for="mk-al-descricao"><small>Descrição</small><input id="mk-al-descricao" maxlength="200" placeholder="para que serve"></label>
+        <div class="acoes">
+          <button type="submit" class="botao">Alugar e submeter o JOB</button>
+          <button type="button" class="botao-leve" id="mk-al-cancelar">Cancelar</button>
+        </div>
+        <p class="saida" id="mk-al-saida" role="status"></p>
+      </form>
+    </article>
+    <article class="bloco">
+      <h2>Seus aluguéis</h2>
+      <div class="tabela-caixa"><table id="mk-alugueis"></table></div>
+    </article>
+  </section>
+
+  <!-- Armazenamento distribuído -->
+  <section id="tela-armazenamento" class="tela" aria-labelledby="t-armazenamento" hidden>
+    <div class="tela-cab">
+      <h1 id="t-armazenamento">Armazenamento distribuído</h1>
+      <span class="estado estado-parado" id="ar-estado">—</span>
+    </div>
+    <p class="introducao">O arquivo é cifrado <strong>aqui</strong> (ChaCha20-Poly1305, chave que nunca sai deste computador), dividido em fragmentos de dados e de paridade (Reed–Solomon) e cada fragmento vai para um nó diferente. Quem guarda não vê o conteúdo. Desafios de guarda conferem, sem baixar, que cada fragmento continua lá; fragmento perdido é reconstruído e mandado para outro nó.</p>
+    <div class="metricas" id="ar-metricas"></div>
+    <div class="grade-dupla">
+      <article class="bloco">
+        <h2>Guardar um arquivo na rede</h2>
+        <form id="ar-form" class="formulario" autocomplete="off">
+          <label for="ar-arquivo"><small>Arquivo (até 64 MiB)</small><input id="ar-arquivo" type="file"></label>
+          <div class="campos">
+            <label for="ar-k"><small>Fragmentos de dados (k)</small><input id="ar-k" type="number" min="1" max="32" value="2"></label>
+            <label for="ar-m"><small>Fragmentos de paridade (m)</small><input id="ar-m" type="number" min="0" max="32" value="1"></label>
+          </div>
+          <p class="nota" id="ar-explica"></p>
+          <div class="acoes"><button type="submit" class="botao">Cifrar e guardar</button></div>
+          <p class="saida" id="ar-saida" role="status"></p>
+        </form>
+      </article>
+      <article class="bloco">
+        <h2>Este nó guardando para outros</h2>
+        <dl class="fatos" id="ar-guarda"></dl>
+        <p class="nota">A cota se ajusta em Mercado de máquinas → disco oferecido. Os fragmentos ficam na pasta de dados, em <code>nuvem/guarda</code>, cifrados por quem mandou.</p>
+      </article>
+    </div>
+    <article class="bloco">
+      <h2>Seus arquivos na rede</h2>
+      <div class="tabela-caixa"><table id="ar-arquivos"></table></div>
+      <p class="nota">Cada quadrado é um fragmento: cheio = guardado e conferido; tracejado = enviando; hachurado = perdido (vai ser reparado). Redondo = paridade.</p>
+    </article>
+  </section>
+
+  <!-- Faturamento -->
+  <section id="tela-faturamento" class="tela" aria-labelledby="t-faturamento" hidden>
+    <div class="tela-cab">
+      <h1 id="t-faturamento">Faturamento</h1>
+      <span class="estado estado-parado" id="ft-estado">—</span>
+    </div>
+    <p class="introducao">O livro de contas deste nó: consumo de cada JOB, a partilha (provedor, plataforma e reserva), recibos de aluguel e armazenamento. Cada lançamento carrega o hash do anterior: apagar ou trocar uma linha quebra a conferência de todas as seguintes. <strong>Créditos de computação, não dinheiro:</strong> nada aqui paga ninguém; cobrança em dinheiro exige estrutura jurídica antes.</p>
+    <div class="metricas" id="ft-metricas"></div>
+    <div class="grade-dupla">
+      <article class="bloco">
+        <h2>Tarifas</h2>
+        <form id="ft-tarifas" class="formulario" autocomplete="off">
+          <div class="campos">
+            <label for="ft-provedor"><small>Provedor (%)</small><input id="ft-provedor" type="number" min="0" max="100"></label>
+            <label for="ft-plataforma"><small>Plataforma (%)</small><input id="ft-plataforma" type="number" min="0" max="100"></label>
+          </div>
+          <p class="nota" id="ft-reserva"></p>
+          <div class="acoes"><button type="submit" class="botao-leve">Salvar tarifas</button></div>
+          <p class="saida" id="ft-saida" role="status"></p>
+        </form>
+      </article>
+      <article class="bloco">
+        <h2>Faturas por mês</h2>
+        <div class="tabela-caixa"><table id="ft-faturas"></table></div>
+      </article>
+    </div>
+    <article class="bloco">
+      <h2>Lançamentos</h2>
+      <div class="tabela-caixa"><table id="ft-livro"></table></div>
+    </article>
+  </section>
+
+  <!-- Segurança -->
+  <section id="tela-seguranca" class="tela" aria-labelledby="t-seguranca" hidden>
+    <div class="tela-cab">
+      <h1 id="t-seguranca">Segurança</h1>
+      <span class="estado estado-parado" id="sg-estado">—</span>
+    </div>
+    <p class="introducao">Quem é este nó, o que protege cada caminho e o que ainda falta. Nada aqui é decoração: cada linha sai do núcleo.</p>
+    <div class="grade-dupla">
+      <article class="bloco"><h2>Identidade e integridade</h2><dl class="fatos" id="sg-identidade"></dl></article>
+      <article class="bloco"><h2>Proteções ativas</h2><ul class="alertas" id="sg-protecoes"></ul></article>
+    </div>
+    <article class="bloco">
+      <h2>Eventos de segurança e de erro</h2>
+      <ol class="registro" id="sg-eventos"></ol>
+    </article>
   </section>
 
   <!-- Carteira -->
@@ -317,6 +499,15 @@
         </form>
       </article>
       <article class="bloco">
+        <h2>Aparência</h2>
+        <p class="nota">Cloud Design 2.0: o escuro é o padrão; o claro serve para salas iluminadas. A escolha fica só neste computador.</p>
+        <div class="segmentado" role="group" aria-label="Tema" id="a-tema">
+          <button type="button" data-tema="escuro">Escuro</button>
+          <button type="button" data-tema="claro">Claro</button>
+          <button type="button" data-tema="sistema">Como o sistema</button>
+        </div>
+      </article>
+      <article class="bloco">
         <h2>Painel e avisos</h2>
         <label class="chave" for="a-na-rede"><input type="checkbox" id="a-na-rede"><span>Ver no celular (outros aparelhos da rede local leem o painel; comando continua só daqui)</span></label>
         <p class="nota" id="a-url"></p>
@@ -368,6 +559,8 @@
         <li><span class="selo selo-pendente">PENDENTE</span> Coordenadas 3D reais das moléculas (a tela mostra a estrutura plana do SMILES).</li>
         <li><span class="selo selo-pendente">PENDENTE</span> Trabalho científico valendo na recompensa do bloco (mudança de consenso, SPEC-02).</li>
         <li><span class="selo selo-pendente">PENDENTE</span> Nós semente públicos da testnet e assinatura digital do programa.</li>
+        <li><span class="selo selo-pendente">PENDENTE</span> Cobrança em dinheiro no mercado: os preços são em créditos de computação (estrutura jurídica antes de qualquer dinheiro).</li>
+        <li><span class="selo selo-pendente">PENDENTE</span> Furo de NAT direto (transporte UDP); hoje quem não tem porta aberta passa por ponte.</li>
       </ul>
     </article>
   </section>

@@ -1,0 +1,101 @@
+/* Cloud Design 2.0 2.0.0 — GERADO por scripts/gerar-tokens.py a partir de design/cloud-design-2.json. Não edite à mão.
+   Escuro por padrão; data-tema="claro" no <html> troca tudo de uma vez.
+   Com data-tema="sistema", segue o sistema operacional. */
+
+:root {
+  --vazio: #040405;
+  --fundo: #0A0B0D;
+  --lateral: #0D0E10;
+  --painel: #111214;
+  --painel-2: #17181B;
+  --painel-3: #1E2024;
+  --aco: #24262A;
+  --tinta: #EDEBE6;
+  --tinta-2: #C4C7CC;
+  --tinta-3: #8D9199;
+  --fio: rgba(237, 235, 230, 0.08);
+  --fio-forte: rgba(237, 235, 230, 0.20);
+  --luz: #F2D9A8;
+  --luz-forte: #FFF4E0;
+  --luz-fundo: rgba(242, 217, 168, 0.10);
+  --sobre-luz: #141210;
+  --ok: #F2D9A8;
+  --atencao: #E3A15E;
+  --falha: #EE7363;
+  --info: #A9BCDB;
+  --gpu: #9FBDF2;
+  --sombra: 0 1px 0 rgba(255, 255, 255, 0.03) inset, 0 12px 32px rgba(0, 0, 0, 0.45);
+  --raio: 12px;
+  --raio-p: 8px;
+  --raio-pilula: 999px;
+  --espaco-1: 4px;
+  --espaco-2: 8px;
+  --espaco-3: 12px;
+  --espaco-4: 16px;
+  --espaco-5: 24px;
+  --espaco-6: 32px;
+  --t-rotulo: 11px;
+  --t-pequeno: 12.5px;
+  --t-corpo: 14px;
+  --t-destaque: 16px;
+  --t-titulo: 22px;
+  --t-tela: 28px;
+  --t-numero: 34px;
+  --fonte-texto: "Archivo", "Segoe UI", "Helvetica Neue", Arial, system-ui, sans-serif;
+  --fonte-mono: "IBM Plex Mono", "Cascadia Mono", Consolas, "SF Mono", ui-monospace, monospace;
+  color-scheme: dark;
+}
+
+:root[data-tema="claro"] {
+  --vazio: #FFFFFF;
+  --fundo: #F2F2F0;
+  --lateral: #FAFAF9;
+  --painel: #FFFFFF;
+  --painel-2: #F4F4F2;
+  --painel-3: #E9E9E6;
+  --aco: #D6D6D2;
+  --tinta: #0B0C0E;
+  --tinta-2: #3A3D43;
+  --tinta-3: #5F636B;
+  --fio: rgba(11, 12, 14, 0.09);
+  --fio-forte: rgba(11, 12, 14, 0.22);
+  --luz: #7A5715;
+  --luz-forte: #5C410F;
+  --luz-fundo: rgba(122, 87, 21, 0.10);
+  --sobre-luz: #FFFFFF;
+  --ok: #7A5715;
+  --atencao: #9A5418;
+  --falha: #B2382A;
+  --info: #38598A;
+  --gpu: #2F5DA8;
+  --sombra: 0 1px 2px rgba(11, 12, 14, 0.06), 0 12px 28px rgba(11, 12, 14, 0.08);
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: light) {
+  :root[data-tema="sistema"] {
+    --vazio: #FFFFFF;
+    --fundo: #F2F2F0;
+    --lateral: #FAFAF9;
+    --painel: #FFFFFF;
+    --painel-2: #F4F4F2;
+    --painel-3: #E9E9E6;
+    --aco: #D6D6D2;
+    --tinta: #0B0C0E;
+    --tinta-2: #3A3D43;
+    --tinta-3: #5F636B;
+    --fio: rgba(11, 12, 14, 0.09);
+    --fio-forte: rgba(11, 12, 14, 0.22);
+    --luz: #7A5715;
+    --luz-forte: #5C410F;
+    --luz-fundo: rgba(122, 87, 21, 0.10);
+    --sobre-luz: #FFFFFF;
+    --ok: #7A5715;
+    --atencao: #9A5418;
+    --falha: #B2382A;
+    --info: #38598A;
+    --gpu: #2F5DA8;
+    --sombra: 0 1px 2px rgba(11, 12, 14, 0.06), 0 12px 28px rgba(11, 12, 14, 0.08);
+    color-scheme: light;
+  }
+}

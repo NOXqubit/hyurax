@@ -9,7 +9,7 @@
 import { $, el, texto, fmt, compacto, curto, selo, valorComOrigem, trocar } from "../util.js";
 import { estado, ouvir } from "../estado.js";
 import { Cena } from "../cena/visualizadores.js";
-import { fatos, linhaDeRegistro, grafico, cores } from "./comum.js";
+import { fatos, linhaDeRegistro, grafico, cores, metricas, creditos, marcarEstado, estadoEl, bytes } from "./comum.js";
 
 let cena = null;
 let info = null; // o resumo do que está na cena agora
@@ -189,7 +189,65 @@ export function montar() {
   $("cena-reenquadrar").addEventListener("click", () => cena.motor.reenquadrar());
 }
 
+/**
+ * Os alertas do nó, todos tirados do estado real: [tipo, título, detalhe].
+ * O app usa a mesma lista para o contador da navegação.
+ */
+export function alertasDe(e) {
+  const a = [];
+  if (!e) return a;
+  if (!e.no?.pares) a.push(["atencao", "Sem pares conectados", "Sem outro nó, a cadeia não anda e a nuvem fica vazia. Veja Rede (sementes, porta, vizinhos)."]);
+  else if (!e.no?.sincronizado) a.push(["em-curso", "Sincronizando a cadeia", `${e.no.pares} par(es) conectado(s).`]);
+  if (!e.carteira?.existe) a.push(["atencao", "Nenhuma carteira", "Crie ou importe uma em Carteira para minerar e receber HYX de teste."]);
+  else if (e.carteira?.sem_senha) a.push(["falha", "Carteira sem senha", "O segredo está em texto no disco. Proteja em Carteira."]);
+  if (e.nuvem?.em_risco) a.push(["falha", `${e.nuvem.em_risco} arquivo(s) em risco`, "Menos fragmentos guardados que o necessário para reconstruir. Veja Armazenamento."]);
+  if (e.nuvem?.degradados) a.push(["atencao", `${e.nuvem.degradados} arquivo(s) em reparo`, "Um guardião sumiu ou falhou; o fragmento está sendo reconstruído."]);
+  if (e.nuvem && e.nuvem.livro_integro === false) a.push(["falha", "Livro de contas adulterado", "A conferência por hash quebrou. Veja Faturamento."]);
+  if (e.atualizacao?.disponivel) a.push(["em-curso", `Versão ${e.atualizacao.disponivel.versao} disponível`, "Manifesto assinado conferido. Instale em Ajustes → Atualização."]);
+  if (e.atualizacao?.erro) a.push(["atencao", "Busca de atualização falhou", e.atualizacao.erro]);
+  return a;
+}
+
+function painel(e) {
+  const m = e.metricas || {};
+  const pct = (v) => (v?.valor == null ? "—" : fmt(v.valor, 0));
+  const online = e.no?.pares > 0;
+  marcarEstado("vg-estado", online ? "ok" : "atencao", online ? `online · ${e.no.pares} par(es)` : "sem pares");
+  metricas(
+    "vg-metricas",
+    [
+      { rotulo: "CPU da máquina", valor: pct(m.cpu_total), unidade: "%", origem: m.cpu_total?.origem, fonte: m.cpu_total?.fonte, nota: `programa: ${pct(m.cpu_processo)}%` },
+      { rotulo: "RAM livre", valor: m.ram_livre?.valor == null ? "—" : fmt(m.ram_livre.valor / 1024, 1), unidade: "GiB", origem: m.ram_livre?.origem, fonte: m.ram_livre?.fonte },
+      { rotulo: "GPU 3D", valor: pct(m.gpu_3d), unidade: "%", origem: m.gpu_3d?.origem || "PENDENTE", fonte: m.gpu_3d?.fonte, nota: "todos os programas" },
+      { rotulo: "Temperatura", valor: "—", origem: "PENDENTE", nota: "sem leitura confiável sem administrador" },
+      { rotulo: "JOBs ativos", valor: fmt(e.jobs?.ativos ?? 0), nota: `${fmt(e.jobs?.total ?? 0)} no total` },
+      { rotulo: "Créditos consumidos", valor: creditos(e.jobs?.consumo_mili ?? 0), nota: "créditos de computação, não HYX" },
+      { rotulo: "Arquivos na rede", valor: fmt(e.nuvem?.arquivos ?? 0), nota: e.nuvem?.guarda?.usado_bytes ? `guardando ${bytes(e.nuvem.guarda.usado_bytes)} de outros` : "cifrados aqui, em vários nós" },
+      { rotulo: "Altura da cadeia", valor: fmt(e.no?.altura), nota: e.no?.sincronizado ? "alcançou os pares" : "rede de teste" },
+    ],
+    selo,
+  );
+  const al = alertasDe(e);
+  trocar(
+    "vg-alertas",
+    al.length
+      ? al.map(([tipo, titulo, det]) => el("li", {}, estadoEl(tipo, tipo === "falha" ? "falha" : tipo === "atencao" ? "atenção" : "em curso"), el("span", {}, titulo), el("small", {}, det)))
+      : [el("li", {}, estadoEl("ok", "tudo certo"), el("span", {}, "Nenhum alerta agora"), el("small", {}, "Pares conectados, carteira protegida e arquivos íntegros."))],
+  );
+  const nv = e.nuvem || {};
+  fatos("vg-nuvem", [
+    ["Esta máquina no mercado", nv.anunciando ? "anunciada" : "não anunciada"],
+    ["Máquinas vistas", fmt(nv.anuncios ?? 0)],
+    ["Arquivos na rede", `${fmt(nv.arquivos ?? 0)}${nv.degradados ? ` · ${nv.degradados} em reparo` : ""}`],
+    ["Guardando para outros", nv.guarda ? `${bytes(nv.guarda.usado_bytes)} · ${fmt(nv.guarda.fragmentos)} fragmento(s)` : "—"],
+    ["Aluguéis", fmt(nv.alugueis ?? 0)],
+    ["Consumo no livro", creditos(nv.consumo_mili ?? 0)],
+    ["A receber (recibos)", creditos(nv.a_receber_mili ?? 0)],
+  ]);
+}
+
 export function atualizar(e) {
+  painel(e);
   maquina(e);
   cartoes(e);
   linhaDeLeitura();

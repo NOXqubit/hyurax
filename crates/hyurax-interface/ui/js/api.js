@@ -74,3 +74,19 @@ export function url(caminho) {
   if (!chave) return `${BASE}${caminho}`;
   return `${BASE}${caminho}${caminho.includes("?") ? "&" : "?"}chave=${chave}`;
 }
+
+/** POST de bytes crus (um arquivo), com parâmetros na busca. */
+export async function postarBytes(caminho, bytes, parametros = {}) {
+  const busca = new URLSearchParams(Object.entries(parametros).map(([k, v]) => [k, String(v)])).toString();
+  try {
+    const r = await fetch(`${BASE}${caminho}${busca ? `?${busca}` : ""}`, {
+      method: "POST",
+      headers: cabecalhos({ "Content-Type": "application/octet-stream" }),
+      body: bytes,
+    });
+    const dados = await r.json().catch(() => null);
+    return { ok: r.ok, status: r.status, dados, erro: dados?.erro || (r.ok ? "" : erroDe(r.status)) };
+  } catch (e) {
+    return { ok: false, status: 0, dados: null, erro: `sem resposta do núcleo (${e.message || e})` };
+  }
+}

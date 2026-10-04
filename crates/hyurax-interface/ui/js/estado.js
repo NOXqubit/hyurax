@@ -75,7 +75,7 @@ export function conectar() {
     }
     avisar("estado", d);
   });
-  for (const tipo of ["registro", "bloco", "amostra"]) {
+  for (const tipo of ["registro", "bloco", "amostra", "nuvem"]) {
     fonte.addEventListener(tipo, (e) => {
       const d = ler(e);
       if (d) avisar(tipo, d);

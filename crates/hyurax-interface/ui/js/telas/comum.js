@@ -150,3 +150,64 @@ export function resultado(id, r, textoOk) {
   s.className = r.ok ? "saida" : "saida erro";
   s.textContent = r.ok ? textoOk : r.erro;
 }
+
+/** Milicréditos como créditos de computação (não são dinheiro nem HYX). */
+export function creditos(mili, casas = 3) {
+  if (mili === null || mili === undefined) return "—";
+  const v = Number(mili) / 1000;
+  return `${new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 0, maximumFractionDigits: casas }).format(v)} cr`;
+}
+
+/**
+ * Cartões de número de destaque: [{rotulo, valor, unidade, nota, origem}].
+ * O valor é texto; `origem` (REAL, DERIVADO…) vira selo.
+ */
+export function metricas(id, lista, seloDe) {
+  const caixa = $(id);
+  if (!caixa) return;
+  const n = lista.filter(Boolean).length;
+  caixa.style.setProperty("--colunas", String(n <= 5 ? n : Math.ceil(n / 2)));
+  caixa.replaceChildren(
+    ...lista.filter(Boolean).map((m) =>
+      el(
+        "div",
+        { class: "metrica" },
+        el("span", { class: "metrica-rotulo" }, m.rotulo),
+        el("span", { class: "metrica-valor" }, m.valor ?? "—", m.unidade ? el("small", {}, m.unidade) : null),
+        m.nota || m.origem ? el("span", { class: "metrica-nota" }, m.origem && seloDe ? seloDe(m.origem, m.fonte) : null, m.origem && m.nota ? " " : null, m.nota || null) : null,
+      ),
+    ),
+  );
+}
+
+/** Um estado com forma e texto: tipo = ok, em-curso, atencao, falha ou parado. */
+export function estadoEl(tipo, textoDoEstado, dica) {
+  return el("span", { class: `estado estado-${tipo}`, title: dica }, textoDoEstado);
+}
+
+/** Troca um <span class="estado"> existente. */
+export function marcarEstado(id, tipo, textoDoEstado) {
+  const s = $(id);
+  if (!s) return;
+  s.className = `estado estado-${tipo}`;
+  s.textContent = textoDoEstado;
+}
+
+/** Bytes legíveis (KiB, MiB, GiB). */
+export function bytes(n) {
+  const v = Number(n);
+  if (!Number.isFinite(v)) return "—";
+  const u = ["B", "KiB", "MiB", "GiB", "TiB"];
+  let i = 0;
+  let x = v;
+  while (x >= 1024 && i < u.length - 1) {
+    x /= 1024;
+    i += 1;
+  }
+  return `${new Intl.NumberFormat("pt-BR", { maximumFractionDigits: i ? 1 : 0 }).format(x)} ${u[i]}`;
+}
+
+/** Uma caixa de "nada ainda", com o que fazer. */
+export function vazio(titulo, explicacao) {
+  return el("div", { class: "vazio" }, el("strong", {}, titulo), explicacao ? el("span", {}, explicacao) : null);
+}

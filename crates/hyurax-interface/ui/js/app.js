@@ -11,17 +11,23 @@ import * as carteira from "./telas/carteira.js";
 import * as cadeia from "./telas/cadeia.js";
 import * as rede from "./telas/rede.js";
 import * as registro from "./telas/registro.js";
+import * as mercado from "./telas/mercado.js";
+import * as armazenamento from "./telas/armazenamento.js";
+import * as faturamento from "./telas/faturamento.js";
+import * as seguranca from "./telas/seguranca.js";
+import { creditos } from "./telas/comum.js";
 import * as ajustes from "./telas/ajustes.js";
 
 // a chave de sessão vem no endereço; tira dele antes de qualquer coisa
 pegarChaveDoEndereco();
 
-const TELAS = { visao, ultrax, ciencia, carteira, cadeia, rede, registro, ajustes };
+const TELAS = { visao, ultrax, ciencia, mercado, armazenamento, faturamento, carteira, cadeia, rede, seguranca, registro, ajustes };
 let atual = "visao";
 
 // ---------- navegação ----------
 function mostrarTela(nome) {
   if (!TELAS[nome]) nome = "visao";
+  if (atual !== nome) TELAS[atual]?.aoEsconder?.();
   atual = nome;
   for (const n of Object.keys(TELAS)) $(`tela-${n}`).hidden = n !== nome;
   for (const a of document.querySelectorAll("#navegacao a")) {
@@ -49,6 +55,18 @@ function atualizarTopo(e) {
   texto("topo-pares", fmt(e.no?.pares));
   texto("topo-sinc", e.no?.pares ? (e.no.sincronizado ? "alcançou os pares" : "sincronizando…") : "sem pares");
   texto("topo-saldo", e.carteira?.existe ? `${e.carteira.saldo} HYX` : "sem carteira");
+  texto("topo-creditos", creditos(e.jobs?.consumo_mili ?? 0));
+  // contadores da navegação: só números que saem do estado
+  const alertas = visao.alertasDe(e).filter(([t]) => t !== "em-curso").length;
+  const na = $("nav-alertas");
+  na.hidden = !alertas;
+  na.textContent = String(alertas);
+  const nm = $("nav-mercado");
+  nm.hidden = !e.nuvem?.anuncios;
+  nm.textContent = String(e.nuvem?.anuncios ?? "");
+  const nar = $("nav-armazenamento");
+  nar.hidden = !e.nuvem?.arquivos;
+  nar.textContent = String(e.nuvem?.arquivos ?? "");
   const s = e.metricas?.sistema;
   if (s) texto("nav-maquina", `${s.cpu || "CPU"} · ${s.nucleos_logicos} núcleo(s)${s.ram_total_mib ? ` · ${fmt(s.ram_total_mib / 1024, 1)} GiB` : ""}`);
 }
@@ -63,6 +81,24 @@ ouvir("conexao", (ligado) => {
   $("faixa-conexao").hidden = ligado || !jaConectou;
   document.body.classList.toggle("desconectado", !ligado && jaConectou);
 });
+
+// ---------- tema (Cloud Design 2.0) ----------
+function marcarTema() {
+  const t = document.documentElement.getAttribute("data-tema") || "escuro";
+  for (const b of document.querySelectorAll("#a-tema button")) b.setAttribute("aria-pressed", String(b.dataset.tema === t));
+}
+for (const b of document.querySelectorAll("#a-tema button")) {
+  b.addEventListener("click", () => {
+    document.documentElement.setAttribute("data-tema", b.dataset.tema);
+    try {
+      localStorage.setItem("hyurax-tema", b.dataset.tema);
+    } catch {
+      /* sem armazenamento: vale só nesta abertura */
+    }
+    marcarTema();
+  });
+}
+marcarTema();
 
 // ---------- termos e cadeado ----------
 let termosCarregados = false;
