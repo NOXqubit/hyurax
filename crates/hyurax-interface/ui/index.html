@@ -15,41 +15,56 @@
 
 <a class="pular" href="#principal">Pular para o conteúdo</a>
 
-<header id="topo">
-  <div class="marca">
-    <svg class="marca-simbolo" viewBox="0 0 64 64" aria-hidden="true"><g stroke="currentColor" stroke-width="3.6" stroke-linecap="round" opacity="0.6"><line x1="18" y1="14" x2="18" y2="50"/><line x1="46" y1="14" x2="46" y2="50"/><line x1="18" y1="32" x2="46" y2="32"/></g><g fill="currentColor"><circle cx="18" cy="14" r="5"/><circle cx="18" cy="50" r="5"/><circle cx="46" cy="14" r="5"/><circle cx="46" cy="50" r="5"/><circle cx="18" cy="32" r="5.6"/><circle cx="46" cy="32" r="5.6"/></g><circle cx="33" cy="32" r="2.8" fill="currentColor"/></svg>
-    <span class="marca-nome">HYURAX</span><span class="marca-barra">/</span><span class="marca-sub">ULTRAX</span>
-    <span class="versao num" id="topo-versao">—</span>
-    <span class="etiqueta-rede" id="topo-rede" title="A rede pública é de teste: o HYX não tem valor">REDE DE TESTE</span>
-  </div>
-  <dl class="topo-fatos">
-    <div><dt>Conexão com o núcleo</dt><dd id="topo-conexao" class="estado-desligado" aria-live="polite">conectando…</dd></div>
-    <div><dt>Altura</dt><dd id="topo-altura" class="num">—</dd></div>
-    <div><dt>Pares</dt><dd id="topo-pares" class="num">—</dd></div>
-    <div><dt>Sincronização</dt><dd id="topo-sinc">—</dd></div>
-    <div><dt>Créditos consumidos</dt><dd id="topo-creditos" class="num">—</dd></div>
-    <div><dt>Saldo</dt><dd id="topo-saldo" class="num">—</dd></div>
-  </dl>
-</header>
+<div class="bv" id="boasvindas" role="dialog" aria-modal="true" aria-labelledby="bv-titulo" hidden>
+  <section class="bv-texto">
+    <div class="lat-marca" style="padding:0"><svg viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="16" fill="#1D1D1F"/><g stroke="#F2B544" stroke-width="3.6" stroke-linecap="round"><line x1="18" y1="14" x2="18" y2="50"/><line x1="46" y1="14" x2="46" y2="50"/><line x1="18" y1="32" x2="46" y2="32"/></g><g fill="#FFFFFF"><circle cx="18" cy="14" r="5"/><circle cx="18" cy="50" r="5"/><circle cx="46" cy="14" r="5"/><circle cx="46" cy="50" r="5"/><circle cx="18" cy="32" r="5.6"/><circle cx="46" cy="32" r="5.6"/></g></svg><div><b>Hyurax</b><small>Rede de teste</small></div></div>
+    <div style="display:grid;gap:18px">
+      <span class="bv-passo">Bem-vindo</span>
+      <h1 id="bv-titulo">Uma nuvem feita dos computadores das pessoas.</h1>
+      <p class="lide">Sem data center e sem dono. O seu computador pode emprestar o tempo livre, rodar cálculos e guardar arquivos cifrados em outros computadores. Tudo é conferido antes de valer.</p>
+    </div>
+    <fieldset class="bv-opcoes">
+      <legend>O que você quer fazer primeiro?</legend>
+      <button type="button" class="escolha linha" data-bv="contribuir" aria-pressed="true"><span class="sigla">A</span><span class="texto"><b>Ajudar com o meu computador</b><small>Ele trabalha quando está livre, e você ganha créditos para usar a rede.</small></span><span class="radio"></span></button>
+      <button type="button" class="escolha linha" data-bv="usar" aria-pressed="false"><span class="sigla">B</span><span class="texto"><b>Usar a nuvem</b><small>Rodar cálculos e guardar arquivos cifrados em outros computadores.</small></span><span class="radio"></span></button>
+      <button type="button" class="escolha linha" data-bv="explorar" aria-pressed="false"><span class="sigla">C</span><span class="texto"><b>Só conhecer</b><small>Ver a rede funcionando sem ligar nada.</small></span><span class="radio"></span></button>
+    </fieldset>
+    <div class="acoes"><button type="button" class="botao-escuro botao-grande" id="bv-continuar">Continuar</button><small>Dá para mudar depois, em Ajustes.</small></div>
+    <p class="saida" id="bv-saida" role="status"></p>
+  </section>
+  <aside class="bv-arte" aria-hidden="true">
+    <div class="anel a1"></div>
+    <div class="anel a2"><span style="top:-7px;left:50%;width:14px;height:14px;background:#F5F5F7"></span><span style="bottom:40px;left:20px;width:10px;height:10px;background:#F5F5F7"></span><span style="top:120px;right:-5px;width:10px;height:10px;background:#F2B544"></span></div>
+    <div class="anel a3"><span style="bottom:-6px;left:45%;width:12px;height:12px;background:#F2B544"></span><span style="top:30px;left:22px;width:9px;height:9px;background:#F5F5F7"></span></div>
+    <div class="centro"><svg viewBox="0 0 64 64" aria-hidden="true"><g stroke="#1D1D1F" stroke-width="4" stroke-linecap="round"><line x1="18" y1="14" x2="18" y2="50"/><line x1="46" y1="14" x2="46" y2="50"/><line x1="18" y1="32" x2="46" y2="32"/></g><g fill="#1D1D1F"><circle cx="18" cy="14" r="5"/><circle cx="18" cy="50" r="5"/><circle cx="46" cy="14" r="5"/><circle cx="46" cy="50" r="5"/></g></svg></div>
+    <p>Cada ponto é um computador como o seu. O do meio é você.</p>
+  </aside>
+</div>
 
 <nav id="navegacao" aria-label="Seções">
-  <span class="nav-grupo">Operação</span>
-  <a href="#visao" data-tela="visao">Visão geral <span class="nav-contador alerta" id="nav-alertas" hidden></span></a>
-  <a href="#ultrax" data-tela="ultrax">Worker (ULTRAX)</a>
-  <a href="#ciencia" data-tela="ciencia">JOBs científicos</a>
-  <span class="nav-grupo">Nuvem entre nós</span>
-  <a href="#mercado" data-tela="mercado">Mercado de máquinas <span class="nav-contador" id="nav-mercado" hidden></span></a>
-  <a href="#armazenamento" data-tela="armazenamento">Armazenamento <span class="nav-contador" id="nav-armazenamento" hidden></span></a>
-  <a href="#faturamento" data-tela="faturamento">Faturamento</a>
-  <span class="nav-grupo">Rede e ativos</span>
-  <a href="#carteira" data-tela="carteira">Carteira</a>
-  <a href="#cadeia" data-tela="cadeia">Cadeia e mineração</a>
-  <a href="#rede" data-tela="rede">Rede</a>
-  <span class="nav-grupo">Sistema</span>
-  <a href="#seguranca" data-tela="seguranca">Segurança</a>
-  <a href="#registro" data-tela="registro">Registro</a>
-  <a href="#ajustes" data-tela="ajustes">Ajustes</a>
-  <p class="nav-rodape"><span id="nav-maquina">—</span></p>
+  <div class="lat-marca"><svg viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="16" fill="#1D1D1F"/><g stroke="#F2B544" stroke-width="3.6" stroke-linecap="round"><line x1="18" y1="14" x2="18" y2="50"/><line x1="46" y1="14" x2="46" y2="50"/><line x1="18" y1="32" x2="46" y2="32"/></g><g fill="#FFFFFF"><circle cx="18" cy="14" r="5"/><circle cx="18" cy="50" r="5"/><circle cx="46" cy="14" r="5"/><circle cx="46" cy="50" r="5"/><circle cx="18" cy="32" r="5.6"/><circle cx="46" cy="32" r="5.6"/></g></svg><div><b>Hyurax</b><small id="topo-rede">Rede de teste</small></div></div>
+  <a href="#inicio" data-tela="inicio"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v9.5h13V10"/></svg>Início<span class="nav-contador alerta" id="nav-alertas" hidden></span></a>
+  <a href="#computar" data-tela="computar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="2.5"/><path d="M9 2.5v3M15 2.5v3M9 18.5v3M15 18.5v3M2.5 9h3M2.5 15h3M18.5 9h3M18.5 15h3"/></svg>Computar</a>
+  <a href="#mercado" data-tela="mercado"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9h16l-1.4 10.2a2 2 0 0 1-2 1.8H7.4a2 2 0 0 1-2-1.8z"/><path d="M8.5 9V7a3.5 3.5 0 0 1 7 0v2"/></svg>Mercado<span class="nav-contador" id="nav-mercado" hidden></span></a>
+  <a href="#armazenamento" data-tela="armazenamento"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 18.5h10.5a4 4 0 0 0 .6-7.96A6 6 0 0 0 6.5 9.6 4.5 4.5 0 0 0 7 18.5z"/></svg>Arquivos<span class="nav-contador" id="nav-armazenamento" hidden></span></a>
+  <a href="#carteira" data-tela="carteira"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="6" width="18" height="13" rx="3"/><path d="M16 12.5h2.5M3 9.5h18"/></svg>Carteira</a>
+  <span class="nav-grupo">Mais</span>
+  <div class="nav-mais">
+    <a href="#cadeia" data-tela="cadeia"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="9" width="8" height="6" rx="2"/><rect x="13" y="9" width="8" height="6" rx="2"/><path d="M11 12h2"/></svg>Mineração e cadeia</a>
+    <a href="#visao" data-tela="visao"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12h4l2-6 4 12 2-6h6"/></svg>Painel ao vivo</a>
+    <a href="#ultrax" data-tela="ultrax"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3.5"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3"/></svg>Worker (ULTRAX)</a>
+    <a href="#ciencia" data-tela="ciencia"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h14v16H5z"/><path d="M8.5 8.5h7M8.5 12h7M8.5 15.5h4"/></svg>Cálculos avançados</a>
+    <a href="#faturamento" data-tela="faturamento"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6"/></svg>Faturamento</a>
+    <a href="#rede" data-tela="rede"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="5" r="2.2"/><circle cx="5" cy="18" r="2.2"/><circle cx="19" cy="18" r="2.2"/><path d="M10.9 6.9 6.1 16M13.1 6.9l4.8 9.1M7.2 18h9.6"/></svg>Rede</a>
+    <a href="#seguranca" data-tela="seguranca"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 5 6v5.5c0 4.4 3 7.9 7 9.5 4-1.6 7-5.1 7-9.5V6z"/><path d="m9 12 2.2 2.2L15.5 10"/></svg>Segurança</a>
+    <a href="#registro" data-tela="registro"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10"/></svg>Registro</a>
+    <a href="#ajustes" data-tela="ajustes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg>Ajustes</a>
+  </div>
+  <div class="lat-status" aria-live="polite">
+    <span id="topo-conexao" class="estado-desligado">conectando…</span>
+    <small id="lat-resumo">—</small>
+    <small id="nav-maquina"></small>
+  </div>
 </nav>
 
 <main id="principal" tabindex="-1">
@@ -59,10 +74,79 @@
     <span>Os números desta tela pararam no último valor recebido. Se o núcleo só travou por um instante, a tela reconecta sozinha. Se o programa foi fechado, abra de novo pela janela dele (ou pelo endereço novo que o <code>hyurax-no painel</code> mostrar): cada abertura tem uma chave nova, e esta página não vale mais.</span>
   </div>
 
+  <!-- Início -->
+  <section id="tela-inicio" class="tela" aria-labelledby="t-inicio" hidden>
+    <header class="tela-cab">
+      <div><span class="subtitulo" id="in-data" style="font-size:15px;color:var(--tinta-3)"></span><h1 id="t-inicio">Olá.</h1></div>
+      <a href="#computar" class="botao-escuro"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" width="18" height="18"><path d="M12 5v14M5 12h14"/></svg>Novo cálculo</a>
+    </header>
+    <section class="heroi" aria-label="Seu computador na rede">
+      <div class="orbe parado" id="in-orbe"><span class="nucleo"></span><svg viewBox="0 0 64 64" aria-hidden="true"><g stroke="#1D1D1F" stroke-width="4" stroke-linecap="round"><line x1="18" y1="14" x2="18" y2="50"/><line x1="46" y1="14" x2="46" y2="50"/><line x1="18" y1="32" x2="46" y2="32"/></g><g fill="#1D1D1F"><circle cx="18" cy="14" r="5"/><circle cx="18" cy="50" r="5"/><circle cx="46" cy="14" r="5"/><circle cx="46" cy="50" r="5"/></g></svg></div>
+      <div class="heroi-texto">
+        <span class="heroi-status fora" id="in-status">conectando…</span>
+        <h2 id="in-titulo">Seu computador está só olhando.</h2>
+        <p id="in-explica">Nada roda em segundo plano.</p>
+      </div>
+      <button type="button" class="interruptor" id="in-ajudar" aria-pressed="false"><span class="trilho"></span><span id="in-ajudar-rotulo">Pausado</span></button>
+    </section>
+    <div class="numeros">
+      <article class="numero"><span>Trabalho conferido</span><strong id="in-trabalho">—</strong><span>contas conferidas antes de valer</span></article>
+      <article class="numero"><span>Créditos usados</span><strong id="in-creditos">—</strong><span>créditos de computação, não são HYX</span></article>
+      <article class="numero"><span>Saldo de teste</span><strong id="in-saldo">—</strong><span id="in-saldo-nota">HYX sem valor real</span></article>
+      <article class="numero"><span>Arquivos protegidos</span><strong id="in-arquivos">—</strong><span id="in-arquivos-nota">cifrados aqui, guardados em outros computadores</span></article>
+    </div>
+    <div class="grade-dupla">
+      <section class="bloco" aria-labelledby="in-passos-t">
+        <div class="bloco-cab"><h2 id="in-passos-t">Primeiros passos</h2><small id="in-passos-cont"></small></div>
+        <div class="progresso" style="margin-bottom:10px"><span id="in-passos-barra" style="width:0%"></span></div>
+        <ol class="passos" id="in-passos"></ol>
+      </section>
+      <section class="bloco" aria-labelledby="in-ativ-t">
+        <h2 id="in-ativ-t">O que aconteceu</h2>
+        <ul class="atividade" id="in-atividade"></ul>
+      </section>
+    </div>
+    <section class="bloco" aria-labelledby="in-min-t">
+      <div class="bloco-cab"><h2 id="in-min-t">Mineração de HYX de teste</h2><span class="estado estado-parado" id="in-min-estado">parada</span></div>
+      <div class="acoes" style="justify-content:space-between">
+        <p class="subtitulo" id="in-min-texto" style="font-size:15px"></p>
+        <a href="#cadeia" class="botao-leve">Ajustar mineração</a>
+      </div>
+    </section>
+    <p class="nota">Rede de teste. Créditos de computação servem para usar a rede; não são dinheiro nem HYX. O HYX de teste também não tem valor.</p>
+  </section>
+
+  <!-- Computar -->
+  <section id="tela-computar" class="tela" aria-labelledby="t-computar" hidden>
+    <header class="tela-cab"><div><h1 id="t-computar">Rode um cálculo na rede</h1><p class="subtitulo">O trabalho é dividido em partes. Cada parte é calculada e conferida antes de valer.</p></div></header>
+    <div class="computar">
+      <section aria-labelledby="cp-tipo-t">
+        <h2 id="cp-tipo-t" style="margin:0">1. O que calcular</h2>
+        <div class="escolhas" id="cp-motores"></div>
+        <h2 style="margin:12px 0 0">2. Quanto conferir</h2>
+        <div class="escolhas" role="radiogroup" aria-label="Quanto conferir" id="cp-niveis"></div>
+        <p class="nota" id="cp-aviso"></p>
+      </section>
+      <aside class="resumo" aria-labelledby="cp-resumo-t">
+        <h2 id="cp-resumo-t" style="margin:0">Resumo</h2>
+        <label for="cp-partes" style="display:grid;gap:8px;font-size:14px;color:var(--tinta-3)">Quantas partes<input id="cp-partes" type="number" min="1" max="10000" value="12" inputmode="numeric"></label>
+        <dl id="cp-resumo"></dl>
+        <div class="custo"><span style="color:var(--tinta-3)">Custo estimado</span><strong id="cp-custo">—</strong></div>
+        <small id="cp-tempo"></small>
+        <button type="button" class="botao botao-grande" id="cp-enviar">Enviar cálculo</button>
+        <p class="saida" id="cp-saida" role="status"></p>
+      </aside>
+    </div>
+    <section class="bloco" aria-labelledby="cp-lista-t">
+      <div class="bloco-cab"><h2 id="cp-lista-t">Seus cálculos</h2><a href="#ciencia">Relatórios e detalhes</a></div>
+      <div id="cp-lista"></div>
+    </section>
+  </section>
+
   <!-- Visão geral -->
   <section id="tela-visao" class="tela" aria-labelledby="t-visao">
     <div class="tela-cab">
-      <h1 id="t-visao">Visão geral</h1>
+      <h1 id="t-visao">Painel ao vivo</h1>
       <span class="estado estado-parado" id="vg-estado">conectando…</span>
     </div>
     <div class="metricas" id="vg-metricas" aria-label="Os números principais deste nó"></div>
@@ -193,115 +277,78 @@
 
   <!-- Mercado de máquinas -->
   <section id="tela-mercado" class="tela" aria-labelledby="t-mercado" hidden>
-    <div class="tela-cab">
-      <h1 id="t-mercado">Mercado de máquinas</h1>
-      <span class="estado estado-parado" id="mk-estado">—</span>
-    </div>
-    <p class="introducao">Máquinas que outros nós anunciaram, assinadas por eles e repassadas de par em par, sem servidor. Alugar capacidade é um JOB que só manda unidades para aquela máquina: cada unidade volta e é <strong>refeita aqui</strong> antes de contar, e você assina um recibo do trabalho verificado. Preços em créditos de computação, que não são dinheiro nem HYX.</p>
-    <div class="metricas" id="mk-metricas"></div>
-    <div class="grade-dupla">
-      <article class="bloco">
-        <h2>Esta máquina no mercado</h2>
-        <form id="mk-form" class="formulario" autocomplete="off">
-          <label class="chave" for="mk-anunciar"><input type="checkbox" id="mk-anunciar"><span>Anunciar esta máquina (o anúncio sai assinado e vale 1 hora; é refeito sozinho)</span></label>
-          <div class="campos">
-            <label for="mk-tipo"><small>O que oferece</small><select id="mk-tipo">
-              <option value="capacidade">Capacidade (CPU, GPU, disco)</option>
-              <option value="maquina_inteira">Máquina inteira</option>
-              <option value="venda">Venda da máquina (só listagem)</option>
-            </select></label>
-            <label for="mk-preco"><small>Preço por crédito verificado</small><input id="mk-preco" type="number" min="0" step="0.001" inputmode="decimal"></label>
-            <label for="mk-gb"><small>Armazenamento (créditos por GB/mês)</small><input id="mk-gb" type="number" min="0" step="0.001" inputmode="decimal"></label>
-            <label for="mk-disco"><small>Disco oferecido (MiB)</small><input id="mk-disco" type="number" min="0" step="1"></label>
-            <label for="mk-venda" id="mk-venda-rotulo"><small>Preço de venda (R$)</small><input id="mk-venda" type="number" min="0" step="0.01" inputmode="decimal"></label>
-          </div>
-          <label for="mk-descricao"><small>Descrição (até 200 caracteres)</small><input id="mk-descricao" maxlength="200" placeholder="ex.: PC de casa, ligado à noite"></label>
-          <div class="acoes"><button type="submit" class="botao">Salvar e anunciar</button></div>
-          <p class="saida" id="mk-saida" role="status"></p>
-        </form>
-      </article>
-      <article class="bloco">
-        <h2>Como o anúncio aparece para os outros</h2>
-        <div id="mk-previa"></div>
-        <p class="nota">Linhas, memória e GPU saem das métricas reais desta máquina. O benchmark é <span class="selo selo-estimado">ESTIMADO</span>: ninguém confere o que o dono declara; a reputação de cada máquina é a que o SEU nó mediu conferindo trabalho dela.</p>
-      </article>
-    </div>
-    <article class="bloco">
-      <div class="bloco-cab">
-        <h2>Máquinas anunciadas</h2>
-        <div class="acoes">
-          <label for="mk-filtro" class="rotulo-pequeno">Mostrar</label>
-          <select id="mk-filtro" style="width:auto">
-            <option value="">todas</option>
-            <option value="capacidade">capacidade</option>
-            <option value="maquina_inteira">máquina inteira</option>
-            <option value="venda">venda</option>
-            <option value="conectadas">só conectadas agora</option>
-          </select>
-        </div>
-      </div>
-      <div class="lista-cartoes" id="mk-lista"></div>
-    </article>
-    <article class="bloco" id="mk-aluguel-bloco" hidden>
-      <h2 id="mk-aluguel-titulo">Alugar capacidade</h2>
+    <header class="tela-cab">
+      <div><h1 id="t-mercado">Mercado</h1><p class="subtitulo">Computadores de outras pessoas, prontos para o seu cálculo. Cada parte volta e é refeita aqui antes de contar.</p></div>
+      <a href="#mk-oferta" class="botao-leve" id="mk-oferecer">Oferecer meu computador</a>
+    </header>
+    <span class="estado estado-parado" id="mk-estado" hidden>—</span>
+    <section class="destaque-maquina" id="mk-destaque" hidden></section>
+    <div class="chips" role="group" aria-label="Filtro" id="mk-filtros"></div>
+    <section class="lista-cartoes" id="mk-lista" aria-label="Computadores"></section>
+    <section class="bloco bloco-destaque" id="mk-aluguel-bloco" hidden>
+      <h2 id="mk-aluguel-titulo">Alugar</h2>
       <form id="mk-aluguel" class="formulario" autocomplete="off">
-        <p class="nota" id="mk-aluguel-nota"></p>
+        <p class="subtitulo" id="mk-aluguel-nota" style="font-size:15px"></p>
         <div class="campos">
-          <label for="mk-al-lado"><small>Matriz (lado)</small><select id="mk-al-lado">
-            <option value="64">64 × 64</option>
-            <option value="128" selected>128 × 128</option>
-            <option value="256">256 × 256</option>
-          </select></label>
-          <label for="mk-al-unidades"><small>Unidades</small><input id="mk-al-unidades" type="number" min="1" max="10000" value="12"></label>
-          <label for="mk-al-orcamento"><small>Orçamento (créditos, 0 = sem)</small><input id="mk-al-orcamento" type="number" min="0" step="0.001" value="0"></label>
+          <label for="mk-al-lado">Tamanho da conta<select id="mk-al-lado"><option value="64">Pequena (64 × 64)</option><option value="128" selected>Média (128 × 128)</option><option value="256">Grande (256 × 256)</option></select></label>
+          <label for="mk-al-unidades">Partes<input id="mk-al-unidades" type="number" min="1" max="10000" value="12"></label>
+          <label for="mk-al-orcamento">Limite de créditos (0 = sem)<input id="mk-al-orcamento" type="number" min="0" step="0.001" value="0"></label>
         </div>
-        <label for="mk-al-descricao"><small>Descrição</small><input id="mk-al-descricao" maxlength="200" placeholder="para que serve"></label>
-        <div class="acoes">
-          <button type="submit" class="botao">Alugar e submeter o JOB</button>
-          <button type="button" class="botao-leve" id="mk-al-cancelar">Cancelar</button>
-        </div>
+        <label for="mk-al-descricao">Para que serve<input id="mk-al-descricao" maxlength="200" placeholder="opcional"></label>
+        <div class="acoes"><button type="submit" class="botao">Alugar e enviar</button><button type="button" class="botao-leve" id="mk-al-cancelar">Cancelar</button></div>
         <p class="saida" id="mk-al-saida" role="status"></p>
       </form>
-    </article>
-    <article class="bloco">
-      <h2>Seus aluguéis</h2>
-      <div class="tabela-caixa"><table id="mk-alugueis"></table></div>
-    </article>
+    </section>
+    <details class="painel-recolhido" id="mk-oferta">
+      <summary>Oferecer meu computador</summary>
+      <div class="dentro">
+        <div class="grade-dupla">
+          <form id="mk-form" class="formulario" autocomplete="off">
+            <label class="chave" for="mk-anunciar"><input type="checkbox" id="mk-anunciar"><span>Mostrar este computador no mercado</span></label>
+            <div class="campos">
+              <label for="mk-tipo">O que oferece<select id="mk-tipo"><option value="capacidade">Capacidade (CPU, GPU, disco)</option><option value="maquina_inteira">O computador inteiro</option><option value="venda">Vender o computador</option></select></label>
+              <label for="mk-preco">Preço por crédito<input id="mk-preco" type="number" min="0" step="0.001" inputmode="decimal"></label>
+              <label for="mk-gb">Guardar arquivos (por GB/mês)<input id="mk-gb" type="number" min="0" step="0.001" inputmode="decimal"></label>
+              <label for="mk-disco">Espaço oferecido (MiB)<input id="mk-disco" type="number" min="0" step="1"></label>
+              <label for="mk-venda" id="mk-venda-rotulo">Preço de venda (R$)<input id="mk-venda" type="number" min="0" step="0.01" inputmode="decimal"></label>
+            </div>
+            <label for="mk-descricao">Descrição<input id="mk-descricao" maxlength="200" placeholder="ex.: PC de casa, ligado à noite"></label>
+            <div class="acoes"><button type="submit" class="botao">Salvar</button></div>
+            <p class="saida" id="mk-saida" role="status"></p>
+          </form>
+          <div><h3>Como os outros veem</h3><div id="mk-previa"></div></div>
+        </div>
+      </div>
+    </details>
+    <details class="painel-recolhido">
+      <summary>Seus aluguéis</summary>
+      <div class="dentro"><div class="tabela-caixa"><table id="mk-alugueis"></table></div></div>
+    </details>
+    <p class="nota" id="mk-rodape">Do preço, a parte do dono, a da plataforma e a reserva seguem as tarifas de Faturamento. A reputação é a que o SEU computador mediu conferindo o trabalho de cada um. Preços em créditos de teste.</p>
   </section>
 
-  <!-- Armazenamento distribuído -->
+  <!-- Arquivos (armazenamento distribuído) -->
   <section id="tela-armazenamento" class="tela" aria-labelledby="t-armazenamento" hidden>
-    <div class="tela-cab">
-      <h1 id="t-armazenamento">Armazenamento distribuído</h1>
-      <span class="estado estado-parado" id="ar-estado">—</span>
+    <header class="tela-cab"><div><h1 id="t-armazenamento">Arquivos</h1><p class="subtitulo">Guardados em vários computadores. Só você tem a chave.</p></div><span class="estado estado-parado" id="ar-estado">—</span></header>
+    <form id="ar-form" class="soltar" autocomplete="off">
+      <span class="icone-grande"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V5M7 9.5 12 5l5 4.5"/><path d="M5 15v3a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-3"/></svg></span>
+      <span class="texto"><b>Arraste um arquivo para cá</b><span id="ar-explica"></span></span>
+      <label class="botao-escuro" for="ar-arquivo" style="cursor:pointer">Escolher arquivo<input id="ar-arquivo" type="file" style="position:absolute;width:1px;height:1px;opacity:0;pointer-events:none"></label>
+      <p class="saida" id="ar-saida" role="status" style="width:100%"></p>
+      <details style="width:100%"><summary style="cursor:pointer;color:var(--tinta-3);font-size:14px">Opções avançadas</summary>
+        <div class="campos" style="margin-top:12px;max-width:420px">
+          <label for="ar-k">Pedaços com dados<input id="ar-k" type="number" min="1" max="32" value="2"></label>
+          <label for="ar-m">Pedaços de reserva<input id="ar-m" type="number" min="0" max="32" value="1"></label>
+        </div>
+      </details>
+    </form>
+    <section class="bloco" aria-labelledby="ar-lista-t"><h2 id="ar-lista-t">Seus arquivos</h2><div id="ar-arquivos"></div></section>
+    <div class="explica">
+      <article><b>1 · TRANCADO AQUI</b><span>A chave nunca sai deste computador. Quem guarda um pedaço só vê bytes embaralhados.</span></article>
+      <article><b>2 · CONFERIDO SEMPRE</b><span>De tempos em tempos, cada computador prova que ainda guarda o pedaço, sem precisar mandá-lo de volta.</span></article>
+      <article><b>3 · CONSERTA SOZINHO</b><span>Se alguém sumir, o pedaço perdido é refeito com os outros e enviado para outro computador.</span></article>
     </div>
-    <p class="introducao">O arquivo é cifrado <strong>aqui</strong> (ChaCha20-Poly1305, chave que nunca sai deste computador), dividido em fragmentos de dados e de paridade (Reed–Solomon) e cada fragmento vai para um nó diferente. Quem guarda não vê o conteúdo. Desafios de guarda conferem, sem baixar, que cada fragmento continua lá; fragmento perdido é reconstruído e mandado para outro nó.</p>
-    <div class="metricas" id="ar-metricas"></div>
-    <div class="grade-dupla">
-      <article class="bloco">
-        <h2>Guardar um arquivo na rede</h2>
-        <form id="ar-form" class="formulario" autocomplete="off">
-          <label for="ar-arquivo"><small>Arquivo (até 64 MiB)</small><input id="ar-arquivo" type="file"></label>
-          <div class="campos">
-            <label for="ar-k"><small>Fragmentos de dados (k)</small><input id="ar-k" type="number" min="1" max="32" value="2"></label>
-            <label for="ar-m"><small>Fragmentos de paridade (m)</small><input id="ar-m" type="number" min="0" max="32" value="1"></label>
-          </div>
-          <p class="nota" id="ar-explica"></p>
-          <div class="acoes"><button type="submit" class="botao">Cifrar e guardar</button></div>
-          <p class="saida" id="ar-saida" role="status"></p>
-        </form>
-      </article>
-      <article class="bloco">
-        <h2>Este nó guardando para outros</h2>
-        <dl class="fatos" id="ar-guarda"></dl>
-        <p class="nota">A cota se ajusta em Mercado de máquinas → disco oferecido. Os fragmentos ficam na pasta de dados, em <code>nuvem/guarda</code>, cifrados por quem mandou.</p>
-      </article>
-    </div>
-    <article class="bloco">
-      <h2>Seus arquivos na rede</h2>
-      <div class="tabela-caixa"><table id="ar-arquivos"></table></div>
-      <p class="nota">Cada quadrado é um fragmento: cheio = guardado e conferido; tracejado = enviando; hachurado = perdido (vai ser reparado). Redondo = paridade.</p>
-    </article>
+    <details class="painel-recolhido"><summary>Este computador guardando para outros</summary><div class="dentro"><dl class="fatos" id="ar-guarda"></dl><p class="nota">O espaço oferecido se ajusta em Mercado → Oferecer meu computador.</p></div></details>
   </section>
 
   <!-- Faturamento -->
@@ -396,12 +443,19 @@
         </form>
       </article>
       <div class="grade-dupla">
-        <article class="bloco">
-          <h2>Saldo</h2>
-          <p class="saldo num" id="c-saldo">—</p>
-          <dl class="fatos" id="c-fatos"></dl>
-          <p class="endereco" id="c-endereco">—</p>
-          <div id="c-qr" class="qr" role="img" aria-label="QR Code do endereço"></div>
+        <article class="heroi carteira-heroi" aria-label="Saldo">
+          <div class="ct-linha"><span>Saldo de teste</span><span class="pilula luz">Sem valor real</span></div>
+          <p class="saldo" id="c-saldo">—</p>
+          <small id="c-imaturo"></small>
+          <div class="acoes">
+            <a href="#e-para" class="botao botao-grande" id="c-enviar-atalho">Enviar</a>
+            <button type="button" class="botao-leve botao-grande" id="c-receber-botao" aria-expanded="false" aria-controls="c-receber">Receber</button>
+          </div>
+          <div id="c-receber" hidden>
+            <p class="endereco" id="c-endereco">—</p>
+            <div id="c-qr" class="qr" role="img" aria-label="QR Code do endereço"></div>
+          </div>
+          <details><summary>Detalhes</summary><dl class="fatos" id="c-fatos" style="margin-top:12px"></dl></details>
         </article>
         <article class="bloco">
           <h2>Enviar HYX de teste</h2>
@@ -500,12 +554,14 @@
       </article>
       <article class="bloco">
         <h2>Aparência</h2>
-        <p class="nota">Cloud Design 2.0: o escuro é o padrão; o claro serve para salas iluminadas. A escolha fica só neste computador.</p>
+        <p class="nota">O claro é o padrão; o escuro descansa a vista à noite. A escolha fica só neste computador.</p>
         <div class="segmentado" role="group" aria-label="Tema" id="a-tema">
-          <button type="button" data-tema="escuro">Escuro</button>
           <button type="button" data-tema="claro">Claro</button>
+          <button type="button" data-tema="escuro">Escuro</button>
           <button type="button" data-tema="sistema">Como o sistema</button>
         </div>
+        <p class="nota">Primeira vez aqui, ou quer mostrar para alguém?</p>
+        <button type="button" class="botao-leve" id="a-boasvindas">Ver as boas-vindas de novo</button>
       </article>
       <article class="bloco">
         <h2>Painel e avisos</h2>

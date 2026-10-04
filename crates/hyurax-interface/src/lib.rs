@@ -35,6 +35,8 @@ pub const ARQUIVOS: &[Arquivo] = &[
     arquivo!("js/gpu/trabalhador.js", JS),
     arquivo!("js/telas/comum.js", JS),
     arquivo!("js/telas/visao.js", JS),
+    arquivo!("js/telas/inicio.js", JS),
+    arquivo!("js/telas/computar.js", JS),
     arquivo!("js/telas/ultrax.js", JS),
     arquivo!("js/telas/ciencia.js", JS),
     arquivo!("js/telas/historico.js", JS),

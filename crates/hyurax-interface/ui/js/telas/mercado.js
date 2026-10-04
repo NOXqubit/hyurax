@@ -1,95 +1,135 @@
-// Hyurax / Ultrax — Mercado de máquinas: o anúncio desta máquina, as
-// máquinas anunciadas por outros nós e os aluguéis.
+// Hyurax / Ultrax — Mercado (Cloud Design 2.0): computadores de outras
+// pessoas como numa loja de aplicativos. Um destaque (o de melhor reputação
+// medida por ESTE nó, conectado agora), filtros, cartões e o aluguel. A
+// oferta deste computador fica num painel que abre.
 //
 // Tudo sai de /api/v1/nuvem. Preço em créditos de computação (não são
-// dinheiro nem HYX). A reputação mostrada é a que ESTE nó mediu conferindo
-// trabalho da máquina; o benchmark do anúncio é ESTIMADO pelo dono.
+// dinheiro nem HYX). O benchmark do anúncio é ESTIMADO pelo dono.
 
-import { $, el, texto, fmt, curto, selo, trocar } from "../util.js";
+import { $, el, texto, fmt, curto, trocar } from "../util.js";
 import { postar } from "../api.js";
 import { estado } from "../estado.js";
 import { nuvem, aoMudar, mostrar, esconder, ler } from "../nuvem.js";
-import { creditos, metricas, marcarEstado, estadoEl, tabela, resultado, vazio, bytes } from "./comum.js";
+import { creditos, marcarEstado, tabela, resultado, vazio, estadoEl } from "./comum.js";
 
-const NOMES = { capacidade: "Capacidade", maquina_inteira: "Máquina inteira", venda: "Venda" };
-let alugando = null; // o anúncio escolhido para alugar
+const FILTROS = [
+  ["todos", "Todos"],
+  ["online", "Online agora"],
+  ["gpu", "Com placa de vídeo"],
+  ["disco", "Guardam arquivos"],
+  ["venda", "À venda"],
+];
+const NOMES = { capacidade: "Capacidade", maquina_inteira: "Computador inteiro", venda: "À venda" };
+let filtro = "todos";
+let alugando = null;
 let formularioPreenchido = false;
 
+function svgMaquina() {
+  const s = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  s.setAttribute("viewBox", "0 0 24 24");
+  s.setAttribute("fill", "none");
+  s.setAttribute("stroke", "currentColor");
+  s.setAttribute("stroke-width", "1.7");
+  s.setAttribute("stroke-linecap", "round");
+  s.setAttribute("stroke-linejoin", "round");
+  s.setAttribute("aria-hidden", "true");
+  s.innerHTML = '<rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/>';
+  return s;
+}
+
+function nomeDa(a) {
+  if (a.descricao) return a.descricao.length > 48 ? `${a.descricao.slice(0, 46)}…` : a.descricao;
+  return `${NOMES[a.tipo] || a.tipo} · ${a.linhas} núcleo(s)`;
+}
+
+function preco(a) {
+  if (a.tipo === "venda") return a.preco_venda_centavos ? `R$ ${fmt(a.preco_venda_centavos / 100, 2)}` : "a combinar";
+  return fmt(a.preco_credito_mili / 1000, 2);
+}
+
+function reputacao(a) {
+  if (a.reputacao == null) return "Ainda sem histórico com você";
+  return `Reputação ${fmt(a.reputacao)} de 1000 · ${a.classe === "verificado" ? "verificado" : "em observação"}`;
+}
+
 function cartao(a, { minha = false } = {}) {
-  const d = nuvem.dados;
   const pode = estado.atual?.pode_mandar;
-  const titulo = `${NOMES[a.tipo] || a.tipo} · ${a.linhas} linha(s) · ${fmt(a.ram_mib / 1024, 1)} GiB`;
-  const conexao = minha ? estadoEl(d?.ajustes?.anunciar ? "ok" : "parado", d?.ajustes?.anunciar ? "anunciando" : "não anunciada") : a.conectado ? estadoEl("ok", "conectada") : estadoEl("parado", "fora da rede agora");
-  const p = a.por_1000_creditos;
-  const preco =
-    a.tipo === "venda"
-      ? el("dl", { class: "preco" }, el("dt", {}, "Preço pedido"), el("dd", { class: "total" }, a.preco_venda_centavos ? `R$ ${fmt(a.preco_venda_centavos / 100, 2)}` : "a combinar"), el("dt", {}, "Negociação"), el("dd", {}, "fora da rede"))
-      : el(
-          "dl",
-          { class: "preco", title: "por 1.000 créditos de computação verificados" },
-          el("dt", {}, "1.000 créditos verificados"),
-          el("dd", { class: "total" }, creditos(p?.total_mili)),
-          el("dt", {}, `ao proprietário (${d?.ajustes?.provedor_pct ?? "—"}%)`),
-          el("dd", {}, creditos(p?.proprietario_mili)),
-          el("dt", {}, `comissão HYURAX (${d?.ajustes?.plataforma_pct ?? "—"}%)`),
-          el("dd", {}, creditos(p?.plataforma_mili)),
-          el("dt", {}, "reserva"),
-          el("dd", {}, creditos(p?.reserva_mili)),
-        );
-  const rep = a.reputacao == null ? "sem histórico neste nó" : `${fmt(a.reputacao)} de 1000 · ${a.classe}`;
-  const fatos = el(
-    "dl",
-    { class: "fatos" },
-    el("dt", {}, "GPU"),
-    el("dd", {}, a.gpu ? `${a.gpu}${a.vram_mib ? ` · ${fmt(a.vram_mib)} MiB` : ""}` : "nenhuma declarada"),
-    el("dt", {}, "Disco oferecido"),
-    el("dd", { class: "num" }, a.disco_mib ? bytes(a.disco_mib * 1024 * 1024) : "nenhum"),
-    el("dt", {}, "Armazenamento"),
-    el("dd", { class: "num" }, a.disco_mib ? `${creditos(a.preco_gb_mes_mili)} / GB·mês` : "—"),
-    el("dt", {}, "Benchmark"),
-    el("dd", {}, a.creditos_hora_estimado ? [`${creditos(a.creditos_hora_estimado)} / h `, selo("ESTIMADO", "medido pelo próprio dono")] : "não informado"),
-    minha ? null : el("dt", {}, "Reputação"),
-    minha ? null : el("dd", {}, rep),
-    minha ? null : el("dt", {}, "Identidade"),
-    minha ? null : el("dd", { class: "num", title: a.worker }, curto(a.worker, 14)),
-  );
   const pode_alugar = !minha && a.tipo !== "venda" && a.preco_credito_mili > 0 && a.conectado && pode;
+  const botao = minha
+    ? null
+    : el(
+        "button",
+        {
+          type: "button",
+          class: pode_alugar ? "botao-escuro" : "botao-leve",
+          disabled: !pode_alugar,
+          title: pode_alugar ? "" : a.tipo === "venda" ? "a venda acontece fora da rede" : !a.conectado ? "o computador não está conectado agora" : "comando só pela janela deste computador",
+          onclick: () => abrirAluguel(a),
+        },
+        a.tipo === "venda" ? "Só anúncio" : a.conectado ? "Alugar" : "Fora da rede",
+      );
   return el(
     "article",
     { class: "cartao" },
-    el("div", { class: "cartao-cab" }, el("span", { class: "cartao-titulo" }, titulo), conexao),
-    a.descricao ? el("p", { class: "nota", style: "margin:0" }, a.descricao) : null,
-    fatos,
-    preco,
-    minha
-      ? null
-      : el(
-          "div",
-          { class: "acoes" },
-          el(
-            "button",
-            {
-              type: "button",
-              class: "botao-leve",
-              disabled: !pode_alugar,
-              title: pode_alugar ? "" : a.tipo === "venda" ? "anúncio de venda" : !a.conectado ? "a máquina não está conectada" : "comando só pela janela deste computador",
-              onclick: () => abrirAluguel(a),
-            },
-            a.tipo === "venda" ? "Só listagem" : "Alugar capacidade",
-          ),
-        ),
+    el(
+      "div",
+      { class: "cartao-cab" },
+      el("span", { class: `cartao-icone${a.gpu ? " gpu" : ""}` }, svgMaquina()),
+      el(
+        "span",
+        { class: "cartao-titulo" },
+        el("b", {}, minha ? "Este computador" : nomeDa(a)),
+        el("small", {}, el("span", { class: `ponto${a.conectado || minha ? "" : " fora"}` }), minha ? (nuvem.dados?.ajustes?.anunciar ? "No mercado" : "Fora do mercado") : a.conectado ? "Online agora" : "Fora da rede agora"),
+      ),
+    ),
+    el(
+      "div",
+      { class: "specs" },
+      el("span", {}, el("b", {}, fmt(a.linhas)), el("small", {}, "núcleos")),
+      el("span", {}, el("b", {}, fmt(a.ram_mib / 1024, 0)), el("small", {}, "GB de RAM")),
+      el("span", {}, el("b", {}, a.disco_mib ? fmt(a.disco_mib / 1024, a.disco_mib < 10240 ? 1 : 0) : "—"), el("small", {}, "GB p/ arquivos")),
+    ),
+    el("small", {}, minha ? (a.gpu ? `GPU: ${a.gpu}` : "Sem placa de vídeo declarada") : `${reputacao(a)}${a.gpu ? ` · ${a.gpu}` : ""}`),
+    el(
+      "div",
+      { class: "cartao-rodape" },
+      el("strong", {}, preco(a), " ", a.tipo === "venda" ? null : el("small", {}, "cr / crédito")),
+      botao,
+    ),
   );
 }
 
 function abrirAluguel(a) {
   alugando = a;
   $("mk-aluguel-bloco").hidden = false;
-  texto("mk-aluguel-titulo", `Alugar capacidade de ${curto(a.worker, 12)}`);
+  texto("mk-aluguel-titulo", `Alugar: ${nomeDa(a)}`);
   texto(
     "mk-aluguel-nota",
-    `As unidades deste JOB vão só para essa máquina, a ${creditos(a.preco_credito_mili)} por crédito verificado. Cada unidade é refeita aqui antes de contar (concordância 2 de 2): resultado errado não é pago e pesa na reputação dela.`,
+    `As partes deste cálculo vão só para esse computador, a ${fmt(a.preco_credito_mili / 1000, 2)} cr por crédito conferido. Cada parte volta e é refeita aqui antes de contar: resposta errada não é paga e pesa na reputação dele.`,
   );
   $("mk-aluguel-bloco").scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function destaque(lista) {
+  const melhor = lista.filter((a) => a.conectado && a.tipo !== "venda" && a.preco_credito_mili > 0).sort((x, y) => (y.reputacao ?? -1) - (x.reputacao ?? -1) || x.preco_credito_mili - y.preco_credito_mili)[0];
+  const caixa = $("mk-destaque");
+  if (!melhor) {
+    caixa.hidden = true;
+    return;
+  }
+  caixa.hidden = false;
+  const b = el("button", { type: "button", class: "botao", disabled: !estado.atual?.pode_mandar, onclick: () => abrirAluguel(melhor) }, "Alugar");
+  caixa.replaceChildren(
+    el("span", { class: "icone-grande" }, svgMaquina()),
+    el(
+      "div",
+      { class: "texto" },
+      el("span", { class: "rotulo" }, melhor.reputacao != null ? "Melhor reputação com você" : "Online agora"),
+      el("h2", {}, nomeDa(melhor)),
+      el("p", {}, `${fmt(melhor.linhas)} núcleo(s), ${fmt(melhor.ram_mib / 1024, 0)} GB de RAM${melhor.gpu ? `, ${melhor.gpu}` : ""}. ${reputacao(melhor)}.`),
+    ),
+    el("div", { class: "preco-grande" }, el("strong", {}, preco(melhor), " ", el("small", {}, "cr / crédito")), b),
+  );
 }
 
 function desenhar() {
@@ -99,15 +139,30 @@ function desenhar() {
     return;
   }
   const lista = d.mercado || [];
-  const conectadas = lista.filter((a) => a.conectado).length;
-  marcarEstado("mk-estado", d.ajustes.anunciar ? "ok" : "parado", d.ajustes.anunciar ? "esta máquina está anunciada" : "esta máquina não está anunciada");
-  metricas("mk-metricas", [
-    { rotulo: "Máquinas anunciadas", valor: fmt(lista.length), nota: "vistas por este nó, assinadas" },
-    { rotulo: "Conectadas agora", valor: fmt(conectadas), nota: "pares com anúncio válido" },
-    { rotulo: "Com disco oferecido", valor: fmt(lista.filter((a) => a.disco_mib > 0 && a.conectado).length), nota: "podem guardar fragmentos" },
-    { rotulo: "Seus aluguéis", valor: fmt((d.alugueis || []).length), nota: "JOBs restritos a um fornecedor" },
-  ]);
-  // o formulário só é preenchido uma vez (não atropela quem está digitando)
+  trocar(
+    "mk-filtros",
+    FILTROS.map(([id, nome]) => {
+      const b = el("button", { type: "button", class: "chip", "aria-pressed": String(id === filtro) }, nome);
+      b.addEventListener("click", () => {
+        filtro = id;
+        desenhar();
+      });
+      return b;
+    }),
+  );
+  destaque(lista);
+  const visiveis = lista.filter(
+    (a) => filtro === "todos" || (filtro === "online" && a.conectado) || (filtro === "gpu" && a.gpu) || (filtro === "disco" && a.disco_mib > 0) || (filtro === "venda" && a.tipo === "venda"),
+  );
+  trocar(
+    "mk-lista",
+    visiveis.length
+      ? visiveis.map((a) => cartao(a))
+      : vazio(
+          lista.length ? "Nenhum computador neste filtro" : "Nenhum computador anunciado ainda",
+          lista.length ? "Escolha outro filtro acima." : "Os anúncios chegam pelos computadores conectados a este. Sem conexões (veja Rede), o mercado fica vazio: não existe servidor central de onde buscar.",
+        ),
+  );
   if (!formularioPreenchido) {
     const aj = d.ajustes;
     $("mk-anunciar").checked = aj.anunciar;
@@ -129,60 +184,39 @@ function desenhar() {
         linhas: m.linhas,
         ram_mib: m.ram_mib,
         gpu: m.gpu,
-        vram_mib: m.vram_mib,
         disco_mib: d.ajustes.disco_mib,
         preco_credito_mili: d.ajustes.preco_credito_mili,
-        preco_gb_mes_mili: d.ajustes.preco_gb_mes_mili,
         preco_venda_centavos: d.ajustes.preco_venda_centavos,
-        descricao: d.ajustes.descricao,
-        creditos_hora_estimado: m.creditos_hora_estimado,
-        por_1000_creditos: partilha(d.ajustes.preco_credito_mili * 1000, d.ajustes),
+        conectado: true,
       },
       { minha: true },
     ),
   );
-  const filtro = $("mk-filtro").value;
-  const filtrada = lista.filter((a) => (!filtro ? true : filtro === "conectadas" ? a.conectado : a.tipo === filtro));
-  trocar(
-    "mk-lista",
-    filtrada.length
-      ? filtrada.map((a) => cartao(a))
-      : vazio(
-          lista.length ? "Nenhuma máquina neste filtro" : "Nenhuma máquina anunciada ainda",
-          lista.length ? "Troque o filtro acima." : "Os anúncios chegam pelos pares conectados. Sem pares (veja Rede), o mercado fica vazio: não há servidor central de onde buscar.",
-        ),
-  );
   tabela(
     "mk-alugueis",
-    [{ t: "JOB" }, { t: "Fornecedor" }, { t: "Preço / crédito", num: true }, { t: "Créditos verificados", num: true }, { t: "Valor", num: true }, { t: "Recibo assinado", num: true }, { t: "Fornecedor agora" }],
+    [{ t: "Cálculo" }, { t: "Computador" }, { t: "Preço", num: true }, { t: "Conferido", num: true }, { t: "Valor", num: true }, { t: "Recibo assinado", num: true }, { t: "Agora" }],
     (d.alugueis || []).map((a) => [
-      { v: curto(a.job, 12), title: a.job },
-      { v: curto(a.fornecedor, 12), title: a.fornecedor },
+      { v: curto(a.job, 10), title: a.job },
+      { v: curto(a.fornecedor, 10), title: a.fornecedor },
       { v: creditos(a.preco_credito_mili), num: true },
       { v: creditos(a.creditos_mili), num: true },
       { v: creditos(a.total_mili), num: true },
-      { v: creditos(a.recibo_mili), num: true, title: "créditos já reconhecidos em recibo assinado por você" },
-      a.conectado ? estadoEl("ok", "conectado") : estadoEl("parado", "fora"),
+      { v: creditos(a.recibo_mili), num: true },
+      a.conectado ? estadoEl("ok", "online") : estadoEl("parado", "fora"),
     ]),
-    { vazio: "nenhum aluguel ainda: escolha uma máquina acima" },
+    { vazio: "nenhum aluguel ainda" },
   );
 }
 
-/** A mesma partilha que o núcleo faz (para a prévia do anúncio desta máquina). */
-function partilha(total, aj) {
-  const p = Math.floor((total * aj.provedor_pct) / 100);
-  const pl = Math.floor((total * aj.plataforma_pct) / 100);
-  return { total_mili: total, proprietario_mili: p, plataforma_mili: pl, reserva_mili: total - p - pl };
-}
-
 function alternarVenda() {
-  const venda = $("mk-tipo").value === "venda";
-  $("mk-venda-rotulo").hidden = !venda;
+  $("mk-venda-rotulo").hidden = $("mk-tipo").value !== "venda";
 }
 
 export function montar() {
   $("mk-tipo").addEventListener("change", alternarVenda);
-  $("mk-filtro").addEventListener("change", desenhar);
+  $("mk-oferecer").addEventListener("click", () => {
+    $("mk-oferta").open = true;
+  });
   $("mk-form").addEventListener("submit", async (ev) => {
     ev.preventDefault();
     const mili = (id) => Math.round(Number($(id).value || 0) * 1000);
@@ -195,7 +229,7 @@ export function montar() {
       preco_venda_centavos: Math.round(Number($("mk-venda").value || 0) * 100),
       descricao: $("mk-descricao").value.trim(),
     });
-    resultado("mk-saida", r, "Salvo. O anúncio novo sai assinado na próxima volta (2 s) para os pares conectados.");
+    resultado("mk-saida", r, "Salvo. O anúncio sai assinado para os computadores conectados em instantes.");
     if (r.ok) ler();
   });
   $("mk-al-cancelar").addEventListener("click", () => {
@@ -214,7 +248,7 @@ export function montar() {
       orcamento_milicreditos: Math.round(Number($("mk-al-orcamento").value || 0) * 1000),
       descricao: $("mk-al-descricao").value.trim() || "aluguel de capacidade",
     });
-    resultado("mk-al-saida", r, r.ok ? `JOB ${curto(r.dados.job, 12)} submetido só para essa máquina. Acompanhe em JOBs científicos.` : "");
+    resultado("mk-al-saida", r, r.ok ? "Enviado só para esse computador. Acompanhe em Computar." : "");
     if (r.ok) ler();
   });
   aoMudar(() => {

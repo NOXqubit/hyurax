@@ -25,7 +25,7 @@ export function pegarChaveDoEndereco() {
   } catch {
     /* idem */
   }
-  history.replaceState(null, "", `${location.pathname}#visao`);
+  history.replaceState(null, "", `${location.pathname}#inicio`);
 }
 
 /** A chave desta sessão (vazia se a página não veio pela janela). */

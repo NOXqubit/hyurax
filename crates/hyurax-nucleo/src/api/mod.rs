@@ -49,6 +49,8 @@ pub type Arquivos = &'static [(&'static str, &'static str, &'static [u8])];
 /// O arquivo da chave de sessão do painel, na pasta de configuração.
 pub const ARQUIVO_DA_CHAVE: &str = "painel.chave";
 
+/// Pilha de cada conexão.
+const PILHA: usize = 8 * 1024 * 1024;
 /// Conexões abertas ao mesmo tempo, no total.
 const CONEXOES_MAX: usize = 64;
 /// Conexões ao mesmo tempo de um mesmo aparelho de fora.
@@ -190,7 +192,9 @@ pub fn abrir(n: &Arc<Nucleo>, porta: u16, arquivos: Arquivos) -> Result<u16, Str
             }
             let Some(vaga) = Vaga::reservar(par.ip(), local) else { continue };
             let n = Arc::clone(&n);
-            std::thread::spawn(move || {
+            // pilha folgada: o estado inteiro em JSON (o fluxo o monta a cada
+            // segundo) passa dos 2 MiB padrão num build de depuração
+            let _ = std::thread::Builder::new().stack_size(PILHA).spawn(move || {
                 let _vaga = vaga;
                 let _ = atender(s, porta, local, &n, arquivos);
             });

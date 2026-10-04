@@ -30,17 +30,21 @@ def _css_vars(pares: dict, recuo: str = "  ") -> str:
 
 
 def css(t: dict) -> str:
-    escuro, claro = t["temas"]["escuro"], t["temas"]["claro"]
+    padrao = t.get("padrao", "escuro")
+    outro = "claro" if padrao == "escuro" else "escuro"
+    base, alt = t["temas"][padrao], t["temas"][outro]
+    esquema = {"claro": "light", "escuro": "dark"}
     medidas = dict(t["medidas"])
     fontes = {"fonte-texto": t["fontes"]["texto"], "fonte-mono": t["fontes"]["mono"]}
     return (
         f"/* {t['nome']} {t['versao']} — {CABECALHO}\n"
-        "   Escuro por padrão; data-tema=\"claro\" no <html> troca tudo de uma vez.\n"
+        f"   Tema {padrao} por padrão; data-tema=\"{outro}\" no <html> troca tudo de uma vez.\n"
         "   Com data-tema=\"sistema\", segue o sistema operacional. */\n\n"
-        ":root {\n" + _css_vars(escuro) + "\n" + _css_vars(medidas) + "\n" + _css_vars(fontes) + "\n  color-scheme: dark;\n}\n\n"
-        ":root[data-tema=\"claro\"] {\n" + _css_vars(claro) + "\n  color-scheme: light;\n}\n\n"
-        "@media (prefers-color-scheme: light) {\n  :root[data-tema=\"sistema\"] {\n"
-        + _css_vars(claro, "    ") + "\n    color-scheme: light;\n  }\n}\n"
+        ":root {\n" + _css_vars(base) + "\n" + _css_vars(medidas) + "\n" + _css_vars(fontes)
+        + f"\n  color-scheme: {esquema[padrao]};\n}}\n\n"
+        f":root[data-tema=\"{outro}\"] {{\n" + _css_vars(alt) + f"\n  color-scheme: {esquema[outro]};\n}}\n\n"
+        f"@media (prefers-color-scheme: {esquema[outro]}) {{\n  :root[data-tema=\"sistema\"] {{\n"
+        + _css_vars(alt, "    ") + f"\n    color-scheme: {esquema[outro]};\n  }}\n}}\n"
     )
 
 
@@ -60,8 +64,8 @@ def _ts_obj(pares: dict, recuo: str = "  ") -> str:
 
 
 def ts(t: dict) -> str:
-    escuro = {k: v for k, v in t["temas"]["escuro"].items() if k != "sombra"}
-    claro = {k: v for k, v in t["temas"]["claro"].items() if k != "sombra"}
+    escuro = {k: v for k, v in t["temas"]["escuro"].items() if not k.startswith("sombra")}
+    claro = {k: v for k, v in t["temas"]["claro"].items() if not k.startswith("sombra")}
     return (
         f"// {t['nome']} {t['versao']} — {CABECALHO}\n\n"
         "export const escuro = {\n" + _ts_obj(escuro) + "\n} as const;\n\n"

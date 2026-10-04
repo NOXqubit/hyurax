@@ -1,8 +1,8 @@
 // Hyurax / Ultrax — o tema (Cloud Design 2.0), aplicado antes de desenhar:
-// escuro (padrão), claro ou o do sistema. A escolha fica só neste computador.
+// claro (padrão), escuro ou o do sistema. A escolha fica só neste computador.
 (function () {
-  var t = "escuro";
-  try { t = localStorage.getItem("hyurax-tema") || "escuro"; } catch (e) { /* sem armazenamento */ }
-  if (t !== "claro" && t !== "sistema") t = "escuro";
+  var t = "claro";
+  try { t = localStorage.getItem("hyurax-tema") || "claro"; } catch (e) { /* sem armazenamento */ }
+  if (t !== "escuro" && t !== "sistema") t = "claro";
   document.documentElement.setAttribute("data-tema", t);
 })();

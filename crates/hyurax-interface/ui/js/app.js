@@ -5,6 +5,8 @@ import { $, texto, trocar, fmt } from "./util.js";
 import { conectar, estado, ouvir, avisar } from "./estado.js";
 import { obter, postar, pegarChaveDoEndereco, chaveDaSessao } from "./api.js";
 import * as visao from "./telas/visao.js";
+import * as inicio from "./telas/inicio.js";
+import * as computar from "./telas/computar.js";
 import * as ultrax from "./telas/ultrax.js";
 import * as ciencia from "./telas/ciencia.js";
 import * as carteira from "./telas/carteira.js";
@@ -21,12 +23,12 @@ import * as ajustes from "./telas/ajustes.js";
 // a chave de sessão vem no endereço; tira dele antes de qualquer coisa
 pegarChaveDoEndereco();
 
-const TELAS = { visao, ultrax, ciencia, mercado, armazenamento, faturamento, carteira, cadeia, rede, seguranca, registro, ajustes };
-let atual = "visao";
+const TELAS = { inicio, computar, mercado, armazenamento, carteira, visao, ultrax, ciencia, faturamento, cadeia, rede, seguranca, registro, ajustes };
+let atual = "inicio";
 
 // ---------- navegação ----------
 function mostrarTela(nome) {
-  if (!TELAS[nome]) nome = "visao";
+  if (!TELAS[nome]) nome = "inicio";
   if (atual !== nome) TELAS[atual]?.aoEsconder?.();
   atual = nome;
   for (const n of Object.keys(TELAS)) $(`tela-${n}`).hidden = n !== nome;
@@ -49,7 +51,8 @@ window.addEventListener("hashchange", () => {
 // ---------- barra de estado ----------
 function atualizarTopo(e) {
   texto("topo-versao", `v${e.versao}`);
-  texto("topo-rede", e.rede?.tipo === "TESTNET" ? "REDE DE TESTE" : String(e.rede?.nome || "").toUpperCase());
+  texto("topo-rede", e.rede?.tipo === "TESTNET" ? `Rede de teste · v${e.versao}` : String(e.rede?.nome || ""));
+  texto("lat-resumo", e.no?.pares ? `${e.no.pares} computador(es) conectado(s) · bloco ${fmt(e.no.altura)}` : `Sem conexões ainda · bloco ${fmt(e.no?.altura)}`);
   if (e.trancado) return;
   texto("topo-altura", fmt(e.no?.altura));
   texto("topo-pares", fmt(e.no?.pares));
@@ -84,7 +87,7 @@ ouvir("conexao", (ligado) => {
 
 // ---------- tema (Cloud Design 2.0) ----------
 function marcarTema() {
-  const t = document.documentElement.getAttribute("data-tema") || "escuro";
+  const t = document.documentElement.getAttribute("data-tema") || "claro";
   for (const b of document.querySelectorAll("#a-tema button")) b.setAttribute("aria-pressed", String(b.dataset.tema === t));
 }
 for (const b of document.querySelectorAll("#a-tema button")) {
@@ -99,6 +102,7 @@ for (const b of document.querySelectorAll("#a-tema button")) {
   });
 }
 marcarTema();
+$("a-boasvindas")?.addEventListener("click", () => inicio.abrirBoasVindas());
 
 // ---------- termos e cadeado ----------
 let termosCarregados = false;
@@ -212,7 +216,7 @@ ouvir("estado", (e) => {
 });
 
 for (const tela of Object.values(TELAS)) tela.montar?.({ abrirTermos });
-mostrarTela(location.hash.slice(1) || "visao");
+mostrarTela(location.hash.slice(1) || "inicio");
 conectar();
 // o estado chega pelo fluxo; esta leitura só adianta o primeiro quadro
 obter("/estado").then((r) => {

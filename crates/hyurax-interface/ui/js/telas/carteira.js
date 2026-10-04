@@ -39,7 +39,12 @@ function comCarteira(e) {
   $("c-sem-carteira").hidden = true;
   $("c-com-carteira").hidden = false;
   $("c-sem-senha").hidden = !c.sem_senha;
-  texto("c-saldo", `${c.saldo} HYX`);
+  const legivel = (t) => {
+    const n = Number(String(t ?? "").replace(",", "."));
+    return Number.isFinite(n) ? new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 8 }).format(n) : "—";
+  };
+  $("c-saldo").replaceChildren(legivel(c.saldo), el("small", {}, "HYX"));
+  texto("c-imaturo", Number(String(c.imaturo).replace(",", ".")) > 0 ? `+ ${legivel(c.imaturo)} HYX liberando (recompensa recente, espera a maturidade)` : "Tudo liberado para enviar.");
   fatos("c-fatos", [
     ["Imaturo", `${c.imaturo} HYX`, "recompensa de bloco que ainda não passou da maturidade"],
     ["Pode enviar até", `${c.maximo_envio} HYX`],
@@ -215,7 +220,14 @@ async function cifrar(ev) {
   if (r.ok) $("c-cif-senha").value = $("c-cif-senha2").value = "";
 }
 
+function alternarReceber() {
+  const caixa = $("c-receber");
+  caixa.hidden = !caixa.hidden;
+  $("c-receber-botao").setAttribute("aria-expanded", String(!caixa.hidden));
+}
+
 export function montar() {
+  $("c-receber-botao").addEventListener("click", alternarReceber);
   $("c-nova").addEventListener("submit", criar);
   $("c-importar").addEventListener("submit", importar);
   $("c-cifrar").addEventListener("submit", cifrar);
