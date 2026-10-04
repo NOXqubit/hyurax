@@ -28,7 +28,7 @@ conta. **A conta é sua**, e o cadastro você mesmo faz.
 
 ## No Render (grátis, sem cartão)
 
-O Render só deixa entrar HTTPS, e não uma porta TCP qualquer. Desde a 1.3.0, o
+O Render só deixa entrar HTTPS, e não uma porta TCP qualquer. Desde a 1.3.1, o
 nó também escuta **WebSocket** (`--ws-porta`), e as sementes podem ser escritas
 como `wss://NOME.onrender.com/p2p`. Por dentro do WebSocket passa a mesma
 conexão de sempre, com o aperto de mão Noise XX e a validação de cada bloco.

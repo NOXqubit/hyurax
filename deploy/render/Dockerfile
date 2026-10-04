@@ -13,7 +13,7 @@
 # semente é só uma porta de entrada.
 
 FROM alpine:3.20 AS baixar
-ARG VERSAO=v1.3.0
+ARG VERSAO=v1.3.1
 RUN apk add --no-cache curl
 WORKDIR /baixar
 RUN set -eu; \

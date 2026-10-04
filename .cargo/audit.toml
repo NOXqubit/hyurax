@@ -1,0 +1,27 @@
+# Avisos do RustSec conferidos à mão e aceitos, cada um com o motivo.
+# Todos vêm do TLS do transporte WebSocket (rustls-rustcrypto, ver o comentário
+# no Cargo.toml da raiz). Conferido em 04/10/2026, no código-fonte do
+# rustls-rustcrypto 0.0.2-alpha. Revisar quando houver provedor novo.
+#
+# - RUSTSEC-2023-0071 (rsa, ataque Marvin): o vazamento é por tempo em
+#   operações com a chave PRIVADA RSA (decifrar ou assinar). O nó é cliente
+#   TLS sem certificado próprio: só VERIFICA a assinatura RSA do servidor,
+#   com a chave pública. O código de assinar do provedor nunca é chamado.
+#
+# - RUSTSEC-2026-0049, -0098, -0099 e -0104 (rustls-webpki 0.102.8): o
+#   provedor usa essa versão só para as constantes de identificador de
+#   algoritmo (`webpki::alg_id`, bytes fixos). A validação do certificado, onde
+#   ficam os defeitos (CRL, restrição de nomes), roda no rustls-webpki 0.103.15
+#   que o próprio rustls usa, versão já corrigida.
+#
+# Em qualquer caso, o TLS aqui é só o cano: a identidade do par e a cifra do
+# tráfego entre nós são do Noise XX, por dentro do WebSocket.
+
+[advisories]
+ignore = [
+    "RUSTSEC-2023-0071",
+    "RUSTSEC-2026-0049",
+    "RUSTSEC-2026-0098",
+    "RUSTSEC-2026-0099",
+    "RUSTSEC-2026-0104",
+]
