@@ -17,6 +17,7 @@ members = [
     "crates/hyurax-eter",
     "crates/hyurax-net",
     "crates/hyurax-ultrax",
+    "crates/hyurax-nuvem",
     "crates/hyurax-nucleo",
     "crates/hyurax-interface",
     "crates/hyurax-no",
@@ -70,6 +71,7 @@ hyurax-wire = { path = "crates/hyurax-wire" }
 hyurax-eter = { path = "crates/hyurax-eter" }
 hyurax-net = { path = "crates/hyurax-net" }
 hyurax-ultrax = { path = "crates/hyurax-ultrax" }
+hyurax-nuvem = { path = "crates/hyurax-nuvem" }
 hyurax-nucleo = { path = "crates/hyurax-nucleo" }
 hyurax-interface = { path = "crates/hyurax-interface" }
 

@@ -1222,10 +1222,22 @@ dependencies = [
  "hyurax-crypto",
  "hyurax-identidade",
  "hyurax-net",
+ "hyurax-nuvem",
  "hyurax-pow",
  "hyurax-store",
  "hyurax-tx",
  "hyurax-ultrax",
+ "serde_json",
+]
+
+[[package]]
+name = "hyurax-nuvem"
+version = "1.0.3"
+dependencies = [
+ "hex",
+ "hyurax-codec",
+ "hyurax-crypto",
+ "hyurax-identidade",
  "serde_json",
 ]
 

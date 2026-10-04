@@ -147,7 +147,15 @@ pub(super) struct EstadoDaRede {
     /// refazer o cálculo (segundos) e roda fora da thread que lê o par: senão
     /// um resultado remoto segurava os blocos e as transações daquele par.
     pub(super) decisora: Option<std::sync::mpsc::SyncSender<([u8; HASH_LEN], u64)>>,
+    /// JOBs alugados: as unidades de fora só vão para este worker.
+    pub(super) alugueis: BTreeMap<[u8; HASH_LEN], [u8; PUBKEY_LEN]>,
+    /// Quem fica sabendo de cada unidade de fora verificada: (JOB, worker,
+    /// operações da unidade). A nuvem usa para os recibos de aluguel.
+    pub(super) ao_verificar: Option<AoVerificar>,
 }
+
+/// Gancho de unidade de fora verificada: (JOB, worker, operações).
+pub type AoVerificar = Arc<dyn Fn(&[u8; HASH_LEN], &[u8; PUBKEY_LEN], u64) + Send + Sync>;
 
 /// Unidades esperando decisão na fila da thread decisora. Cheia, a decisão
 /// roda na hora, na thread de quem chegou (o par que inunda espera por ela).
@@ -567,7 +575,8 @@ impl Ciencia {
         if trabalho::tamanho_maximo_do_resultado(&esp) > RESULTADO_MAX as u64 {
             return None;
         }
-        let candidatos = r.candidatos(&esp, agora);
+        let restrito = r.alugueis.get(&job).copied();
+        let candidatos: Vec<(u64, [u8; PUBKEY_LEN])> = r.candidatos(&esp, agora).into_iter().filter(|(_, w)| restrito.is_none_or(|f| f == *w)).collect();
         if candidatos.len() < precisa {
             return None;
         }
@@ -582,6 +591,30 @@ impl Ciencia {
         }
         r.redundantes.insert((job, indice), Redundante { esp, semente, prazo_ms, local: None, remotos, revelou: false });
         Some(envios)
+    }
+
+    /// A reputação que ESTE nó mediu de um worker: (nota 0–1000, classe:
+    /// "verificado", "observando" ou "sem historico").
+    pub fn reputacao_de(&self, worker: &[u8; PUBKEY_LEN]) -> Option<(u32, String)> {
+        let r = self.rede.lock().ok()?;
+        let h = r.reputacao.get(worker)?;
+        let c = reputacao::classificar(h, agora_ms());
+        let classe = if c.verificado { "verificado" } else { "observando" };
+        Some((u32::try_from(h.rep.nota()).unwrap_or(0), classe.to_string()))
+    }
+
+    /// Restringe as unidades de fora de um JOB a um só worker (aluguel).
+    pub fn restringir_a(&self, job: [u8; HASH_LEN], worker: [u8; PUBKEY_LEN]) {
+        if let Ok(mut r) = self.rede.lock() {
+            r.alugueis.insert(job, worker);
+        }
+    }
+
+    /// Registra quem fica sabendo das unidades de fora verificadas.
+    pub fn ao_verificar_de_fora(&self, gancho: AoVerificar) {
+        if let Ok(mut r) = self.rede.lock() {
+            r.ao_verificar = Some(gancho);
+        }
     }
 
     /// Quantos workers de fora aceitariam este trabalho agora.
@@ -828,6 +861,13 @@ impl Ciencia {
                     _ => "CONSENSUS",
                 };
                 let outros: Vec<[u8; PUBKEY_LEN]> = aceitos.iter().filter(|w| **w != e.worker).copied().collect();
+                // cada worker de fora que acertou: as operações da unidade dele
+                let gancho = self.rede.lock().ok().and_then(|r| r.ao_verificar.clone());
+                if let Some(g) = gancho {
+                    for v in entregas.iter().filter(|x| aceitos.contains(&x.worker) && x.worker != self.no) {
+                        g(job_id, &v.worker, v.registro.operacoes);
+                    }
+                }
                 let d = DesfechoDeUnidade {
                     job: *job_id,
                     indice,

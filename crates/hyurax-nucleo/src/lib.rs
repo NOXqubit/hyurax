@@ -25,6 +25,7 @@
 //! | [`mineracao`] | a mineração dos blocos (Argon2id + prova útil) |
 //! | [`ultrax`] | o worker de trabalho útil: fila, linhas, GPU, LAB, prova |
 //! | [`ciencia`] | JOBs científicos: agendador, consenso entre nós, relatório |
+//! | [`nuvem`] | mercado de máquinas, armazenamento distribuído e livro de contas, entre os nós |
 //! | [`metricas`] | CPU, RAM e GPU da máquina, com a origem de cada número |
 //! | [`barramento`] | os eventos, em ordem, para a tela e o registro |
 //! | [`api`] | o servidor local (HTTP e fluxo de eventos) |
@@ -47,6 +48,7 @@ pub mod instalacao;
 pub mod maquinas;
 pub mod metricas;
 pub mod mineracao;
+pub mod nuvem;
 pub mod pastas;
 pub mod sementes;
 pub mod servico;

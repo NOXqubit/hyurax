@@ -74,6 +74,15 @@ fn semente() -> Result<&'static [u8; 32], String> {
     SEMENTE.get_or_init(entropia_do_sistema).as_ref().map_err(Clone::clone)
 }
 
+/// Lê a semente já, numa linha à parte. No Windows a leitura passa pelo
+/// PowerShell e leva segundos numa máquina fraca; se ficasse para o primeiro
+/// aperto de mão, ela sozinha estourava o prazo dele.
+pub fn aquecer() {
+    std::thread::spawn(|| {
+        let _ = semente();
+    });
+}
+
 /// Enche `destino` com bytes imprevisíveis.
 ///
 /// # Errors

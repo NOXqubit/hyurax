@@ -181,6 +181,31 @@ pub fn estado(n: &Nucleo, pode_mandar: bool, url_celular: &str) -> Value {
         o.insert("registros".into(), Value::Array(registros));
         o.insert("maquinas".into(), Value::Array(maquinas));
         o.insert("ultimo_evento".into(), json!(n.barramento.ultimo_seq()));
+        o.insert("nuvem".into(), n.nuvem.resumo());
+        // os JOBs em números (o detalhe fica em /api/v1/ciencia)
+        let (ativos, total, consumo) = n
+            .ciencia
+            .jobs
+            .lock()
+            .map(|j| {
+                let ativos = j.iter().filter(|x| matches!(x.estado, crate::ciencia::EstadoDoJob::Rodando | crate::ciencia::EstadoDoJob::AguardandoNos)).count();
+                (ativos, j.len(), j.iter().map(|x| x.consumo.milicreditos()).sum::<u64>())
+            })
+            .unwrap_or_default();
+        o.insert("jobs".into(), json!({ "ativos": ativos, "total": total, "consumo_mili": consumo }));
+        o.insert(
+            "seguranca".into(),
+            json!({
+                "identidade_no": hex(&n.rede.identidade_publica()),
+                "worker": hex(&n.nuvem.worker),
+                "executavel_sha512": if pode_mandar { executavel_sha512() } else { None },
+                "chave_de_lancamento": crate::atualizacao::chave_do_projeto().is_some(),
+                "assinatura_windows": "PENDENTE",
+                "api_local": "chave de sessão por abertura, Host e Origin conferidos",
+                "cifra_entre_nos": "Noise XX (identidade provada no aperto de mão)",
+                "segundo_fator": n.carteira.seguranca().0,
+            }),
+        );
         let atu = n.atualizacao.lock().map(|a| a.clone()).unwrap_or_default();
         o.insert(
             "atualizacao".into(),
@@ -218,6 +243,18 @@ pub fn estado(n: &Nucleo, pode_mandar: bool, url_celular: &str) -> Value {
         );
     }
     j
+}
+
+/// SHA-512 do executável que está rodando (calculado uma vez): o dono confere
+/// contra a soma publicada na Release.
+fn executavel_sha512() -> Option<String> {
+    static H: std::sync::OnceLock<Option<String>> = std::sync::OnceLock::new();
+    H.get_or_init(|| {
+        let caminho = std::env::current_exe().ok()?;
+        let bytes = std::fs::read(caminho).ok()?;
+        Some(hex(&hyurax_crypto::sha512(&bytes)))
+    })
+    .clone()
 }
 
 /// O resumo público, para as outras máquinas do dono (só leitura).

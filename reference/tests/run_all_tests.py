@@ -41,6 +41,7 @@ MODULES = [
     ("test_17_job.py", "JOB do ULTRAX: unidades, intervalos, resumo e creditos"),
     ("test_18_rede_ultrax.py", "mensagens do ULTRAX entre nos"),
     ("test_19_malha.py", "malha: alcance, pontes e vizinhos na rede local"),
+    ("test_20_nuvem.py", "nuvem: Reed-Solomon, anúncio de máquina, recibo e livro"),
 ]
 
 

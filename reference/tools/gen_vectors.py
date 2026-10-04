@@ -26,7 +26,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 OUT_DIR = ROOT.parent / "vectors"
 
-from hyurax import argon2, codec, consensus, crypto, genetica, ia, identidade, job, malha, melhoramento, rede_ultrax, rotas, triagem, usefulpow, ultrax  # noqa: E402
+from hyurax import argon2, codec, consensus, crypto, genetica, ia, identidade, job, malha, melhoramento, nuvem, rede_ultrax, rotas, triagem, usefulpow, ultrax  # noqa: E402
 from hyurax.block import BlockHeader  # noqa: E402
 from hyurax.chain import Chain, make_genesis  # noqa: E402
 from hyurax.consensus import MAINNET, REGTEST, TESTNET  # noqa: E402
@@ -1542,6 +1542,103 @@ def vec_malha() -> dict:
     }
 
 
+def vec_nuvem() -> dict:
+    """Nuvem (reference/hyurax/nuvem.py): Reed–Solomon, anúncio de máquina,
+    recibo de aluguel, mensagens de armazenamento, livro e corpos recusados."""
+    segredo = bytes(range(32))
+    cliente = bytes(range(100, 132))
+    dados = bytes((i * 37 + 11) % 256 for i in range(777))
+    codigos = []
+    for k, m in [(1, 0), (1, 1), (2, 1), (3, 2), (4, 4), (5, 3)]:
+        frags = nuvem.codificar(dados, k, m)
+        perdidos = list(range(min(m, k + m - k)))  # perde os m primeiros
+        sobra = {i: frags[i] for i in range(k + m) if i not in perdidos}
+        assert nuvem.reconstruir(sobra, k, m, len(dados)) == dados
+        codigos.append({"k": k, "m": m, "fragmentos": [h(f) for f in frags], "reconstroi_sem": perdidos})
+    vazio = nuvem.codificar(b"", 2, 1)
+    a = {
+        "identidade": crypto.H(b"identidade")[:32], "tipo": 1, "instante_ms": 1_790_000_000_000, "validade_s": 3600,
+        "linhas": 4, "ram_mib": 8192, "gpu": "Intel HD Graphics 400", "vram_mib": 512, "disco_mib": 10_240,
+        "preco_credito_mili": 1200, "preco_gb_mes_mili": 50_000, "preco_venda_centavos": 0,
+        "descricao": "PC de casa, ligado à noite — só capacidade", "creditos_hora": 3_600,
+    }
+    venda = dict(a, tipo=3, preco_venda_centavos=150_000, descricao="Notebook usado, pronto como nó", preco_credito_mili=0)
+    anuncios = [nuvem.msg_anuncio(nuvem.anuncio(segredo, a)), nuvem.msg_anuncio(nuvem.anuncio(segredo, venda))]
+    job_id = crypto.H(b"job de teste")
+    fornecedor = crypto.ed25519_public_key(segredo)
+    recibo = nuvem.msg_recibo(nuvem.recibo(cliente, fornecedor, job_id, 2_500, 1_200, 1_790_000_000_500))
+    arq = crypto.H(b"arquivo")[:32]
+    fh = crypto.H(b"fragmento")
+    nonce = crypto.H(b"nonce")[:32]
+    mensagens = [
+        ("anuncio capacidade", anuncios[0]),
+        ("anuncio venda", anuncios[1]),
+        ("guardar", nuvem.guardar(arq, 2, 4096, fh)),
+        ("parte", nuvem.parte(arq, 2, 1024, b"bytes cifrados")),
+        ("guardado ok", nuvem.guardado(arq, 2, True, "")),
+        ("guardado recusado", nuvem.guardado(arq, 2, False, "sem espaço oferecido")),
+        ("desafio", nuvem.desafio(arq, 2, nonce)),
+        ("prova", nuvem.msg_prova(arq, 2, nonce, nuvem.prova(nonce, b"fragmento"))),
+        ("buscar", nuvem.buscar(arq, 63)),
+        ("entrega", nuvem.entrega(arq, 0, True, 4096, fh)),
+        ("entrega sem", nuvem.entrega(arq, 0, False, 0, bytes(64))),
+        ("apagar", nuvem.apagar(arq, 1)),
+        ("recibo", recibo),
+    ]
+    casos = [{"nome": n, "corpo": h(c), "subtipo": nuvem.ler(c)["subtipo"]} for n, c in mensagens]
+    torto_assinatura = bytearray(anuncios[0])
+    torto_assinatura[-1] ^= 1
+    torto_total = bytearray(recibo)
+    torto_total[2 + 32 + 32 + 64 + 16 + 7] ^= 1
+    recusados = [
+        ("versao", bytes([2]) + mensagens[8][1][1:]),
+        ("subtipo", bytes([1, 11])),
+        ("sobra", mensagens[8][1] + b"\x00"),
+        ("curto", mensagens[8][1][:-1]),
+        ("indice", mensagens[8][1][:-1] + bytes([64])),
+        ("parte vazia", bytes([1, 3]) + arq + bytes([0]) + bytes(4) + codec.enc_bytes(b"")),
+        ("guardar zero", bytes([1, 2]) + arq + bytes([0]) + codec.enc_u32(0) + fh),
+        ("marca", mensagens[4][1][:2 + 33] + bytes([2]) + codec.enc_str("")),
+        ("total do recibo", bytes(torto_total)),
+        ("tipo de anuncio", None),
+    ]
+    # tipo de anúncio 4: o corpo é montado à mão (o gabarito recusa assinar)
+    corpo4 = bytearray(anuncios[0])
+    corpo4[2 + 64] = 4
+    recusados[-1] = ("tipo de anuncio", bytes(corpo4))
+    for _, c in recusados:
+        try:
+            nuvem.ler(c)
+        except (ValueError, codec.CodecError):
+            continue
+        raise AssertionError("corpo recusado foi aceito")
+    zero = bytes(64)
+    linhas = []
+    anterior = zero
+    for seq, (tipo, valor, nota) in enumerate([("credito", 10_000, "limite da conta 1"), ("consumo", 3_000, "JOB"),
+                                               ("provedor", 2_400, ""), ("plataforma", 450, ""), ("reserva", 150, "")], start=1):
+        hh = nuvem.hash_da_linha(anterior, seq, 1_790_000_000, tipo, 1, job_id, fornecedor, valor, nota)
+        linhas.append({"seq": seq, "instante": 1_790_000_000, "tipo": tipo, "conta": 1, "job": h(job_id),
+                       "contraparte": h(fornecedor), "valor_mili": valor, "nota": nota, "hash": h(hh)})
+        anterior = hh
+    return {
+        "tipo_nuvem": nuvem.TIPO_NUVEM,
+        "dados": h(dados),
+        "codigos": codigos,
+        "vazio": [h(f) for f in vazio],
+        "cauchy_3_2": nuvem.cauchy(3, 2),
+        "anuncio_assinatura_adulterada": h(bytes(torto_assinatura)),
+        "anuncio_worker": h(fornecedor),
+        "recibo_cliente": h(crypto.ed25519_public_key(cliente)),
+        "mensagens": casos,
+        "recusados": [{"nome": n, "corpo": h(c)} for n, c in recusados],
+        "prova": {"nonce": h(nonce), "fragmento": h(b"fragmento"), "h": h(nuvem.prova(nonce, b"fragmento"))},
+        "livro": linhas,
+        "repartir": [{"total": t, "provedor_pct": 80, "plataforma_pct": 15, "partes": list(nuvem.repartir(t, 80, 15))}
+                     for t in (0, 1, 7, 999, 3_000, 10**12 + 7)],
+    }
+
+
 FILES = {
     "units.json": vec_units,
     "crypto_ed25519.json": vec_crypto,
@@ -1569,6 +1666,7 @@ FILES = {
     "triagem.json": vec_triagem,
     "rede_ultrax.json": vec_rede_ultrax,
     "malha.json": vec_malha,
+    "nuvem.json": vec_nuvem,
 }
 
 

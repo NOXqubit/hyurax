@@ -226,6 +226,11 @@ impl Contas {
         self.jobs.lock().map(|j| j.iter().filter(|(_, c)| **c == id).map(|(job, _)| *job).collect()).unwrap_or_default()
     }
 
+    /// De que conta é o JOB (nenhuma: do dono do nó).
+    pub fn conta_do_job(&self, job: &[u8; HASH_LEN]) -> Option<u32> {
+        self.jobs.lock().ok()?.get(job).copied()
+    }
+
     /// O JOB é desta conta?
     pub fn e_da_conta(&self, id: u32, job: &[u8; HASH_LEN]) -> bool {
         self.jobs.lock().is_ok_and(|j| j.get(job) == Some(&id))

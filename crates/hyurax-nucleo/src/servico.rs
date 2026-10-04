@@ -97,6 +97,8 @@ pub struct Nucleo {
     pub chave_do_resumo: [u8; hyurax_crypto::SECRET_LEN],
     /// A atualização segura (manifesto assinado).
     pub atualizacao: Mutex<crate::atualizacao::Estado>,
+    /// A nuvem: mercado de máquinas, armazenamento distribuído e livro.
+    pub nuvem: Arc<crate::nuvem::Nuvem>,
     /// Quem fecha o programa quando o instalador da versão nova abre (a
     /// janela registra; no terminal, ninguém).
     pub ao_sair: Mutex<Option<Box<dyn Fn() + Send + Sync>>>,
@@ -176,6 +178,42 @@ impl Nucleo {
             }));
         }
         ciencia.ligar_rede(&rede, hyurax_ultrax::prova::chave_do_worker(id.segredo()), ajustes.aceitar_rede);
+        let metricas = Metricas::iniciar();
+        let nuvem = {
+            let (b, b2, m, u) = (Arc::clone(&barramento), Arc::clone(&barramento), Arc::clone(&metricas), Arc::clone(&ultrax));
+            crate::nuvem::Nuvem::abrir(
+                &pastas.dados,
+                &pastas.config,
+                hyurax_ultrax::prova::chave_do_worker(id.segredo()),
+                rede.identidade_publica(),
+                crate::nuvem::Ganchos {
+                    registrar: Box::new(move |c, t| b.registrar(c, t)),
+                    publicar: Box::new(move |j| {
+                        b2.publicar("nuvem", j);
+                    }),
+                    maquina: Box::new(move || {
+                        let s = m.sistema();
+                        let g = s.gpus.first();
+                        crate::nuvem::Maquina {
+                            linhas: u16::try_from(u.linhas.load(Ordering::Relaxed)).unwrap_or(1),
+                            ram_mib: s.ram_total_mib.and_then(|x| u32::try_from(x).ok()).unwrap_or(0),
+                            gpu: g.map(|g| g.nome.clone()).unwrap_or_default(),
+                            vram_mib: g.and_then(|g| g.memoria_mib).and_then(|x| u32::try_from(x).ok()).unwrap_or(0),
+                            creditos_hora: 0,
+                        }
+                    }),
+                },
+            )
+        };
+        nuvem.ligar_rede(&rede);
+        {
+            let fraca = Arc::downgrade(&nuvem);
+            ciencia.ao_verificar_de_fora(Arc::new(move |job, worker, mili| {
+                if let Some(nv) = fraca.upgrade() {
+                    nv.unidade_verificada(job, worker, mili);
+                }
+            }));
+        }
         let carteira = Carteira::abrir(p.arquivo_carteira.clone(), p.endereco_fixo, pastas.config.clone());
         let mineracao = Mineracao::nova(nucleos, ajustes.linhas.unwrap_or(p.linhas_padrao), ajustes.limite_cpu);
         let sementes = if p.modo == Modo::Janela { ajustes.sementes.clone() } else { p.config.sementes.clone() };
@@ -193,7 +231,8 @@ impl Nucleo {
             mineracao,
             ultrax,
             ciencia,
-            metricas: Metricas::iniciar(),
+            metricas,
+            nuvem,
             maquinas,
             na_rede: AtomicBool::new(ajustes.na_rede || p.painel_na_rede),
             api_externa: AtomicBool::new(ajustes.api_externa),
@@ -208,6 +247,16 @@ impl Nucleo {
             ao_sair: Mutex::new(None),
             _trava: trava,
         });
+        // o livro da nuvem lê o consumo de cada JOB, e de quem é o JOB
+        {
+            let fraco = Arc::downgrade(&n);
+            n.nuvem.ao_liquidar(Box::new(move || {
+                let Some(n) = fraco.upgrade() else { return Vec::new() };
+                let jobs: Vec<([u8; hyurax_crypto::HASH_LEN], u64)> =
+                    n.ciencia.jobs.lock().map(|j| j.iter().map(|x| (x.id, x.consumo.milicreditos())).collect()).unwrap_or_default();
+                jobs.into_iter().map(|(id, mili)| (id, n.contas.conta_do_job(&id).unwrap_or(0), mili)).collect()
+            }));
+        }
         // a atualização segura: um minuto depois de abrir, e a cada 12 h (só
         // no programa com janela; o terminal confere à mão, se quiser)
         if n.modo == Modo::Janela && crate::atualizacao::chave_do_projeto().is_some() {

@@ -134,6 +134,14 @@ fn endereco_util(texto: &str) -> bool {
 /// tipo desconhecido.
 pub const TIPO_ULTRAX: u16 = 0x5558;
 
+/// Uma conexão viva com uma identidade: quem discou, a geração (para a
+/// limpeza não apagar a ligação que a substituiu) e o socket para fechá-la.
+struct Ligacao {
+    quem_discou: [u8; 32],
+    geracao: u64,
+    fechar: Option<TcpStream>,
+}
+
 /// Quem recebe as mensagens do ULTRAX: `(id do par, identidade do par, corpo)`.
 pub type TratadorUltrax = Arc<dyn Fn(u64, [u8; 32], &[u8]) + Send + Sync>;
 
@@ -214,11 +222,16 @@ pub struct Rede {
     /// Chave estática da cifra: como os outros nós reconhecem este.
     identidade: Identidade,
     /// Identidades com conexão aberta agora: uma conexão por nó, no máximo.
-    identidades_conectadas: Mutex<BTreeMap<[u8; 32], ()>>,
+    identidades_conectadas: Mutex<BTreeMap<[u8; 32], Ligacao>>,
+    /// Contador das ligações (para a limpeza não apagar a ligação que
+    /// substituiu a sua).
+    geracoes: AtomicU64,
     /// O trabalho acumulado que cada par conectado anunciou no aperto de mão.
     trabalho_dos_pares: Mutex<HashMap<u64, [u8; 32]>>,
     /// Quem trata as mensagens do ULTRAX, se alguém registrou.
     ultrax: Mutex<Option<TratadorUltrax>>,
+    /// Quem trata as outras extensões (a nuvem), por tipo de mensagem.
+    extensoes: Mutex<HashMap<u16, TratadorUltrax>>,
     /// Identidade (chave estática da cifra) de cada par conectado, pelo id.
     identidade_do_par: Mutex<HashMap<u64, [u8; 32]>>,
     /// Conexões de entrada abertas, por IP.
@@ -244,6 +257,7 @@ impl Rede {
 
     /// Cria a rede em torno de um nó, com a identidade dada.
     pub fn com_identidade(no: No, identidade: Identidade) -> Arc<Self> {
+        crate::entropia::aquecer();
         let magic = no.chain.params.magic;
         Arc::new(Self {
             no: Arc::new(Mutex::new(no)),
@@ -259,8 +273,10 @@ impl Rede {
             manutencao_ligada: AtomicBool::new(false),
             identidade,
             identidades_conectadas: Mutex::new(BTreeMap::new()),
+            geracoes: AtomicU64::new(1),
             trabalho_dos_pares: Mutex::new(HashMap::new()),
             ultrax: Mutex::new(None),
+            extensoes: Mutex::new(HashMap::new()),
             identidade_do_par: Mutex::new(HashMap::new()),
             entradas: Mutex::new(HashMap::new()),
             saidas: AtomicUsize::new(0),
@@ -292,6 +308,32 @@ impl Rede {
     pub fn difundir_ultrax(&self, corpo: &[u8]) -> usize {
         let Some(quadro) = self.quadro(&Message::Desconhecida { tipo: TIPO_ULTRAX, corpo: corpo.to_vec() }) else { return 0 };
         self.pares.lock().map_or(0, |p| p.values().filter(|s| s.mandar(quadro.clone()).is_ok()).count())
+    }
+
+    /// Registra quem trata as mensagens de rede de `tipo` (uma extensão fora
+    /// do consenso, como a nuvem). Os tipos da rede, da malha e do ULTRAX
+    /// não podem ser tomados.
+    pub fn ao_receber_tipo(&self, tipo: u16, tratador: TratadorUltrax) {
+        if tipo == TIPO_ULTRAX || tipo == crate::malha::TIPO_MALHA {
+            return;
+        }
+        if let Ok(mut t) = self.extensoes.lock() {
+            t.insert(tipo, tratador);
+        }
+    }
+
+    /// Manda uma mensagem de extensão a um par. `false` se ele não está mais
+    /// conectado, ou a fila dele está cheia.
+    pub fn enviar_tipo(&self, par: u64, tipo: u16, corpo: Vec<u8>) -> bool {
+        let Some(quadro) = self.quadro(&Message::Desconhecida { tipo, corpo }) else { return false };
+        self.pares.lock().ok().and_then(|p| p.get(&par).map(|s| s.mandar(quadro).is_ok())).unwrap_or(false)
+    }
+
+    /// Manda uma mensagem de extensão a todos os pares, menos `exceto`.
+    /// Devolve a quantos.
+    pub fn difundir_tipo(&self, tipo: u16, corpo: &[u8], exceto: Option<u64>) -> usize {
+        let Some(quadro) = self.quadro(&Message::Desconhecida { tipo, corpo: corpo.to_vec() }) else { return 0 };
+        self.pares.lock().map_or(0, |p| p.iter().filter(|(id, _)| Some(**id) != exceto).filter(|(_, s)| s.mandar(quadro.clone()).is_ok()).count())
     }
 
     /// Os ids dos pares conectados agora, com a identidade de cada um.
@@ -548,7 +590,13 @@ impl Rede {
     /// # Errors
     /// Endereço que não resolve, ou nenhum dos endereços atende no prazo.
     pub fn conectar(self: &Arc<Self>, addr: impl ToSocketAddrs) -> std::io::Result<()> {
-        self.discar(addr, None)
+        // vai também para o livro: se este aperto de mão falhar (prazo, par
+        // ocupado), a manutenção tenta de novo com a espera crescente
+        let enderecos: Vec<SocketAddr> = addr.to_socket_addrs()?.collect();
+        for sa in &enderecos {
+            self.aprender(sa.to_string());
+        }
+        self.discar(enderecos.as_slice(), None)
     }
 
     fn discar(self: &Arc<Self>, addr: impl ToSocketAddrs, rotulo: Option<String>) -> std::io::Result<()> {
@@ -682,13 +730,27 @@ impl Rede {
             conexao.fechar();
             return Err(NetError::Handshake("conexão comigo mesmo".into()));
         }
+        // Os dois discando ao mesmo tempo: cada lado recusava a do outro e as
+        // duas caíam (e de novo, na mesma batida). Agora fica a conexão que
+        // foi discada pela identidade menor; os dois lados chegam à mesma
+        // escolha sem conversar, e a outra é fechada.
+        let quem_discou = if papel == Papel::Discou { self.identidade.publica() } else { chave_do_par };
+        let geracao = self.geracoes.fetch_add(1, Ordering::Relaxed);
         {
             let mut ids = self.identidades_conectadas.lock().map_err(|_| NetError::Handshake("cadeado envenenado".into()))?;
-            if ids.insert(chave_do_par, ()).is_some() {
+            if let Some(velha) = ids.get(&chave_do_par)
+                && velha.quem_discou <= quem_discou
+            {
                 drop(ids);
                 conexao.fechar();
                 return Err(NetError::Handshake("já existe conexão com este nó".into()));
             }
+            if let Some(velha) = ids.remove(&chave_do_par)
+                && let Some(s) = velha.fechar
+            {
+                let _ = s.shutdown(std::net::Shutdown::Both);
+            }
+            ids.insert(chave_do_par, Ligacao { quem_discou, geracao, fechar: conexao.clonar_stream().ok() });
         }
         if papel == Papel::Discou {
             self.saidas.fetch_add(1, Ordering::Relaxed);
@@ -697,7 +759,9 @@ impl Rede {
         if papel == Papel::Discou {
             self.saidas.fetch_sub(1, Ordering::Relaxed);
         }
-        if let Ok(mut ids) = self.identidades_conectadas.lock() {
+        if let Ok(mut ids) = self.identidades_conectadas.lock()
+            && ids.get(&chave_do_par).is_some_and(|l| l.geracao == geracao)
+        {
             ids.remove(&chave_do_par);
         }
         // malícia provada: a identidade e o IP ficam de fora por uma hora
@@ -902,6 +966,15 @@ impl Rede {
                 // O ULTRAX também é transporte: vai para quem registrou, fora do nó.
                 Message::Desconhecida { tipo: TIPO_ULTRAX, corpo } => {
                     let tratador = self.ultrax.lock().ok().and_then(|t| t.clone());
+                    let par = self.identidade_do_par.lock().ok().and_then(|m| m.get(&id).copied()).unwrap_or([0; 32]);
+                    if let Some(t) = tratador {
+                        t(id, par, &corpo);
+                    }
+                    continue;
+                }
+                // as outras extensões (a nuvem): também transporte
+                Message::Desconhecida { tipo, corpo } if self.extensoes.lock().is_ok_and(|e| e.contains_key(&tipo)) => {
+                    let tratador = self.extensoes.lock().ok().and_then(|e| e.get(&tipo).cloned());
                     let par = self.identidade_do_par.lock().ok().and_then(|m| m.get(&id).copied()).unwrap_or([0; 32]);
                     if let Some(t) = tratador {
                         t(id, par, &corpo);

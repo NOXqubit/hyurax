@@ -244,6 +244,8 @@ fn atender(mut s: TcpStream, porta: u16, local: bool, n: &Arc<Nucleo>, arquivos:
             externa::corpo_max(rota)
         } else if rota.starts_with("/api/v1/gpu/resultado/") {
             ultrax::GPU_RESULTADO_MAX
+        } else if rota == "/api/v1/nuvem/guardar" {
+            crate::nuvem::armazem::ARQUIVO_MAX
         } else {
             http::CORPO_MAX
         }
@@ -377,6 +379,25 @@ fn ler(mut s: TcpStream, p: &Pedido, n: &Arc<Nucleo>, arquivos: Arquivos, daqui:
                     }
                 }
                 _ => responder(&mut s, "404 Not Found", "text/plain", b"nao existe"),
+            }
+        }
+        "/api/v1/nuvem" => {
+            let c = Arc::clone(&n.ciencia);
+            json_ok(&mut s, n.nuvem.json(&move |w| c.reputacao_de(w)))
+        }
+        "/api/v1/nuvem/livro" => {
+            let (pv, pl) = n.nuvem.ajustes.lock().map(|a| (a.provedor_pct, a.plataforma_pct)).unwrap_or((80, 15));
+            json_ok(&mut s, n.nuvem.livro.json(500, pv, pl))
+        }
+        // o arquivo recuperado: só para a janela deste computador
+        r if r.starts_with("/api/v1/nuvem/arquivo/") => {
+            match crate::nuvem::arquivo(r.trim_start_matches("/api/v1/nuvem/arquivo/")).filter(|_| daqui).and_then(|a| n.nuvem.recuperado(&a)) {
+                Some((nome, bytes)) => {
+                    let limpo: String = nome.chars().map(|c| if c.is_control() || c == '"' || c == '\\' { '_' } else { c }).collect();
+                    let disp = format!("attachment; filename=\"{limpo}\"");
+                    http::responder_com(&mut s, "200 OK", "application/octet-stream", &[("Content-Disposition", disp)], &bytes)
+                }
+                None => responder(&mut s, "404 Not Found", "text/plain", b"arquivo ainda nao recuperado"),
             }
         }
         // as matrizes de uma tarefa da GPU: só para a janela deste computador

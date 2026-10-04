@@ -190,6 +190,57 @@ pub(super) fn atender(s: &mut TcpStream, p: &Pedido, n: &Arc<Nucleo>) -> std::io
         "/api/v1/atualizacao/instalar" if janela => n.instalar_atualizacao().map(|()| json!({ "ok": true })),
         "/api/v1/abrir-pasta" if janela => abrir_pasta(&n.config.pastas.dados).map(|()| json!({ "ok": true })),
         // o canal do backend da GPU (o worker WebGL 2 da janela)
+        "/api/v1/nuvem/ajustes" => {
+            let mut a = n.nuvem.ajustes.lock().map(|a| a.clone()).unwrap_or_default();
+            let n64 = |nome: &str| campo(&c, nome).and_then(|v| v.parse::<u64>().ok());
+            let pct = |nome: &str| campo(&c, nome).and_then(|v| v.parse::<u8>().ok()).filter(|x| *x <= 100);
+            if let Some(v) = sim("anunciar") {
+                a.anunciar = v;
+            }
+            if let Some(t) = campo(&c, "tipo").and_then(|v| match v.as_str() {
+                "capacidade" => Some(hyurax_nuvem::anuncio::TipoDeAnuncio::Capacidade),
+                "maquina_inteira" => Some(hyurax_nuvem::anuncio::TipoDeAnuncio::MaquinaInteira),
+                "venda" => Some(hyurax_nuvem::anuncio::TipoDeAnuncio::Venda),
+                _ => None,
+            }) {
+                a.tipo = t;
+            }
+            a.preco_credito_mili = n64("preco_credito_mili").unwrap_or(a.preco_credito_mili);
+            a.preco_gb_mes_mili = n64("preco_gb_mes_mili").unwrap_or(a.preco_gb_mes_mili);
+            a.preco_venda_centavos = n64("preco_venda_centavos").unwrap_or(a.preco_venda_centavos);
+            if let Some(d) = campo(&c, "descricao") {
+                a.descricao = d.chars().take(200).collect();
+            }
+            a.disco_mib = n64("disco_mib").filter(|x| *x <= 10_000_000).unwrap_or(a.disco_mib);
+            a.provedor_pct = pct("provedor_pct").unwrap_or(a.provedor_pct);
+            a.plataforma_pct = pct("plataforma_pct").unwrap_or(a.plataforma_pct);
+            n.nuvem.mudar_ajustes(a).map(|()| {
+                n.barramento.registrar("nuvem", "ajustes da nuvem gravados (anúncio refeito)");
+                json!({ "ok": true })
+            })
+        }
+        "/api/v1/nuvem/guardar" => {
+            let nome = p.parametro("nome").and_then(super::http::decodificar).unwrap_or_else(|| "arquivo".into());
+            let k = p.parametro("k").and_then(|v| v.parse::<u8>().ok()).unwrap_or(2);
+            let m = p.parametro("m").and_then(|v| v.parse::<u8>().ok()).unwrap_or(1);
+            n.nuvem.guardar_arquivo(&nome, &p.corpo, k, m).map(|id| json!({ "arquivo": hex(&id) }))
+        }
+        "/api/v1/nuvem/recuperar" => crate::nuvem::arquivo(&texto("arquivo")).ok_or_else(|| "arquivo inválido".to_string()).and_then(|a| n.nuvem.recuperar(&a)).map(|()| json!({ "ok": true })),
+        "/api/v1/nuvem/apagar" => crate::nuvem::arquivo(&texto("arquivo")).ok_or_else(|| "arquivo inválido".to_string()).and_then(|a| n.nuvem.apagar_arquivo(&a)).map(|()| json!({ "ok": true })),
+        "/api/v1/nuvem/alugar" => crate::util::de_hex::<32>(&texto("worker"))
+            .ok_or_else(|| "worker inválido".to_string())
+            .and_then(|w| n.nuvem.anuncio_para_alugar(&w))
+            .and_then(|anuncio| {
+                let mut pedido = crate::ciencia::pedido_do_formulario(&c)?;
+                // aluguel: cada unidade calculada lá e refeita aqui (concordância 2 de 2)
+                pedido.nivel = hyurax_ultrax::job::Nivel::Concordancia;
+                pedido.redundancia = 2;
+                let id = n.ciencia.submeter(pedido)?;
+                n.ciencia.restringir_a(id, anuncio.worker);
+                n.nuvem.registrar_aluguel(id, &anuncio);
+                n.barramento.registrar("nuvem", format!("aluguel: JOB {}… só para o worker {}…, a {} milicréditos por crédito verificado", hex(id.get(..6).unwrap_or_default()), hex(anuncio.worker.get(..6).unwrap_or_default()), anuncio.preco_credito_mili));
+                Ok(json!({ "job": hex(&id) }))
+            }),
         "/api/v1/gpu/pegar" => n.ultrax.gpu_pegar(&texto("nome")).map(|(numero, lado, job)| {
             json!({ "numero": numero, "n": lado, "origem": if job.is_some() { "JOB" } else { "LAB" }, "job": job.map(|(j, _)| hex(&j)), "unidade": job.map(|(_, i)| i) })
         }),
