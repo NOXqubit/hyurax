@@ -1,9 +1,9 @@
 formato=HYURAX-ATUALIZACAO-v1
-versao=1.3.1
+versao=1.3.2
 rede=testnet
 instalador=hyurax-instalador-windows-x86_64.exe
-endereco=https://github.com/NOXqubit/hyurax/releases/download/v1.3.1/hyurax-instalador-windows-x86_64.exe
-tamanho=10218496
-sha512=344f12cc2e5286b059d03b5fc6ca8770b9a9ced63dad2754911677605080ccc44a912f9d6b8eb30f3d3937ee2fa286cc30193819b6176e08aff8853d639cac17
-notas=Carteiras de celular: o programa pode servir o aplicativo Hyurax do celular (Ajustes → Carteiras de celular). A rede agora também conversa por WebSocket, o que permite um nó semente público grátis. Correção: o painel não espera mais o cálculo da soma do próprio programa.
-assinatura=01fdcd8fbee77fb5e0924c9b17ec2a7e8d13fab7b90aacfcaa33fe357ff8e284d94b3ba3559f372d48d80814021f9421b02a5426635e40b78d457ca07ced020a
+endereco=https://github.com/NOXqubit/hyurax/releases/download/v1.3.2/hyurax-instalador-windows-x86_64.exe
+tamanho=10212864
+sha512=46fa3aca07fc6bb4b0170305774b1f7b4ed5315435a978449ab4f6d55e02bb96508885499560e40ddeab9c53627178cf13d2ff63827de2fd03980e2cf4a19ca8
+notas=Correção importante: na 1.3.1 o núcleo travava ("o núcleo não está respondendo") assim que o programa se conectava a outro nó, e a mineração parava junto. Corrigido e testado conectado à semente pública.
+assinatura=8babfa3f545bab61fdb86d9182668e4ea1cbb5a4a57087ceaa0685dec1dd65d3c42f70ac9f1afb80e49ef5871db020d721d8a5a9680b9e1b2e6f1f1ffdbf810c
