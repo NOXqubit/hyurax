@@ -1,9 +1,9 @@
 formato=HYURAX-ATUALIZACAO-v1
-versao=1.0.1
+versao=1.0.3
 rede=testnet
 instalador=hyurax-instalador-windows-x86_64.exe
-endereco=https://github.com/NOXqubit/hyurax/releases/download/v1.0.1/hyurax-instalador-windows-x86_64.exe
-tamanho=7617536
-sha512=a4115531326b80a18b077d0e84cb9ea6f33d54f4f173d29e16fecba5041b5074c6261edc6c482465add74b5f12acffd8786d4124f1c7211c2eed46f0a0a39f1b
-notas=Malha: os nós se acham na rede local, abrem a porta no roteador sozinhos (UPnP/NAT-PMP), conversam por pontes quando não há porta aberta, e blocos e transações viajam em pacotes do Éter (pendrive, Bluetooth, som).
-assinatura=f72809441a018ee71b90b0981f89e4434c5fc06ea08f18b2bb95dc74bbdc4aff19197d8ed3fa0eb54ada86c707aca551d7f3fd37baf2240defe47b0976f48f05
+endereco=https://github.com/NOXqubit/hyurax/releases/download/v1.0.3/hyurax-instalador-windows-x86_64.exe
+tamanho=7618560
+sha512=d1cf5adae52d43efbee8bdebe9eafdd0fb5e21b041935980b7bcc66a7ddff00a76a86a7b18634d153782b9836e990f5348da102e8e5239e8d96e51ba71fdcfd9
+notas=Malha: os nós se acham na rede local, abrem a porta no roteador sozinhos (UPnP/NAT-PMP), conversam por pontes quando não há porta aberta (agora com desempate quando os dois discam juntos), e blocos e transações viajam em pacotes do Éter.
+assinatura=9e463c3de420ef89e0ad80c849f7505d4cce1a9323db8de9c90efe457239871476471de8e4d0e7a30ce756532a37b6348cbb7273a9099b2b3c5270ac0275f109
