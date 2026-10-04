@@ -354,13 +354,23 @@ impl Rede {
 
     /// Se a cadeia deste nó já tem pelo menos o trabalho que os pares
     /// conectados anunciaram. Sem nenhum par, é `false`.
+    ///
+    /// Pega a trava da cadeia: **não chame com ela já pega** (a trava não é
+    /// reentrante e a linha esperaria por si mesma). Quem já está com a cadeia
+    /// na mão usa [`Rede::trabalho_dos_pares`] e compara.
     pub fn alcancou_os_pares(&self) -> bool {
-        let visto = self.trabalho_dos_pares.lock().ok().and_then(|t| t.values().max().copied()).unwrap_or([0u8; 32]);
+        let visto = self.trabalho_dos_pares();
         if visto == [0u8; 32] {
             return false;
         }
         let meu = self.no.lock().map_or([0u8; 32], |n| n.chain.total_work().to_be32().unwrap_or([0xff; 32]));
         meu >= visto
+    }
+
+    /// O maior trabalho anunciado pelos pares conectados (zero sem nenhum).
+    /// Não pega a trava da cadeia.
+    pub fn trabalho_dos_pares(&self) -> [u8; 32] {
+        self.trabalho_dos_pares.lock().ok().and_then(|t| t.values().max().copied()).unwrap_or([0u8; 32])
     }
 
     /// Chave pública da identidade deste nó.

@@ -103,13 +103,18 @@ pub fn estado(n: &Nucleo, pode_mandar: bool, url_celular: &str) -> Value {
         "circuitos": m.circuitos,
         "roteador": m.roteador,
     });
+    // A cadeia já está na mão (trava pega acima): comparar aqui, sem chamar
+    // `alcancou_os_pares`, que pegaria a mesma trava de novo e travaria o
+    // núcleo inteiro assim que houvesse um par (o defeito da 1.3.1).
+    let visto = n.rede.trabalho_dos_pares();
+    let sincronizado = n.rede.pares_conectados() > 0 && visto != [0u8; 32] && c.total_work().to_be32().unwrap_or([0xff; 32]) >= visto;
     let no_json = json!({
         "altura": altura,
         "ponta": hex(&c.tip_hash()),
         "trabalho": c.total_work().to_decimal(),
         "emitido": hyx(u128::from(c.state.total_emitted)),
         "pares": n.rede.pares_conectados(),
-        "sincronizado": n.rede.pares_conectados() > 0 && n.rede.alcancou_os_pares(),
+        "sincronizado": sincronizado,
         "mempool": no.mempool_len(),
         "porta_p2p": n.porta_p2p,
         // a malha (docs/HYURAX-MALHA.md): o que este nó sabe do próprio alcance

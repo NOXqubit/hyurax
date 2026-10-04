@@ -131,3 +131,23 @@ para quem usa:
 - **API:** `GET /api/v1/ciencia/moleculas?busca=` (até 24 resultados). A
   rota `GET /api/v1/ciencia/molecula/<i>` agora traz também `previsto_mili`,
   `erro_tipico_mili` e `total`.
+
+## 1.3.2 (04/10/2026): correção do núcleo travando
+
+- **O defeito:** na 1.3.1, assim que o programa se conectava a outro nó (a
+  semente pública, pela primeira vez), o núcleo parava inteiro: o painel
+  mostrava "o núcleo não está respondendo" e a mineração parava junto.
+- **A causa:** para montar o estado da tela, o núcleo pega a trava da cadeia.
+  Com ela ainda pega, chamava uma função que pega a mesma trava de novo para
+  dizer se o nó está "sincronizado". A trava não é reentrante, então a linha
+  esperava por si mesma para sempre, e tudo que precisa da cadeia esperava
+  atrás. Sem nenhum par conectado esse caminho não era percorrido; por isso
+  o defeito só apareceu com a semente pública no ar.
+- **A correção:** o estado compara o trabalho dos pares com a cadeia que já
+  tem na mão, sem pegar a trava de novo (`Rede::trabalho_dos_pares`). Uma
+  varredura no núcleo não achou outro ponto com o mesmo padrão.
+- **O teste que trava o defeito:** `estado_responde_com_par_conectado`
+  (`crates/hyurax-nucleo/tests/api_local.rs`). Com o código antigo, ele
+  congela como o programa congelou; com a correção, passa. Num ensaio na
+  rede de teste real, ligado à semente pelo WebSocket, o estado respondeu
+  em 15 ms durante 3 minutos.

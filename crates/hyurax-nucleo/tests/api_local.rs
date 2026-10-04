@@ -213,3 +213,44 @@ fn carteira_de_celular_le_saldo_e_entrega_transacao_assinada_fora() {
     n.encerrar();
     let _ = std::fs::remove_dir_all(pasta);
 }
+
+/// Defeito da 1.3.1: com um par conectado (que já anunciou o trabalho dele),
+/// montar o estado pegava a trava da cadeia duas vezes na mesma linha, e o
+/// núcleo inteiro parava (painel, mineração, rede). O estado tem de responder
+/// com par conectado, várias vezes seguidas.
+#[test]
+fn estado_responde_com_par_conectado() {
+    use hyurax_consensus::ParametrosRede;
+    let (n, porta, pasta) = ligar("par");
+    let chave = n.chave_painel.clone();
+    let cab = [("X-Hyurax-Chave", chave.as_str())];
+
+    // um par com 2 blocos a mais: trabalho anunciado diferente de zero
+    let p = ParametrosRede::REGTEST;
+    let mut cadeia = hyurax_chain::Chain::nova(p).unwrap();
+    for _ in 0..2 {
+        let ts = cadeia.tip().unwrap().header.timestamp + p.target_spacing;
+        let bloco = cadeia.mine([9u8; 20], vec![], Some(ts), 2).unwrap();
+        cadeia.accept_block(bloco, Some(ts + 10)).unwrap();
+    }
+    let par = hyurax_net::Rede::nova(hyurax_net::No::novo(cadeia)).unwrap();
+    let porta_par = par.escutar("127.0.0.1:0").unwrap();
+    n.rede.conectar_texto(&format!("127.0.0.1:{porta_par}")).unwrap();
+    let ate = std::time::Instant::now() + Duration::from_secs(60);
+    while n.rede.trabalho_dos_pares() == [0u8; 32] && std::time::Instant::now() < ate {
+        std::thread::sleep(Duration::from_millis(100));
+    }
+    assert_ne!(n.rede.trabalho_dos_pares(), [0u8; 32], "o par não anunciou o trabalho");
+
+    for _ in 0..5 {
+        let (s, corpo) = pedido(porta, "GET", "/api/v1/estado", &cab, "");
+        assert_eq!(s, 200, "o estado não respondeu com par conectado: {corpo}");
+        assert!(corpo.contains("\"sincronizado\":"), "{corpo}");
+    }
+    // e a cadeia segue destravada para quem vier depois
+    assert_eq!(pedido(porta, "GET", "/api/v1/resumo", &[], "").0, 200);
+
+    par.desligar();
+    n.encerrar();
+    let _ = std::fs::remove_dir_all(pasta);
+}
