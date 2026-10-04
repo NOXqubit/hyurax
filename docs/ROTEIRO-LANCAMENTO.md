@@ -50,6 +50,7 @@ não é.
 | 27/09/2026 | Computação científica: JOBs com unidades conferidas, motores de genética, plantas, rotas e triagem de 8.289 moléculas, visão 3D por eventos reais, ULTRA BENCHMARK e cálculo entre nós com compromisso, maioria e conferência local (ensaio com 3 processos: 30/30 em consenso 3/3) |
 | 27/09/2026 | Termos de uso versão 2 (computação científica); versão `v0.4.0-teste.1` preparada, notas em `docs/historico/NOTAS-v0.4.0-teste.1.md` |
 | 02/10/2026 | **Hyurax / Ultrax 1.0** (programa oficial, rede de TESTE): núcleo separado da tela, API v1 com fluxo de eventos, painel novo, métricas reais com a origem de cada número, cena 3D feita das amostras reais dos motores, GPU calculando unidades de JOB, instalador com manifesto e teste de instalação limpa; termos versão 3. Notas em `docs/NOTAS-1.0.md` |
+| 04/10/2026 | Preparação da mainnet medida em [MAINNET.md](MAINNET.md) (o que trava é a semente pública); aplicativo do celular (carteira) com a chave só no aparelho e a API das carteiras leves no nó ([APP-CELULAR.md](APP-CELULAR.md)) |
 
 Próximo: **o primeiro nó respondendo de fora**. O PC do autor serve para começar (`scripts/no-sempre-ligado.ps1` + porta 8790 no roteador + teste pelo 4G do celular). Os passos 1, 2 e 3 de `docs/LANCAR-A-REDE.md` são do autor: renomear e publicar o repositório, criar a etiqueta, e deixar o nó ligado.
 

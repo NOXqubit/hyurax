@@ -1,0 +1,42 @@
+{
+  "name": "hyurax-carteira",
+  "version": "0.1.0",
+  "main": "expo-router/entry",
+  "dependencies": {
+    "@noble/ciphers": "^2.4.0",
+    "@noble/curves": "^2.4.0",
+    "@noble/hashes": "^2.4.0",
+    "expo": "~57.0.26",
+    "expo-build-properties": "~57.0.22",
+    "expo-camera": "~57.0.6",
+    "expo-clipboard": "~57.0.2",
+    "expo-constants": "~57.0.20",
+    "expo-crypto": "~57.0.3",
+    "expo-linking": "~57.0.11",
+    "expo-local-authentication": "~57.0.3",
+    "expo-router": "~57.0.24",
+    "expo-secure-store": "~57.0.4",
+    "expo-status-bar": "~57.0.1",
+    "react": "19.2.3",
+    "react-native": "0.86.3",
+    "react-native-safe-area-context": "~5.7.0",
+    "react-native-screens": "~4.26.0",
+    "react-native-svg": "15.15.4"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.5",
+    "@types/react": "~19.2.2",
+    "react-dom": "19.2.3",
+    "react-native-web": "0.21.3",
+    "typescript": "~6.0.3"
+  },
+  "scripts": {
+    "start": "expo start",
+    "android": "expo start --android",
+    "testar": "node --test teste/nucleo.test.ts",
+    "tipos": "tsc --noEmit",
+    "prebuild": "expo prebuild --platform android --clean"
+  },
+  "private": true,
+  "license": "MIT OR Apache-2.0"
+}

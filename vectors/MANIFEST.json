@@ -32,6 +32,10 @@
       "bytes": 1137,
       "sha512_16": "0cd9d49f7cec2194bc7ec7b6a00f19ea"
     },
+    "enderecos.json": {
+      "bytes": 5056,
+      "sha512_16": "c6c7243e5fd4b599823f94acc3dc9fb7"
+    },
     "genesis.json": {
       "bytes": 42014,
       "sha512_16": "55401ef72e90a8d65e4bb430a97dbdb5"

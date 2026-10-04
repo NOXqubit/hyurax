@@ -28,6 +28,7 @@
 mod comandos;
 pub mod estado;
 pub mod externa;
+pub mod leve;
 pub mod http;
 
 use std::io::{Read, Write};
@@ -170,7 +171,7 @@ pub fn abrir(n: &Arc<Nucleo>, porta: u16, arquivos: Arquivos) -> Result<u16, Str
     // no programa com janela a porta sempre abre para a rede, e quem decide se
     // responde a outro aparelho é o ajuste "ver no celular", conferido antes
     // de ler qualquer byte
-    let ip = if n.modo == Modo::Janela || n.na_rede.load(Ordering::Relaxed) || n.api_externa.load(Ordering::Relaxed) {
+    let ip = if n.modo == Modo::Janela || n.na_rede.load(Ordering::Relaxed) || n.api_externa.load(Ordering::Relaxed) || n.carteiras_leves.load(Ordering::Relaxed) {
         IpAddr::V4(Ipv4Addr::UNSPECIFIED)
     } else {
         IpAddr::V4(Ipv4Addr::LOCALHOST)
@@ -183,7 +184,7 @@ pub fn abrir(n: &Arc<Nucleo>, porta: u16, arquivos: Arquivos) -> Result<u16, Str
             let Ok(mut s) = conexao else { continue };
             let Ok(par) = s.peer_addr() else { continue };
             let local = par.ip().is_loopback();
-            if !local && !n.na_rede.load(Ordering::Relaxed) && !n.api_externa.load(Ordering::Relaxed) {
+            if !local && !n.na_rede.load(Ordering::Relaxed) && !n.api_externa.load(Ordering::Relaxed) && !n.carteiras_leves.load(Ordering::Relaxed) {
                 // recusa sem ler nada e sem abrir linha: a resposta cabe no
                 // buffer do sistema, então a escrita não bloqueia
                 let _ = s.set_nonblocking(true);
@@ -196,7 +197,7 @@ pub fn abrir(n: &Arc<Nucleo>, porta: u16, arquivos: Arquivos) -> Result<u16, Str
             // segundo) passa dos 2 MiB padrão num build de depuração
             let _ = std::thread::Builder::new().stack_size(PILHA).spawn(move || {
                 let _vaga = vaga;
-                let _ = atender(s, porta, local, &n, arquivos);
+                let _ = atender(s, porta, local, par.ip(), &n, arquivos);
             });
         }
     });
@@ -241,10 +242,12 @@ fn host_local(host: &str, porta: u16) -> bool {
     [format!("127.0.0.1:{porta}"), format!("localhost:{porta}"), format!("[::1]:{porta}")].iter().any(|h| h == host)
 }
 
-fn atender(mut s: TcpStream, porta: u16, local: bool, n: &Arc<Nucleo>, arquivos: Arquivos) -> std::io::Result<()> {
+fn atender(mut s: TcpStream, porta: u16, local: bool, ip: IpAddr, n: &Arc<Nucleo>, arquivos: Arquivos) -> std::io::Result<()> {
     // de fora, só leitura: nenhum corpo é aceito (fora os formulários da API externa)
     let corpo_max = |rota: &str| {
-        if !local {
+        if rota.starts_with(leve::PREFIXO) {
+            leve::corpo_max(rota)
+        } else if !local {
             externa::corpo_max(rota)
         } else if rota.starts_with("/api/v1/gpu/resultado/") {
             ultrax::GPU_RESULTADO_MAX
@@ -266,6 +269,13 @@ fn atender(mut s: TcpStream, porta: u16, local: bool, n: &Arc<Nucleo>, arquivos:
             return responder(&mut s, "403 Forbidden", "application/json; charset=utf-8", r#"{"erro":"a API externa deste nó está desligada"}"#.as_bytes());
         }
         return externa::atender(&mut s, &p, n);
+    }
+    // as carteiras de celular: só com a API delas ligada (ou deste computador)
+    if p.rota().starts_with(leve::PREFIXO) {
+        if !local && !n.carteiras_leves.load(Ordering::Relaxed) {
+            return responder(&mut s, "403 Forbidden", "application/json; charset=utf-8", r#"{"erro":"este nó não está servindo carteiras de celular"}"#.as_bytes());
+        }
+        return leve::atender(&mut s, &p, n, ip);
     }
     // com só a API externa ligada, o resto continua só deste computador
     if !local && !n.na_rede.load(Ordering::Relaxed) {

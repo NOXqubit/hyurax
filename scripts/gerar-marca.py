@@ -60,3 +60,32 @@ grande.save(SAIDA / "Hyurax.ico", sizes=[(16, 16), (24, 24), (32, 32), (48, 48),
 p64 = grande.resize((64, 64), Image.LANCZOS)
 (SAIDA / "icone-64.rgba").write_bytes(p64.tobytes())
 print("ok")
+
+# ---------------------------------------------------------------------------
+# Ícones do aplicativo do celular (mobile/assets): o ícone inteiro, e o H
+# sozinho para o ícone adaptável do Android (só o miolo de 66% aparece com
+# certeza, por isso o H ocupa o centro) e para a abertura.
+APP = Path(__file__).resolve().parent.parent / "mobile" / "assets"
+if APP.is_dir():
+    grande.save(APP / "icon.png")
+    grande.resize((48, 48), Image.LANCZOS).save(APP / "favicon.png")
+
+    def so_o_h(cor_colunas, cor_travessa, escala):
+        """O H sem o fundo, em 1024×1024, ocupando `escala` do lado."""
+        cheio = Image.new("RGBA", (S, S), (0, 0, 0, 0))
+        trav = Image.new("RGBA", (S, S), cor_travessa)
+        cols = Image.new("RGBA", (S, S), cor_colunas)
+        cheio.paste(trav, (0, 0), bar_m)
+        cheio.paste(cols, (0, 0), col_m)
+        # o H ocupa de 12 a 50 no quadro de 64: recorta e centraliza
+        caixa = cheio.crop((int(12 * u), int(12 * u), int(52 * u), int(52 * u)))
+        lado = int(1024 * escala)
+        caixa = caixa.resize((lado, lado), Image.LANCZOS)
+        saida = Image.new("RGBA", (1024, 1024), (0, 0, 0, 0))
+        saida.paste(caixa, ((1024 - lado) // 2, (1024 - lado) // 2), caixa)
+        return saida
+
+    so_o_h((245, 245, 247, 255), (242, 181, 68, 255), 0.52).save(APP / "android-icon-foreground.png")
+    so_o_h((255, 255, 255, 255), (255, 255, 255, 255), 0.52).save(APP / "android-icon-monochrome.png")
+    so_o_h((245, 245, 247, 255), (242, 181, 68, 255), 0.42).save(APP / "splash-icon.png")
+    print("ícones do app em", APP)

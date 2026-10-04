@@ -166,3 +166,50 @@ fn moleculas_se_buscam_e_vem_com_a_previsao_da_ia() {
     n.encerrar();
     let _ = std::fs::remove_dir_all(pasta);
 }
+
+#[test]
+fn carteira_de_celular_le_saldo_e_entrega_transacao_assinada_fora() {
+    use hyurax_nucleo::carteira::endereco;
+    let (n, porta, pasta) = ligar("leve");
+    let rede = n.config.rede;
+    let magic = rede.magic;
+
+    // info: rede, prefixo e magic, sem chave nenhuma (deste computador)
+    let (s, corpo) = pedido(porta, "GET", "/api/v1/leve/info", &[], "");
+    assert_eq!(s, 200, "{corpo}");
+    let info: serde_json::Value = serde_json::from_str(&corpo).unwrap();
+    assert_eq!(info["prefixo"], "rhyx");
+    assert_eq!(info["magic"], magic.iter().map(|b| format!("{b:02x}")).collect::<String>());
+
+    // uma conta sem nada: saldo zero, nonce zero, aceita Bech32m e hexadecimal
+    let segredo = [7u8; 32];
+    let de = hyurax_crypto::address_from_ed25519_pubkey(&hyurax_crypto::ed25519_public_key(&segredo));
+    let texto = endereco::mostrar(&de, rede.nome);
+    let (s, corpo) = pedido(porta, "GET", &format!("/api/v1/leve/conta/{texto}"), &[], "");
+    assert_eq!(s, 200, "{corpo}");
+    let c: serde_json::Value = serde_json::from_str(&corpo).unwrap();
+    assert_eq!((c["saldo_unidades"].as_u64(), c["proximo_nonce"].as_u64()), (Some(0), Some(0)));
+    let hexa: String = de.iter().map(|b| format!("{b:02x}")).collect();
+    assert_eq!(pedido(porta, "GET", &format!("/api/v1/leve/conta/{hexa}"), &[], "").0, 200);
+    assert_eq!(pedido(porta, "GET", "/api/v1/leve/conta/thyx1errado", &[], "").0, 400);
+    let (s, corpo) = pedido(porta, "GET", &format!("/api/v1/leve/historico/{texto}"), &[], "");
+    assert_eq!(s, 200);
+    assert!(corpo.contains("\"movimentos\":[]"), "{corpo}");
+
+    // transação assinada fora do nó, sem saldo: a validação do nó recusa
+    let para = hyurax_crypto::address_from_ed25519_pubkey(&hyurax_crypto::ed25519_public_key(&[9u8; 32]));
+    let saida = hyurax_tx::Output { recipient: para, asset_id: hyurax_tx::HYX, amount: 1000 };
+    let tx = hyurax_tx::sign_transfer_outputs(&segredo, &magic, de, vec![saida], 0, 0).unwrap();
+    let corpo_tx: String = hyurax_tx::Tx::Transfer(tx).encode().unwrap().iter().map(|b| format!("{b:02x}")).collect();
+    let (s, corpo) = pedido(porta, "POST", "/api/v1/leve/transacao", &[], &corpo_tx);
+    assert_eq!(s, 400, "{corpo}");
+    assert!(corpo.contains("saldo gastável insuficiente"), "{corpo}");
+    // lixo e corpo grande demais
+    assert_eq!(pedido(porta, "POST", "/api/v1/leve/transacao", &[], "zz").0, 400);
+    let (s, _) = pedido(porta, "POST", "/api/v1/leve/transacao", &[], &"00".repeat(20_000));
+    assert!(s == 400 || s == 413, "{s}");
+    assert_eq!(pedido(porta, "GET", "/api/v1/leve/nada", &[], "").0, 404);
+
+    n.encerrar();
+    let _ = std::fs::remove_dir_all(pasta);
+}

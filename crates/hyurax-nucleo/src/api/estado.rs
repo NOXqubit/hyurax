@@ -225,6 +225,7 @@ pub fn estado(n: &Nucleo, pode_mandar: bool, url_celular: &str) -> Value {
                 "centavos_kwh": ajustes.centavos_kwh,
                 "na_rede": n.na_rede.load(Ordering::Relaxed),
                 "api_externa": n.api_externa.load(Ordering::Relaxed),
+                "carteiras_leves": n.carteiras_leves.load(Ordering::Relaxed),
                 // as contas (sem chave: em disco só há o hash) só para quem pode mandar
                 "contas": if pode_mandar {
                     n.contas.listar().iter().map(|c| json!({ "id": c.id, "nome": c.nome, "limite_milicreditos": c.limite_milicreditos, "revogada": c.revogada, "jobs": n.contas.jobs_da_conta(c.id).len() })).collect::<Vec<_>>()
@@ -245,16 +246,23 @@ pub fn estado(n: &Nucleo, pode_mandar: bool, url_celular: &str) -> Value {
     j
 }
 
-/// SHA-512 do executável que está rodando (calculado uma vez): o dono confere
-/// contra a soma publicada na Release.
+/// SHA-512 do executável que está rodando: o dono confere contra a soma
+/// publicada na Release. Calculado uma vez, numa linha própria: num
+/// executável grande e numa máquina lenta leva segundos, e o estado não pode
+/// esperar por isso. Até ficar pronto, vem `None` (a tela mostra "calculando").
 fn executavel_sha512() -> Option<String> {
-    static H: std::sync::OnceLock<Option<String>> = std::sync::OnceLock::new();
-    H.get_or_init(|| {
-        let caminho = std::env::current_exe().ok()?;
-        let bytes = std::fs::read(caminho).ok()?;
-        Some(hex(&hyurax_crypto::sha512(&bytes)))
-    })
-    .clone()
+    static H: std::sync::OnceLock<String> = std::sync::OnceLock::new();
+    static COMECOU: std::sync::Once = std::sync::Once::new();
+    COMECOU.call_once(|| {
+        let _ = std::thread::Builder::new().name("hash-do-executavel".into()).spawn(|| {
+            let calculado = std::env::current_exe()
+                .ok()
+                .and_then(|c| std::fs::read(c).ok())
+                .map_or_else(|| "indisponível".to_string(), |b| hex(&hyurax_crypto::sha512(&b)));
+            let _ = H.set(calculado);
+        });
+    });
+    H.get().cloned()
 }
 
 /// O resumo público, para as outras máquinas do dono (só leitura).

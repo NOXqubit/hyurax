@@ -26,7 +26,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 OUT_DIR = ROOT.parent / "vectors"
 
-from hyurax import argon2, codec, consensus, crypto, genetica, ia, identidade, job, malha, melhoramento, nuvem, rede_ultrax, rotas, triagem, usefulpow, ultrax  # noqa: E402
+from hyurax import argon2, codec, consensus, crypto, endereco, genetica, ia, identidade, job, malha, melhoramento, nuvem, rede_ultrax, rotas, triagem, usefulpow, ultrax  # noqa: E402
 from hyurax.block import BlockHeader  # noqa: E402
 from hyurax.chain import Chain, make_genesis  # noqa: E402
 from hyurax.consensus import MAINNET, REGTEST, TESTNET  # noqa: E402
@@ -1639,6 +1639,51 @@ def vec_nuvem() -> dict:
     }
 
 
+def vec_enderecos() -> dict:
+    """Endereços em Bech32m (reference/hyurax/endereco.py): os textos nas
+    três redes e as recusas, com a mensagem exata."""
+    cargas = [bytes(20), bytes([255] * 20), bytes(range(20)),
+              bytes([0xC0, 0xDE, 0x48, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 0x1B, 0x0E])]
+    for s in (bytes([0x11] * 32), bytes([0x22] * 32), bytes(range(32))):
+        cargas.append(crypto.address_from_pubkey(crypto.ed25519_public_key(s)))
+    validos = []
+    for c in cargas:
+        validos.append({"endereco": h(c), **{rede: endereco.mostrar(c, "hyurax-" + rede) for rede in ("mainnet", "testnet", "regtest")}})
+    teste = endereco.mostrar(cargas[3], "hyurax-testnet")
+    trocado = teste[:10] + ("q" if teste[10] != "q" else "p") + teste[11:]
+    entradas = [
+        (teste, "hyurax-mainnet"),
+        (teste, "hyurax-regtest"),
+        (endereco.mostrar(cargas[3], "hyurax-mainnet"), "hyurax-testnet"),
+        (endereco.codificar("btc", cargas[3]), "hyurax-testnet"),
+        (trocado, "hyurax-testnet"),
+        (teste[:5] + teste[5:].upper(), "hyurax-testnet"),
+        (teste.replace(teste[8], "b", 1) if teste[8] != "b" else teste, "hyurax-testnet"),
+        ("thyx1", "hyurax-testnet"),
+        ("thyxqqqqqqqqqqqqq", "hyurax-testnet"),
+        (endereco.codificar("thyx", bytes(19)), "hyurax-testnet"),
+        (endereco.codificar("thyx", bytes(21)), "hyurax-testnet"),
+        ("x" * 91, "hyurax-testnet"),
+    ]
+    recusas = []
+    for texto, rede in entradas:
+        try:
+            endereco.ler(texto, rede)
+        except ValueError as e:
+            recusas.append({"texto": texto, "rede": rede, "erro": str(e)})
+        else:
+            raise AssertionError(f"devia recusar: {texto}")
+    aceitos = [
+        {"texto": teste.upper(), "rede": "hyurax-testnet", "endereco": h(cargas[3])},
+        {"texto": "  " + teste + "\n", "rede": "hyurax-testnet", "endereco": h(cargas[3])},
+        {"texto": h(cargas[3]), "rede": "hyurax-mainnet", "endereco": h(cargas[3])},
+        {"texto": h(cargas[3]).upper(), "rede": "hyurax-testnet", "endereco": h(cargas[3])},
+    ]
+    for a in aceitos:
+        assert endereco.ler(a["texto"], a["rede"]).hex() == a["endereco"]
+    return {"validos": validos, "aceitos": aceitos, "recusas": recusas}
+
+
 FILES = {
     "units.json": vec_units,
     "crypto_ed25519.json": vec_crypto,
@@ -1667,6 +1712,7 @@ FILES = {
     "rede_ultrax.json": vec_rede_ultrax,
     "malha.json": vec_malha,
     "nuvem.json": vec_nuvem,
+    "enderecos.json": vec_enderecos,
 }
 
 

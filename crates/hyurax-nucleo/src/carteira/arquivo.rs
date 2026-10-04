@@ -254,4 +254,22 @@ mod testes {
         let trocada = nova.replace(&format!("formato={FORMATO}"), "formato=OUTRO-FORMATO-v2");
         assert!(abrir(&trocada, SENHA).is_err());
     }
+
+    /// Gabarito entre linguagens: o app do celular (`mobile/teste`) abre este
+    /// mesmo arquivo e, com os mesmos dados, escreve o mesmo texto. Com
+    /// `HYURAX_GERAR_GABARITO=1`, regrava o arquivo em vez de conferir.
+    #[test]
+    fn gabarito_da_carteira_para_o_celular() {
+        let caminho = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../mobile/teste/dados/carteira-v2.txt");
+        let segredo: [u8; 32] = core::array::from_fn(|i| i as u8);
+        let aleatorio: [u8; 28] = core::array::from_fn(|i| (i as u8).wrapping_mul(7).wrapping_add(3));
+        let texto = cifrar(&segredo, "senha do gabarito 2026", &aleatorio).unwrap();
+        if std::env::var_os("HYURAX_GERAR_GABARITO").is_some() {
+            std::fs::create_dir_all(caminho.parent().unwrap()).unwrap();
+            std::fs::write(&caminho, &texto).unwrap();
+        }
+        let gravado = std::fs::read_to_string(&caminho).unwrap().replace("\r\n", "\n");
+        assert_eq!(gravado, texto);
+        assert_eq!(abrir(&gravado, "senha do gabarito 2026").unwrap(), segredo);
+    }
 }

@@ -28,6 +28,9 @@ pub fn comando(args: &[String]) -> Result<(), String> {
     if o.api_externa {
         n.api_externa.store(true, Ordering::Relaxed);
     }
+    if o.carteiras {
+        n.carteiras_leves.store(true, Ordering::Relaxed);
+    }
     let porta = hyurax_nucleo::api::abrir(&n, o.painel_porta, hyurax_interface::ARQUIVOS)?;
     // a chave da sessão vai no endereço (depois do #): sem ela o painel só
     // mostra o aviso para abrir por aqui
@@ -37,6 +40,9 @@ pub fn comando(args: &[String]) -> Result<(), String> {
     }
     if o.api_externa {
         println!("  API externa ligada em /api/v1/externa/ (contas: hyurax-no contas)");
+    }
+    if o.carteiras {
+        println!("  carteiras de celular ligadas em /api/v1/leve/ (saldo e envio de transações assinadas no aparelho)");
     }
     if endereco.is_none() {
         println!("  sem --arquivo nem --endereco: nada de mineração (não há para onde mandar a recompensa)");

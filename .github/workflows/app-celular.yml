@@ -1,0 +1,76 @@
+# O aplicativo do celular (mobile/), montado pelo próprio GitHub: sem
+# Android Studio e sem conta na Expo. O Expo gera o projeto Android a partir
+# do app.json (prebuild) e o Gradle compila o APK.
+#
+# - Em todo push que mexe em mobile/: testa o núcleo contra os vetores,
+#   confere os tipos e monta o APK (fica nos artefatos da execução).
+# - Numa etiqueta `app-v*`: o mesmo, e o APK vai para uma Release própria,
+#   com a soma SHA-256.
+#
+# Assinatura: por enquanto o APK sai assinado com a chave de depuração que o
+# próprio build gera (cada execução, uma chave). Instala por fora da loja,
+# mas atualizar exige desinstalar antes. A chave de lançamento do app entra
+# como segredo do repositório quando o app for para a Play Store.
+
+name: app-celular
+
+on:
+  push:
+    branches: [main]
+    paths: ["mobile/**", "vectors/**", ".github/workflows/app-celular.yml"]
+    tags: ["app-v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  apk:
+    name: testar e montar o APK
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 17
+      - run: npm ci --no-audit --no-fund
+      - name: núcleo contra os vetores (os mesmos do Python e do Rust)
+        run: npm run testar
+      - name: tipos
+        run: npx tsc --noEmit
+      - name: projeto Android (prebuild)
+        run: npx expo prebuild --platform android --no-install
+      - name: compilar o APK
+        working-directory: mobile/android
+        env:
+          GRADLE_OPTS: -Dorg.gradle.jvmargs=-Xmx4g
+        run: ./gradlew assembleRelease --no-daemon
+      - name: nome e soma
+        run: |
+          versao=$(node -p "require('./app.json').expo.version")
+          mkdir -p ../dist
+          cp android/app/build/outputs/apk/release/app-release.apk "../dist/hyurax-carteira-${versao}.apk"
+          cd ../dist && sha256sum *.apk > "hyurax-carteira-${versao}.apk.sha256" && cat *.sha256
+      - uses: actions/upload-artifact@v5
+        with:
+          name: hyurax-carteira-apk
+          path: dist/
+      - name: Release (etiqueta app-v*)
+        if: startsWith(github.ref, 'refs/tags/app-v')
+        working-directory: .
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${GITHUB_REF_NAME}" dist/* \
+            --title "Hyurax carteira ${GITHUB_REF_NAME#app-v} (Android, rede de teste)" \
+            --notes "Aplicativo de carteira para Android, rede de TESTE: o HYX não tem valor. A chave fica no aparelho; o app fala com um nó Hyurax (no PC: Ajustes → Carteiras de celular). Assinado com chave de depuração: para atualizar, desinstale a versão anterior. Confira a soma SHA-256 antes de instalar." \
+            --prerelease

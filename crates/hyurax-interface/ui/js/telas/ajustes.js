@@ -41,6 +41,7 @@ export function montar(opcoes) {
   });
   $("a-termos").addEventListener("click", () => abrirTermos(false));
   $("a-api").addEventListener("change", (e) => mudar({ api_externa: e.target.checked ? "1" : "0" }));
+  $("a-leve").addEventListener("change", (e) => mudar({ carteiras_leves: e.target.checked ? "1" : "0" }));
   $("a-conta").addEventListener("submit", async (ev) => {
     ev.preventDefault();
     const nome = $("a-conta-nome").value.trim();
@@ -123,6 +124,7 @@ export function atualizar(e) {
     qr.hidden = true;
   }
   caixa("a-api", a.api_externa);
+  caixa("a-leve", a.carteiras_leves);
   $("a-api").disabled = !janela;
   for (const x of $("a-conta").elements) x.disabled = !e.pode_mandar;
   tabela(

@@ -36,6 +36,8 @@ pub struct Opcoes {
     pub painel_rede: bool,
     /// API externa ligada (contas de cliente mandam JOBs).
     pub api_externa: bool,
+    /// API das carteiras de celular ligada.
+    pub carteiras: bool,
     /// Pacote do Éter (gravar a transação num arquivo, ou ler um).
     pub pacote: Option<PathBuf>,
 }
@@ -67,6 +69,7 @@ pub fn ler(args: &[String]) -> Result<Opcoes, String> {
         painel_porta: config::PORTA_PAINEL,
         painel_rede: false,
         api_externa: false,
+        carteiras: false,
         pacote: None,
     };
     // endereços se leem no fim, quando já se sabe a rede: o prefixo depende dela
@@ -84,6 +87,10 @@ pub fn ler(args: &[String]) -> Result<Opcoes, String> {
             }
             "--api-externa" => {
                 o.api_externa = true;
+                continue;
+            }
+            "--carteiras" => {
+                o.carteiras = true;
                 continue;
             }
             "--sem-malha" => {

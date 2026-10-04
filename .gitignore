@@ -54,3 +54,13 @@ desktop.ini
 #   .cargo/      a configuração de build é a mesma nas três máquinas.
 #   spec/        a especificação é o projeto.
 # ---------------------------------------------------------------------------
+
+# ---------------------------------------------------------------------------
+# Aplicativo do celular (mobile/): dependências e pastas nativas geradas
+# (o Expo gera android/ e ios/ a partir do app.json; nunca editar à mão)
+# ---------------------------------------------------------------------------
+mobile/node_modules/
+mobile/.expo/
+mobile/android/
+mobile/ios/
+mobile/dist/

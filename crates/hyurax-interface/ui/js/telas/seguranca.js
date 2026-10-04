@@ -17,7 +17,7 @@ export function atualizar(e) {
     ["Versão", `${e.versao} · rede de teste`],
     ["Identidade do nó (Noise)", el("span", { class: "num", title: s.identidade_no }, curto(s.identidade_no, 20))],
     ["Chave do worker (assina provas e anúncios)", el("span", { class: "num", title: s.worker }, curto(s.worker, 20))],
-    ["SHA-512 deste executável", s.executavel_sha512 ? el("span", { class: "num", title: s.executavel_sha512 }, curto(s.executavel_sha512, 24)) : "só nesta janela"],
+    ["SHA-512 deste executável", s.executavel_sha512 ? el("span", { class: "num", title: s.executavel_sha512 }, curto(s.executavel_sha512, 24)) : e.pode_mandar ? "calculando…" : "só nesta janela"],
     ["Chave de lançamento embutida", s.chave_de_lancamento ? "sim: atualização só com manifesto assinado" : "não (programa compilado sem ela)"],
     ["Última busca de atualização", atu.verificado_ms ? new Date(atu.verificado_ms).toLocaleString("pt-BR", { hour12: false }) : "ainda não buscou"],
     ["Versão nova conferida", atu.disponivel ? `${atu.disponivel.versao} (assinatura conferida)` : "nenhuma"],

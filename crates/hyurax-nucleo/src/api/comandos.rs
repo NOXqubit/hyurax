@@ -162,6 +162,13 @@ pub(super) fn atender(s: &mut TcpStream, p: &Pedido, n: &Arc<Nucleo>) -> std::io
                 n.api_externa.store(ligar, Ordering::Relaxed);
                 n.barramento.registrar("painel", if ligar { "API externa ligada: contas de cliente mandam JOBs pela rede" } else { "API externa desligada" });
             }
+            if let Some(ligar) = sim("carteiras_leves") {
+                n.carteiras_leves.store(ligar, Ordering::Relaxed);
+                n.barramento.registrar(
+                    "painel",
+                    if ligar { "carteiras de celular ligadas: o app pode ler saldo e mandar transações já assinadas por este nó" } else { "carteiras de celular desligadas" },
+                );
+            }
             n.gravar_ajustes();
             ok()
         }

@@ -1,0 +1,134 @@
+{
+  "data": {
+    "aceitos": [
+      {
+        "endereco": "c0de480102030405060708090a0b0c0d0e0f1b0e",
+        "rede": "hyurax-testnet",
+        "texto": "THYX1CR0YSQGZQVZQ2PS8PQYS5ZCVP58Q7XCW66Z475"
+      },
+      {
+        "endereco": "c0de480102030405060708090a0b0c0d0e0f1b0e",
+        "rede": "hyurax-testnet",
+        "texto": "  thyx1cr0ysqgzqvzq2ps8pqys5zcvp58q7xcw66z475\n"
+      },
+      {
+        "endereco": "c0de480102030405060708090a0b0c0d0e0f1b0e",
+        "rede": "hyurax-mainnet",
+        "texto": "c0de480102030405060708090a0b0c0d0e0f1b0e"
+      },
+      {
+        "endereco": "c0de480102030405060708090a0b0c0d0e0f1b0e",
+        "rede": "hyurax-testnet",
+        "texto": "C0DE480102030405060708090A0B0C0D0E0F1B0E"
+      }
+    ],
+    "recusas": [
+      {
+        "erro": "este endereço é da rede de teste; aqui a rede espera um que comece com hyx1",
+        "rede": "hyurax-mainnet",
+        "texto": "thyx1cr0ysqgzqvzq2ps8pqys5zcvp58q7xcw66z475"
+      },
+      {
+        "erro": "este endereço é da rede de teste; aqui a rede espera um que comece com rhyx1",
+        "rede": "hyurax-regtest",
+        "texto": "thyx1cr0ysqgzqvzq2ps8pqys5zcvp58q7xcw66z475"
+      },
+      {
+        "erro": "este endereço é da rede principal; aqui a rede espera um que comece com thyx1",
+        "rede": "hyurax-testnet",
+        "texto": "hyx1cr0ysqgzqvzq2ps8pqys5zcvp58q7xcw50t379"
+      },
+      {
+        "erro": "este endereço é de outra coisa, não do Hyurax; aqui a rede espera um que comece com thyx1",
+        "rede": "hyurax-testnet",
+        "texto": "btc1cr0ysqgzqvzq2ps8pqys5zcvp58q7xcwnt5872"
+      },
+      {
+        "erro": "o dígito verificador não confere: tem erro de digitação no endereço",
+        "rede": "hyurax-testnet",
+        "texto": "thyx1cr0yspgzqvzq2ps8pqys5zcvp58q7xcw66z475"
+      },
+      {
+        "erro": "endereço mistura maiúsculas e minúsculas",
+        "rede": "hyurax-testnet",
+        "texto": "thyx1CR0YSQGZQVZQ2PS8PQYS5ZCVP58Q7XCW66Z475"
+      },
+      {
+        "erro": "o dígito verificador não confere: tem erro de digitação no endereço",
+        "rede": "hyurax-testnet",
+        "texto": "thbx1cr0ysqgzqvzq2ps8pqys5zcvp58q7xcw66z475"
+      },
+      {
+        "erro": "endereço com tamanho errado",
+        "rede": "hyurax-testnet",
+        "texto": "thyx1"
+      },
+      {
+        "erro": "endereço sem o separador 1",
+        "rede": "hyurax-testnet",
+        "texto": "thyxqqqqqqqqqqqqq"
+      },
+      {
+        "erro": "endereço com tamanho errado",
+        "rede": "hyurax-testnet",
+        "texto": "thyx1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq3pvur3"
+      },
+      {
+        "erro": "endereço com tamanho errado",
+        "rede": "hyurax-testnet",
+        "texto": "thyx1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqk57gws"
+      },
+      {
+        "erro": "endereço com tamanho errado",
+        "rede": "hyurax-testnet",
+        "texto": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+      }
+    ],
+    "validos": [
+      {
+        "endereco": "0000000000000000000000000000000000000000",
+        "mainnet": "hyx1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqfltgcg",
+        "regtest": "rhyx1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq4f2ye0",
+        "testnet": "thyx1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq82zvce"
+      },
+      {
+        "endereco": "ffffffffffffffffffffffffffffffffffffffff",
+        "mainnet": "hyx1llllllllllllllllllllllllllllllll9w28lz",
+        "regtest": "rhyx1llllllllllllllllllllllllllllllllectt79",
+        "testnet": "thyx1lllllllllllllllllllllllllllllllltmrrln"
+      },
+      {
+        "endereco": "000102030405060708090a0b0c0d0e0f10111213",
+        "mainnet": "hyx1qqqsyqcyq5rqwzqfpg9scrgwpugpzysne26dwv",
+        "regtest": "rhyx1qqqsyqcyq5rqwzqfpg9scrgwpugpzysn9ump0t",
+        "testnet": "thyx1qqqsyqcyq5rqwzqfpg9scrgwpugpzysnhlnfwa"
+      },
+      {
+        "endereco": "c0de480102030405060708090a0b0c0d0e0f1b0e",
+        "mainnet": "hyx1cr0ysqgzqvzq2ps8pqys5zcvp58q7xcw50t379",
+        "regtest": "rhyx1cr0ysqgzqvzq2ps8pqys5zcvp58q7xcwge2alz",
+        "testnet": "thyx1cr0ysqgzqvzq2ps8pqys5zcvp58q7xcw66z475"
+      },
+      {
+        "endereco": "a036e6ddaf9df2b5bee54330ef94561811219990",
+        "mainnet": "hyx15qmwdhd0nhett0h9gvcwl9zkrqgjrxvsvmw9cy",
+        "regtest": "rhyx15qmwdhd0nhett0h9gvcwl9zkrqgjrxvssd0fer",
+        "testnet": "thyx15qmwdhd0nhett0h9gvcwl9zkrqgjrxvszw8pc4"
+      },
+      {
+        "endereco": "d3f1fe3f80c9f13b705fa3b2767dc05474e0fc27",
+        "mainnet": "hyx160clu0uqe8cnkuzl5we8vlwq236wplp8ztzsgj",
+        "regtest": "rhyx160clu0uqe8cnkuzl5we8vlwq236wplp87aruf4",
+        "testnet": "thyx160clu0uqe8cnkuzl5we8vlwq236wplp8v7t5gr"
+      },
+      {
+        "endereco": "e95ddae848d6d0ef5383021c31c1309ecd7b3123",
+        "mainnet": "hyx1a9wa46zg6mgw75urqgwrrsfsnmxhkvfrgwdq69",
+        "regtest": "rhyx1a9wa46zg6mgw75urqgwrrsfsnmxhkvfr5cvvmz",
+        "testnet": "thyx1a9wa46zg6mgw75urqgwrrsfsnmxhkvfrxmyy65"
+      }
+    ]
+  },
+  "generator": "reference/tools/gen_vectors.py",
+  "spec": "HYURAX-SPEC-01"
+}

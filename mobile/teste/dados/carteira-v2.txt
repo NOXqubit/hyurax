@@ -1,0 +1,14 @@
+# Carteira Hyurax de TESTE, cifrada com senha.
+# Sem a senha, este arquivo não gasta nada. Sem este arquivo E a senha,
+# o saldo fica perdido: guarde uma cópia e não esqueça a senha.
+# A rede pública não existe e o HYX não tem valor.
+formato=HYURAX-CARTEIRA-v2
+endereco=e95ddae848d6d0ef5383021c31c1309ecd7b3123
+kdf=argon2id
+memoria_kib=65536
+passadas=3
+faixas=1
+sal=030a11181f262d343b424950575e656c
+nonce=737a81888f969da4abb2b9c0
+cifrado=247cd9b7832f6c69f547583fd77525053f908c489c21d19234a3910cc437a195
+etiqueta=940008eeec78036a999846e749d7074b

@@ -50,7 +50,7 @@ registros em `%LOCALAPPDATA%\Hyurax`. No Linux, as pastas do XDG.
 |---|---|
 | Especificação `HYURAX-SPEC-01` | escrita, congelável quando a tokenomics fechar |
 | Implementação de referência (Python) | completa, 177 testes |
-| Vetores de validação cruzada | 25 arquivos |
+| Vetores de validação cruzada | 29 arquivos, conferidos pelo Python, pelo Rust e (endereço, transação e carteira) pelo app do celular |
 | Nó de produção (Rust) | `hyurax-types`, `hyurax-crypto`, `hyurax-codec`, `hyurax-pow`, `hyurax-usefulpow`, `hyurax-tx`, `hyurax-block`, `hyurax-consensus`, `hyurax-state`, `hyurax-chain`, `hyurax-store`, `hyurax-wire`, `hyurax-net`, todos iguais ao gabarito por vetor |
 | Programa 1.0 | `hyurax-nucleo` (o núcleo, sem tela), `hyurax-interface` (a tela), `hyurax-app` (a janela), `hyurax-no` (terminal) e `hyurax-instalador`. Ver [`docs/ARQUITETURA.md`](docs/ARQUITETURA.md) |
 | ULTRAX (trabalho útil) | oito motores, especificados em Python e iguais no Rust por vetor; CPU com limitador por linha e GPU (WebGL 2) conferida pela CPU. Ver [`docs/ULTRAX.md`](docs/ULTRAX.md) |
@@ -61,7 +61,8 @@ registros em `%LOCALAPPDATA%\Hyurax`. No Linux, as pastas do XDG.
 | Termos de uso | [`docs/TERMOS-DE-USO.md`](docs/TERMOS-DE-USO.md), versão 3, aceitos no instalador e na primeira abertura; revisados pelo projeto (lista de leis no começo do arquivo), **sem assinatura de advogado** |
 | Assinatura digital do programa | não tem ainda; opções em [`docs/ASSINATURA-DIGITAL.md`](docs/ASSINATURA-DIGITAL.md) |
 | Testnet pública | ensaiada com três processos; lançamento em [`docs/LANCAR-A-REDE.md`](docs/LANCAR-A-REDE.md); sementes em [`rede/sementes-testnet.txt`](rede/sementes-testnet.txt); kit do nó semente em [`docs/NO-SEMENTE.md`](docs/NO-SEMENTE.md); **nenhum semente no ar ainda** |
-| Mainnet | não existe |
+| Aplicativo do celular | carteira Android (Expo), chave só no aparelho, APK montado pelo GitHub. Ver [`docs/APP-CELULAR.md`](docs/APP-CELULAR.md) |
+| Mainnet | não existe; o que falta e o que o autor decide em [`docs/MAINNET.md`](docs/MAINNET.md) |
 | HYX Index, Hyurax Flux, Direct e Resonance | arquiteturas registradas em `docs/`; estado RED, nada implementado |
 | Éter (transporte por qualquer meio) | núcleo em `hyurax-eter` (pasta de arquivos e memória); Bluetooth, LoRa e rádio projetados, não implementados. Ver [`docs/HYURAX-ETER.md`](docs/HYURAX-ETER.md) |
 

@@ -618,6 +618,11 @@
       </article>
     </div>
     <article class="bloco">
+      <h2>Carteiras de celular</h2>
+      <p class="nota">O aplicativo Hyurax do celular não guarda a cadeia. Ele pergunta a um nó o saldo e entrega a transação já assinada no aparelho; a senha e a chave nunca passam por este computador. Com isto ligado, o app de qualquer aparelho que alcance este PC lê saldos (o que a cadeia já mostra a todos) e manda transações, que a validação deste nó confere antes de aceitar. No app, use <b>http://IP-DESTE-PC:8800</b>.</p>
+      <label class="chave" for="a-leve"><input type="checkbox" id="a-leve"><span>Servir carteiras de celular</span></label>
+    </article>
+    <article class="bloco">
       <h2>API externa e contas de cliente</h2>
       <p class="nota">Contas de cliente mandam JOBs de outro computador por <code>/api/v1/externa/</code>, com a chave de acesso delas (ver docs/API-EXTERNA.md). Cada conta tem um limite de créditos de computação, que não são dinheiro nem HYX. A conexão não é cifrada: use só em rede local confiável.</p>
       <label class="chave" for="a-api"><input type="checkbox" id="a-api"><span>Ligar a API externa</span></label>

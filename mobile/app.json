@@ -1,0 +1,43 @@
+{
+  "expo": {
+    "name": "Hyurax",
+    "slug": "hyurax",
+    "version": "0.1.0",
+    "scheme": "hyurax",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "backgroundColor": "#0B0B0C",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#121626"
+    },
+    "android": {
+      "package": "org.hyurax.carteira",
+      "versionCode": 1,
+      "adaptiveIcon": {
+        "backgroundColor": "#121626",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "allowBackup": false,
+      "predictiveBackGestureEnabled": false
+    },
+    "ios": {
+      "bundleIdentifier": "org.hyurax.carteira",
+      "supportsTablet": false
+    },
+    "plugins": [
+      "expo-router",
+      "expo-status-bar",
+      ["expo-secure-store", { "configureAndroidBackup": true, "faceIDPermission": "Confirmar o envio de HYX com o Face ID." }],
+      ["expo-local-authentication", { "faceIDPermission": "Confirmar o envio de HYX com o Face ID." }],
+      ["expo-camera", { "cameraPermission": "A câmera lê o QR Code de um endereço Hyurax. Nada é gravado.", "recordAudioAndroid": false, "barcodeScannerEnabled": true }],
+      ["expo-build-properties", { "android": { "usesCleartextTraffic": true } }]
+    ],
+    "experiments": {
+      "typedRoutes": false
+    }
+  }
+}

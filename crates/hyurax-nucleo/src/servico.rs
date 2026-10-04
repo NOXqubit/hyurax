@@ -81,6 +81,8 @@ pub struct Nucleo {
     pub na_rede: AtomicBool,
     /// A API externa responde (contas de cliente, `/api/v1/externa/`).
     pub api_externa: AtomicBool,
+    /// A API das carteiras de celular responde (`/api/v1/leve/`).
+    pub carteiras_leves: AtomicBool,
     /// As contas de cliente da API externa.
     pub contas: crate::contas::Contas,
     /// Porta do nó para outros nós (0: não escuta).
@@ -236,6 +238,7 @@ impl Nucleo {
             maquinas,
             na_rede: AtomicBool::new(ajustes.na_rede || p.painel_na_rede),
             api_externa: AtomicBool::new(ajustes.api_externa),
+            carteiras_leves: AtomicBool::new(ajustes.carteiras_leves),
             contas: crate::contas::Contas::abrir(Some(pastas.config.clone())),
             sementes: Mutex::new(sementes),
             ajustes: Mutex::new(ajustes.clone()),
@@ -322,6 +325,7 @@ impl Nucleo {
         a.limite_cpu = self.mineracao.limite_cpu.load(Ordering::Relaxed);
         a.na_rede = self.na_rede.load(Ordering::Relaxed);
         a.api_externa = self.api_externa.load(Ordering::Relaxed);
+        a.carteiras_leves = self.carteiras_leves.load(Ordering::Relaxed);
         a.ultrax = u.ligado.load(Ordering::Relaxed);
         a.ultrax_linhas = u.linhas.load(Ordering::Relaxed);
         a.ultrax_limite_cpu = u.uso_cpu.load(Ordering::Relaxed);
