@@ -284,6 +284,10 @@ pub struct Config {
     pub versao_minima_agente: String,
     /// Versão dos termos de uso que o cadastro aceita.
     pub termos_versao: u32,
+    /// Contato do suporte (e-mail ou endereço), mostrado nas páginas. Vazio:
+    /// não aparece.
+    #[serde(default)]
+    pub contato: String,
 }
 
 impl Default for Config {
@@ -302,6 +306,7 @@ impl Default for Config {
             pix: Pix::default(),
             versao_minima_agente: "1.5.0".into(),
             termos_versao: 1,
+            contato: String::new(),
         }
     }
 }
@@ -332,6 +337,9 @@ impl Config {
             if !TipoDeTrabalho::TODOS.iter().any(|t| t.nome() == nome) {
                 return Err(format!("motor desconhecido: {nome}"));
             }
+        }
+        if self.contato.len() > 200 || self.contato.chars().any(char::is_control) {
+            return Err("contato do suporte longo demais".into());
         }
         if self.pix.chave.len() > 120 || self.pix.titular.len() > 120 {
             return Err("dados do Pix longos demais".into());

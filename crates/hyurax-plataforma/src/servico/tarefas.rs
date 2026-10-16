@@ -540,6 +540,11 @@ impl Plataforma {
             prova,
             t: agora,
         }];
+        // a primeira entrega prova que a execução começou, mesmo que o agente
+        // não tenha mandado progresso antes
+        if n.estado.tarefas.get(&tarefa).is_some_and(|x| matches!(x.estado, EstadoTarefa::Queued | EstadoTarefa::Scheduled | EstadoTarefa::Dispatched)) {
+            eventos.push(Evento::TaskState { tarefa, estado: EstadoTarefa::Running, motivo: String::new(), por: 0, t: agora });
+        }
         let resposta = match &julgamento {
             Err(motivo) => {
                 eventos.push(Evento::AssignmentClosed { atribuicao, desfecho: Desfecho::Recusada, motivo: motivo.clone(), t: agora });
@@ -1057,6 +1062,7 @@ impl Plataforma {
             "retencao_dias": e.config.retencao_dias,
             "como_cobra": "por trabalho conferido: as operações do modelo de custo de cada motor, convertidas em horas de um núcleo de referência (1 bilhão de operações por segundo)",
             "cadastro_aberto": e.config.cadastro_aberto,
+            "contato": e.config.contato,
             "parada_de_emergencia": e.config.parada_de_emergencia,
             "modo_teste": self.opcoes.modo_teste,
         }))

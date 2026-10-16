@@ -59,6 +59,8 @@ jobs:
       # três núcleos completos ligados pelos sockets: JOB de nível 3 e um nó
       # que cai no meio
       - run: cargo test -p hyurax-nucleo --test tres_nos --locked -- --ignored
+      # o agente do programa (núcleo completo) contra o servidor da plataforma V1
+      - run: cargo test -p hyurax-plataforma --test agente_real --locked -- --ignored
 
   dependencias:
     name: falhas conhecidas nas dependências (RustSec)

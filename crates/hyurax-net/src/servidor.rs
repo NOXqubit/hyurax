@@ -38,7 +38,7 @@ use crate::no::No;
 
 mod pacote;
 mod ponte;
-mod websocket;
+pub(crate) mod websocket;
 pub use pacote::ResultadoDoPacote;
 pub use ponte::EstadoDaMalha;
 

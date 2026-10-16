@@ -71,7 +71,7 @@ jobs:
           target: ${{ matrix.alvo }}
       - name: compilar
         shell: bash
-        run: cargo build --release --locked --target ${{ matrix.alvo }} -p hyurax-no
+        run: cargo build --release --locked --target ${{ matrix.alvo }} -p hyurax-no -p hyurax-plataforma
       - name: empacotar
         shell: bash
         run: |
@@ -82,6 +82,8 @@ jobs:
           ext=""
           [ "${{ runner.os }}" = "Windows" ] && ext=".exe"
           cp ".target/${{ matrix.alvo }}/release/hyurax-no${ext}" "$pasta/"
+          cp ".target/${{ matrix.alvo }}/release/hyurax-plataforma${ext}" "$pasta/"
+          cp docs/OPERAR-A-PLATAFORMA.md "$pasta/PLATAFORMA.md"
           cp LICENSE-MIT LICENSE-APACHE "$pasta/"
           cp docs/RODAR-UM-NO.md "$pasta/LEIA-ME.md"
           if [ "${{ runner.os }}" = "Windows" ]; then
@@ -166,5 +168,7 @@ jobs:
             | `linux-arm64-e-celular` | Linux em ARM e celular Android pelo Termux |
             | `windows-x86_64` | Windows 10 ou 11 |
             | `macos-arm64` | Mac com chip Apple |
+
+            Os pacotes de terminal trazem também o `hyurax-plataforma`, o servidor do **HYURAX Compute (V1)**, o mercado de computação: contas, nós, agendador, conferência, cobrança em reais e administração. Como hospedar: `PLATAFORMA.md` no pacote ([docs/OPERAR-A-PLATAFORMA.md](https://github.com/NOXqubit/hyurax/blob/main/docs/OPERAR-A-PLATAFORMA.md)). O programa com janela traz a tela **Fornecer**, para emprestar este computador à plataforma.
 
             Confira a soma SHA-256 de cada pacote antes de rodar.

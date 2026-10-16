@@ -227,6 +227,8 @@ impl Ultrax {
         let _ = item.tarefa.avancar(Estado::Verificando, agora_ms(), "");
         let total_verificacao = match (item.desafio, esp.tipo()) {
             (Some(_), _) => 1,
+            // a plataforma confere por concordância entre nós: nada a refazer aqui
+            (None, _) if !item.autoconferir => 0,
             // a mochila refaz a programação dinâmica da instância, o mesmo total da execução
             (None, TipoDeTrabalho::Mochila) => total,
             (None, _) => trabalho::operacoes_de_verificacao(&esp),
@@ -235,17 +237,26 @@ impl Ultrax {
         self.marcar(
             numero,
             "VERIFICATION STARTED",
-            format!(
-                "{} · autoconferência na CPU desta máquina ({MODO}){}",
-                item.tarefa.metodo.nome(),
-                if gpu.is_some() { " · o resultado veio da GPU" } else { "" }
-            ),
+            if item.autoconferir {
+                format!(
+                    "{} · autoconferência na CPU desta máquina ({MODO}){}",
+                    item.tarefa.metodo.nome(),
+                    if gpu.is_some() { " · o resultado veio da GPU" } else { "" }
+                )
+            } else {
+                "conferência pela plataforma HYURAX Compute (concordância entre nós); aqui só a assinatura".to_string()
+            },
         );
         let comeco_verificacao = Instant::now();
         // a conferência é sempre na CPU, com outro algoritmo: é o que pega o erro da GPU
         let mut controle = Controle::novo(self, linha, item.tarefa.prazo_ms, &feitas);
         let julgamento: Result<Parecer, ErroDeTrabalho> = if !assinatura.is_some_and(|a| registro.assinatura_confere(&a)) {
             Ok(Parecer::Recusado(Recusa("o registro de prova não tem assinatura válida deste worker".into())))
+        } else if !item.autoconferir && item.desafio.is_none() {
+            // unidade da plataforma HYURAX Compute: a conferência é lá, por
+            // concordância entre nós de donos diferentes; a assinatura do
+            // registro já foi conferida acima
+            Ok(Parecer::Aceito)
         } else if let Some(d) = item.desafio.and_then(|q| DESAFIOS.get(q)) {
             feitas.store(1, Ordering::Relaxed);
             Ok(if hex(&registro.resultado) == d.esperado {

@@ -167,3 +167,39 @@ para quem usa:
   marcadas "a venda ainda não abriu".
 - **`hyurax-no planos`**: catálogo, chave de planos (fora do repositório),
   emitir e conferir voucher.
+
+## 1.5.0 (16/10/2026): HYURAX Compute, a plataforma V1
+
+O mercado de computação do documento "HYURAX V1 — Compute Marketplace", de
+ponta a ponta. O mapa seção por seção está em
+[V1-PLATAFORMA.md](V1-PLATAFORMA.md); como hospedar e operar, em
+[OPERAR-A-PLATAFORMA.md](OPERAR-A-PLATAFORMA.md).
+
+- **`hyurax-plataforma`**, o servidor central (vem nos pacotes de terminal):
+  contas com Argon2id, sessão e chave de API (HYX_API_KEY) com escopo e
+  limite; registro de nós com pulso e telemetria; agendador que escolhe o
+  nó mais adequado, não o mais forte; tarefas com estimativa e reserva de
+  saldo; conferência (Freivalds no servidor, concordância entre nós de donos
+  diferentes por amostragem de reputação, quarentena); cobrança em real ou
+  dólar num livro de partida dobrada; retenção e saque dos fornecedores;
+  antifraude; administração com kill switch em quatro níveis; diário com
+  hash encadeado que é ao mesmo tempo banco, sistema de eventos e registro
+  de auditoria.
+- **Painéis web** do cliente, do fornecedor e do administrador, no Cloud
+  Design do programa (claro, escuro e celular).
+- **Tela Fornecer** no programa e **`hyurax-no agente`**: este computador
+  como fornecedor. Vincula com o código do painel, empresta os núcleos e a
+  memória que o dono escolher, pausa na hora. As unidades rodam no mesmo
+  worker do ULTRAX, com os mesmos limites e a mesma prova assinada.
+- **Regras de dinheiro especificadas em Python** (`reference/hyurax/plataforma.py`):
+  preço por hora de núcleo de referência, liquidação que fecha ao centavo,
+  reputação e assinatura do agente, conferidas pelo Rust em
+  `vectors/plataforma.json`.
+- **Testes:** a definição de pronto inteira por HTTP (`fluxo_completo.rs`),
+  segurança básica (`seguranca.rs`), queda e volta (`recuperacao.rs`), e o
+  agente real contra o servidor real nesta máquina.
+- **O que depende do dono:** servidor com disco persistente para hospedar,
+  e a empresa (CNPJ com a atividade certa, conta PJ, provedor de pagamento,
+  termos revisados) para abrir a venda. Até lá, o pagamento é Pix manual
+  conferido pela equipe, e só abre quando a chave Pix da empresa estiver na
+  configuração.

@@ -1237,6 +1237,7 @@ impl Ciencia {
                         semente: u.semente,
                         prioridade: PRIORIDADE,
                         prazo_ms,
+                        autoconferir: true,
                     },
                     progresso,
                 ));

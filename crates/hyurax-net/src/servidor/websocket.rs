@@ -390,7 +390,7 @@ pub(crate) fn ler_url(texto: &str) -> Option<(bool, String, u16, String)> {
     valido.then(|| (seguro, host.to_string(), porta, caminho.to_string()))
 }
 
-fn configuracao_tls() -> Option<Arc<rustls::ClientConfig>> {
+pub(crate) fn configuracao_tls() -> Option<Arc<rustls::ClientConfig>> {
     static CFG: std::sync::OnceLock<Option<Arc<rustls::ClientConfig>>> = std::sync::OnceLock::new();
     CFG.get_or_init(|| {
         let raizes = rustls::RootCertStore { roots: webpki_roots::TLS_SERVER_ROOTS.to_vec() };

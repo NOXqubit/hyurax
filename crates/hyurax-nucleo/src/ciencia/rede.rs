@@ -504,7 +504,7 @@ impl Ciencia {
             operacao: format!("unidade {} de um JOB de outro nó ({}…): {} {}", x.indice, hex(x.job.get(..8).unwrap_or_default()), x.esp.tipo().descricao(), x.esp.resumo()),
             ..Evento::default()
         });
-        Some(PedidoDeUnidade { job: x.job, indice: x.indice, especificacao: x.esp, semente: x.semente, prioridade: PRIORIDADE, prazo_ms: x.prazo_ms })
+        Some(PedidoDeUnidade { job: x.job, indice: x.indice, especificacao: x.esp, semente: x.semente, prioridade: PRIORIDADE, prazo_ms: x.prazo_ms, autoconferir: true })
     }
 
     /// Quem trabalha: o worker local terminou uma unidade de outro nó.

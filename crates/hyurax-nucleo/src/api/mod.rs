@@ -400,6 +400,7 @@ fn ler(mut s: TcpStream, p: &Pedido, n: &Arc<Nucleo>, arquivos: Arquivos, daqui:
             }
         }
         "/api/v1/planos" => json_ok(&mut s, n.planos.json(&n.ultrax.worker(), crate::util::agora_ms())),
+        "/api/v1/plataforma" => json_ok(&mut s, n.plataforma.json()),
         "/api/v1/nuvem" => {
             let c = Arc::clone(&n.ciencia);
             json_ok(&mut s, n.nuvem.json(&move |w| c.reputacao_de(w)))

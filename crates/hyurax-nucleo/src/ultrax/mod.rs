@@ -288,6 +288,10 @@ pub struct PedidoDeUnidade {
     pub prioridade: u8,
     /// Prazo da unidade, em milissegundos desde 1970.
     pub prazo_ms: u64,
+    /// Conferir o resultado nesta máquina antes de entregar. A plataforma
+    /// HYURAX Compute pede `false` nos motores que ela confere por
+    /// concordância entre nós: refazer a conta aqui só dobraria o custo.
+    pub autoconferir: bool,
 }
 
 /// Como uma unidade de JOB saiu do worker.
@@ -380,6 +384,8 @@ struct NaFila {
     origem: Vec<u8>,
     /// `(JOB_ID, índice)` quando é unidade de JOB.
     job: Option<([u8; HASH_LEN], u64)>,
+    /// Conferir o resultado nesta máquina (ver [`PedidoDeUnidade::autoconferir`]).
+    autoconferir: bool,
 }
 
 /// O que a execução deixa para a conferência.
@@ -831,6 +837,13 @@ impl Ultrax {
 
     /// Liga o agendador de JOBs: dali em diante, a fila pede unidades a ele
     /// antes de gerar trabalho LAB.
+    /// Acorda o gerador: chegou trabalho de fora (a plataforma) para a fila.
+    pub fn pedir_trabalho(&self) {
+        self.pedir_mais();
+    }
+
+    /// Liga quem entrega unidades de JOB (a ciência, ou o agendador composto
+    /// quando há agente da plataforma).
     pub fn ligar_agendador(&self, agendador: Arc<dyn Agendador>) {
         if let Ok(mut a) = self.agendador.lock() {
             *a = Some(agendador);
@@ -919,7 +932,9 @@ impl Ultrax {
         if self.ligado.swap(ligar, Ordering::Relaxed) == ligar {
             return;
         }
-        if ligar {
+        if ligar && !self.lab.load(Ordering::Relaxed) {
+            (self.aviso)("ultrax", "ULTRAX ligado só para trabalho pedido (JOBs e plataforma), sem carga de teste".into());
+        } else if ligar {
             (self.aviso)("ultrax", format!("ULTRAX ligado (modo {MODO}, {SELO}): trabalho de teste gerado nesta máquina"));
         } else {
             self.descartar_fila("o ULTRAX foi desligado");

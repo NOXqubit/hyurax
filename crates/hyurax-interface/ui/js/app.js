@@ -18,6 +18,7 @@ import * as mercado from "./telas/mercado.js";
 import * as armazenamento from "./telas/armazenamento.js";
 import * as faturamento from "./telas/faturamento.js";
 import * as planos from "./telas/planos.js";
+import * as fornecer from "./telas/fornecer.js";
 import * as seguranca from "./telas/seguranca.js";
 import { creditos } from "./telas/comum.js";
 import * as ajustes from "./telas/ajustes.js";
@@ -25,7 +26,7 @@ import * as ajustes from "./telas/ajustes.js";
 // a chave de sessão vem no endereço; tira dele antes de qualquer coisa
 pegarChaveDoEndereco();
 
-const TELAS = { inicio, computar, laboratorio, mercado, armazenamento, carteira, planos, visao, ultrax, ciencia, faturamento, cadeia, rede, seguranca, registro, ajustes };
+const TELAS = { inicio, computar, laboratorio, mercado, armazenamento, carteira, fornecer, planos, visao, ultrax, ciencia, faturamento, cadeia, rede, seguranca, registro, ajustes };
 let atual = "inicio";
 
 // ---------- navegação ----------

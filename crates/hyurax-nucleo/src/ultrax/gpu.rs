@@ -63,7 +63,7 @@ impl Ultrax {
                     "TASK CREATED",
                     format!("{} {} · {} · na GPU · verificação: {} na CPU · {SELO}", esp.tipo().descricao(), esp.resumo(), esp.tipo().categoria().nome(), tarefa.metodo.nome()),
                 );
-                (NaFila { tarefa, desafio: None, recusas: 0, origem: origem.to_vec(), job: None }, "LAB")
+                (NaFila { tarefa, desafio: None, recusas: 0, origem: origem.to_vec(), job: None, autoconferir: true }, "LAB")
             }
         };
         let esp = item.tarefa.especificacao;

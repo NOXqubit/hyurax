@@ -4,6 +4,7 @@
 //! Usa o mesmo núcleo do programa com janela (`hyurax-nucleo`); aqui só se
 //! lê a linha de comando e se imprime o resultado.
 
+mod agente;
 mod cadeia;
 mod carteira;
 mod ciencia;
@@ -76,6 +77,12 @@ Com --pasta P, tudo fica em P. Redes: testnet (padrão) e regtest (local).
       Para quem publica: a chave de lançamento (nasce fora do repositório) e
       o manifesto assinado que a atualização segura do programa confere.
 
+  hyurax-no agente --plataforma https://... --codigo HYX-XXXX-XXXX [--linhas N] [--memoria MiB] [--gpu] [--nome NOME]
+      Este computador como fornecedor da plataforma HYURAX Compute (V1), sem
+      janela. O código de vínculo sai do painel da plataforma (Computadores →
+      Adicionar computador); depois da primeira vez, basta `hyurax-no agente`.
+      Só os motores do programa rodam; o cliente manda parâmetros, nunca código.
+
   hyurax-no planos catalogo | chave --saida ARQUIVO
   hyurax-no planos emitir --chave ARQUIVO --plano pro|equipe|empresa --para WORKER --serie N [--dias 30]
   hyurax-no planos conferir --voucher hyurax-plano:...
@@ -119,6 +126,7 @@ fn principal(args: &[String]) -> Result<(), String> {
         "ciencia" => ciencia::comando(resto),
         "lancamento" => lancamento::comando(resto),
         "planos" => planos::comando(resto),
+        "agente" => agente::comando(resto),
         "identidade" => identidade::comando(resto),
         "contas" => contas::comando(resto),
         "copia" => copia::comando(resto),

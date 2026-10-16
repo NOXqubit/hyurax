@@ -115,6 +115,15 @@ pub struct Telemetria {
     pub rede_bytes: u64,
 }
 
+/// `null` vira o padrão (o `#[serde(default)]` só cobre o campo ausente).
+fn nulo_e_padrao<'de, D, T>(d: D) -> Result<T, D::Error>
+where
+    D: serde::Deserializer<'de>,
+    T: Deserialize<'de> + Default,
+{
+    Ok(Option::<T>::deserialize(d)?.unwrap_or_default())
+}
+
 /// O pulso do agente.
 #[derive(Clone, Debug, Default, Deserialize)]
 pub struct PedidoDePulso {
@@ -142,8 +151,8 @@ pub struct PedidoDePulso {
     /// Atribuições recebidas e o progresso delas.
     #[serde(default)]
     pub progresso: Vec<Progresso>,
-    /// Telemetria.
-    #[serde(default)]
+    /// Telemetria (pode faltar ou vir nula: as métricas do sistema ainda não leram nada).
+    #[serde(default, deserialize_with = "nulo_e_padrao")]
     pub telemetria: Telemetria,
 }
 

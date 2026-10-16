@@ -23,6 +23,7 @@ hyurax-pow.workspace = true
 hyurax-block.workspace = true
 hyurax-tx.workspace = true
 hyurax-ultrax.workspace = true
+serde_json.workspace = true
 
 [lints.rust]
 unsafe_code = "forbid"

@@ -54,6 +54,22 @@ auditoria do WebGL 2 e do programa 0.x, está em
 | `hyurax-no` | o programa de terminal: carteira, minerar, enviar, `painel` (núcleo + interface no navegador), nó, ULTRAX, ciência |
 | `hyurax-instalador` | o instalador para Windows, que leva o programa dentro |
 | `hyurax-ultrax` | os oito motores de trabalho útil e o observador |
+| `hyurax-plataforma` | o servidor do HYURAX Compute (V1): contas, nós, agendador, tarefas, conferência, cobrança, saques, administração e os painéis web. Ver [V1-PLATAFORMA.md](V1-PLATAFORMA.md) |
+
+### A plataforma V1 e o agente
+
+```
+ navegador ──HTTPS──► hyurax-plataforma ◄──HTTPS, pedido assinado── agente (hyurax-nucleo::plataforma)
+                        diario.hyx (eventos com hash encadeado = banco, eventos e auditoria)
+                        estado = diário relido · agendador · conferência · livro em partida dobrada
+ agente: pulso a cada 5 s ─► unidades ─► agendador composto do ULTRAX (plataforma, depois ciência)
+         ─► worker (memória reservada, linhas limitadas, prova assinada) ─► resultado ─► plataforma
+```
+
+O agente só fala de dentro para fora; o computador do fornecedor não abre
+porta. As unidades da plataforma entram no mesmo worker das unidades de JOB,
+com prioridade acima delas e sem carga LAB enquanto o fornecimento estiver
+ligado.
 
 ## Pastas do usuário
 

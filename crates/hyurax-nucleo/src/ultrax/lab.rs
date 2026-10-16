@@ -135,7 +135,7 @@ impl Ultrax {
         );
         tarefa.avancar(Estado::NaFila, agora_ms(), "").map_err(|e| e.to_string())?;
         self.marcar(numero, "TASK QUEUED", String::new());
-        Ok(NaFila { tarefa, desafio, recusas: 0, origem: origem.to_vec(), job: None })
+        Ok(NaFila { tarefa, desafio, recusas: 0, origem: origem.to_vec(), job: None, autoconferir: true })
     }
 
     /// Transforma uma unidade de JOB numa tarefa, já em QUEUED. A semente é a
@@ -161,7 +161,7 @@ impl Ultrax {
         );
         tarefa.avancar(Estado::NaFila, agora_ms(), "").map_err(|e| e.to_string())?;
         self.marcar(numero, "TASK QUEUED", String::new());
-        Ok(NaFila { tarefa, desafio: None, recusas: 0, origem: p.semente.to_vec(), job: Some((p.job, p.indice)) })
+        Ok(NaFila { tarefa, desafio: None, recusas: 0, origem: p.semente.to_vec(), job: Some((p.job, p.indice)), autoconferir: p.autoconferir })
     }
 
     /// Execução e verificação, com a CPU inteira, no ritmo medido.

@@ -23,6 +23,8 @@ serde_json.workspace = true
 
 [dev-dependencies]
 hex.workspace = true
+# só no teste do agente real (o núcleo do programa contra este servidor)
+hyurax-nucleo.workspace = true
 
 [lints.rust]
 unsafe_code = "forbid"

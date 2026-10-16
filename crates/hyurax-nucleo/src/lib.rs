@@ -51,6 +51,7 @@ pub mod mineracao;
 pub mod nuvem;
 pub mod pastas;
 pub mod planos;
+pub mod plataforma;
 pub mod sementes;
 pub mod servico;
 pub mod termos;

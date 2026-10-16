@@ -6,6 +6,25 @@ Blockchain com prova de trabalho e trabalho computacional útil e conferível.
 teste não tem valor e não existe mainnet. Não há venda, pré-venda nem promessa
 de lucro. Qualquer pessoa que disser o contrário está mentindo.
 
+## HYURAX Compute (V1): o mercado de computação
+
+**Quem precisa de processamento** manda a tarefa e paga, em reais ou dólares,
+só o trabalho que passou na conferência. **Quem tem computador parado**
+empresta a máquina pelo programa Hyurax (tela **Fornecer**) e recebe por
+isso, sem dar acesso a nada do que é seu: só rodam os motores que vêm no
+programa, e o cliente manda parâmetros, nunca código.
+
+- o servidor `hyurax-plataforma`: contas, nós, agendador, tarefas,
+  conferência, cobrança, saques, antifraude e administração com kill switch;
+- os painéis do cliente, do fornecedor e do administrador;
+- o agente no programa e no terminal (`hyurax-no agente`).
+
+Sem token, sem blockchain e sem mineração no caminho do dinheiro: o saldo é
+crédito de uso. O mapa do documento V1 seção por seção está em
+[`docs/V1-PLATAFORMA.md`](docs/V1-PLATAFORMA.md); como hospedar e operar, em
+[`docs/OPERAR-A-PLATAFORMA.md`](docs/OPERAR-A-PLATAFORMA.md). **A venda ainda
+não abriu** (ver [`docs/MONETIZACAO.md`](docs/MONETIZACAO.md)).
+
 ## O programa 1.0
 
 Um programa só, com janela, que junta:
@@ -49,14 +68,15 @@ registros em `%LOCALAPPDATA%\Hyurax`. No Linux, as pastas do XDG.
 | Parte | Estado |
 |---|---|
 | Especificação `HYURAX-SPEC-01` | escrita, congelável quando a tokenomics fechar |
-| Implementação de referência (Python) | completa, 177 testes |
-| Vetores de validação cruzada | 29 arquivos, conferidos pelo Python, pelo Rust e (endereço, transação e carteira) pelo app do celular |
+| Implementação de referência (Python) | completa, 204 testes |
+| Vetores de validação cruzada | 30 arquivos, conferidos pelo Python, pelo Rust e (endereço, transação e carteira) pelo app do celular |
 | Nó de produção (Rust) | `hyurax-types`, `hyurax-crypto`, `hyurax-codec`, `hyurax-pow`, `hyurax-usefulpow`, `hyurax-tx`, `hyurax-block`, `hyurax-consensus`, `hyurax-state`, `hyurax-chain`, `hyurax-store`, `hyurax-wire`, `hyurax-net`, todos iguais ao gabarito por vetor |
 | Programa 1.0 | `hyurax-nucleo` (o núcleo, sem tela), `hyurax-interface` (a tela), `hyurax-app` (a janela), `hyurax-no` (terminal) e `hyurax-instalador`. Ver [`docs/ARQUITETURA.md`](docs/ARQUITETURA.md) |
 | ULTRAX (trabalho útil) | oito motores, especificados em Python e iguais no Rust por vetor; CPU com limitador por linha e GPU (WebGL 2) conferida pela CPU. Ver [`docs/ULTRAX.md`](docs/ULTRAX.md) |
 | Computação científica (JOBs) | unidades conferidas, checkpoint, retomada, relatório, verificação entre nós com compromisso assinado antes da revelação. Três núcleos completos pela rede P2P numa máquina (`tests/tres_nos.rs`); entre máquinas, fica para a testnet. Ver [`docs/COMPUTACAO-CIENTIFICA.md`](docs/COMPUTACAO-CIENTIFICA.md) e [`docs/REPUTACAO.md`](docs/REPUTACAO.md) |
 | API externa (clientes) | contas com chave de acesso mandam JOBs a um nó, com limite de créditos de computação (não é dinheiro). Ver [`docs/API-EXTERNA.md`](docs/API-EXTERNA.md) |
 | Segurança e operação | [`docs/MODELO-DE-AMEACAS.md`](docs/MODELO-DE-AMEACAS.md), [`docs/OPERACAO.md`](docs/OPERACAO.md) (saúde, cópias, incidentes) e a auditoria contra o Documento Mestre em [`docs/AUDITORIA-DOCUMENTO-MESTRE.md`](docs/AUDITORIA-DOCUMENTO-MESTRE.md) |
+| **HYURAX Compute (V1)** | `hyurax-plataforma` (servidor e painéis) e o agente no `hyurax-nucleo`. A definição de pronto do documento V1, de ponta a ponta, em teste. Ver [`docs/V1-PLATAFORMA.md`](docs/V1-PLATAFORMA.md) |
 | Planos (monetização) | Comunidade grátis; Pro, Equipe e Empresa pagam a capacidade gerenciada; ativação por voucher assinado, conferido pelo programa. **A venda ainda não abriu.** Ver [`docs/MONETIZACAO.md`](docs/MONETIZACAO.md) |
 | Economia | para que o HYX é necessário (e para que não é) em [`docs/ECONOMIA.md`](docs/ECONOMIA.md); nada de venda, pré-venda ou promessa de valorização |
 | Termos de uso | [`docs/TERMOS-DE-USO.md`](docs/TERMOS-DE-USO.md), versão 3, aceitos no instalador e na primeira abertura; revisados pelo projeto (lista de leis no começo do arquivo), **sem assinatura de advogado** |

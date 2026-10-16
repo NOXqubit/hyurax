@@ -479,6 +479,9 @@ fn diferencas(a: &Config, b: &Config) -> String {
     if a.cadastro_aberto != b.cadastro_aberto {
         d.push(format!("cadastro aberto: {}", b.cadastro_aberto));
     }
+    if a.contato != b.contato {
+        d.push("contato do suporte".into());
+    }
     if a.versao_minima_agente != b.versao_minima_agente {
         d.push(format!("versão mínima do agente: {}", b.versao_minima_agente));
     }

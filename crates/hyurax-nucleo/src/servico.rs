@@ -87,6 +87,8 @@ pub struct Nucleo {
     pub contas: crate::contas::Contas,
     /// O plano deste nó (vouchers assinados; ver `crate::planos`).
     pub planos: crate::planos::Planos,
+    /// O agente da plataforma HYURAX Compute (este computador como fornecedor).
+    pub plataforma: Arc<crate::plataforma::Agente>,
     /// Porta do nó para outros nós (0: não escuta).
     pub porta_p2p: u16,
     /// Quando o núcleo ligou.
@@ -183,6 +185,11 @@ impl Nucleo {
         }
         ciencia.ligar_rede(&rede, hyurax_ultrax::prova::chave_do_worker(id.segredo()), ajustes.aceitar_rede);
         let metricas = Metricas::iniciar();
+        // o agente da plataforma: o agendador do ULTRAX passa a ser o
+        // composto (plataforma primeiro, depois os JOBs da ciência)
+        let plataforma = crate::plataforma::Agente::abrir(Some(pastas.config.clone()), hyurax_ultrax::prova::chave_do_worker(id.segredo()), VERSAO);
+        plataforma.watts_nucleo.store(u64::from(ajustes.watts_nucleo), Ordering::Relaxed);
+        plataforma.ligar(&ultrax, &ciencia, &metricas);
         let nuvem = {
             let (b, b2, m, u) = (Arc::clone(&barramento), Arc::clone(&barramento), Arc::clone(&metricas), Arc::clone(&ultrax));
             crate::nuvem::Nuvem::abrir(
@@ -243,6 +250,7 @@ impl Nucleo {
             carteiras_leves: AtomicBool::new(ajustes.carteiras_leves),
             contas: crate::contas::Contas::abrir(Some(pastas.config.clone())),
             planos: crate::planos::Planos::abrir(Some(&pastas.config)),
+            plataforma,
             sementes: Mutex::new(sementes),
             ajustes: Mutex::new(ajustes.clone()),
             inicio: Instant::now(),

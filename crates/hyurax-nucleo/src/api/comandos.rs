@@ -48,6 +48,28 @@ pub(super) fn atender(s: &mut TcpStream, p: &Pedido, n: &Arc<Nucleo>) -> std::io
             n.gravar_ajustes();
             ok()
         }
+        "/api/v1/plataforma/vincular" => {
+            let ram = campo(&c, "ram_mib").and_then(|v| v.parse::<u64>().ok()).unwrap_or(1024);
+            n.plataforma.vincular(&texto("url"), &texto("codigo"), &texto("nome"), numero("linhas").unwrap_or(1), ram, sim("gpu").unwrap_or(false)).inspect(|v| {
+                n.barramento.registrar("plataforma", format!("computador vinculado à plataforma como nó {}", v.get("no").and_then(serde_json::Value::as_u64).unwrap_or(0)));
+            })
+        }
+        "/api/v1/plataforma/ligar" => {
+            let ligar = sim("ligar").unwrap_or(false);
+            n.plataforma.ligar_fornecimento(ligar);
+            n.barramento.registrar("plataforma", if ligar { "fornecimento ligado" } else { "fornecimento pausado" });
+            ok()
+        }
+        "/api/v1/plataforma/ajustes" => {
+            let ram = campo(&c, "ram_mib").and_then(|v| v.parse::<u64>().ok()).unwrap_or(1024);
+            n.plataforma.ajustar(numero("linhas").unwrap_or(1), ram, sim("gpu").unwrap_or(false));
+            ok()
+        }
+        "/api/v1/plataforma/desvincular" => {
+            n.plataforma.desvincular();
+            n.barramento.registrar("plataforma", "computador desvinculado da plataforma");
+            ok()
+        }
         "/api/v1/planos/ativar" => n.planos.ativar(&texto("voucher"), &n.ultrax.worker(), crate::util::agora_ms()).map(|v| {
             let nome = hyurax_nuvem::plano::do_catalogo(v.plano).map_or("?", |p| p.nome);
             n.barramento.registrar("planos", format!("plano {nome} ativado (voucher {}), até {}", v.serie, crate::util::data_curta(v.fim_ms)));

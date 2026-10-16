@@ -17,6 +17,7 @@
 mod cifra;
 mod conexao;
 pub mod entropia;
+pub mod https;
 pub mod malha;
 pub mod roteador;
 mod no;

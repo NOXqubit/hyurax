@@ -112,7 +112,7 @@ fn teto_de_memoria_cancela_o_que_nao_cabe() {
     let esp = Especificacao::nova(TipoDeTrabalho::Matriz, 1024, 0).unwrap();
     let mut tarefa = Tarefa::nova(esp, MetodoDeVerificacao::Freivalds, Instancia::PorWorker, b"x", 0, agora_ms(), agora_ms() + 60_000).unwrap();
     tarefa.avancar(Estado::NaFila, agora_ms(), "").unwrap();
-    u.processar(0, NaFila { tarefa, desafio: None, recusas: 0, origem: vec![0; 32], job: None });
+    u.processar(0, NaFila { tarefa, desafio: None, recusas: 0, origem: vec![0; 32], job: None, autoconferir: true });
     let placar = u.placar();
     // não cabe e nunca vai caber: conta como falha (abandonada), não como
     // parada do dono; numa unidade de JOB, isso vira WORK_UNIT_FAILED em vez
@@ -132,7 +132,7 @@ fn desligar_cancela_sem_julgar() {
     let mut tarefa = Tarefa::nova(esp, MetodoDeVerificacao::Freivalds, Instancia::PorWorker, b"y", 0, agora_ms(), agora_ms() + 60_000).unwrap();
     tarefa.avancar(Estado::NaFila, agora_ms(), "").unwrap();
     u.ligado.store(false, Ordering::Relaxed);
-    u.processar(0, NaFila { tarefa, desafio: None, recusas: 0, origem: vec![0; 32], job: None });
+    u.processar(0, NaFila { tarefa, desafio: None, recusas: 0, origem: vec![0; 32], job: None, autoconferir: true });
     let placar = u.placar();
     assert_eq!((placar.canceladas, placar.recusadas, placar.reputacao.recusadas), (1, 0, 0), "parar não é errar");
     let _ = std::fs::remove_dir_all(p);
@@ -234,7 +234,7 @@ fn contagem_de_recusa_dupla() {
     let mut tarefa = Tarefa::nova(esp, MetodoDeVerificacao::ResultadoEsperado, Instancia::Compartilhada, b"z", 0, agora_ms(), agora_ms() + 60_000).unwrap();
     tarefa.avancar(Estado::NaFila, agora_ms(), "").unwrap();
     // desafio de índice 0 é a matriz 16; esta tarefa é 8, então a resposta nunca bate
-    u.processar(0, NaFila { tarefa, desafio: Some(0), recusas: 0, origem: vec![0; 32], job: None });
+    u.processar(0, NaFila { tarefa, desafio: Some(0), recusas: 0, origem: vec![0; 32], job: None, autoconferir: true });
     let item = u.fila.lock().unwrap().pop_front().expect("volta para a fila uma vez");
     u.processar(0, item);
     let placar = u.placar();

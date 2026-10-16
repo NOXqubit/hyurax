@@ -29,6 +29,31 @@ O que já existe no programa e sustenta isso:
 | Planos e ativação por voucher assinado | `hyurax-nuvem/src/plano.rs`, tela Planos | **nesta etapa** |
 | Cobrança em reais (checkout, nota fiscal) | — | depende do dono (ver Fase M1) |
 
+## A plataforma V1 (HYURAX Compute): pagar pelo uso
+
+Desde a 1.5.0 existe o **serviço central** que a Fase M2 previa: a plataforma
+HYURAX Compute ([V1-PLATAFORMA.md](V1-PLATAFORMA.md)). Ela vende computação
+**por uso**, com saldo pré-pago em reais ou dólares:
+
+| Categoria | Preço proposto (V1) |
+|---|---|
+| CPU | R$ 0,50 por hora de 4 núcleos de referência (R$ 0,125 o núcleo-hora) |
+| Memória | R$ 0,10 por GB-hora |
+| GPU | R$ 3,00 por hora |
+
+- Cobra-se **trabalho conferido**: as operações do modelo de custo de cada
+  motor, em horas de um núcleo de referência (1 bilhão de operações por
+  segundo). A reserva sai do saldo na criação; o que não for usado volta.
+- **Divisão:** 70% para quem forneceu a máquina, 30% para a plataforma
+  (configurável no servidor). As conferências por amostragem saem da parte da
+  plataforma.
+- **Ganhos** ficam 7 dias retidos (estorno e fraude) e depois podem ser
+  sacados por Pix, pagos pela empresa.
+
+Os planos abaixo continuam valendo para o programa (comissão menor no mercado
+P2P de máquinas) e viram, na plataforma, pacote mensal de saldo com
+prioridade quando a venda abrir.
+
 ## Os planos
 
 Os preços são a proposta inicial. Todos ficam num lugar só
@@ -112,7 +137,7 @@ inteiro pelo provedor de pagamento da empresa. O programa só vê o voucher.
 |---|---|---|---|
 | **M0** | Catálogo de planos, voucher assinado (especificado em Python, igual no Rust por vetor), ativação no programa, tela Planos, preços no site marcados "em breve", este documento | o projeto | **feita nesta etapa** |
 | **M1** | Primeira venda: link de pagamento do provedor, voucher emitido à mão com `hyurax-no planos emitir`, capacidade gerenciada inicial (1 ou 2 servidores pagos) | o dono + o projeto | precisa dos itens da lista abaixo |
-| **M2** | Serviço central: checkout, webhook do provedor, emissão automática do voucher, nota fiscal pela integração do provedor | o projeto | depois da M1 validada |
+| **M2** | Serviço central: contas, saldo, tarefas, cobrança e repasse (feito: plataforma V1, 1.5.0); checkout e aviso do provedor integrado, nota fiscal | o projeto | a parte de software está pronta; falta o provedor, que depende da M1 |
 | **M3** | Repasse em reais a quem aluga máquina (split de pagamento do provedor) | o projeto, com parecer jurídico | depois da M2 |
 | **M4** | Empresa: contrato, SLA, rede privada, auditoria | o dono | sob demanda |
 

@@ -528,3 +528,13 @@ input[type="file"] { padding: 8px; }
 .pl-tabela th, .pl-tabela td { text-transform: none; letter-spacing: 0; font-family: var(--texto); }
 .pl-tabela tbody th { font-weight: 560; color: var(--tinta-2); font-size: 14px; }
 .pl-tabela thead th { font-size: 13.5px; color: var(--tinta); font-weight: 650; }
+
+
+/* ---------- Fornecer ---------- */
+.fo-limites { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr)); gap: 12px; }
+.fo-checar { display: flex; gap: 10px; align-items: flex-start; font-size: 14.5px; color: var(--tinta-2); cursor: pointer; }
+.fo-checar input { width: 18px; height: 18px; margin: 2px 0 0; accent-color: var(--tinta); flex: none; }
+#fo-desvinculado .bloco { max-width: 720px; }
+#fo-numeros { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+@media (min-width: 1100px) { #fo-numeros { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+@media (max-width: 520px) { #fo-numeros { grid-template-columns: 1fr; } }

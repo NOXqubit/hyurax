@@ -1,1 +1,33 @@
-<!doctype html><title>HYURAX Compute</title>
+<!doctype html>
+<html lang="pt-BR" data-tema="sistema">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>HYURAX Compute</title>
+<meta name="description" content="Computação sob demanda em computadores de pessoas e empresas, com o resultado conferido antes de cobrar.">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/tokens.css?v=__VERSAO__">
+<link rel="stylesheet" href="/app.css?v=__VERSAO__">
+<script type="module" src="/app.js?v=__VERSAO__"></script>
+</head>
+<body>
+<a class="pular" href="#conteudo">Pular para o conteúdo</a>
+<div id="faixa-teste" class="faixa-teste" role="note" hidden>Ambiente de teste: os pagamentos são simulados e nada aqui é dinheiro de verdade.</div>
+<div id="raiz">
+  <noscript><p class="carregando">O HYURAX Compute precisa de JavaScript ligado para funcionar.</p></noscript>
+  <p class="carregando" id="carregando">Carregando…</p>
+</div>
+<div id="avisos" class="avisos" role="status" aria-live="polite"></div>
+<dialog id="dialogo" class="dialogo" aria-labelledby="dialogo-titulo">
+  <form method="dialog" id="dialogo-form">
+    <h2 id="dialogo-titulo"></h2>
+    <p id="dialogo-texto" class="nota"></p>
+    <div id="dialogo-campos" class="campos"></div>
+    <div class="acoes">
+      <button type="submit" class="botao" id="dialogo-ok" value="ok">Confirmar</button>
+      <button type="button" class="botao-leve" id="dialogo-cancelar">Cancelar</button>
+    </div>
+  </form>
+</dialog>
+</body>
+</html>
