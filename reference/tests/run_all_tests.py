@@ -44,6 +44,7 @@ MODULES = [
     ("test_20_nuvem.py", "nuvem: Reed-Solomon, anúncio de máquina, recibo e livro"),
     ("test_21_endereco.py", "endereco Bech32m: BIP-350, redes e erro de digitacao"),
     ("test_22_plano.py", "planos: voucher assinado, quando vale e o catalogo"),
+    ("test_23_plataforma.py", "plataforma V1: pedido do agente, preco, liquidacao e reputacao"),
 ]
 
 

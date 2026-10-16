@@ -1,0 +1,36 @@
+[package]
+name = "hyurax-plataforma"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+description = "HYURAX Compute (V1) — a plataforma central do mercado de computação: contas, nós, agendador, tarefas, verificação, cobrança, repasse e administração"
+
+[[bin]]
+name = "hyurax-plataforma"
+path = "src/main.rs"
+
+[dependencies]
+hyurax-identidade.workspace = true
+hyurax-crypto.workspace = true
+hyurax-codec.workspace = true
+hyurax-ultrax.workspace = true
+hyurax-net.workspace = true
+argon2.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+
+[dev-dependencies]
+hex.workspace = true
+
+[lints.rust]
+unsafe_code = "forbid"
+missing_docs = "warn"
+
+[lints.clippy]
+unwrap_used = "deny"
+expect_used = "deny"
+panic = "deny"
+indexing_slicing = "deny"
+arithmetic_side_effects = "warn"

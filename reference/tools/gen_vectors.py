@@ -26,7 +26,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 OUT_DIR = ROOT.parent / "vectors"
 
-from hyurax import argon2, codec, consensus, crypto, endereco, genetica, plano, ia, identidade, job, malha, melhoramento, nuvem, rede_ultrax, rotas, triagem, usefulpow, ultrax  # noqa: E402
+from hyurax import argon2, codec, consensus, crypto, endereco, genetica, plano, plataforma, ia, identidade, job, malha, melhoramento, nuvem, rede_ultrax, rotas, triagem, usefulpow, ultrax  # noqa: E402
 from hyurax.block import BlockHeader  # noqa: E402
 from hyurax.chain import Chain, make_genesis  # noqa: E402
 from hyurax.consensus import MAINNET, REGTEST, TESTNET  # noqa: E402
@@ -1751,6 +1751,109 @@ def vec_plano() -> dict:
             "nao_confere": nao_confere, "recusas": recusas, "recusas_texto": recusas_texto}
 
 
+def vec_plataforma() -> dict:
+    """Plataforma V1 (reference/hyurax/plataforma.py): pedido assinado do
+    agente, JOB da tarefa, preço, estimativa, liquidação e reputação."""
+    segredo = bytes(range(32))
+    chave = crypto.ed25519_public_key(segredo)
+    t0 = 1_791_000_000_000
+    caminho, corpo = "/api/v1/agente/pulso", b'{"livre":{"linhas":4}}'
+    boa = plataforma.assinar_pedido(segredo, "POST", caminho, t0, corpo)
+    vazio = plataforma.assinar_pedido(segredo, "GET", "/api/v1/agente/resumo", t0, b"")
+    casos = [
+        ("POST", caminho, t0, corpo, boa, t0 + 1_000, chave),
+        ("POST", caminho, t0, corpo, boa, t0 + plataforma.JANELA_MS, chave),
+        ("GET", "/api/v1/agente/resumo", t0, b"", vazio, t0, chave),
+        ("POST", caminho, t0, corpo + b" ", boa, t0, chave),
+        ("POST", "/api/v1/agente/resultado", t0, corpo, boa, t0, chave),
+        ("GET", caminho, t0, corpo, boa, t0, chave),
+        ("POST", caminho, t0 + 1, corpo, boa, t0, chave),
+        ("POST", caminho, t0, corpo, boa, t0 + plataforma.JANELA_MS + 1, chave),
+        ("POST", caminho, t0, corpo, boa, t0 - plataforma.JANELA_MS - 1, chave),
+        ("PUT", caminho, t0, corpo, boa, t0, chave),
+        ("POST", "/api/v1/admin/precos", t0, corpo, boa, t0, chave),
+        ("POST", "/api/v1/agente/pul so", t0, corpo, boa, t0, chave),
+        ("POST", caminho, t0, corpo, boa, t0, crypto.ed25519_public_key(bytes(32))),
+        ("POST", caminho, t0, corpo, boa[:63] + bytes([boa[63] ^ 1]), t0, chave),
+    ]
+    pedidos = [{
+        "metodo": m, "caminho": c, "tempo_ms": t, "corpo": h(b), "assinatura": h(a), "agora_ms": agora,
+        "chave": h(k), "motivo": plataforma.conferir_pedido(k, m, c, t, b, a, agora),
+    } for m, c, t, b, a, agora, k in casos]
+    assert sum(1 for x in pedidos if x["motivo"] is None) == 3
+
+    jobs = []
+    for semente_job, tarefa, nonce in [(b"job-a", 1, bytes(32)), (b"job-a", 2, bytes(32)), (b"job-b", 7, bytes(range(32)))]:
+        jid = crypto.H(semente_job)
+        jp = plataforma.job_da_tarefa(jid, tarefa, nonce)
+        jobs.append({"job_id": h(jid), "tarefa": tarefa, "nonce": h(nonce), "job": h(jp),
+                     "sementes": [{"indice": i, "semente": h(plataforma.semente(jp, i))} for i in (0, 1, 2**40 - 1)]})
+
+    tabela = {"cpu_nucleo_hora": 125_000, "ram_gib_hora": 100_000, "gpu_hora": 3_000_000,
+              "ops_por_s_cpu": 1_000_000_000, "ops_por_s_gpu": 20_000_000_000}
+    hora = 1_000_000_000 * 3600
+
+    def tentar(f, *args):
+        try:
+            return {"valor": f(*args), "erro": None}
+        except ValueError as e:
+            return {"valor": None, "erro": str(e)}
+
+    custos = []
+    for t, ops, mem, gpu in [
+        (tabela, hora, 0, False), (tabela, hora, 2 * plataforma.GIB, False), (tabela, 1, 0, False), (tabela, 0, 0, False),
+        (tabela, 20_000_000_000 * 3600, 0, True), (tabela, 123_456_789, 50_331_648, False), (tabela, 987_654_321_012, 3 * plataforma.GIB + 7, False),
+        (tabela, 4_294_967_296, 0, True), (tabela, plataforma.OPS_MAX, plataforma.MEMORIA_MAX, False), (tabela, plataforma.OPS_MAX + 1, 0, False),
+        (tabela, 1, plataforma.MEMORIA_MAX + 1, False), (dict(tabela, ops_por_s_cpu=0), 1, 0, False),
+        (dict(tabela, gpu_hora=plataforma.PRECO_MAX + 1), 1, 0, True),
+        (dict(tabela, cpu_nucleo_hora=plataforma.PRECO_MAX, ram_gib_hora=plataforma.PRECO_MAX, ops_por_s_cpu=1), plataforma.OPS_MAX, plataforma.MEMORIA_MAX, False),
+    ]:
+        r = tentar(plataforma.custo_da_execucao, t, ops, mem, gpu)
+        custos.append({"tabela": t, "operacoes": ops, "memoria": mem, "gpu": gpu,
+                       "micro": None if r["valor"] is None else str(r["valor"]), "erro": r["erro"]})
+    estimativas = []
+    for t, ops, mem, un, cop, gpu in [
+        (tabela, hora, 0, 10, 2, False), (tabela, 50_000_000_000, 64 << 20, 1000, 1, False), (tabela, 1 << 30, 8 << 20, 16, 3, True),
+        (dict(tabela, ops_por_s_cpu=1), plataforma.OPS_MAX, plataforma.MEMORIA_MAX, 1 << 40, 7, False),
+    ]:
+        r = tentar(plataforma.estimativa, t, ops, mem, un, cop, gpu)
+        estimativas.append({"tabela": t, "operacoes_maximas": ops, "memoria": mem, "unidades": un, "copias": cop, "gpu": gpu,
+                            "micro": None if r["valor"] is None else str(r["valor"]),
+                            "centavos": None if r["valor"] is None else str(plataforma.centavos(r["valor"])), "erro": r["erro"]})
+
+    liquidacoes = []
+    for ex, bp in [
+        ([(1, 333_334, "cliente"), (2, 333_333, "cliente"), (3, 333_333, "cliente")], 7_000),
+        ([(9, 10_000, "cliente"), (4, 10_000, "cliente")], 5_000),
+        ([(1, 1_000_000, "cliente"), (2, 1_000_000, "plataforma")], 7_000),
+        ([], 7_000),
+        ([(5, 1, "cliente")], 7_000),
+        ([(3, 17, "cliente"), (3, 9_999, "cliente"), (8, 123_456_789, "cliente"), (2, 55_555, "plataforma"), (8, 1_111, "plataforma")], 7_000),
+        ([(1, 10**12, "cliente"), (2, 3 * 10**11, "cliente"), (3, 7, "plataforma")], 10_000),
+        ([(1, 999_999, "cliente")], 0),
+        ([(1, 1, "cliente")], 10_001),
+    ]:
+        try:
+            r = plataforma.liquidar(ex, bp)
+            saida = {"cobranca": r["cobranca"], "conferencia": r["conferencia"], "plataforma": r["plataforma"],
+                     "fornecedores": [{"no": k, "centavos": v} for k, v in r["fornecedores"].items()], "erro": None}
+        except ValueError as e:
+            saida = {"erro": str(e)}
+        liquidacoes.append({"execucoes": [{"no": n, "micro": m, "pagador": pg} for n, m, pg in ex], "fornecedor_bp": bp, **saida})
+
+    reputacao = []
+    for v, f, i in [(0, 0, 0), (1, 0, 0), (100, 0, 0), (1_000_000, 0, 0), (100, 0, 1), (0, 0, 1), (10, 5, 0), (40, 3, 1),
+                    (500, 20, 2), (30, 0, 3), (3, 40, 0), (9, 0, 0), (10, 0, 0), (2**40, 2**40, 2**40)]:
+        pt = plataforma.pontuacao(v, f, i)
+        reputacao.append({"verificadas": v, "falhas": f, "incorretas": i, "pontuacao": pt, "faixa": plataforma.faixa(pt),
+                          "amostragem_bp": plataforma.amostragem_bp(pt, v), "quarentena": plataforma.quarentena(pt, i)})
+    return {
+        "dominio_pedido": plataforma.DOMINIO_PEDIDO.decode(), "dominio_job": plataforma.DOMINIO_JOB.decode(),
+        "janela_ms": plataforma.JANELA_MS, "pedidos": pedidos, "jobs": jobs, "custos": custos,
+        "estimativas": estimativas, "liquidacoes": liquidacoes, "reputacao": reputacao,
+    }
+
+
 FILES = {
     "units.json": vec_units,
     "crypto_ed25519.json": vec_crypto,
@@ -1781,6 +1884,7 @@ FILES = {
     "nuvem.json": vec_nuvem,
     "enderecos.json": vec_enderecos,
     "plano.json": vec_plano,
+    "plataforma.json": vec_plataforma,
 }
 
 

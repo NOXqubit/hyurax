@@ -1,0 +1,853 @@
+{
+  "data": {
+    "custos": [
+      {
+        "erro": null,
+        "gpu": false,
+        "memoria": 0,
+        "micro": "125000",
+        "operacoes": 3600000000000,
+        "tabela": {
+          "cpu_nucleo_hora": 125000,
+          "gpu_hora": 3000000,
+          "ops_por_s_cpu": 1000000000,
+          "ops_por_s_gpu": 20000000000,
+          "ram_gib_hora": 100000
+        }
+      },
+      {
+        "erro": null,
+        "gpu": false,
+        "memoria": 2147483648,
+        "micro": "325000",
+        "operacoes": 3600000000000,
+        "tabela": {
+          "cpu_nucleo_hora": 125000,
+          "gpu_hora": 3000000,
+          "ops_por_s_cpu": 1000000000,
+          "ops_por_s_gpu": 20000000000,
+          "ram_gib_hora": 100000
+        }
+      },
+      {
+        "erro": null,
+        "gpu": false,
+        "memoria": 0,
+        "micro": "1",
+        "operacoes": 1,
+        "tabela": {
+          "cpu_nucleo_hora": 125000,
+          "gpu_hora": 3000000,
+          "ops_por_s_cpu": 1000000000,
+          "ops_por_s_gpu": 20000000000,
+          "ram_gib_hora": 100000
+        }
+      },
+      {
+        "erro": null,
+        "gpu": false,
+        "memoria": 0,
+        "micro": "0",
+        "operacoes": 0,
+        "tabela": {
+          "cpu_nucleo_hora": 125000,
+          "gpu_hora": 3000000,
+          "ops_por_s_cpu": 1000000000,
+          "ops_por_s_gpu": 20000000000,
+          "ram_gib_hora": 100000
+        }
+      },
+      {
+        "erro": null,
+        "gpu": true,
+        "memoria": 0,
+        "micro": "3000000",
+        "operacoes": 72000000000000,
+        "tabela": {
+          "cpu_nucleo_hora": 125000,
+          "gpu_hora": 3000000,
+          "ops_por_s_cpu": 1000000000,
+          "ops_por_s_gpu": 20000000000,
+          "ram_gib_hora": 100000
+        }
+      },
+      {
+        "erro": null,
+        "gpu": false,
+        "memoria": 50331648,
+        "micro": "5",
+        "operacoes": 123456789,
+        "tabela": {
+          "cpu_nucleo_hora": 125000,
+          "gpu_hora": 3000000,
+          "ops_por_s_cpu": 1000000000,
+          "ops_por_s_gpu": 20000000000,
+          "ram_gib_hora": 100000
+        }
+      },
+      {
+        "erro": null,
+        "gpu": false,
+        "memoria": 3221225479,
+        "micro": "116599",
+        "operacoes": 987654321012,
+        "tabela": {
+          "cpu_nucleo_hora": 125000,
+          "gpu_hora": 3000000,
+          "ops_por_s_cpu": 1000000000,
+          "ops_por_s_gpu": 20000000000,
+          "ram_gib_hora": 100000
+        }
+      },
+      {
+        "erro": null,
+        "gpu": true,
+        "memoria": 0,
+        "micro": "179",
+        "operacoes": 4294967296,
+        "tabela": {
+          "cpu_nucleo_hora": 125000,
+          "gpu_hora": 3000000,
+          "ops_por_s_cpu": 1000000000,
+          "ops_por_s_gpu": 20000000000,
+          "ram_gib_hora": 100000
+        }
+      },
+      {
+        "erro": null,
+        "gpu": false,
+        "memoria": 68719476736,
+        "micro": "2040693582",
+        "operacoes": 1125899906842624,
+        "tabela": {
+          "cpu_nucleo_hora": 125000,
+          "gpu_hora": 3000000,
+          "ops_por_s_cpu": 1000000000,
+          "ops_por_s_gpu": 20000000000,
+          "ram_gib_hora": 100000
+        }
+      },
+      {
+        "erro": "operações acima do teto",
+        "gpu": false,
+        "memoria": 0,
+        "micro": null,
+        "operacoes": 1125899906842625,
+        "tabela": {
+          "cpu_nucleo_hora": 125000,
+          "gpu_hora": 3000000,
+          "ops_por_s_cpu": 1000000000,
+          "ops_por_s_gpu": 20000000000,
+          "ram_gib_hora": 100000
+        }
+      },
+      {
+        "erro": "memória acima do teto",
+        "gpu": false,
+        "memoria": 68719476737,
+        "micro": null,
+        "operacoes": 1,
+        "tabela": {
+          "cpu_nucleo_hora": 125000,
+          "gpu_hora": 3000000,
+          "ops_por_s_cpu": 1000000000,
+          "ops_por_s_gpu": 20000000000,
+          "ram_gib_hora": 100000
+        }
+      },
+      {
+        "erro": "ritmo de referência fora da faixa",
+        "gpu": false,
+        "memoria": 0,
+        "micro": null,
+        "operacoes": 1,
+        "tabela": {
+          "cpu_nucleo_hora": 125000,
+          "gpu_hora": 3000000,
+          "ops_por_s_cpu": 0,
+          "ops_por_s_gpu": 20000000000,
+          "ram_gib_hora": 100000
+        }
+      },
+      {
+        "erro": "preço acima do teto",
+        "gpu": true,
+        "memoria": 0,
+        "micro": null,
+        "operacoes": 1,
+        "tabela": {
+          "cpu_nucleo_hora": 125000,
+          "gpu_hora": 1099511627777,
+          "ops_por_s_cpu": 1000000000,
+          "ops_por_s_gpu": 20000000000,
+          "ram_gib_hora": 100000
+        }
+      },
+      {
+        "erro": null,
+        "gpu": false,
+        "memoria": 68719476736,
+        "micro": "22351695153763810519011966",
+        "operacoes": 1125899906842624,
+        "tabela": {
+          "cpu_nucleo_hora": 1099511627776,
+          "gpu_hora": 3000000,
+          "ops_por_s_cpu": 1,
+          "ops_por_s_gpu": 20000000000,
+          "ram_gib_hora": 1099511627776
+        }
+      }
+    ],
+    "dominio_job": "HYURAX-PLATAFORMA-JOB-v1",
+    "dominio_pedido": "HYURAX-PLATAFORMA-PEDIDO-v1",
+    "estimativas": [
+      {
+        "centavos": "250",
+        "copias": 2,
+        "erro": null,
+        "gpu": false,
+        "memoria": 0,
+        "micro": "2500000",
+        "operacoes_maximas": 3600000000000,
+        "tabela": {
+          "cpu_nucleo_hora": 125000,
+          "gpu_hora": 3000000,
+          "ops_por_s_cpu": 1000000000,
+          "ops_por_s_gpu": 20000000000,
+          "ram_gib_hora": 100000
+        },
+        "unidades": 10
+      },
+      {
+        "centavos": "183",
+        "copias": 1,
+        "erro": null,
+        "gpu": false,
+        "memoria": 67108864,
+        "micro": "1823000",
+        "operacoes_maximas": 50000000000,
+        "tabela": {
+          "cpu_nucleo_hora": 125000,
+          "gpu_hora": 3000000,
+          "ops_por_s_cpu": 1000000000,
+          "ops_por_s_gpu": 20000000000,
+          "ram_gib_hora": 100000
+        },
+        "unidades": 1000
+      },
+      {
+        "centavos": "1",
+        "copias": 3,
+        "erro": null,
+        "gpu": true,
+        "memoria": 8388608,
+        "micro": "2160",
+        "operacoes_maximas": 1073741824,
+        "tabela": {
+          "cpu_nucleo_hora": 125000,
+          "gpu_hora": 3000000,
+          "ops_por_s_cpu": 1000000000,
+          "ops_por_s_gpu": 20000000000,
+          "ram_gib_hora": 100000
+        },
+        "unidades": 16
+      },
+      {
+        "centavos": null,
+        "copias": 7,
+        "erro": "estimativa acima do teto",
+        "gpu": false,
+        "memoria": 68719476736,
+        "micro": null,
+        "operacoes_maximas": 1125899906842624,
+        "tabela": {
+          "cpu_nucleo_hora": 125000,
+          "gpu_hora": 3000000,
+          "ops_por_s_cpu": 1,
+          "ops_por_s_gpu": 20000000000,
+          "ram_gib_hora": 100000
+        },
+        "unidades": 1099511627776
+      }
+    ],
+    "janela_ms": 300000,
+    "jobs": [
+      {
+        "job": "6c1da5d37762e1a95d9e6e59f6e822df2a0378afc3e8dabff13a3274567576f39f674fe1abd20d7efe6f29d4b59b5abc5d4545642b5766a6b5ab4fe3c06a9ffe",
+        "job_id": "681fe300dcc555c29baa7290666adfc05ea1e113de97d8c7b2445ac25249c5588625a79cc704a53179f3096772d88e01cd2082b64ffec787399d89acf54c8840",
+        "nonce": "0000000000000000000000000000000000000000000000000000000000000000",
+        "sementes": [
+          {
+            "indice": 0,
+            "semente": "5fb202fa0dabed6bde744046e193aae5129311979de8f6ee4bcc80d5185e88371d7783c5fc1e2e329134cc9196ac537566f74fd71aac683a89d52af71586c4c0"
+          },
+          {
+            "indice": 1,
+            "semente": "2b8c64f6875c1364cd2f198abc930ee8fce3ac791249e811197715255df7aff75fd33fc2e68a4616d11bb60a127f9a10b7d23fba52f0d1bb6498d5431bf1c36b"
+          },
+          {
+            "indice": 1099511627775,
+            "semente": "cd0e1440d1a6d20aa2455e3b8ee8942a492c68bab2a8bf5bd9d61e0c7603856e3326a680e1976bfdb3e807ef08b1d39482f49b36256bfe69d2000677d1a988e6"
+          }
+        ],
+        "tarefa": 1
+      },
+      {
+        "job": "dcb4ee06df7d784c6ec0986269193ac51eba8104d372e50cb25729da44a24686d8c80511b70bf65bdaca70f122f1caaa940b214846438a58dedb451baaac5c28",
+        "job_id": "681fe300dcc555c29baa7290666adfc05ea1e113de97d8c7b2445ac25249c5588625a79cc704a53179f3096772d88e01cd2082b64ffec787399d89acf54c8840",
+        "nonce": "0000000000000000000000000000000000000000000000000000000000000000",
+        "sementes": [
+          {
+            "indice": 0,
+            "semente": "f7537bfa0877a905107df9938009a3cca4ee1aaeb555745ae9542c0f2df7c33d0c13f8cb894bcd45dbfa9a084f389e8c4d072121dfeef11d930c8f1561cf6502"
+          },
+          {
+            "indice": 1,
+            "semente": "da86a83cd2faff38d740fb5433b4e1a2b56d2ff96d6b5fdbaa48248c8c83e2c05c0870626de9687cd4d9a66f295a425184c3f0da36513eddb6ac6020b7566e68"
+          },
+          {
+            "indice": 1099511627775,
+            "semente": "74ec0c2b88e3c4ef7ab59196b44f31d9888cf0ab6ba03613e08a8806c37744eb3ed6f9cfbf26fafc43ce121830357c5207c2363e409d9e2d48d198d5be30cba4"
+          }
+        ],
+        "tarefa": 2
+      },
+      {
+        "job": "20a1abd0175b7082510235e81ea8788ebe56523eda100d0788f33fc1e2f9410d52585204b181acf1fd71ca36f6de62545774c106c3757445f8dab4d37077c1f6",
+        "job_id": "940278f03d397df3b48449866f9131e1b6cf0a264534a86e6b606f48e639aea460214c9355aa55c738334451b46f87094c5b08431147e848783ca6cf3b12d8bc",
+        "nonce": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+        "sementes": [
+          {
+            "indice": 0,
+            "semente": "6a2e07bd89f0f1891b123e4471f2d098996d4633accc14f4ff22ca16a8ec0640c6cd796c0cd9eb74b0f35990c28086ac54359e882d30be36dbc88fb96c28ac40"
+          },
+          {
+            "indice": 1,
+            "semente": "83371b21f02a1fd2d8849a553458947cf1b9a5c530a4012723cca3bc74207dd98f1b9bc2498ecddb221d9417d31a096192abf33efe1082cab7969fd95c6247d9"
+          },
+          {
+            "indice": 1099511627775,
+            "semente": "28bf48a870f2c53febd6d1ba7d3f3241c3d56aed85668eefcfff3bdeda76f65e1c4c483abddbaf8158e8517d2eb3bda0a07d8d001f93e4dc10c49bf3d190f7c2"
+          }
+        ],
+        "tarefa": 7
+      }
+    ],
+    "liquidacoes": [
+      {
+        "cobranca": 100,
+        "conferencia": 0,
+        "erro": null,
+        "execucoes": [
+          {
+            "micro": 333334,
+            "no": 1,
+            "pagador": "cliente"
+          },
+          {
+            "micro": 333333,
+            "no": 2,
+            "pagador": "cliente"
+          },
+          {
+            "micro": 333333,
+            "no": 3,
+            "pagador": "cliente"
+          }
+        ],
+        "fornecedor_bp": 7000,
+        "fornecedores": [
+          {
+            "centavos": 24,
+            "no": 1
+          },
+          {
+            "centavos": 23,
+            "no": 2
+          },
+          {
+            "centavos": 23,
+            "no": 3
+          }
+        ],
+        "plataforma": 30
+      },
+      {
+        "cobranca": 2,
+        "conferencia": 0,
+        "erro": null,
+        "execucoes": [
+          {
+            "micro": 10000,
+            "no": 9,
+            "pagador": "cliente"
+          },
+          {
+            "micro": 10000,
+            "no": 4,
+            "pagador": "cliente"
+          }
+        ],
+        "fornecedor_bp": 5000,
+        "fornecedores": [
+          {
+            "centavos": 1,
+            "no": 4
+          },
+          {
+            "centavos": 0,
+            "no": 9
+          }
+        ],
+        "plataforma": 1
+      },
+      {
+        "cobranca": 100,
+        "conferencia": 70,
+        "erro": null,
+        "execucoes": [
+          {
+            "micro": 1000000,
+            "no": 1,
+            "pagador": "cliente"
+          },
+          {
+            "micro": 1000000,
+            "no": 2,
+            "pagador": "plataforma"
+          }
+        ],
+        "fornecedor_bp": 7000,
+        "fornecedores": [
+          {
+            "centavos": 70,
+            "no": 1
+          },
+          {
+            "centavos": 70,
+            "no": 2
+          }
+        ],
+        "plataforma": -40
+      },
+      {
+        "cobranca": 0,
+        "conferencia": 0,
+        "erro": null,
+        "execucoes": [],
+        "fornecedor_bp": 7000,
+        "fornecedores": [],
+        "plataforma": 0
+      },
+      {
+        "cobranca": 1,
+        "conferencia": 0,
+        "erro": null,
+        "execucoes": [
+          {
+            "micro": 1,
+            "no": 5,
+            "pagador": "cliente"
+          }
+        ],
+        "fornecedor_bp": 7000,
+        "fornecedores": [
+          {
+            "centavos": 0,
+            "no": 5
+          }
+        ],
+        "plataforma": 1
+      },
+      {
+        "cobranca": 12347,
+        "conferencia": 4,
+        "erro": null,
+        "execucoes": [
+          {
+            "micro": 17,
+            "no": 3,
+            "pagador": "cliente"
+          },
+          {
+            "micro": 9999,
+            "no": 3,
+            "pagador": "cliente"
+          },
+          {
+            "micro": 123456789,
+            "no": 8,
+            "pagador": "cliente"
+          },
+          {
+            "micro": 55555,
+            "no": 2,
+            "pagador": "plataforma"
+          },
+          {
+            "micro": 1111,
+            "no": 8,
+            "pagador": "plataforma"
+          }
+        ],
+        "fornecedor_bp": 7000,
+        "fornecedores": [
+          {
+            "centavos": 4,
+            "no": 2
+          },
+          {
+            "centavos": 1,
+            "no": 3
+          },
+          {
+            "centavos": 8641,
+            "no": 8
+          }
+        ],
+        "plataforma": 3701
+      },
+      {
+        "cobranca": 130000000,
+        "conferencia": 1,
+        "erro": null,
+        "execucoes": [
+          {
+            "micro": 1000000000000,
+            "no": 1,
+            "pagador": "cliente"
+          },
+          {
+            "micro": 300000000000,
+            "no": 2,
+            "pagador": "cliente"
+          },
+          {
+            "micro": 7,
+            "no": 3,
+            "pagador": "plataforma"
+          }
+        ],
+        "fornecedor_bp": 10000,
+        "fornecedores": [
+          {
+            "centavos": 100000000,
+            "no": 1
+          },
+          {
+            "centavos": 30000000,
+            "no": 2
+          },
+          {
+            "centavos": 1,
+            "no": 3
+          }
+        ],
+        "plataforma": -1
+      },
+      {
+        "cobranca": 100,
+        "conferencia": 0,
+        "erro": null,
+        "execucoes": [
+          {
+            "micro": 999999,
+            "no": 1,
+            "pagador": "cliente"
+          }
+        ],
+        "fornecedor_bp": 0,
+        "fornecedores": [
+          {
+            "centavos": 0,
+            "no": 1
+          }
+        ],
+        "plataforma": 100
+      },
+      {
+        "erro": "parte do fornecedor fora da faixa",
+        "execucoes": [
+          {
+            "micro": 1,
+            "no": 1,
+            "pagador": "cliente"
+          }
+        ],
+        "fornecedor_bp": 10001
+      }
+    ],
+    "pedidos": [
+      {
+        "agora_ms": 1791000001000,
+        "assinatura": "52d7037b705a761764e47870c6fdf40e0a36bdbfc5651296d78f7f7a61e055689a909300551d29345d451c9f381b0de0a2bb4fad25f42ad8e361728a5269e903",
+        "caminho": "/api/v1/agente/pulso",
+        "chave": "03a107bff3ce10be1d70dd18e74bc09967e4d6309ba50d5f1ddc8664125531b8",
+        "corpo": "7b226c69767265223a7b226c696e686173223a347d7d",
+        "metodo": "POST",
+        "motivo": null,
+        "tempo_ms": 1791000000000
+      },
+      {
+        "agora_ms": 1791000300000,
+        "assinatura": "52d7037b705a761764e47870c6fdf40e0a36bdbfc5651296d78f7f7a61e055689a909300551d29345d451c9f381b0de0a2bb4fad25f42ad8e361728a5269e903",
+        "caminho": "/api/v1/agente/pulso",
+        "chave": "03a107bff3ce10be1d70dd18e74bc09967e4d6309ba50d5f1ddc8664125531b8",
+        "corpo": "7b226c69767265223a7b226c696e686173223a347d7d",
+        "metodo": "POST",
+        "motivo": null,
+        "tempo_ms": 1791000000000
+      },
+      {
+        "agora_ms": 1791000000000,
+        "assinatura": "d146e16551ae538233f4c1b40331941fce5c7219e3a1b899197b88b4673ab7e0e3f36fc7fa0b74f3464026d0c4eb4f24a49c79ffeb4c3a2efc3fe61f152a2b04",
+        "caminho": "/api/v1/agente/resumo",
+        "chave": "03a107bff3ce10be1d70dd18e74bc09967e4d6309ba50d5f1ddc8664125531b8",
+        "corpo": "",
+        "metodo": "GET",
+        "motivo": null,
+        "tempo_ms": 1791000000000
+      },
+      {
+        "agora_ms": 1791000000000,
+        "assinatura": "52d7037b705a761764e47870c6fdf40e0a36bdbfc5651296d78f7f7a61e055689a909300551d29345d451c9f381b0de0a2bb4fad25f42ad8e361728a5269e903",
+        "caminho": "/api/v1/agente/pulso",
+        "chave": "03a107bff3ce10be1d70dd18e74bc09967e4d6309ba50d5f1ddc8664125531b8",
+        "corpo": "7b226c69767265223a7b226c696e686173223a347d7d20",
+        "metodo": "POST",
+        "motivo": "assinatura do nó não confere",
+        "tempo_ms": 1791000000000
+      },
+      {
+        "agora_ms": 1791000000000,
+        "assinatura": "52d7037b705a761764e47870c6fdf40e0a36bdbfc5651296d78f7f7a61e055689a909300551d29345d451c9f381b0de0a2bb4fad25f42ad8e361728a5269e903",
+        "caminho": "/api/v1/agente/resultado",
+        "chave": "03a107bff3ce10be1d70dd18e74bc09967e4d6309ba50d5f1ddc8664125531b8",
+        "corpo": "7b226c69767265223a7b226c696e686173223a347d7d",
+        "metodo": "POST",
+        "motivo": "assinatura do nó não confere",
+        "tempo_ms": 1791000000000
+      },
+      {
+        "agora_ms": 1791000000000,
+        "assinatura": "52d7037b705a761764e47870c6fdf40e0a36bdbfc5651296d78f7f7a61e055689a909300551d29345d451c9f381b0de0a2bb4fad25f42ad8e361728a5269e903",
+        "caminho": "/api/v1/agente/pulso",
+        "chave": "03a107bff3ce10be1d70dd18e74bc09967e4d6309ba50d5f1ddc8664125531b8",
+        "corpo": "7b226c69767265223a7b226c696e686173223a347d7d",
+        "metodo": "GET",
+        "motivo": "assinatura do nó não confere",
+        "tempo_ms": 1791000000000
+      },
+      {
+        "agora_ms": 1791000000000,
+        "assinatura": "52d7037b705a761764e47870c6fdf40e0a36bdbfc5651296d78f7f7a61e055689a909300551d29345d451c9f381b0de0a2bb4fad25f42ad8e361728a5269e903",
+        "caminho": "/api/v1/agente/pulso",
+        "chave": "03a107bff3ce10be1d70dd18e74bc09967e4d6309ba50d5f1ddc8664125531b8",
+        "corpo": "7b226c69767265223a7b226c696e686173223a347d7d",
+        "metodo": "POST",
+        "motivo": "assinatura do nó não confere",
+        "tempo_ms": 1791000000001
+      },
+      {
+        "agora_ms": 1791000300001,
+        "assinatura": "52d7037b705a761764e47870c6fdf40e0a36bdbfc5651296d78f7f7a61e055689a909300551d29345d451c9f381b0de0a2bb4fad25f42ad8e361728a5269e903",
+        "caminho": "/api/v1/agente/pulso",
+        "chave": "03a107bff3ce10be1d70dd18e74bc09967e4d6309ba50d5f1ddc8664125531b8",
+        "corpo": "7b226c69767265223a7b226c696e686173223a347d7d",
+        "metodo": "POST",
+        "motivo": "pedido fora da janela de 5 minutos",
+        "tempo_ms": 1791000000000
+      },
+      {
+        "agora_ms": 1790999699999,
+        "assinatura": "52d7037b705a761764e47870c6fdf40e0a36bdbfc5651296d78f7f7a61e055689a909300551d29345d451c9f381b0de0a2bb4fad25f42ad8e361728a5269e903",
+        "caminho": "/api/v1/agente/pulso",
+        "chave": "03a107bff3ce10be1d70dd18e74bc09967e4d6309ba50d5f1ddc8664125531b8",
+        "corpo": "7b226c69767265223a7b226c696e686173223a347d7d",
+        "metodo": "POST",
+        "motivo": "pedido fora da janela de 5 minutos",
+        "tempo_ms": 1791000000000
+      },
+      {
+        "agora_ms": 1791000000000,
+        "assinatura": "52d7037b705a761764e47870c6fdf40e0a36bdbfc5651296d78f7f7a61e055689a909300551d29345d451c9f381b0de0a2bb4fad25f42ad8e361728a5269e903",
+        "caminho": "/api/v1/agente/pulso",
+        "chave": "03a107bff3ce10be1d70dd18e74bc09967e4d6309ba50d5f1ddc8664125531b8",
+        "corpo": "7b226c69767265223a7b226c696e686173223a347d7d",
+        "metodo": "PUT",
+        "motivo": "método não aceito",
+        "tempo_ms": 1791000000000
+      },
+      {
+        "agora_ms": 1791000000000,
+        "assinatura": "52d7037b705a761764e47870c6fdf40e0a36bdbfc5651296d78f7f7a61e055689a909300551d29345d451c9f381b0de0a2bb4fad25f42ad8e361728a5269e903",
+        "caminho": "/api/v1/admin/precos",
+        "chave": "03a107bff3ce10be1d70dd18e74bc09967e4d6309ba50d5f1ddc8664125531b8",
+        "corpo": "7b226c69767265223a7b226c696e686173223a347d7d",
+        "metodo": "POST",
+        "motivo": "caminho fora da área do agente",
+        "tempo_ms": 1791000000000
+      },
+      {
+        "agora_ms": 1791000000000,
+        "assinatura": "52d7037b705a761764e47870c6fdf40e0a36bdbfc5651296d78f7f7a61e055689a909300551d29345d451c9f381b0de0a2bb4fad25f42ad8e361728a5269e903",
+        "caminho": "/api/v1/agente/pul so",
+        "chave": "03a107bff3ce10be1d70dd18e74bc09967e4d6309ba50d5f1ddc8664125531b8",
+        "corpo": "7b226c69767265223a7b226c696e686173223a347d7d",
+        "metodo": "POST",
+        "motivo": "caminho fora da área do agente",
+        "tempo_ms": 1791000000000
+      },
+      {
+        "agora_ms": 1791000000000,
+        "assinatura": "52d7037b705a761764e47870c6fdf40e0a36bdbfc5651296d78f7f7a61e055689a909300551d29345d451c9f381b0de0a2bb4fad25f42ad8e361728a5269e903",
+        "caminho": "/api/v1/agente/pulso",
+        "chave": "3b6a27bcceb6a42d62a3a8d02a6f0d73653215771de243a63ac048a18b59da29",
+        "corpo": "7b226c69767265223a7b226c696e686173223a347d7d",
+        "metodo": "POST",
+        "motivo": "assinatura do nó não confere",
+        "tempo_ms": 1791000000000
+      },
+      {
+        "agora_ms": 1791000000000,
+        "assinatura": "52d7037b705a761764e47870c6fdf40e0a36bdbfc5651296d78f7f7a61e055689a909300551d29345d451c9f381b0de0a2bb4fad25f42ad8e361728a5269e902",
+        "caminho": "/api/v1/agente/pulso",
+        "chave": "03a107bff3ce10be1d70dd18e74bc09967e4d6309ba50d5f1ddc8664125531b8",
+        "corpo": "7b226c69767265223a7b226c696e686173223a347d7d",
+        "metodo": "POST",
+        "motivo": "assinatura do nó não confere",
+        "tempo_ms": 1791000000000
+      }
+    ],
+    "reputacao": [
+      {
+        "amostragem_bp": 10000,
+        "faixa": "normal",
+        "falhas": 0,
+        "incorretas": 0,
+        "pontuacao": 70,
+        "quarentena": false,
+        "verificadas": 0
+      },
+      {
+        "amostragem_bp": 10000,
+        "faixa": "normal",
+        "falhas": 0,
+        "incorretas": 0,
+        "pontuacao": 72,
+        "quarentena": false,
+        "verificadas": 1
+      },
+      {
+        "amostragem_bp": 1000,
+        "faixa": "confiavel",
+        "falhas": 0,
+        "incorretas": 0,
+        "pontuacao": 97,
+        "quarentena": false,
+        "verificadas": 100
+      },
+      {
+        "amostragem_bp": 1000,
+        "faixa": "confiavel",
+        "falhas": 0,
+        "incorretas": 0,
+        "pontuacao": 99,
+        "quarentena": false,
+        "verificadas": 1000000
+      },
+      {
+        "amostragem_bp": 2500,
+        "faixa": "normal",
+        "falhas": 0,
+        "incorretas": 1,
+        "pontuacao": 79,
+        "quarentena": false,
+        "verificadas": 100
+      },
+      {
+        "amostragem_bp": 10000,
+        "faixa": "risco",
+        "falhas": 0,
+        "incorretas": 1,
+        "pontuacao": 20,
+        "quarentena": true,
+        "verificadas": 0
+      },
+      {
+        "amostragem_bp": 5000,
+        "faixa": "atencao",
+        "falhas": 5,
+        "incorretas": 0,
+        "pontuacao": 56,
+        "quarentena": false,
+        "verificadas": 10
+      },
+      {
+        "amostragem_bp": 5000,
+        "faixa": "atencao",
+        "falhas": 3,
+        "incorretas": 1,
+        "pontuacao": 58,
+        "quarentena": false,
+        "verificadas": 40
+      },
+      {
+        "amostragem_bp": 2500,
+        "faixa": "normal",
+        "falhas": 20,
+        "incorretas": 2,
+        "pontuacao": 84,
+        "quarentena": false,
+        "verificadas": 500
+      },
+      {
+        "amostragem_bp": 10000,
+        "faixa": "risco",
+        "falhas": 0,
+        "incorretas": 3,
+        "pontuacao": 32,
+        "quarentena": true,
+        "verificadas": 30
+      },
+      {
+        "amostragem_bp": 10000,
+        "faixa": "risco",
+        "falhas": 40,
+        "incorretas": 0,
+        "pontuacao": 10,
+        "quarentena": true,
+        "verificadas": 3
+      },
+      {
+        "amostragem_bp": 10000,
+        "faixa": "normal",
+        "falhas": 0,
+        "incorretas": 0,
+        "pontuacao": 84,
+        "quarentena": false,
+        "verificadas": 9
+      },
+      {
+        "amostragem_bp": 2500,
+        "faixa": "normal",
+        "falhas": 0,
+        "incorretas": 0,
+        "pontuacao": 85,
+        "quarentena": false,
+        "verificadas": 10
+      },
+      {
+        "amostragem_bp": 10000,
+        "faixa": "risco",
+        "falhas": 1099511627776,
+        "incorretas": 1099511627776,
+        "pontuacao": 3,
+        "quarentena": true,
+        "verificadas": 1099511627776
+      }
+    ]
+  },
+  "generator": "reference/tools/gen_vectors.py",
+  "spec": "HYURAX-SPEC-01"
+}

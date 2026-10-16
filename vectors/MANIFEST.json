@@ -72,6 +72,10 @@
       "bytes": 13718,
       "sha512_16": "ff6cea6363b56699eba7e01098d37973"
     },
+    "plataforma.json": {
+      "bytes": 25217,
+      "sha512_16": "d5bd01bfcdf378fd8349d612ca4221bd"
+    },
     "rede_ultrax.json": {
       "bytes": 4899,
       "sha512_16": "183f1d1c560c4bf4cc908f0e5d97e4fa"
