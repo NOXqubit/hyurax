@@ -26,6 +26,9 @@ const CABECALHO_MAX: usize = 16 * 1024;
 /// Corpo padrão.
 pub const CORPO_PADRAO: usize = 256 * 1024;
 const PRAZO_DO_PEDIDO: Duration = Duration::from_secs(15);
+/// Quanto um pedido recusado ainda pode mandar antes de a conexão fechar.
+const ESCOAR_PRAZO: Duration = Duration::from_secs(2);
+const ESCOAR_MAX: usize = 4 * 1024 * 1024;
 
 /// Um pedido.
 #[derive(Clone, Debug, Default)]
@@ -300,16 +303,38 @@ pub fn servir_em(p: Arc<Plataforma>, ouvinte: TcpListener, saltos: usize) -> std
 fn atender_conexao(p: &Plataforma, s: &mut TcpStream, saltos: usize) {
     let inicio = Instant::now();
     let par = s.peer_addr().map(|a| a.ip().to_string()).unwrap_or_default();
-    let resposta = match ler(s, &crate::rotas::corpo_max) {
+    let (resposta, recusado) = match ler(s, &crate::rotas::corpo_max) {
         Ok(mut pedido) => {
             pedido.ip = ip_do_cliente(&par, pedido.cabecalho("x-forwarded-for"), saltos);
-            crate::rotas::atender(p, &pedido)
+            (crate::rotas::atender(p, &pedido), false)
         }
-        Err(status) => Resposta::erro(&Erro { status, mensagem: "pedido inválido".into() }),
+        Err(status) => (Resposta::erro(&Erro { status, mensagem: "pedido inválido".into() }), true),
     };
     let _ = escrever(s, &resposta, p.opcoes.https);
     p.anotar_pedido(resposta.status, u32::try_from(inicio.elapsed().as_millis()).unwrap_or(u32::MAX));
+    if recusado {
+        escoar(s);
+    }
     let _ = s.shutdown(std::net::Shutdown::Both);
+}
+
+/// Fecha com calma um pedido recusado antes de o corpo ser lido (413, 408...).
+/// Fechar com bytes não lidos faz o sistema mandar RST, e o RST pode apagar a
+/// resposta antes de o cliente ler: o navegador veria "conexão redefinida" em
+/// vez do aviso. Então manda o fim (FIN) e descarta o que ainda vier, com
+/// teto de tempo e de tamanho.
+fn escoar(s: &mut TcpStream) {
+    let _ = s.shutdown(std::net::Shutdown::Write);
+    let _ = s.set_read_timeout(Some(Duration::from_millis(500)));
+    let inicio = Instant::now();
+    let mut lixo = [0u8; 8192];
+    let mut total = 0usize;
+    while inicio.elapsed() < ESCOAR_PRAZO && total < ESCOAR_MAX {
+        match s.read(&mut lixo) {
+            Ok(0) | Err(_) => break,
+            Ok(n) => total = total.saturating_add(n),
+        }
+    }
 }
 
 #[cfg(test)]

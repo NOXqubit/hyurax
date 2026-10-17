@@ -27,7 +27,7 @@ members = [
 ]
 
 [workspace.package]
-version = "1.5.0"
+version = "1.5.1"
 edition = "2024"
 rust-version = "1.98"
 authors = ["Projeto Hyurax"]
@@ -84,7 +84,8 @@ hyurax-interface = { path = "crates/hyurax-interface" }
 # O rustls-rustcrypto ainda é alfa. Isso foi aceito porque o TLS aqui é só o
 # cano: quem prova a identidade do par e cifra o tráfego entre nós é o Noise XX,
 # por dentro. Versões exatas: nada de TLS novo por `cargo update`.
-rustls = { version = "=0.23.45", default-features = false, features = ["std", "tls12", "logging"] }
+# 17/10/2026: rustls 0.23.45 → 0.23.46, que corrige RUSTSEC-2026-0346 a 0349.
+rustls = { version = "=0.23.46", default-features = false, features = ["std", "tls12", "logging"] }
 rustls-rustcrypto = "=0.0.2-alpha"
 webpki-roots = "=1.0.9"
 

@@ -203,3 +203,15 @@ ponta a ponta. O mapa seção por seção está em
   termos revisados) para abrir a venda. Até lá, o pagamento é Pix manual
   conferido pela equipe, e só abre quando a chave Pix da empresa estiver na
   configuração.
+
+## 1.5.1 (17/10/2026): TLS corrigido
+
+A 1.5.0 não chegou a ser publicada: a conferência de falhas conhecidas
+(`cargo audit`) parou o lançamento, porque em 14/10 saíram quatro avisos para
+o `rustls` 0.23.45 (RUSTSEC-2026-0346 a 0349). A 1.5.1 é a 1.5.0 com o
+`rustls` 0.23.46, a versão corrigida, sem dependência nova.
+
+- **Servidor da plataforma:** o pedido recusado antes de o corpo ser lido
+  (grande demais, lento demais) agora fecha com calma. Antes, o sistema podia
+  cortar a conexão com RST e apagar a resposta: o navegador mostrava "conexão
+  redefinida" em vez do aviso de tamanho.
