@@ -1,9 +1,9 @@
 formato=HYURAX-ATUALIZACAO-v1
-versao=1.4.0
+versao=1.5.1
 rede=testnet
 instalador=hyurax-instalador-windows-x86_64.exe
-endereco=https://github.com/NOXqubit/hyurax/releases/download/v1.4.0/hyurax-instalador-windows-x86_64.exe
-tamanho=10249728
-sha512=6f0187af46a5445883f96ae87a11ad2f2a3ce2462125caa0395050dfe1c55d4407f6d28d14c724da654b8f382cae7f7d780f0385ba291c6bb6b65fe9d1f1874b
-notas=Nova tela Planos: Comunidade (grátis), Pro, Equipe e Empresa, com o que entra em cada um. A venda ainda não abriu; o plano pago se ativa com um voucher assinado pelo projeto, conferido pelo próprio programa, e reduz a comissão da plataforma no mercado.
-assinatura=bbebeafd1ef66d478a36602d638ad88978e14421c2d6402f12ccdb899832de525a250e41607623aaebbcf9324958ef83d372fe5d33c3745ddf299fce04dcf405
+endereco=https://github.com/NOXqubit/hyurax/releases/download/v1.5.1/hyurax-instalador-windows-x86_64.exe
+tamanho=10433536
+sha512=a30a5931a886e5265e40f16bb59d943feb17be8c322956ce76233c4c79af6c4f19df168f76c07559c46fdda93e79992f54e593d81418f65c71ff75370f4be4d8
+notas=Nova tela Fornecer: liga este computador à plataforma HYURAX Compute, com os núcleos e a memória que você escolher, e pausa na hora. A plataforma ainda não está aberta ao público. Também: TLS atualizado (rustls 0.23.46) com as correções de segurança de outubro.
+assinatura=8d77359423f09195feecef5839cfdb96c71962145641db82f10e98a24130c9abf6697a90b6e9b054dcb8bf4ccc7dd47eb1a6b6cbda2bb0f20c7418d7a75e260c
