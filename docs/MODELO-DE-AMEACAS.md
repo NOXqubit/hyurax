@@ -80,6 +80,16 @@ Quer ler o painel ou mandar comando para `127.0.0.1:8800`.
   Bloco que já tenho não custa conta nenhuma. Testes: `pow_fora_da_trava.rs`.
 - Teto de conexões de entrada por faixa de endereços públicos (IPv4 /24,
   IPv6 /48), além do teto por IP. Teste: `faixa_agrupa_vizinhos_publicos_e_ignora_a_rede_local`.
+- **Porta WebSocket** (a da semente pública): no máximo 128 conexões em
+  atendimento antes do upgrade, com prazo de 10 s para o cabeçalho; acima
+  disso a conexão fecha sem abrir thread, e uma falha ao abrir thread fecha só
+  aquela conexão, nunca o laço que aceita. Quadros pela RFC 6455 (controle
+  com até 125 bytes e inteiro; bits reservados e tipos desconhecidos derrubam
+  a conexão). Testes: `websocket_aguenta_enxurrada_de_conexoes_lentas`,
+  `quadros_que_a_rfc_manda_recusar`.
+- **Fuzzing** de todo decodificador que recebe bytes de fora e da conferência
+  dos 8 motores (`hyurax-nucleo/tests/fuzz.rs`, semente nova a cada execução
+  do CI). Ver [TEMPORADA-DE-ATAQUES.md](TEMPORADA-DE-ATAQUES.md).
 - Rotação da identidade: `hyurax-no identidade girar` (com o programa
   fechado) troca a identidade e guarda a antiga ao lado. Teste:
   `girar_troca_a_identidade_e_guarda_a_antiga`.

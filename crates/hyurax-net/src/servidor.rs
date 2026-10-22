@@ -571,8 +571,10 @@ impl Rede {
                         // o teto e o banimento valem antes de abrir a thread
                         let Some(vaga) = rede.vaga_de_entrada(&stream) else { continue };
                         let r = Arc::clone(&rede);
-                        // prefixo da malha (ponte, alcance) ou aperto Noise
-                        std::thread::spawn(move || r.atender_entrada(stream, vaga));
+                        // prefixo da malha (ponte, alcance) ou aperto Noise.
+                        // Sem linha nova no sistema, só esta conexão fecha (e
+                        // solta a vaga); o laço segue aceitando
+                        let _ = std::thread::Builder::new().spawn(move || r.atender_entrada(stream, vaga));
                     }
                     Err(ref e) if e.kind() == std::io::ErrorKind::WouldBlock => {
                         std::thread::sleep(Duration::from_millis(50));

@@ -58,7 +58,7 @@ continua possível, mas está em risco.
 | Liberar `mainnet` na linha de comando | **por último**, num commit próprio, depois de tudo acima |
 | Assinatura digital do programa (Windows) | depende do certificado (`docs/ASSINATURA-DIGITAL.md`) |
 | Doação | o endereço é de corretora; antes da mainnet, trocar por uma carteira em que só o autor tenha a chave |
-| Revisão de segurança de fora | recomendada antes do lançamento: chamar a temporada de ataques na testnet pública (semanas 7 a 9 do roteiro) |
+| Revisão de segurança de fora | recomendada antes do lançamento: chamar a temporada de ataques na testnet pública (semanas 7 a 9 do roteiro). Guia, regras e placar prontos em [TEMPORADA-DE-ATAQUES.md](TEMPORADA-DE-ATAQUES.md); a rodada interna (fuzzing e porta WebSocket) foi feita em 22/10/2026. Falta anunciar |
 
 ## O que fica de fora da mainnet, de propósito
 

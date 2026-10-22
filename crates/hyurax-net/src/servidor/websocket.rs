@@ -22,6 +22,7 @@
 
 use std::io::{ErrorKind, Read, Write};
 use std::net::{Shutdown, TcpListener, TcpStream, ToSocketAddrs};
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
@@ -33,6 +34,15 @@ const GUID: &str = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
 const MAX_QUADRO: usize = 4 * 1024 * 1024;
 /// Cabeçalho HTTP do aperto de mão, no máximo.
 const MAX_CABECALHO: usize = 8 * 1024;
+/// Conexões em atendimento antes do upgrade (lendo o cabeçalho HTTP ou
+/// respondendo a página de saúde). Acima disso a conexão fecha na hora, sem
+/// abrir linha: uma enxurrada de conexões lentas não esgota as linhas do
+/// sistema nem derruba o laço que aceita conexões.
+const MAX_ATENDIMENTOS: usize = 128;
+/// Prazo para o cabeçalho HTTP de quem chega ficar inteiro.
+const PRAZO_CABECALHO: Duration = Duration::from_secs(10);
+/// Maior corpo de quadro de controle (fechar, ping, pong), pela RFC 6455.
+const MAX_CONTROLE: usize = 125;
 /// Discar: TCP e TLS.
 const PRAZO_CONEXAO: Duration = Duration::from_secs(15);
 /// A resposta ao upgrade. Folgado: no plano grátis do Render, um serviço que
@@ -118,6 +128,7 @@ fn aceite(chave: &str) -> String {
 // Quadros
 
 const OP_CONTINUACAO: u8 = 0;
+const OP_TEXTO: u8 = 1;
 const OP_BINARIO: u8 = 2;
 const OP_FECHAR: u8 = 8;
 const OP_PING: u8 = 9;
@@ -148,10 +159,24 @@ fn quadro(opcode: u8, dados: &[u8], mascara: Option<[u8; 4]>) -> Vec<u8> {
 }
 
 /// Tira um quadro completo do começo de `buf`, se já chegou inteiro.
-/// `Err` para quadro grande demais ou fragmentado de um jeito que não usamos.
+/// `Err` para o que a RFC 6455 manda recusar (e derrubar a conexão): bits
+/// reservados ligados (nenhuma extensão foi combinada), tipo de quadro
+/// desconhecido, quadro de controle grande ou fragmentado, ou quadro maior
+/// que o teto.
 fn tirar_quadro(buf: &mut Vec<u8>) -> Result<Option<(u8, Vec<u8>)>, &'static str> {
     let (Some(&b0), Some(&b1)) = (buf.first(), buf.get(1)) else { return Ok(None) };
+    let fim_da_mensagem = b0 & 0x80 != 0;
+    if b0 & 0x70 != 0 {
+        return Err("bits reservados ligados");
+    }
     let opcode = b0 & 0x0F;
+    if !matches!(opcode, OP_CONTINUACAO | OP_TEXTO | OP_BINARIO | OP_FECHAR | OP_PING | OP_PONG) {
+        return Err("tipo de quadro desconhecido");
+    }
+    let controle = opcode >= OP_FECHAR;
+    if controle && (!fim_da_mensagem || usize::from(b1 & 0x7F) > MAX_CONTROLE) {
+        return Err("quadro de controle grande ou fragmentado");
+    }
     let mascarado = b1 & 0x80 != 0;
     let (tamanho, mut pos) = match b1 & 0x7F {
         126 => match buf.get(2..4) {
@@ -477,23 +502,29 @@ impl Rede {
         let porta = ouvinte.local_addr()?.port();
         self.garantir_manutencao();
         let rede = Arc::clone(self);
+        let atendendo = Arc::new(AtomicUsize::new(0));
         std::thread::spawn(move || {
             for conexao in ouvinte.incoming() {
                 if rede.parando() {
                     break;
                 }
                 let Ok(s) = conexao else { continue };
+                // o teto vale antes de abrir a linha; acima dele, `s` cai
+                // aqui mesmo e a conexão fecha sem ler nem responder
+                let Some(vez) = Vez::pegar(&atendendo) else { continue };
                 let r = Arc::clone(&rede);
-                std::thread::spawn(move || r.atender_ws(s));
+                // se o sistema não der linha nova, só esta conexão fecha (a
+                // closure cai com ela e solta a vez); o laço segue aceitando
+                let _ = std::thread::Builder::new().spawn(move || r.atender_ws(s, vez));
             }
         });
         Ok(porta)
     }
 
-    fn atender_ws(self: &Arc<Self>, tcp: TcpStream) {
+    fn atender_ws(self: &Arc<Self>, tcp: TcpStream, vez: Vez) {
         let _ = tcp.set_write_timeout(Some(PRAZO_CONEXAO));
         let mut cano = Cano::Simples(tcp);
-        let Ok((cabecalho, sobra)) = ler_cabecalho(&mut cano, Duration::from_secs(10)) else { return };
+        let Ok((cabecalho, sobra)) = ler_cabecalho(&mut cano, PRAZO_CABECALHO) else { return };
         let mut linha = cabecalho.lines().next().unwrap_or("").split_whitespace();
         let (metodo, caminho) = (linha.next().unwrap_or(""), linha.next().unwrap_or(""));
         let rota = caminho.split('?').next().unwrap_or("");
@@ -518,6 +549,9 @@ impl Rede {
                 let _vaga = vaga;
                 let _ = r.servir(minha, Papel::Recebeu, None, true, None);
             });
+            // virou conexão de nó: daqui em diante quem conta é a vaga de
+            // entrada (o teto de pares), não a vez do atendimento
+            drop(vez);
             bombear(cano, outra, false, sobra);
             return;
         }
@@ -538,6 +572,25 @@ impl Rede {
             corpo.len()
         );
         let _ = cano.write_all(resposta.as_bytes());
+    }
+}
+
+/// Uma vez entre os atendimentos antes do upgrade; solta ao cair.
+struct Vez(Arc<AtomicUsize>);
+
+impl Vez {
+    fn pegar(atendendo: &Arc<AtomicUsize>) -> Option<Self> {
+        if atendendo.fetch_add(1, Ordering::AcqRel) >= MAX_ATENDIMENTOS {
+            atendendo.fetch_sub(1, Ordering::AcqRel);
+            return None;
+        }
+        Some(Self(Arc::clone(atendendo)))
+    }
+}
+
+impl Drop for Vez {
+    fn drop(&mut self) {
+        self.0.fetch_sub(1, Ordering::AcqRel);
     }
 }
 
@@ -575,6 +628,41 @@ mod testes {
         let mut gigante = vec![0x82, 127];
         gigante.extend_from_slice(&u64::MAX.to_be_bytes());
         assert!(tirar_quadro(&mut gigante).is_err());
+    }
+
+    #[test]
+    fn quadros_que_a_rfc_manda_recusar() {
+        // controle com o teto da RFC passa; um byte a mais, não
+        let mut ping = quadro(OP_PING, &[7; MAX_CONTROLE], None);
+        assert_eq!(tirar_quadro(&mut ping).unwrap(), Some((OP_PING, vec![7; MAX_CONTROLE])));
+        assert!(tirar_quadro(&mut quadro(OP_PING, &[7; MAX_CONTROLE + 1], None)).is_err(), "ping grande");
+        assert!(tirar_quadro(&mut quadro(OP_FECHAR, &[0; 200], Some([1, 2, 3, 4]))).is_err(), "fechar grande");
+        // controle fragmentado (sem o bit de fim)
+        let mut partido = quadro(OP_PONG, b"x", None);
+        partido[0] &= 0x7F;
+        assert!(tirar_quadro(&mut partido).is_err());
+        // bits reservados e tipos desconhecidos
+        let mut reservado = quadro(OP_BINARIO, b"x", None);
+        reservado[0] |= 0x40;
+        assert!(tirar_quadro(&mut reservado).is_err());
+        for tipo in [3u8, 7, 11, 15] {
+            assert!(tirar_quadro(&mut quadro(tipo, b"x", None)).is_err(), "tipo {tipo}");
+        }
+        // dado fragmentado continua valendo (o cano é um fluxo de bytes)
+        let mut primeiro = quadro(OP_BINARIO, b"ab", None);
+        primeiro[0] &= 0x7F;
+        assert_eq!(tirar_quadro(&mut primeiro).unwrap(), Some((OP_BINARIO, b"ab".to_vec())));
+    }
+
+    #[test]
+    fn vez_tem_teto_e_solta_ao_cair() {
+        let atendendo = Arc::new(AtomicUsize::new(0));
+        let vezes: Vec<Vez> = (0..MAX_ATENDIMENTOS).map(|_| Vez::pegar(&atendendo).unwrap()).collect();
+        assert!(Vez::pegar(&atendendo).is_none(), "acima do teto");
+        assert_eq!(atendendo.load(Ordering::Acquire), MAX_ATENDIMENTOS);
+        drop(vezes);
+        assert_eq!(atendendo.load(Ordering::Acquire), 0);
+        assert!(Vez::pegar(&atendendo).is_some());
     }
 
     #[test]

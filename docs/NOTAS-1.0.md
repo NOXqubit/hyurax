@@ -227,3 +227,24 @@ dependência nova. Novo teste `https_de_verdade` (só com
 Também: o teste `decisora_decide_fora_da_thread_do_par` lia os eventos antes
 de a decisora emiti-los (ela fecha o JOB dentro da trava e emite depois) e
 falhava às vezes em máquina carregada; agora espera o `JOB_COMPLETED`.
+
+## 1.5.3 (22/10/2026): temporada de ataques, rodada interna
+
+Inclui tudo da 1.5.2 (raízes de certificado e conferência de cadeia).
+O guia da temporada de ataques (regras, laboratório, o que já está coberto,
+como relatar e o placar) está em [TEMPORADA-DE-ATAQUES.md](TEMPORADA-DE-ATAQUES.md).
+Antes de chamar gente de fora, o projeto atacou a si mesmo:
+
+- **Porta WebSocket** (a da semente pública): cada conexão ganhava uma linha
+  antes do upgrade, sem teto, e uma falha ao abrir linha nova derrubava o laço
+  que aceita conexões. Agora são no máximo 128 atendimentos antes do upgrade,
+  e a falha fecha só aquela conexão. Os quadros seguem a RFC 6455: controle
+  com até 125 bytes e inteiro, e bits reservados ou tipos desconhecidos
+  derrubam a conexão. O mesmo cuidado na criação de linha vale para a porta
+  TCP do nó.
+- **Fuzzing** (`crates/hyurax-nucleo/tests/fuzz.rs`): os 15 decodificadores
+  que recebem bytes de fora e a conferência dos 8 motores, com mutações
+  determinísticas. Nada cai nem demora, o que é aceito tem uma codificação
+  só, e nenhum resultado falso passa nos motores de resultado único. O CI
+  roda 100 mil mutações por alvo, com semente nova a cada execução.
+- **SECURITY.md** atualizado para a rede de teste pública.

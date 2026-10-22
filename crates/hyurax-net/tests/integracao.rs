@@ -926,3 +926,49 @@ fn no_por_websocket_sincroniza_e_recebe_bloco() {
     semente.desligar();
     b.desligar();
 }
+
+/// Enxurrada de conexões lentas na porta WebSocket (a da semente pública):
+/// cada uma abre e não manda o cabeçalho. Acima do teto de atendimentos, a
+/// conexão fecha na hora em vez de ganhar uma linha que espera 10 s; e o laço
+/// que aceita conexões continua vivo: passada a enxurrada, a página de saúde
+/// responde.
+#[test]
+#[ignore = "sobe sockets — ver cabeçalho do arquivo"]
+fn websocket_aguenta_enxurrada_de_conexoes_lentas() {
+    let semente = rede(No::novo(cadeia_com(1)));
+    let porta_ws = semente.escutar_ws(0).unwrap();
+    // bem acima do teto (128): as últimas têm que ser recusadas
+    let mut lentas = Vec::new();
+    for _ in 0..300 {
+        // a que não conecta (fila de conexões do sistema cheia) também é recusa
+        if let Ok(s) = std::net::TcpStream::connect(("127.0.0.1", porta_ws)) {
+            lentas.push(s);
+        }
+    }
+    let inicio = Instant::now();
+    let fechadas = lentas
+        .iter()
+        .rev()
+        .take(20)
+        .filter(|s| {
+            s.set_read_timeout(Some(Duration::from_secs(3))).unwrap();
+            let mut leitor: &std::net::TcpStream = s;
+            let mut b = [0u8; 1];
+            // fechada pelo servidor: fim (0) ou "reset"; esperando: prazo
+            !matches!(leitor.read(&mut b), Err(ref e) if matches!(e.kind(), std::io::ErrorKind::WouldBlock | std::io::ErrorKind::TimedOut))
+        })
+        .count();
+    assert_eq!(fechadas, 20, "acima do teto a conexão tem que fechar na hora ({:?})", inicio.elapsed());
+    drop(lentas);
+    // o laço que aceita continua vivo: a saúde volta a responder
+    let saude = || {
+        let Ok(mut s) = std::net::TcpStream::connect(("127.0.0.1", porta_ws)) else { return String::new() };
+        s.set_read_timeout(Some(Duration::from_secs(5))).unwrap();
+        let _ = s.write_all(b"GET /saude HTTP/1.1\r\nHost: x\r\n\r\n");
+        let mut r = String::new();
+        let _ = s.read_to_string(&mut r);
+        r
+    };
+    assert!(esperar(Duration::from_secs(20), || saude().starts_with("HTTP/1.1 200")), "a porta WebSocket parou de atender");
+    semente.desligar();
+}
