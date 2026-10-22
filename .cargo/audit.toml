@@ -11,8 +11,14 @@
 # - RUSTSEC-2026-0049, -0098, -0099 e -0104 (rustls-webpki 0.102.8): o
 #   provedor usa essa versão só para as constantes de identificador de
 #   algoritmo (`webpki::alg_id`, bytes fixos). A validação do certificado, onde
-#   ficam os defeitos (CRL, restrição de nomes), roda no rustls-webpki 0.103.15
+#   ficam os defeitos (CRL, restrição de nomes), roda no rustls-webpki 0.103.16
 #   que o próprio rustls usa, versão já corrigida.
+#
+# - RUSTSEC-2026-0382 (rustls-webpki, intermediário desconfiado aceito na
+#   conferência da cadeia): mesmo caso. Conferido de novo em 22/10/2026: o
+#   rustls-rustcrypto só importa `webpki::alg_id` da 0.102.8. A cadeia é
+#   conferida pela 0.103.16, já corrigida. O aviso só continua aparecendo
+#   por causa da 0.102.8.
 #
 # Em qualquer caso, o TLS aqui é só o cano: a identidade do par e a cifra do
 # tráfego entre nós são do Noise XX, por dentro do WebSocket.
@@ -24,4 +30,5 @@ ignore = [
     "RUSTSEC-2026-0098",
     "RUSTSEC-2026-0099",
     "RUSTSEC-2026-0104",
+    "RUSTSEC-2026-0382",
 ]

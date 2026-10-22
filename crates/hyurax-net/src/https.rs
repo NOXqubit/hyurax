@@ -227,4 +227,20 @@ mod testes {
         let r = pedir("POST", &format!("http://{end}"), "/api/v1/x", &[("X-A", "1".into())], b"corpo", Duration::from_secs(5), 1024).unwrap();
         assert_eq!((r.status, r.corpo.as_slice()), (201, b"ok".as_slice()));
     }
+
+    /// TLS de verdade, com as raízes embutidas, contra a semente no Render.
+    /// Depende da internet, então só roda com a variável ligada:
+    /// `HYX_TESTE_INTERNET=1 cargo test -p hyurax-net https_de_verdade -- --ignored`
+    #[test]
+    #[ignore = "fala com a internet; rode com HYX_TESTE_INTERNET=1 e --ignored"]
+    fn https_de_verdade() {
+        if std::env::var_os("HYX_TESTE_INTERNET").is_none() {
+            return;
+        }
+        // o plano grátis do Render dorme: a primeira resposta pode levar meio minuto
+        let r = pedir("GET", "https://hyurax-semente.onrender.com", "/", &[], b"", Duration::from_secs(60), 64 * 1024).unwrap();
+        let texto = String::from_utf8_lossy(&r.corpo).into_owned();
+        assert_eq!(r.status, 200, "{texto}");
+        assert!(texto.contains("Hyurax"), "{texto}");
+    }
 }

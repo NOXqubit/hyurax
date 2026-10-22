@@ -6,7 +6,7 @@
 # cada reinício apaga contas, saldos e tarefas. Ver docs/OPERAR-A-PLATAFORMA.md.
 
 FROM alpine:3.20 AS baixar
-ARG VERSAO=v1.5.1
+ARG VERSAO=v1.5.2
 RUN apk add --no-cache curl
 WORKDIR /baixar
 RUN set -eu; \

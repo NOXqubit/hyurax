@@ -27,7 +27,7 @@ members = [
 ]
 
 [workspace.package]
-version = "1.5.1"
+version = "1.5.2"
 edition = "2024"
 rust-version = "1.98"
 authors = ["Projeto Hyurax"]
@@ -85,9 +85,11 @@ hyurax-interface = { path = "crates/hyurax-interface" }
 # cano: quem prova a identidade do par e cifra o tráfego entre nós é o Noise XX,
 # por dentro. Versões exatas: nada de TLS novo por `cargo update`.
 # 17/10/2026: rustls 0.23.45 → 0.23.46, que corrige RUSTSEC-2026-0346 a 0349.
+# 22/10/2026: webpki-roots 1.0.9 → 1.0.10 (RUSTSEC-2026-0381) e, no lock,
+# rustls-webpki 0.103.15 → 0.103.16 (RUSTSEC-2026-0382).
 rustls = { version = "=0.23.46", default-features = false, features = ["std", "tls12", "logging"] }
 rustls-rustcrypto = "=0.0.2-alpha"
-webpki-roots = "=1.0.9"
+webpki-roots = "=1.0.10"
 
 # Vetores de teste. Rust puro.
 serde = { version = "1", features = ["derive"] }

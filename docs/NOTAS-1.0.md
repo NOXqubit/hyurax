@@ -215,3 +215,15 @@ o `rustls` 0.23.45 (RUSTSEC-2026-0346 a 0349). A 1.5.1 é a 1.5.0 com o
   (grande demais, lento demais) agora fecha com calma. Antes, o sistema podia
   cortar a conexão com RST e apagar a resposta: o navegador mostrava "conexão
   redefinida" em vez do aviso de tamanho.
+
+## 1.5.2 (22/10/2026): raízes de certificado atualizadas
+
+Mais dois avisos para o TLS, de 19 e 20/10: as raízes embutidas confiavam em
+intermediários da emSign já desconfiados (RUSTSEC-2026-0381, `webpki-roots`
+1.0.9 → 1.0.10), e a conferência da cadeia podia aceitar intermediário
+desconfiado (RUSTSEC-2026-0382, `rustls-webpki` 0.103.15 → 0.103.16). Nenhuma
+dependência nova. Novo teste `https_de_verdade` (só com
+`HYX_TESTE_INTERNET=1`): o cliente do agente fala HTTPS com a semente no Render.
+Também: o teste `decisora_decide_fora_da_thread_do_par` lia os eventos antes
+de a decisora emiti-los (ela fecha o JOB dentro da trava e emite depois) e
+falhava às vezes em máquina carregada; agora espera o `JOB_COMPLETED`.

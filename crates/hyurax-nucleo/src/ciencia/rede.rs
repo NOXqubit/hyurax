@@ -1175,9 +1175,12 @@ mod testes {
             c.tratar_ultrax(par, &m.codificar().unwrap());
         }
         if decisora {
+            // a decisora fecha o JOB dentro da trava e emite os eventos depois
+            // de soltá-la: espera o último deles (JOB_COMPLETED), não só o estado
             let ate = std::time::Instant::now() + std::time::Duration::from_secs(30);
             while c.rede.lock().unwrap().redundantes.contains_key(&(id, 0))
                 || !c.jobs.lock().unwrap().iter().any(|x| x.id == id && x.estado.e_final())
+                || !c.eventos.lock().unwrap().iter().any(|e| e.contains("JOB_COMPLETED"))
             {
                 assert!(std::time::Instant::now() < ate, "a decisora não decidiu a unidade");
                 std::thread::sleep(std::time::Duration::from_millis(20));
